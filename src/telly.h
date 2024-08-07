@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <string.h>
+#include <stdbool.h>
 
 #ifndef TELLY_H
   #define TELLY_H
@@ -10,6 +11,33 @@
     uint16_t port;
   };
 
+  #define RDT_SSTRING '+'
+  #define RDT_BSTRING '$'
+  #define RDT_ARRAY '*'
+
+  typedef struct String {
+    char *data;
+    size_t len;
+  } string_t;
+
+  typedef struct RESPData {
+    uint8_t type;
+
+    union {
+      string_t string;
+      bool boolean;
+      int32_t integer;
+      double doubl;
+      struct RESPData *array;
+    } value;
+
+    uint32_t count;
+  } respdata_t;
+
   void start_server(struct Configuration conf);
+  respdata_t get_resp_data(int connfd);
+
   struct Configuration get_configuration(const char *filename);
+
+  void client_error();
 #endif
