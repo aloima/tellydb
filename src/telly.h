@@ -35,6 +35,11 @@
     uint32_t count;
   } respdata_t;
 
+  struct Command {
+    char *name;
+    void (*run)(int connfd, respdata_t data);
+  };
+
   void start_server(struct Configuration conf);
   respdata_t get_resp_data(int connfd);
   void execute_commands(int connfd, respdata_t data);
@@ -45,6 +50,10 @@
 
   void client_error();
 
-  void cmd_command(int connfd, respdata_t data);
-  void cmd_get(int connfd, respdata_t data);
+  void load_commands();
+  struct Command *get_commands();
+  uint32_t get_command_count();
+
+  extern struct Command cmd_command;
+  extern struct Command cmd_get;
 #endif

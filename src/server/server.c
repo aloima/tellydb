@@ -8,10 +8,9 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
-respdata_t get_resp_data(int connfd);
-void client_error();
-
 void start_server(struct Configuration conf) {
+  load_commands();
+
   int sockfd;
   struct sockaddr_in servaddr, addr;
 

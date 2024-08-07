@@ -2,7 +2,7 @@
 
 #include <unistd.h>
 
-void cmd_get(int connfd, respdata_t data) {
+static void run(int connfd, respdata_t data) {
   switch (data.count) {
     case 1:
       write(connfd, "-ERR missing argument\r\n", 23);
@@ -17,3 +17,8 @@ void cmd_get(int connfd, respdata_t data) {
       break;
   }
 }
+
+struct Command cmd_get = {
+  .name = "GET",
+  .run = run
+};
