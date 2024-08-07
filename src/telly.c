@@ -24,11 +24,29 @@ int main(int argc, char *argv[]) {
           " version        - Prints version\n"
           " help           - Prints this page\n"
           " config [FILE]  - Runs the server using configuration file\n"
-          " create-config  - Creates a configuration file using default values\n"
+          " create-config  - Creates a .tellyconf file using default values. If it is exists, it will be discarded\n"
           " default-config - Prints default configuration values\n\n"
           "Without an argument, starts the server using .tellyconf file in working directory.\n"
           "If .tellyconf is not exists, starts the server using default values."
         ));
+
+        return EXIT_SUCCESS;
+      } else if (streq(arg, "default-config")) {
+        struct Configuration conf = get_default_configuration();
+        char buf[1024];
+
+        get_configuration_string(buf, conf);
+        puts(buf);
+
+        return EXIT_SUCCESS;
+      } else if (streq(arg, "create-config")) {
+        FILE *file = fopen(".tellyconf", "w");
+        struct Configuration conf = get_default_configuration();
+        char buf[1024];
+
+        get_configuration_string(buf, conf);
+        fwrite(buf, sizeof(char), strlen(buf), file);
+        fclose(file);
 
         return EXIT_SUCCESS;
       } else {

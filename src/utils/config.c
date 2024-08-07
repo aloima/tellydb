@@ -42,6 +42,16 @@ struct Configuration parse_configuration(FILE *file) {
   return conf;
 }
 
+void get_configuration_string(char *buf, struct Configuration conf) {
+  sprintf(buf, (
+    "PORT=%d\n"
+  ), conf.port);
+}
+
+struct Configuration get_default_configuration() {
+  return default_conf;
+}
+
 struct Configuration get_configuration(const char *filename) {
   if (filename == NULL) {
     FILE *file = fopen(".tellyconf", "r");

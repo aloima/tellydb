@@ -40,6 +40,8 @@
   void execute_commands(int connfd, respdata_t data);
 
   struct Configuration get_configuration(const char *filename);
+  struct Configuration get_default_configuration();
+  void get_configuration_string(char *buf, struct Configuration conf);
 
   void client_error();
 
