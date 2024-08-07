@@ -35,7 +35,12 @@ void start_server(struct Configuration conf) {
   }
 
   socklen_t addr_len = sizeof(addr);
-  get_resp_data(accept(sockfd, (struct sockaddr *) &addr, &addr_len));
+  int connfd = accept(sockfd, (struct sockaddr *) &addr, &addr_len);
+
+  while (true) {
+    respdata_t data = get_resp_data(connfd);
+    execute_commands(connfd, data);
+  }
 
   close(sockfd);
 }

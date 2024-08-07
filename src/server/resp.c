@@ -153,6 +153,12 @@ respdata_t get_resp_data(int connfd) {
       case RDT_BSTRING:
         data = parse_resp_bstring(connfd, type);
         return data;
+
+      case RDT_ERR:
+        data = parse_resp_sstring(connfd, type);
+        return data;
     }
+
+    usleep(3000);
   }
 }

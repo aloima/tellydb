@@ -14,6 +14,7 @@
   #define RDT_SSTRING '+'
   #define RDT_BSTRING '$'
   #define RDT_ARRAY '*'
+  #define RDT_ERR '-'
 
   typedef struct String {
     char *data;
@@ -36,8 +37,12 @@
 
   void start_server(struct Configuration conf);
   respdata_t get_resp_data(int connfd);
+  void execute_commands(int connfd, respdata_t data);
 
   struct Configuration get_configuration(const char *filename);
 
   void client_error();
+
+  void cmd_command(int connfd, respdata_t data);
+  void cmd_get(int connfd, respdata_t data);
 #endif
