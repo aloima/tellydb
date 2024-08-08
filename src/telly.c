@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "telly.h"
+#include "../headers/telly.h"
 
 int main(int argc, char *argv[]) {
   switch (argc) {
