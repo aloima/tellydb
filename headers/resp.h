@@ -9,6 +9,7 @@
   #define RDT_SSTRING '+'
   #define RDT_BSTRING '$'
   #define RDT_ARRAY '*'
+  #define RDT_INTEGER ':'
   #define RDT_ERR '-'
 
   typedef struct RESPData {

@@ -20,5 +20,6 @@ static void run(int connfd, respdata_t data) {
 
 struct Command cmd_get = {
   .name = "GET",
+  .summary = "Gets value from specified key.",
   .run = run
 };

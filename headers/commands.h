@@ -7,6 +7,7 @@
 
   struct Command {
     char *name;
+    char *summary;
     void (*run)(int connfd, respdata_t data);
   };
 
