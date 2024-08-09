@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 void set_string(string_t *data, char *value, int32_t len) {
-  data->len = len == -1 ? strlen(value) : len;
+  data->len = len == -1 ? strlen(value) : (uint32_t) len;
   const uint32_t size = data->len + 1;
 
   if (data->value != NULL) {

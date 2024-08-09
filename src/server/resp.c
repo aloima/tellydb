@@ -56,23 +56,23 @@ respdata_t parse_resp_sstring(int connfd, uint8_t type) {
   };
 
   string_t string = {
-    .data = malloc(33 * sizeof(char)),
+    .value = malloc(33 * sizeof(char)),
     .len = 0
   };
 
   while (true) {
-    string.len += read(connfd, string.data + string.len, 1);
+    string.len += read(connfd, string.value + string.len, 1);
 
     if (string.len % 32 == 0) {
-      string.data = realloc(string.data, string.len + 33);
+      string.value = realloc(string.value, string.len + 33);
     }
 
-    if (string.data[string.len - 1] == '\r') {
+    if (string.value[string.len - 1] == '\r') {
       char c;
       read(connfd, &c, 1);
 
       if (c == '\n') {
-        string.data[string.len - 1] = '\0';
+        string.value[string.len - 1] = '\0';
         string.len -= 1;
         data.value.string = string;
         break;
@@ -110,12 +110,12 @@ respdata_t parse_resp_bstring(int connfd, uint8_t type) {
         free(len);
 
         data.value.string = (string_t) {
-          .data = malloc(lend + 1),
+          .value = malloc(lend + 1),
           .len = lend
         };
 
-        read(connfd, data.value.string.data, lend);
-        data.value.string.data[lend + 1] = '\0';
+        read(connfd, data.value.string.value, lend);
+        data.value.string.value[lend + 1] = '\0';
 
         char buf[2];
         read(connfd, buf, 2);

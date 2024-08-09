@@ -22,7 +22,7 @@ uint32_t get_command_count() {
 
 void execute_commands(int connfd, respdata_t data) {
   if (data.type == RDT_ARRAY) {
-    char *input = data.value.array[0].value.string.data;
+    char *input = data.value.array[0].value.string.value;
 
     for (uint32_t i = 0; i < command_count; ++i) {
       struct Command command = commands[i];

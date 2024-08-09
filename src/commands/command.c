@@ -8,7 +8,7 @@
 
 static void run(int connfd, respdata_t data) {
   if (data.count != 1) {
-    char *subcommand = data.value.array[1].value.string.data;
+    char *subcommand = data.value.array[1].value.string.value;
 
     if (streq("DOCS", subcommand)) {
       struct Command *commands = get_commands();
