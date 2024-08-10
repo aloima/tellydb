@@ -1,6 +1,8 @@
 #include "commands.h"
 #include "config.h"
 #include "resp.h"
+#include "database.h"
+#include "btree.h"
 #include "utils.h"
 
 #include <string.h>
