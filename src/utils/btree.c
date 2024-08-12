@@ -56,14 +56,14 @@ void *get_kv_val(struct KVPair *pair, uint32_t type) {
 }
 
 /*
-  1 2 3 4 5
+  1 2 3 4 5 _
   if index=1 then
   1 _ 2 3 4 5
 */
-void move_kv(struct BTreeNode *node, uint32_t index) {
-  uint32_t bound = node->size - 2;
+void move_kv(struct BTreeNode *node, int32_t index) {
+  int32_t bound = node->size - 2;
 
-  for (uint32_t i = bound; index <= i; --i) {
+  for (int32_t i = bound; index <= i; --i) {
     struct KVPair *a = &node->data[i];
     struct KVPair *b = &node->data[i + 1];
 
