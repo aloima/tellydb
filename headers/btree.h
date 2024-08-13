@@ -9,7 +9,7 @@
     struct KVPair *data;
     uint32_t size;
 
-    struct BTreeNode *leafs;
+    struct BTreeNode **leafs;
     uint32_t leaf_count;
 
     struct BTreeNode *top;

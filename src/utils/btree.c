@@ -174,13 +174,13 @@ void insert_kv_to_btree(struct BTree *tree, char *key, void *value, uint32_t typ
     if (node->leaf_count != 0) {
       for (uint32_t i = 0; i < node->size; ++i) {
         if (c <= node->data[i].key.value[0]) {
-          node = &node->leafs[i];
+          node = node->leafs[i];
           break;
         }
       }
 
       if (node->top == NULL) {
-        node = &node->leafs[node->leaf_count - 1];
+        node = node->leafs[node->leaf_count - 1];
       }
     }
 
@@ -188,33 +188,48 @@ void insert_kv_to_btree(struct BTree *tree, char *key, void *value, uint32_t typ
 
     if (node->size == tree->max) {
       if (node->leaf_count == 0) {
-        node->leaf_count = 2;
-        node->leafs = calloc(node->leaf_count, sizeof(struct BTreeNode));
-        node->leafs[0].top = node;
-        node->leafs[1].top = node;
+        if ((node->top && node->top->size == tree->max) || !node->top) {
+          node->leaf_count = 2;
+          node->leafs = malloc(node->leaf_count * sizeof(struct BTreeNode *));
+          node->leafs[0] = calloc(1, sizeof(struct BTreeNode));
+          node->leafs[1] = calloc(1, sizeof(struct BTreeNode));
+          node->leafs[0]->top = node;
+          node->leafs[1]->top = node;
 
-        const uint32_t index = (tree->max - 1) / 2;
+          const uint32_t index = (tree->max - 1) / 2;
 
-        for (uint32_t i = 0; i < index; ++i) {
-          struct KVPair a = node->data[0];
-          add_kv_to_node(&node->leafs[0], a.key.value, get_kv_val(&a, a.type), a.type);
-          del_kv_from_node(node, a.key.value);
+          for (uint32_t i = 0; i < index; ++i) {
+            struct KVPair a = node->data[0];
+            add_kv_to_node(node->leafs[0], a.key.value, get_kv_val(&a, a.type), a.type);
+            del_kv_from_node(node, a.key.value);
 
-          struct KVPair b = node->data[index - i];
-          add_kv_to_node(&node->leafs[1], b.key.value, get_kv_val(&b, b.type), b.type);
-          del_kv_from_node(node, b.key.value);
+            struct KVPair b = node->data[index - i];
+            add_kv_to_node(node->leafs[1], b.key.value, get_kv_val(&b, b.type), b.type);
+            del_kv_from_node(node, b.key.value);
+          }
+
+          if (tree->max % 2 == 0) {
+            struct KVPair a = node->data[1];
+            add_kv_to_node(node->leafs[1], a.key.value, get_kv_val(&a, a.type), a.type);
+            del_kv_from_node(node, a.key.value);
+          }
+        } else {
+          node->top->leaf_count += 1;
+          node->top->leafs = realloc(node->top->leafs, node->top->leaf_count * sizeof(struct BTreeNode *));
+          node->top->leafs[node->top->leaf_count - 1] = calloc(1, sizeof(struct BTreeNode));
+          node->top->leafs[node->top->leaf_count - 1]->top = node;
+
+          const uint32_t index = ((tree->max % 2 == 1) ? tree->max : (tree->max - 1)) / 2;
+          struct KVPair tkv = node->data[index];
+          add_kv_to_node(node->top, tkv.key.value, get_kv_val(&tkv, tkv.type), tkv.type);
+          del_kv_from_node(node, tkv.key.value);
+
+          for (uint32_t i = index + 1; i < tree->max; ++i) {
+            struct KVPair a = node->data[index];
+            add_kv_to_node(node->top->leafs[node->top->leaf_count - 1], a.key.value, get_kv_val(&a, a.type), a.type);
+            del_kv_from_node(node, a.key.value);
+          }
         }
-
-        if (tree->max % 2 == 0) {
-          struct KVPair a = node->data[1];
-          add_kv_to_node(&node->leafs[1], a.key.value, get_kv_val(&a, a.type), a.type);
-          del_kv_from_node(node, a.key.value);
-        }
-      } else {
-        node->leaf_count += 1;
-        node->leafs = realloc(node->leafs, node->leaf_count * sizeof(struct BTreeNode));
-        memset(&node->leafs[node->leaf_count - 1], 0, sizeof(struct BTreeNode));
-        node->leafs[node->leaf_count - 1].top = node;
       }
     }
   }
