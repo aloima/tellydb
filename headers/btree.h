@@ -27,4 +27,6 @@
   void del_kv_from_node(struct BTreeNode *node, char *key);
 
   void insert_kv_to_btree(struct BTree *tree, char *key, void *value, uint32_t type);
+
+  void free_btree(struct BTree *tree);
 #endif

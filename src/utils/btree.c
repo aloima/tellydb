@@ -3,7 +3,6 @@
 #include "../../headers/telly.h"
 
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 struct BTree *create_btree(const uint32_t max) {
@@ -88,6 +87,16 @@ void move_kv(struct BTreeNode *node, int32_t index) {
         break;
     }
   }
+
+  struct KVPair *pair = &node->data[index];
+
+  if (pair->type == TELLY_STR) {
+    free(pair->value.string.value);
+    pair->value.string = (string_t) {0};
+  }
+
+  free(pair->key.value);
+  pair->key = (string_t) {0};
 }
 
 void add_kv_to_node(struct BTreeNode *node, char *key, void *value, uint32_t type) {
@@ -130,12 +139,13 @@ void del_kv_from_node(struct BTreeNode *node, char *key) {
         struct KVPair *a = &node->data[j];
         struct KVPair *b = &node->data[j + 1];
 
-        a->type = b->type;
-        set_string(&a->key, b->key.value, b->key.len);
-
         if (a->type == TELLY_STR && b->type != TELLY_STR) {
           free(a->value.string.value);
+          a->value.string = (string_t) {0};
         }
+
+        a->type = b->type;
+        set_string(&a->key, b->key.value, b->key.len);
 
         switch (b->type) {
           case TELLY_STR:
@@ -155,6 +165,10 @@ void del_kv_from_node(struct BTreeNode *node, char *key) {
             break;
         }
       }
+
+      struct KVPair last_pair = node->data[node->size - 1];
+      free(last_pair.key.value);
+      if (last_pair.type == TELLY_STR) free(last_pair.value.string.value);
 
       node->size -= 1;
       node->data = realloc(node->data, node->size * sizeof(struct KVPair));
@@ -233,4 +247,28 @@ void insert_kv_to_btree(struct BTree *tree, char *key, void *value, uint32_t typ
       }
     }
   }
+}
+
+void free_btree_node(struct BTreeNode *node) {
+  for (uint32_t i = 0; i < node->size; ++i) {
+    struct KVPair pair = node->data[i];
+    free(pair.key.value);
+
+    if (pair.type == TELLY_STR) {
+      free(pair.value.string.value);
+    }
+  }
+
+  for (uint32_t i = 0; i < node->leaf_count; ++i) {
+    free_btree_node(node->leafs[i]);
+  }
+
+  if (node->leaf_count != 0) free(node->leafs);
+  free(node->data);
+  free(node);
+}
+
+void free_btree(struct BTree *tree) {
+  free_btree_node(tree->root);
+  free(tree);
 }
