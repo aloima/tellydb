@@ -1,4 +1,5 @@
 #include "resp.h"
+#include "server.h"
 
 #include <stdint.h>
 
@@ -11,7 +12,7 @@
     void (*run)(int connfd, respdata_t data);
   };
 
-  void execute_commands(int connfd, respdata_t data);
+  void execute_commands(struct Client *client, respdata_t data);
 
   void load_commands();
   struct Command *get_commands();

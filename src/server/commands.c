@@ -20,7 +20,7 @@ uint32_t get_command_count() {
   return command_count;
 }
 
-void execute_commands(int connfd, respdata_t data) {
+void execute_commands(struct Client *client, respdata_t data) {
   if (data.type == RDT_ARRAY) {
     char *input = data.value.array[0].value.string.value;
 
@@ -28,7 +28,7 @@ void execute_commands(int connfd, respdata_t data) {
       struct Command command = commands[i];
 
       if (streq(input, command.name)) {
-        command.run(connfd, data);
+        command.run(client->connfd, data);
         break;
       }
     }
