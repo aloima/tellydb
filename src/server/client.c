@@ -6,6 +6,10 @@
 struct Client **clients = NULL;
 uint32_t client_count = 0;
 
+struct Client **get_clients() {
+  return clients;
+}
+
 struct Client *get_client(const int input) {
   for (uint32_t i = 0; i < client_count; ++i) {
     struct Client *client = clients[i];
@@ -39,6 +43,7 @@ struct Client *add_client(const int connfd, const uint32_t max_clients) {
   clients[li] = malloc(sizeof(struct Client));
   clients[li]->connfd = connfd;
   clients[li]->commands = NULL;
+  clients[li]->command_count = 0;
 
   return clients[li];
 }
@@ -75,12 +80,31 @@ void add_command_to_client(struct Client *client, respdata_t data) {
   client->command_count += 1;
 
   if (client->commands == NULL) {
-    client->commands = malloc(sizeof(respdata_t));
+    client->commands = malloc(sizeof(respdata_t *));
   } else {
-    client->commands = realloc(client->commands, client->command_count * sizeof(respdata_t));
+    client->commands = realloc(client->commands, client->command_count * sizeof(respdata_t *));
   }
 
-  client->commands[client->command_count - 1] = data;
+  const uint32_t last = client->command_count - 1;
+  client->commands[last] = malloc(sizeof(respdata_t));
+  memcpy(client->commands[last], &data, sizeof(respdata_t));
 }
 
-// TODO: remove_command_to_client method
+void remove_command_from_client(struct Client *client, respdata_t *data) {
+  for (uint32_t i = 0; i < client->command_count; ++i) {
+    if (data == client->commands[i]) {
+      client->command_count -= 1;
+      memcpy(client->commands + i, client->commands + i + 1, sizeof(respdata_t) * client->command_count);
+      free(client->commands[client->command_count]);
+
+      if (client->command_count == 0) {
+        free(client->commands);
+        client->commands = NULL;
+      } else {
+        client->commands = realloc(client->commands, client->command_count * sizeof(respdata_t *));
+      }
+
+      break;
+    }
+  }
+}

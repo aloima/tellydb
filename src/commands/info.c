@@ -6,7 +6,7 @@
 
 #include <unistd.h>
 
-static void run(int connfd, respdata_t data, struct Configuration conf) {
+static void run(int connfd, respdata_t *data, struct Configuration conf) {
   char buf[8192];
   sprintf(buf, (
     "# Clients\r\n"

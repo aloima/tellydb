@@ -3,16 +3,19 @@
 
 #include <stdint.h>
 
+#include <pthread.h>
+
 #ifndef COMMANDS_H
   #define COMMANDS_H
 
   struct Command {
     char *name;
     char *summary;
-    void (*run)(int connfd, respdata_t data, struct Configuration conf);
+    void (*run)(int connfd, respdata_t *data, struct Configuration conf);
   };
 
-  void execute_commands(struct Client *client, respdata_t data, struct Configuration conf);
+  pthread_t create_command_thread(struct Configuration conf);
+  void execute_command(struct Client *client, respdata_t *data, struct Configuration conf);
 
   void load_commands();
   struct Command *get_commands();

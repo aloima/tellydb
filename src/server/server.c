@@ -29,6 +29,7 @@ static int setnonblocking(int sockfd) {
 
 void start_server(struct Configuration conf) {
   load_commands();
+  create_command_thread(conf);
 
   int sockfd;
   struct sockaddr_in servaddr;
@@ -78,9 +79,8 @@ void start_server(struct Configuration conf) {
         epoll_ctl_add(epfd, client->connfd, EPOLLIN | EPOLLET | EPOLLRDHUP | EPOLLHUP);
       } else if (event.events & EPOLLIN) {
         struct Client *client = get_client(event.data.fd);
-        respdata_t data = get_resp_data(client->connfd);
-
-        execute_commands(client, data, conf);
+        const respdata_t data = get_resp_data(client->connfd);
+        add_command_to_client(client, data);
       } if (event.events & (EPOLLRDHUP | EPOLLHUP)) {
         close(event.data.fd);
         remove_client(event.data.fd);
