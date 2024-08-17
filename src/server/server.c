@@ -48,7 +48,7 @@ void start_server(struct Configuration conf) {
   }
 
   if (setnonblocking(sockfd) == -1) {
-    fputs("cannot set non blocking socker\n", stderr);
+    fputs("cannot set non blocking socket\n", stderr);
     return;
   }
 
