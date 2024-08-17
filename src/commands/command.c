@@ -2,17 +2,17 @@
 
 #include <stdio.h>
 #include <stdint.h>
-
 #include <string.h>
+
 #include <unistd.h>
 
-static void run(int connfd, respdata_t data) {
+static void run(int connfd, respdata_t data, struct Configuration conf) {
   if (data.count != 1) {
     char *subcommand = data.value.array[1].value.string.value;
 
     if (streq("DOCS", subcommand)) {
       struct Command *commands = get_commands();
-      uint32_t command_count = get_command_count();
+      const uint32_t command_count = get_command_count();
 
       char res[16384];
       sprintf(res, "*%d\r\n", command_count * 2);

@@ -4,10 +4,10 @@
 #include <stdlib.h>
 
 static struct Command *commands = NULL;
-static uint32_t command_count = 2;
+static uint32_t command_count = 3;
 
 void load_commands() {
-  struct Command scommands[] = {cmd_command, cmd_get};
+  struct Command scommands[] = {cmd_command, cmd_get, cmd_info};
   commands = malloc(sizeof(scommands));
   memcpy(commands, scommands, sizeof(scommands));
 }
@@ -20,7 +20,7 @@ uint32_t get_command_count() {
   return command_count;
 }
 
-void execute_commands(struct Client *client, respdata_t data) {
+void execute_commands(struct Client *client, respdata_t data, struct Configuration conf) {
   if (data.type == RDT_ARRAY) {
     char *input = data.value.array[0].value.string.value;
 
@@ -28,7 +28,7 @@ void execute_commands(struct Client *client, respdata_t data) {
       struct Command command = commands[i];
 
       if (streq(input, command.name)) {
-        command.run(client->connfd, data);
+        command.run(client->connfd, data, conf);
         break;
       }
     }

@@ -73,14 +73,14 @@ void start_server(struct Configuration conf) {
         socklen_t addr_len = sizeof(addr);
 
         const int connfd = accept(sockfd, (struct sockaddr *) &addr, &addr_len);
-        struct Client *client = add_client(connfd);
+        struct Client *client = add_client(connfd, conf.max_clients);
 
         epoll_ctl_add(epfd, client->connfd, EPOLLIN | EPOLLET | EPOLLRDHUP | EPOLLHUP);
       } else if (event.events & EPOLLIN) {
         struct Client *client = get_client(event.data.fd);
         respdata_t data = get_resp_data(client->connfd);
 
-        execute_commands(client, data);
+        execute_commands(client, data, conf);
       } if (event.events & (EPOLLRDHUP | EPOLLHUP)) {
         close(event.data.fd);
         remove_client(event.data.fd);

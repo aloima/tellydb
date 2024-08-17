@@ -2,7 +2,7 @@
 
 #include <unistd.h>
 
-static void run(int connfd, respdata_t data) {
+static void run(int connfd, respdata_t data, struct Configuration conf) {
   switch (data.count) {
     case 1:
       write(connfd, "-ERR missing argument\r\n", 23);

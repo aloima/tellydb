@@ -18,7 +18,15 @@ struct Client *get_client(const int input) {
   return NULL;
 }
 
-struct Client *add_client(const int connfd) {
+uint32_t get_client_count() {
+  return client_count;
+}
+
+struct Client *add_client(const int connfd, const uint32_t max_clients) {
+  if (max_clients == client_count) {
+    return NULL;
+  }
+
   client_count += 1;
 
   if (clients == NULL) {

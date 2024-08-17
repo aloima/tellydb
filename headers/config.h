@@ -5,6 +5,7 @@
 
   struct Configuration {
     uint16_t port;
+    uint16_t max_clients;
   };
 
   struct Configuration get_configuration(const char *filename);

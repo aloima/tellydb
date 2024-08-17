@@ -4,7 +4,8 @@
 #include <stdlib.h>
 
 static struct Configuration default_conf = {
-  .port = 6379
+  .port = 6379,
+  .max_clients = 128
 };
 
 void parse_value(FILE *file, char *buf) {
@@ -29,6 +30,10 @@ struct Configuration parse_configuration(FILE *file) {
         memset(buf, 0, 64);
         parse_value(file, buf);
         conf.port = atoi(buf);
+      } else if (streq(buf, "MAX_CLIENTS")) {
+        memset(buf, 0, 64);
+        parse_value(file, buf);
+        conf.max_clients = atoi(buf);
       } else {
         return conf;
       }
@@ -45,7 +50,8 @@ struct Configuration parse_configuration(FILE *file) {
 void get_configuration_string(char *buf, struct Configuration conf) {
   sprintf(buf, (
     "PORT=%d\n"
-  ), conf.port);
+    "MAX_CLIENTS=%d\n"
+  ), conf.port, conf.max_clients);
 }
 
 struct Configuration get_default_configuration() {

@@ -9,10 +9,10 @@
   struct Command {
     char *name;
     char *summary;
-    void (*run)(int connfd, respdata_t data);
+    void (*run)(int connfd, respdata_t data, struct Configuration conf);
   };
 
-  void execute_commands(struct Client *client, respdata_t data);
+  void execute_commands(struct Client *client, respdata_t data, struct Configuration conf);
 
   void load_commands();
   struct Command *get_commands();
@@ -20,4 +20,5 @@
 
   extern struct Command cmd_command;
   extern struct Command cmd_get;
+  extern struct Command cmd_info;
 #endif
