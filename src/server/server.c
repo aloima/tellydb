@@ -89,9 +89,9 @@ void start_server(struct Configuration conf) {
 
         if (data.type == RDT_CLOSE) {
           terminate_connection(event, epfd);
+        } else {
+          add_transaction(client, data);
         }
-
-        add_transaction(client, data);
       } else if (event.events & (EPOLLRDHUP | EPOLLHUP)) {
         terminate_connection(event, epfd);
       }
