@@ -1,5 +1,6 @@
 #include "../../headers/telly.h"
 
+#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -27,14 +28,24 @@ uint32_t get_command_count() {
 void execute_command(struct Client *client, respdata_t *data, struct Configuration conf) {
   if (data->type == RDT_ARRAY) {
     char *input = data->value.array[0].value.string.value;
+    bool executed = false;
 
     for (uint32_t i = 0; i < command_count; ++i) {
       struct Command command = commands[i];
 
       if (streq(input, command.name)) {
         command.run(client, data, conf);
+        executed = true;
         break;
       }
+    }
+
+    if (!executed && client != NULL) {
+      const uint32_t len = 21 + data->value.array[0].value.string.len;
+      char res[len + 1];
+      sprintf(res, "-unknown command '%s'\r\n", input);
+
+      write(client->connfd, res, len);
     }
   } else {
     client_error();
