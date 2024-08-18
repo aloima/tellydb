@@ -27,9 +27,15 @@ static int setnonblocking(int sockfd) {
   return 0;
 }
 
+void terminate_connection(struct epoll_event event, int epfd) {
+  close(event.data.fd);
+  remove_client(event.data.fd);
+  epoll_ctl(epfd, EPOLL_CTL_DEL, event.data.fd, NULL);
+}
+
 void start_server(struct Configuration conf) {
   load_commands();
-  create_command_thread(conf);
+  pthread_t thread = create_command_thread(conf);
 
   int sockfd;
   struct sockaddr_in servaddr;
@@ -80,15 +86,19 @@ void start_server(struct Configuration conf) {
       } else if (event.events & EPOLLIN) {
         struct Client *client = get_client(event.data.fd);
         const respdata_t data = get_resp_data(client->connfd);
+
+        if (data.type == RDT_CLOSE) {
+          terminate_connection(event, epfd);
+        }
+
         add_command_to_client(client, data);
-      } if (event.events & (EPOLLRDHUP | EPOLLHUP)) {
-        close(event.data.fd);
-        remove_client(event.data.fd);
-        epoll_ctl(epfd, EPOLL_CTL_DEL, event.data.fd, NULL);
+      } else if (event.events & (EPOLLRDHUP | EPOLLHUP)) {
+        terminate_connection(event, epfd);
       }
     }
   }
 
+  pthread_cancel(thread);
   close(sockfd);
   close(epfd);
 }

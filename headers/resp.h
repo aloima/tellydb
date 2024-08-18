@@ -11,6 +11,7 @@
   #define RDT_ARRAY '*'
   #define RDT_INTEGER ':'
   #define RDT_ERR '-'
+  #define RDT_CLOSE 0
 
   typedef struct RESPData {
     uint8_t type;

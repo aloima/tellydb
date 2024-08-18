@@ -157,6 +157,10 @@ respdata_t get_resp_data(int connfd) {
       case RDT_ERR:
         data = parse_resp_sstring(connfd, type);
         return data;
+
+      case RDT_CLOSE:
+        data.type = type;
+        return data;
     }
 
     usleep(3000);
