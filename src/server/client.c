@@ -58,6 +58,10 @@ void remove_client(const int connfd) {
       if (client->commands == NULL) {
         client->commands = malloc(last->command_count * sizeof(respdata_t));
       } else {
+        for (uint32_t j = 0; j < client->command_count; ++j) {
+          free(client->commands[j]);
+        }
+
         client->commands = realloc(client->commands, last->command_count * sizeof(respdata_t));
       }
 
@@ -69,7 +73,13 @@ void remove_client(const int connfd) {
       free(last);
 
       client_count -= 1;
-      clients = realloc(clients, client_count * sizeof(struct Client));
+
+      if (client_count == 0) {
+        free(clients);
+        clients = NULL;
+      } else {
+        clients = realloc(clients, client_count * sizeof(struct Client));
+      }
 
       break;
     }
