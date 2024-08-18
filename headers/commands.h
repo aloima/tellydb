@@ -3,8 +3,6 @@
 
 #include <stdint.h>
 
-#include <pthread.h>
-
 #ifndef COMMANDS_H
   #define COMMANDS_H
 
@@ -14,7 +12,6 @@
     void (*run)(int connfd, respdata_t *data, struct Configuration conf);
   };
 
-  pthread_t create_command_thread(struct Configuration conf);
   void execute_command(struct Client *client, respdata_t *data, struct Configuration conf);
 
   void load_commands();

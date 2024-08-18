@@ -35,7 +35,7 @@ void terminate_connection(struct epoll_event event, int epfd) {
 
 void start_server(struct Configuration conf) {
   load_commands();
-  pthread_t thread = create_command_thread(conf);
+  pthread_t thread = create_transaction_thread(conf);
 
   int sockfd;
   struct sockaddr_in servaddr;
@@ -91,7 +91,7 @@ void start_server(struct Configuration conf) {
           terminate_connection(event, epfd);
         }
 
-        add_command_to_client(client, data);
+        add_transaction(client, data);
       } else if (event.events & (EPOLLRDHUP | EPOLLHUP)) {
         terminate_connection(event, epfd);
       }
