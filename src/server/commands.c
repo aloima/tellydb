@@ -32,7 +32,7 @@ void execute_command(struct Client *client, respdata_t *data, struct Configurati
       struct Command command = commands[i];
 
       if (streq(input, command.name)) {
-        command.run(client->connfd, data, conf);
+        command.run(client, data, conf);
         break;
       }
     }

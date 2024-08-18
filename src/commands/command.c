@@ -6,8 +6,8 @@
 
 #include <unistd.h>
 
-static void run(int connfd, respdata_t *data, struct Configuration conf) {
-  if (data->count != 1) {
+static void run(struct Client *client, respdata_t *data, struct Configuration conf) {
+  if (data->count != 1 && client != NULL) {
     char *subcommand = data->value.array[1].value.string.value;
 
     if (streq("DOCS", subcommand)) {
@@ -25,7 +25,7 @@ static void run(int connfd, respdata_t *data, struct Configuration conf) {
         strcat(res, buf);
       }
 
-      write(connfd, res, strlen(res));
+      write(client->connfd, res, strlen(res));
     } else if (streq("LIST", subcommand)) {
       struct Command *commands = get_commands();
       uint32_t command_count = get_command_count();
@@ -39,11 +39,11 @@ static void run(int connfd, respdata_t *data, struct Configuration conf) {
         strcat(res, buf);
       }
 
-      write(connfd, res, strlen(res));
+      write(client->connfd, res, strlen(res));
     } else if (streq("COUNT", subcommand)) {
       char res[8];
       sprintf(res, ":%d\r\n", get_command_count());
-      write(connfd, res, strlen(res));
+      write(client->connfd, res, strlen(res));
     }
   }
 }

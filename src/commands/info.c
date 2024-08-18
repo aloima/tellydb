@@ -6,20 +6,23 @@
 
 #include <unistd.h>
 
-static void run(int connfd, respdata_t *data, struct Configuration conf) {
-  char buf[8192];
-  sprintf(buf, (
-    "# Clients\r\n"
-    "Connected clients: %d\r\n"
-    "Max clients: %d\r\n"
-  ), get_client_count(), conf.max_clients);
+static void run(struct Client *client, respdata_t *data, struct Configuration conf) {
+  if (client != NULL) {
+    char buf[8192];
+    sprintf(buf, (
+      "# Clients\r\n"
+      "Connected clients: %d\r\n"
+      "Max clients: %d\r\n"
+      "Transaction count: %d\r\n"
+    ), get_client_count(), conf.max_clients, get_transaction_count());
 
-  const uint32_t buf_len = strlen(buf);
-  const uint32_t res_len = buf_len + 6 + (int32_t) log10(buf_len);
-  char res[res_len + 1];
+    const uint32_t buf_len = strlen(buf);
+    const uint32_t res_len = buf_len + 6 + (int32_t) log10(buf_len);
+    char res[res_len + 1];
 
-  sprintf(res, "$%d\r\n%s\r\n", buf_len, buf);
-  write(connfd, res, res_len);
+    sprintf(res, "$%d\r\n%s\r\n", buf_len, buf);
+    write(client->connfd, res, res_len);
+  }
 }
 
 struct Command cmd_info = {

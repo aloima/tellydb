@@ -2,19 +2,21 @@
 
 #include <unistd.h>
 
-static void run(int connfd, respdata_t *data, struct Configuration conf) {
-  switch (data->count) {
-    case 1:
-      write(connfd, "-ERR missing argument\r\n", 23);
-      break;
+static void run(struct Client *client, respdata_t *data, struct Configuration conf) {
+  if (client != NULL) {
+    switch (data->count) {
+      case 1:
+        if (client != NULL) write(client->connfd, "-ERR missing argument\r\n", 23);
+        break;
 
-    case 2:
-      // TODO
-      break;
+      case 2:
+        // TODO
+        break;
 
-    default:
-      write(connfd, "-ERR additional argument(s)\r\n", 29);
-      break;
+      default:
+        if (client != NULL) write(client->connfd, "-ERR additional argument(s)\r\n", 29);
+        break;
+    }
   }
 }
 
