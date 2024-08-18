@@ -10,6 +10,7 @@
 
   struct Client {
     int connfd;
+    uint32_t id;
   };
 
   void start_server(struct Configuration conf);
@@ -17,7 +18,10 @@
 
   struct Client **get_clients();
   struct Client *get_client(const int input);
+
+  uint32_t get_last_connection_client_id();
   uint32_t get_client_count();
+
   struct Client *add_client(const int connfd, const uint32_t max_clients);
   void remove_client(const int connfd);
 #endif

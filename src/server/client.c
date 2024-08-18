@@ -5,6 +5,7 @@
 
 struct Client **clients = NULL;
 uint32_t client_count = 0;
+uint32_t last_connection_client_id = 0;
 
 struct Client **get_clients() {
   return clients;
@@ -22,9 +23,15 @@ struct Client *get_client(const int input) {
   return NULL;
 }
 
+
 uint32_t get_client_count() {
   return client_count;
 }
+
+uint32_t get_last_connection_client_id() {
+  return last_connection_client_id;
+}
+
 
 struct Client *add_client(const int connfd, const uint32_t max_clients) {
   if (max_clients == client_count) {
@@ -32,6 +39,7 @@ struct Client *add_client(const int connfd, const uint32_t max_clients) {
   }
 
   client_count += 1;
+  last_connection_client_id += 1;
 
   if (clients == NULL) {
     clients = malloc(sizeof(struct Client *));
@@ -41,6 +49,7 @@ struct Client *add_client(const int connfd, const uint32_t max_clients) {
 
   const uint32_t li = client_count - 1;
   clients[li] = malloc(sizeof(struct Client));
+  clients[li]->id = last_connection_client_id;
   clients[li]->connfd = connfd;
 
   return clients[li];

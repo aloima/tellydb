@@ -18,6 +18,7 @@
   struct Command *get_commands();
   uint32_t get_command_count();
 
+  extern struct Command cmd_client;
   extern struct Command cmd_command;
   extern struct Command cmd_get;
   extern struct Command cmd_info;

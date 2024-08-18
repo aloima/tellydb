@@ -14,7 +14,8 @@ static void run(struct Client *client, respdata_t *data, struct Configuration co
       "Connected clients: %d\r\n"
       "Max clients: %d\r\n"
       "Transaction count: %d\r\n"
-    ), get_client_count(), conf.max_clients, get_transaction_count());
+      "Total connection count: %d\r\n"
+    ), get_client_count(), conf.max_clients, get_transaction_count(), get_last_connection_client_id());
 
     const uint32_t buf_len = strlen(buf);
     const uint32_t res_len = buf_len + 6 + (int32_t) log10(buf_len);
