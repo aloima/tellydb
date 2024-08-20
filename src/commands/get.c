@@ -6,7 +6,7 @@ static void run(struct Client *client, respdata_t *data, struct Configuration co
   if (client != NULL) {
     switch (data->count) {
       case 1:
-        write(client->connfd, "-missing argument\r\n", 23);
+        write(client->connfd, "-missing argument\r\n", 19);
         break;
 
       case 2:
@@ -14,7 +14,7 @@ static void run(struct Client *client, respdata_t *data, struct Configuration co
         break;
 
       default:
-        write(client->connfd, "-additional argument(s)\r\n", 29);
+        write(client->connfd, "-additional argument(s)\r\n", 25);
         break;
     }
   }
