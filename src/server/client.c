@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <time.h>
 
 struct Client **clients = NULL;
 uint32_t client_count = 0;
@@ -51,6 +52,8 @@ struct Client *add_client(const int connfd, const uint32_t max_clients) {
   clients[li] = malloc(sizeof(struct Client));
   clients[li]->id = last_connection_client_id;
   clients[li]->connfd = connfd;
+  time(&clients[li]->connected_at);
+  clients[li]->command = NULL;
 
   return clients[li];
 }

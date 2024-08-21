@@ -118,6 +118,17 @@ void start_server(struct Configuration conf) {
         if (data.type == RDT_CLOSE) {
           terminate_connection(event, epfd, conf);
         } else {
+          struct Command *commands = get_commands();
+          const char *used = data.value.array[0].value.string.value;
+          const uint32_t command_count = get_command_count();
+
+          for (uint32_t i = 0; i < command_count; ++i) {
+            if (streq(commands[i].name, used)) {
+              client->command = &commands[i];
+              break;
+            }
+          }
+
           add_transaction(client, data);
         }
       } else if (event.events & (EPOLLRDHUP | EPOLLHUP)) {

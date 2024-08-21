@@ -11,6 +11,8 @@
   struct Client {
     int connfd;
     uint32_t id;
+    time_t connected_at;
+    struct Command *command;
   };
 
   void start_server(struct Configuration conf);
