@@ -17,6 +17,7 @@
   void load_commands();
   struct Command *get_commands();
   uint32_t get_command_count();
+  void free_commands();
 
   extern struct Command cmd_client;
   extern struct Command cmd_command;

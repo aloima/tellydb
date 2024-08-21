@@ -17,6 +17,10 @@ void load_commands() {
   memcpy(commands, scommands, sizeof(scommands));
 }
 
+void free_commands() {
+  free(commands);
+}
+
 struct Command *get_commands() {
   return commands;
 }

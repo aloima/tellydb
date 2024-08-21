@@ -50,6 +50,8 @@ void start_server(struct Configuration conf) {
 
   if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
     write_log("cannot open socket", LOG_ERR, conf.allowed_log_levels);
+    pthread_cancel(thread);
+    free_commands();
     return;
   }
 
@@ -59,16 +61,22 @@ void start_server(struct Configuration conf) {
 
   if ((bind(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr))) != 0) { 
     write_log("cannot bind socket and address", LOG_ERR, conf.allowed_log_levels);
+    pthread_cancel(thread);
+    free_commands();
     return;
   }
 
   if (setnonblocking(sockfd) == -1) {
     write_log("cannot set non-blocking socket", LOG_ERR, conf.allowed_log_levels);
+    pthread_cancel(thread);
+    free_commands();
     return;
   }
 
   if (listen(sockfd, 10) != 0) { 
     write_log("cannot listen socket", LOG_ERR, conf.allowed_log_levels);
+    pthread_cancel(thread);
+    free_commands();
     return;
   }
 
@@ -119,6 +127,7 @@ void start_server(struct Configuration conf) {
   }
 
   pthread_cancel(thread);
+  free_commands();
   close(sockfd);
   close(epfd);
 }
