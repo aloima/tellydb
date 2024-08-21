@@ -115,7 +115,7 @@ respdata_t parse_resp_bstring(int connfd, uint8_t type) {
         };
 
         read(connfd, data.value.string.value, lend);
-        data.value.string.value[lend + 1] = '\0';
+        data.value.string.value[lend] = '\0';
 
         char buf[2];
         read(connfd, buf, 2);
