@@ -40,9 +40,9 @@ void add_transaction(struct Client *client, respdata_t data) {
   transaction_count += 1;
 
   if (transaction_count == 0) {
-    transactions = malloc(sizeof(struct Transaction));
+    transactions = malloc(sizeof(struct Transaction *));
   } else {
-    transactions = realloc(transactions, transaction_count * sizeof(struct Transaction));
+    transactions = realloc(transactions, transaction_count * sizeof(struct Transaction *));
   }
 
   const uint32_t id = transaction_count - 1;
@@ -61,4 +61,11 @@ void remove_transaction(struct Transaction *transaction) {
 
   transaction_count -= 1;
   memcpy(transactions + id, transactions + id + 1, sizeof(struct Transaction *) * transaction_count);
+
+  if (transaction_count == 0) {
+    free(transactions);
+    transactions = NULL;
+  } else {
+    transactions = realloc(transactions, sizeof(struct Transaction *) * transaction_count);
+  }
 }
