@@ -54,11 +54,6 @@ void *get_kv_val(struct KVPair *pair, uint32_t type) {
   return NULL;
 }
 
-/*
-  1 2 3 4 5 _
-  if index=1 then
-  1 _ 2 3 4 5
-*/
 void move_kv(struct BTreeNode *node, int32_t index) {
   struct KVPair *last_addr = node->data[node->size - 1];
   memcpy(node->data + index + 1, node->data + index, (node->size - index - 1) * sizeof(struct KVPair *));
@@ -170,7 +165,7 @@ void insert_kv_to_btree(struct BTree *tree, char *key, void *value, uint32_t typ
           node->top->leafs[node->top->leaf_count - 1] = calloc(1, sizeof(struct BTreeNode));
           node->top->leafs[node->top->leaf_count - 1]->top = node;
 
-          const uint32_t index = ((tree->max % 2 == 1) ? tree->max : (tree->max - 1)) / 2;
+          const uint32_t index = (tree->max - 1) / 2;
           struct KVPair *tkv = node->data[index];
           add_kv_to_node(node->top, tkv->key.value, get_kv_val(tkv, tkv->type), tkv->type);
           del_kv_from_node(node, tkv->key.value);
