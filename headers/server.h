@@ -14,7 +14,7 @@
   };
 
   void start_server(struct Configuration conf);
-  void terminate_connection(struct epoll_event event, int epfd);
+  void terminate_connection(struct epoll_event event, int epfd, struct Configuration conf);
 
   struct Client **get_clients();
   struct Client *get_client(const int input);
