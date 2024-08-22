@@ -69,3 +69,14 @@ void remove_transaction(struct Transaction *transaction) {
     transactions = realloc(transactions, sizeof(struct Transaction *) * transaction_count);
   }
 }
+
+void free_transactions() {
+  for (uint32_t i = 0; i < transaction_count; ++i) {
+    struct Transaction *transaction = transactions[i];
+
+    free(transaction->command);
+    free(transaction);
+  }
+
+  free(transactions);
+}
