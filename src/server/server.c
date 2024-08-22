@@ -31,9 +31,9 @@ static int setnonblocking(int sockfd) {
 }
 
 void terminate_connection(struct epoll_event event, int epfd, struct Configuration *conf) {
-  struct Client *client = get_client(epfd);
-  char message[41 + max_client_id_len];
-  sprintf(message, "Client #%d is disconnected and terminated.", client->id);
+  struct Client *client = get_client(event.data.fd);
+  char message[26 + max_client_id_len];
+  sprintf(message, "Client #%d is disconnected.", client->id);
   write_log(message, LOG_INFO, conf->allowed_log_levels);
 
   close(event.data.fd);
