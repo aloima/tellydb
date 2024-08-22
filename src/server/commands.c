@@ -29,7 +29,7 @@ uint32_t get_command_count() {
   return command_count;
 }
 
-void execute_command(struct Client *client, respdata_t *data, struct Configuration conf) {
+void execute_command(struct Client *client, respdata_t *data, struct Configuration *conf) {
   if (data->type == RDT_ARRAY) {
     char *input = data->value.array[0].value.string.value;
     bool executed = false;

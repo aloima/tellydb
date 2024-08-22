@@ -9,10 +9,10 @@
   struct Command {
     char *name;
     char *summary;
-    void (*run)(struct Client *client, respdata_t *data, struct Configuration conf);
+    void (*run)(struct Client *client, respdata_t *data, struct Configuration *conf);
   };
 
-  void execute_command(struct Client *client, respdata_t *data, struct Configuration conf);
+  void execute_command(struct Client *client, respdata_t *data, struct Configuration *conf);
 
   void load_commands();
   struct Command *get_commands();

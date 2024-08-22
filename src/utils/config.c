@@ -136,23 +136,27 @@ struct Configuration get_default_configuration() {
   return default_conf;
 }
 
-struct Configuration get_configuration(const char *filename) {
+struct Configuration *get_configuration(const char *filename) {
+  struct Configuration *conf = malloc(sizeof(struct Configuration));
+
   if (filename == NULL) {
     FILE *file = fopen(".tellyconf", "r");
 
     if (file != NULL) {
-      struct Configuration conf = parse_configuration(file);
+      struct Configuration data = parse_configuration(file);
+      memcpy(conf, &data, sizeof(struct Configuration));
       fclose(file);
-
-      return conf;
     } else {
-      return default_conf;
+      memcpy(conf, &default_conf, sizeof(struct Configuration));
     }
+
+    return conf;
   } else {
     FILE *file = fopen(filename, "r");
 
     if (file != NULL) {
-      struct Configuration conf = parse_configuration(file);
+      struct Configuration data = parse_configuration(file);
+      memcpy(conf, &data, sizeof(struct Configuration));
       fclose(file);
 
       return conf;

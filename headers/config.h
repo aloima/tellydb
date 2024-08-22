@@ -9,7 +9,7 @@
     uint8_t allowed_log_levels;
   };
 
-  struct Configuration get_configuration(const char *filename);
+  struct Configuration *get_configuration(const char *filename);
   struct Configuration get_default_configuration();
   void get_configuration_string(char *buf, struct Configuration conf);
 #endif

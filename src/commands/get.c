@@ -2,7 +2,7 @@
 
 #include <unistd.h>
 
-static void run(struct Client *client, respdata_t *data, struct Configuration conf) {
+static void run(struct Client *client, respdata_t *data, struct Configuration *conf) {
   if (client != NULL) {
     switch (data->count) {
       case 1:

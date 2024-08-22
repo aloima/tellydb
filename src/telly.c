@@ -6,7 +6,7 @@
 int main(int argc, char *argv[]) {
   switch (argc) {
     case 1: {
-      struct Configuration conf = get_configuration(NULL);
+      struct Configuration *conf = get_configuration(NULL);
       start_server(conf);
       return EXIT_SUCCESS;
     }
@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
 
     case 3:
       if (streq(argv[1], "config")) {
-        struct Configuration conf = get_configuration(argv[2]);
+        struct Configuration *conf = get_configuration(argv[2]);
         start_server(conf);
         return EXIT_SUCCESS;
       } else {

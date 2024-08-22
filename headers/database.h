@@ -31,7 +31,7 @@
     uint32_t type;
   };
 
-  pthread_t create_transaction_thread(struct Configuration conf);
+  pthread_t create_transaction_thread(struct Configuration *conf);
 
   uint32_t get_transaction_count();
   void add_transaction(struct Client *client, respdata_t data);
