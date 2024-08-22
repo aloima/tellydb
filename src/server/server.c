@@ -4,8 +4,10 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <signal.h>
 #include <math.h>
 
+#include <pthread.h>
 #include <fcntl.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
@@ -13,6 +15,11 @@
 #include <arpa/inet.h>
 
 static uint32_t max_client_id_len;
+
+static pthread_t thread;
+static int sockfd;
+static int epfd;
+static struct Configuration *conf;
 
 static void epoll_ctl_add(int epfd, int fd, uint32_t events) {
   struct epoll_event ev;
@@ -41,11 +48,44 @@ void terminate_connection(struct epoll_event event, int epfd, struct Configurati
   epoll_ctl(epfd, EPOLL_CTL_DEL, event.data.fd, NULL);
 }
 
-void start_server(struct Configuration *conf) {
-  load_commands();
-  pthread_t thread = create_transaction_thread(conf);
+void close_server() {
+  write_log("Received SIGINT signal, closing the server...", LOG_WARN, conf->allowed_log_levels);
 
-  int sockfd;
+  struct Client **clients = get_clients();
+  const uint32_t client_count = get_client_count();
+  char message[24 + max_client_id_len];
+
+  for (uint32_t i = 0; i < client_count; ++i) {
+    struct Client *client = clients[0];
+    sprintf(message, "Client #%d is terminated.", client->id);
+    write_log(message, LOG_INFO, conf->allowed_log_levels);
+
+    close(client->connfd);
+    remove_client(client->connfd);
+    epoll_ctl(epfd, EPOLL_CTL_DEL, client->connfd, NULL);
+  }
+
+  pthread_cancel(thread);
+  pthread_kill(thread, SIGINT);
+  free_transactions();
+  free_commands();
+  close(sockfd);
+  close(epfd);
+  free(conf);
+
+  exit(EXIT_SUCCESS);
+}
+
+static void sigint_signal([[maybe_unused]] int arg) {
+  close_server();
+}
+
+void start_server(struct Configuration *config) {
+  load_commands();
+  conf = config;
+  thread = create_transaction_thread(config);
+  signal(SIGINT, sigint_signal);
+
   struct sockaddr_in servaddr;
 
   if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
@@ -80,7 +120,7 @@ void start_server(struct Configuration *conf) {
     return;
   }
 
-  int epfd = epoll_create(1);
+  epfd = epoll_create(1);
   epoll_ctl_add(epfd, sockfd, EPOLLIN | EPOLLOUT | EPOLLET);
 
   write_log("Server is ready for accepting connections...", LOG_INFO, conf->allowed_log_levels);
@@ -137,8 +177,5 @@ void start_server(struct Configuration *conf) {
     }
   }
 
-  pthread_cancel(thread);
-  free_commands();
-  close(sockfd);
-  close(epfd);
+  close_server();
 }

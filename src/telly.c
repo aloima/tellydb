@@ -57,8 +57,8 @@ int main(int argc, char *argv[]) {
 
     case 3:
       if (streq(argv[1], "config")) {
-        struct Configuration *conf = get_configuration(argv[2]);
-        start_server(conf);
+        struct Configuration *config = get_configuration(argv[2]);
+        start_server(config);
         return EXIT_SUCCESS;
       } else {
         puts("invalid argument usage, use help command");
