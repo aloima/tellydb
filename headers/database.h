@@ -1,3 +1,4 @@
+#include "config.h"
 #include "resp.h"
 #include "utils.h"
 
@@ -30,6 +31,16 @@
 
     uint32_t type;
   };
+
+  void create_cache();
+  void free_cache();
+
+  struct KVPair *get_data(char *key, struct Configuration *conf);
+  void set_data(struct KVPair pair);
+  void save_data();
+
+  void open_database_file(const char *filename);
+  void close_database_file();
 
   pthread_t create_transaction_thread(struct Configuration *config);
 

@@ -65,6 +65,11 @@ void close_server() {
     epoll_ctl(epfd, EPOLL_CTL_DEL, client->connfd, NULL);
   }
 
+  write_log("Saving data...", LOG_WARN, conf->allowed_log_levels);
+  save_data();
+  close_database_file();
+  write_log("Saved data and closed database file.", LOG_INFO, conf->allowed_log_levels);
+
   pthread_cancel(thread);
   pthread_kill(thread, SIGINT);
   free_transactions();
@@ -119,6 +124,11 @@ void start_server(struct Configuration *config) {
     free_commands();
     return;
   }
+
+  write_log("Creating cache and opening database file...", LOG_INFO, conf->allowed_log_levels);
+  create_cache();
+  open_database_file(conf->data_file);
+  write_log("Created cache and opened database file.", LOG_INFO, conf->allowed_log_levels);
 
   epfd = epoll_create(1);
   epoll_ctl_add(epfd, sockfd, EPOLLIN | EPOLLOUT | EPOLLET);
