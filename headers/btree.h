@@ -1,3 +1,5 @@
+// B-Tree implementation
+
 #include "database.h"
 
 #include <stdint.h>
@@ -21,10 +23,12 @@
   };
 
   struct BTree *create_btree(const uint32_t max);
+  struct KVPair **get_kvs_from_btree(struct BTree *tree);
 
   void set_kv(struct KVPair *pair, char *key, void *value, uint32_t type);
   void *get_kv_val(struct KVPair *pair, uint32_t type);
   void move_kv(struct BTreeNode *node, int32_t index);
+  uint32_t get_total_size_of_node(struct BTreeNode *node);
 
   struct KVPair *add_kv_to_node(struct BTreeNode *node, char *key, void *value, uint32_t type);
   struct KVPair *insert_kv_to_btree(struct BTree *tree, char *key, void *value, uint32_t type);

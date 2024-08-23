@@ -1,5 +1,6 @@
 #include "../../headers/telly.h"
 
+#include <stdint.h>
 #include <string.h>
 
 void set_kv(struct KVPair *pair, char *key, void *value, uint32_t type) {
@@ -47,4 +48,14 @@ void move_kv(struct BTreeNode *node, int32_t index) {
   struct KVPair *last_addr = node->data[node->size - 1];
   memcpy(node->data + index + 1, node->data + index, (node->size - index - 1) * sizeof(struct KVPair *));
   node->data[index] = last_addr;
+}
+
+uint32_t get_total_size_of_node(struct BTreeNode *node) {
+  uint32_t res = node->size;
+
+  for (uint32_t i = 0; i < node->leaf_count; ++i) {
+    res += get_total_size_of_node(node->leafs[i]);
+  }
+
+  return res;
 }
