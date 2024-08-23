@@ -21,13 +21,17 @@
   };
 
   struct BTree *create_btree(const uint32_t max);
-  struct BTreeNode *create_btree_node();
 
-  void add_kv_to_node(struct BTreeNode *node, char *key, void *value, uint32_t type);
-  void del_kv_from_node(struct BTreeNode *node, char *key);
+  void set_kv(struct KVPair *pair, char *key, void *value, uint32_t type);
+  void *get_kv_val(struct KVPair *pair, uint32_t type);
+  void move_kv(struct BTreeNode *node, int32_t index);
 
-  void insert_kv_to_btree(struct BTree *tree, char *key, void *value, uint32_t type);
+  struct KVPair *add_kv_to_node(struct BTreeNode *node, char *key, void *value, uint32_t type);
+  struct KVPair *insert_kv_to_btree(struct BTree *tree, char *key, void *value, uint32_t type);
+
   struct KVPair *find_kv_from_btree(struct BTree *tree, const char *key);
+
+  void del_kv_from_node(struct BTreeNode *node, char *key);
 
   void free_btree(struct BTree *tree);
 #endif
