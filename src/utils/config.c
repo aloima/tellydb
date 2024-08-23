@@ -7,7 +7,8 @@
 static struct Configuration default_conf = {
   .port = 6379,
   .max_clients = 128,
-  .allowed_log_levels = LOG_INFO | LOG_ERR | LOG_WARN
+  .allowed_log_levels = LOG_INFO | LOG_ERR | LOG_WARN,
+  .data_file = ".tellydb"
 };
 
 static void pass_line(FILE *file, char c) {
@@ -122,14 +123,17 @@ void get_configuration_string(char *buf, struct Configuration conf) {
   sprintf(buf, (
     "# TCP server port\n"
     "PORT=%d\n\n"
+    "# Specifies max connactable client count, higher values may cause higher resource usage\n"
     "MAX_CLIENTS=%d\n\n"
     "# Allowed log levels:\n"
     "# w = warning\n"
     "# i = information\n"
     "# e = error\n\n"
     "# Order of keys does not matter\n"
-    "ALLOWED_LOG_LEVELS=%s\n"
-  ), conf.port, conf.max_clients, allowed_log_levels);
+    "ALLOWED_LOG_LEVELS=%s\n\n"
+    "# Specifies database file where data will be saved\n\n"
+    "DATA_FILE=%s\n"
+  ), conf.port, conf.max_clients, allowed_log_levels, conf.data_file);
 }
 
 struct Configuration get_default_configuration() {

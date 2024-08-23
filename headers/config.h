@@ -7,6 +7,7 @@
     uint16_t port;
     uint16_t max_clients;
     uint8_t allowed_log_levels;
+    char *data_file;
   };
 
   struct Configuration *get_configuration(const char *filename);
