@@ -194,7 +194,8 @@ void save_data() {
         break;
 
       case TELLY_INT: {
-        const uint32_t byte_count = log2(pair->value.integer) + 1;
+        const uint32_t bit_count = log2(pair->value.integer) + 1;
+        const uint32_t byte_count = (bit_count / 8) + 1;
         line = malloc(pair->key.len + byte_count + 4);
 
         memcpy(line, pair->key.value, pair->key.len);
