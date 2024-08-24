@@ -9,10 +9,10 @@
 #include <unistd.h>
 
 static struct Command *commands = NULL;
-static uint32_t command_count = 4;
+static uint32_t command_count = 5;
 
 void load_commands() {
-  struct Command scommands[] = {cmd_client, cmd_command, cmd_get, cmd_info};
+  struct Command scommands[] = {cmd_client, cmd_command, cmd_get, cmd_info, cmd_set};
   commands = malloc(sizeof(scommands));
   memcpy(commands, scommands, sizeof(scommands));
 }

@@ -23,4 +23,5 @@
   extern struct Command cmd_command;
   extern struct Command cmd_get;
   extern struct Command cmd_info;
+  extern struct Command cmd_set;
 #endif

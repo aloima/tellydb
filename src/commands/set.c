@@ -1,0 +1,43 @@
+#include "../../headers/telly.h"
+
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+
+#include <unistd.h>
+
+static void run(struct Client *client, respdata_t *data, [[maybe_unused]] struct Configuration *conf) {
+  if (data->count < 3) {
+    if (client != NULL) write(client->connfd, "-missing arguments\r\n", 20);
+  } else {
+    char *value = data->value.array[2].value.string.value;
+
+    struct KVPair res;
+    res.key = data->value.array[1].value.string;
+
+    const bool is_true = streq(value, "true");
+
+    if (is_integer(value)) {
+      res.type = TELLY_INT;
+      res.value.integer = atoi(value);
+    } else if (is_true || streq(value, "false")) {
+      res.type = TELLY_BOOL;
+      res.value.boolean = is_true;
+    } else if (streq(value, "null")) {
+      res.type = TELLY_NULL;
+      res.value.null = NULL;
+    } else {
+      res.type = TELLY_STR;
+      res.value.string = data->value.array[2].value.string;
+    }
+
+    set_data(res);
+    if (client != NULL) write(client->connfd, "+OK\r\n", 5);
+  }
+}
+
+struct Command cmd_set = {
+  .name = "SET",
+  .summary = "Sets value to specified key. If the key already has a value, it is overwritten.",
+  .run = run
+};
