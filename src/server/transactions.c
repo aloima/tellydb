@@ -2,7 +2,6 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#include <signal.h>
 
 #include <unistd.h>
 #include <pthread.h>
@@ -10,20 +9,11 @@
 struct Transaction **transactions = NULL;
 uint32_t transaction_count = 0;
 struct Configuration *conf = NULL;
-volatile sig_atomic_t loop = true;
-
-void sigint_signal([[maybe_unused]] int arg) {
-  write_log("Thread is closing in a second...", LOG_WARN, conf->allowed_log_levels);
-  loop = false;
-  sleep(1);
-  pthread_exit(NULL);
-}
 
 void *transaction_thread(void *arg) {
   struct Configuration *conf = arg;
-  signal(SIGINT, sigint_signal);
 
-  while (loop) {
+  while (true) {
     for (uint32_t i = 0; i < transaction_count; ++i) {
       struct Transaction *transaction = transactions[i];
 
@@ -34,7 +24,6 @@ void *transaction_thread(void *arg) {
     usleep(10);
   }
 
-  pthread_join(pthread_self(), NULL);
   return NULL;
 }
 
