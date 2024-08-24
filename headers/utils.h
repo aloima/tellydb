@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifndef UTILS_H
   #define UTILS_H
@@ -18,4 +19,6 @@
   };
 
   void write_log(const char *message, const enum LogLevel level, const uint8_t allowed_log_levels);
+
+  bool is_integer(char *value);
 #endif
