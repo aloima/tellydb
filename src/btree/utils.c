@@ -51,11 +51,13 @@ void move_kv(struct BTreeNode *node, int32_t index) {
 }
 
 uint32_t get_total_size_of_node(struct BTreeNode *node) {
-  uint32_t res = node->size;
+  if (node != NULL) {
+    uint32_t res = node->size;
 
-  for (uint32_t i = 0; i < node->leaf_count; ++i) {
-    res += get_total_size_of_node(node->leafs[i]);
-  }
+    for (uint32_t i = 0; i < node->leaf_count; ++i) {
+      res += get_total_size_of_node(node->leafs[i]);
+    }
 
-  return res;
+    return res;
+  } else return 0;
 }
