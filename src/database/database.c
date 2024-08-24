@@ -37,6 +37,9 @@ struct KVPair *get_data(char *key, struct Configuration *conf) {
 
     while ((c = fgetc(file)) != EOF) {
       if (c == key[0]) {
+        data_key[data_key_len] = c;
+        data_key_len += 1;
+
         while (true) {
           c = fgetc(file);
 
