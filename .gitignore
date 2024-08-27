@@ -1,4 +1,5 @@
 /telly
+/.tellydb
 /vgcore.*
 /compile_commands.json
 .cache/
