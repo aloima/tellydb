@@ -44,6 +44,7 @@ struct KVPair *get_data(char *key, struct Configuration *conf) {
           c = fgetc(file);
 
           if (c == EOF) {
+            free(data_key);
             write_log("Database file is corrupted.", LOG_ERR, conf->allowed_log_levels);
             return NULL;
           } else if (c != 0x1D) {
@@ -56,6 +57,8 @@ struct KVPair *get_data(char *key, struct Configuration *conf) {
             type = fgetc(file);
 
             if (streq(data_key, key)) {
+              free(data_key);
+
               if (type != TELLY_BOOL && type != TELLY_STR && type != TELLY_INT && type != TELLY_NULL) {
                 write_log("Database file is corrupted.", LOG_ERR, conf->allowed_log_levels);
                 return NULL;
@@ -68,22 +71,22 @@ struct KVPair *get_data(char *key, struct Configuration *conf) {
 
                 case TELLY_INT: {
                   char *value = malloc(33);
-                  uint32_t value_len = 0;
+                  uint32_t len = 0;
 
-                  while ((value[value_len] = fgetc(file)) != 0x0A) {
-                    value_len += 1;
+                  while ((value[len] = fgetc(file)) != 0x1E) {
+                    len += 1;
 
-                    if (value_len % 32 == 0) {
-                      value = realloc(value, value_len + 33);
+                    if (len % 32 == 0) {
+                      value = realloc(value, len + 33);
                     }
                   }
 
-                  value[value_len] = 0x0;
+                  value[len] = 0x0;
 
                   int res = 0;
 
-                  for (uint32_t i = 0; i < value_len; ++i) {
-                    res |= (value[i] << (8 * (value_len - i - 1)));
+                  for (uint32_t i = 0; i < len; ++i) {
+                    res |= (value[i] << (8 * (len - i - 1)));
                   }
 
                   data = insert_kv_to_btree(cache, key, &res, TELLY_INT);
@@ -92,32 +95,19 @@ struct KVPair *get_data(char *key, struct Configuration *conf) {
                 }
 
                 case TELLY_STR: {
-                  char *len_str = malloc(33);
-                  uint32_t len_str_len = 0;
+                  char *value = malloc(33);
+                  uint32_t len = 0;
 
-                  while ((len_str[len_str_len] = fgetc(file)) != 0x1F) {
-                    len_str_len += 1;
+                  while ((value[len] = fgetc(file)) != 0x1E) {
+                    len += 1;
 
-                    if (len_str_len % 32 == 0) {
-                      len_str = realloc(len_str, len_str_len + 33);
+                    if (len % 32 == 0) {
+                      value = realloc(value, len + 33);
                     }
                   }
 
-                  len_str[len_str_len] = 0x0;
-                  len_str_len -= 1;
-
-                  uint32_t len = atoi(len_str);
-                  char *value = malloc(len + 1);
-
-                  fgets(value, len, file);
-
-                  if (fgetc(file) != 0x0A) {
-                    write_log("Database file is corrupted.", LOG_ERR, conf->allowed_log_levels);
-                    return NULL;
-                  }
-
+                  value[len] = 0x00;
                   data = insert_kv_to_btree(cache, key, value, TELLY_STR);
-                  free(len_str);
                   free(value);
                   break;
                 }
@@ -125,7 +115,12 @@ struct KVPair *get_data(char *key, struct Configuration *conf) {
                 case TELLY_BOOL:
                   c = fgetc(file);
                   data = insert_kv_to_btree(cache, key, &c, type);
-                  fgetc(file);
+
+                  if (fgetc(file) != 0x1E) {
+                    write_log("Database file is corrupted.", LOG_ERR, conf->allowed_log_levels);
+                    return NULL;
+                  }
+
                   break;
               }
 
@@ -136,7 +131,7 @@ struct KVPair *get_data(char *key, struct Configuration *conf) {
       } else {
         while (true) {
           c = fgetc(file);
-          if (c == EOF || c == '\n') break;
+          if (c == EOF || c == 0x1E) break;
         }
       }
     }
@@ -210,7 +205,7 @@ void save_data() {
           line[pair->key.len + 1 + i] = (pair->value.integer >> (8 * (byte_count - i))) & 0xFF;
         }
 
-        line[pair->key.len + 2 + byte_count] = 0x0A;
+        line[pair->key.len + 2 + byte_count] = 0x1E;
         line[pair->key.len + 3 + byte_count] = 0x00;
         break;
       }
@@ -221,7 +216,7 @@ void save_data() {
         line[pair->key.len] = 0x1D;
         line[pair->key.len + 1] = TELLY_BOOL;
         line[pair->key.len + 2] = pair->value.boolean;
-        line[pair->key.len + 3] = 0x0A;
+        line[pair->key.len + 3] = 0x1E;
         line[pair->key.len + 4] = 0x00;
         break;
 
@@ -230,7 +225,7 @@ void save_data() {
         memcpy(line, pair->key.value, pair->key.len);
         line[pair->key.len] = 0x1D;
         line[pair->key.len + 1] = TELLY_NULL;
-        line[pair->key.len + 2] = 0x0A;
+        line[pair->key.len + 2] = 0x1E;
         line[pair->key.len + 3] = 0x00;
         break;
     }
