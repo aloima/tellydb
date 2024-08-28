@@ -4,6 +4,8 @@
 #include <ctype.h>
 
 bool is_integer(char *value) {
+  if (*value == '-') value += 1;
+
   while (true) {
     if (!isdigit(*value)) return false;
     value += 1;
