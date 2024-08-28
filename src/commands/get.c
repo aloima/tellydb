@@ -50,7 +50,7 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
               if (result->value.boolean) {
                 write(client->connfd, "$4\r\ntrue\r\n", 10);
               } else {
-                write(client->connfd, "$4\r\nfalse\r\n", 11);
+                write(client->connfd, "$5\r\nfalse\r\n", 11);
               }
           }
         }
