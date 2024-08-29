@@ -9,7 +9,7 @@
 
 #include <pthread.h>
 #include <fcntl.h>
-#include <sys/epoll.h>
+#include <sys/poll.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -18,34 +18,36 @@ static uint32_t max_client_id_len;
 
 static pthread_t thread;
 static int sockfd;
-static int epfd;
+static struct pollfd *fds = NULL;
+static uint32_t nfds = 0;
 static struct Configuration *conf;
-
-static void epoll_ctl_add(int epfd, int fd, uint32_t events) {
-  struct epoll_event ev;
-  ev.events = events;
-  ev.data.fd = fd;
-
-  if (epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev) == -1) {
-    perror("epoll_ctl()");
-    exit(EXIT_FAILURE);
-  }
-}
 
 static int setnonblocking(int sockfd) {
   if (fcntl(sockfd, F_SETFL, fcntl(sockfd, F_GETFL, 0) | O_NONBLOCK) == -1) return -1;
   return 0;
 }
 
-void terminate_connection(struct epoll_event event, int epfd, struct Configuration *conf) {
-  struct Client *client = get_client(event.data.fd);
+void terminate_connection(const int connfd, struct Configuration *conf) {
+  struct Client *client = get_client(connfd);
   char message[26 + max_client_id_len];
   sprintf(message, "Client #%d is disconnected.", client->id);
   write_log(message, LOG_INFO, conf->allowed_log_levels);
 
-  close(event.data.fd);
-  remove_client(event.data.fd);
-  epoll_ctl(epfd, EPOLL_CTL_DEL, event.data.fd, NULL);
+  for (uint32_t i = 1; i < nfds; ++i) {
+    if (fds[i].fd == connfd) {
+      const uint32_t bound = nfds - 1;
+
+      for (uint32_t j = i; j < bound; ++j) {
+        memcpy(&fds[i], &fds[i + 1], sizeof(struct pollfd));
+      }
+    }
+  }
+
+  nfds -= 1;
+  fds = realloc(fds, nfds * sizeof(struct pollfd));
+
+  close(connfd);
+  remove_client(connfd);
 }
 
 void close_server() {
@@ -55,30 +57,34 @@ void close_server() {
   const uint32_t client_count = get_client_count();
   char message[24 + max_client_id_len];
 
-  for (uint32_t i = 0; i < client_count; ++i) {
-    struct Client *client = clients[0];
-    sprintf(message, "Client #%d is terminated.", client->id);
-    write_log(message, LOG_INFO, conf->allowed_log_levels);
+  if (client_count != nfds) {
+    write_log("Connected client count do not match polling client count", LOG_ERR, conf->allowed_log_levels);
+    exit(EXIT_FAILURE);
+  } else {
+    for (uint32_t i = 0; i < client_count; ++i) {
+      struct Client *client = clients[0];
+      sprintf(message, "Client #%d is terminated.", client->id);
+      write_log(message, LOG_INFO, conf->allowed_log_levels);
 
-    close(client->connfd);
-    remove_client(client->connfd);
-    epoll_ctl(epfd, EPOLL_CTL_DEL, client->connfd, NULL);
+      close(client->connfd);
+      remove_client(client->connfd);
+    }
+
+    write_log("Saving data...", LOG_WARN, conf->allowed_log_levels);
+    save_data();
+    close_database_file();
+    write_log("Saved data and closed database file.", LOG_INFO, conf->allowed_log_levels);
+
+    pthread_cancel(thread);
+    pthread_kill(thread, SIGINT);
+    free_transactions();
+    free_commands();
+    close(sockfd);
+    free(conf);
+    free(fds);
+
+    exit(EXIT_SUCCESS);
   }
-
-  write_log("Saving data...", LOG_WARN, conf->allowed_log_levels);
-  save_data();
-  close_database_file();
-  write_log("Saved data and closed database file.", LOG_INFO, conf->allowed_log_levels);
-
-  pthread_cancel(thread);
-  pthread_kill(thread, SIGINT);
-  free_transactions();
-  free_commands();
-  close(sockfd);
-  close(epfd);
-  free(conf);
-
-  exit(EXIT_SUCCESS);
 }
 
 static void sigint_signal([[maybe_unused]] int arg) {
@@ -130,59 +136,70 @@ void start_server(struct Configuration *config) {
   open_database_file(conf->data_file);
   write_log("Created cache and opened database file.", LOG_INFO, conf->allowed_log_levels);
 
-  epfd = epoll_create(1);
-  epoll_ctl_add(epfd, sockfd, EPOLLIN | EPOLLOUT | EPOLLET);
+  nfds = 1;
+  fds = malloc(sizeof(struct pollfd));
+  fds[0].fd = sockfd;
+  fds[0].events = POLLIN;
+  fds[0].revents = 0;
 
   write_log("Server is ready for accepting connections...", LOG_INFO, conf->allowed_log_levels);
 
-  struct epoll_event events[16];
   max_client_id_len = 1 + (uint32_t) log10(conf->max_clients);
 
   while (true) {
-    int nfds = epoll_wait(epfd, events, 16, -1);
+    int ret = poll(fds, nfds, -1);
 
-    for (int32_t i = 0; i < nfds; ++i) {
-      struct epoll_event event = events[i];
+    if (ret != -1) {
+      for (uint32_t i = 0; i < nfds; ++i) {
+        struct pollfd fd = fds[i];
 
-      if (event.data.fd == sockfd) {
-        if (conf->max_clients == get_client_count()) {
-          char message[] = "A connection request is rejected, because connected client count to the server is maximum.";
-          write_log(message, LOG_WARN, conf->allowed_log_levels);
-        } else {
-          struct sockaddr_in addr;
-          socklen_t addr_len = sizeof(addr);
+        if (fd.fd == sockfd && fd.revents & POLLIN) {
+          if (conf->max_clients == get_client_count()) {
+            char message[] = "A connection request is rejected, because connected client count to the server is maximum.";
+            write_log(message, LOG_WARN, conf->allowed_log_levels);
+          } else {
+            struct sockaddr_in addr;
+            socklen_t addr_len = sizeof(addr);
 
-          const int connfd = accept(sockfd, (struct sockaddr *) &addr, &addr_len);
-          struct Client *client = add_client(connfd, conf->max_clients);
+            const int connfd = accept(sockfd, (struct sockaddr *) &addr, &addr_len);
+            struct Client *client = add_client(connfd, conf->max_clients);
 
-          epoll_ctl_add(epfd, client->connfd, EPOLLIN | EPOLLET | EPOLLRDHUP | EPOLLHUP);
+            nfds += 1;
+            fds = realloc(fds, nfds * sizeof(struct pollfd));
 
-          char message[25 + max_client_id_len];
-          sprintf(message, "A client #%d is connected.", client->id);
-          write_log(message, LOG_INFO, conf->allowed_log_levels);
-        }
-      } else if (event.events & EPOLLIN) {
-        struct Client *client = get_client(event.data.fd);
-        const respdata_t data = get_resp_data(client->connfd);
+            const uint32_t at = nfds - 1;
+            fds[at].fd = connfd;
+            fds[at].events = POLLIN | POLLOUT;
+            fds[at].revents = 0;
 
-        if (data.type == RDT_CLOSE) {
-          terminate_connection(event, epfd, conf);
-        } else {
-          struct Command *commands = get_commands();
-          const char *used = data.value.array[0].value.string.value;
-          const uint32_t command_count = get_command_count();
-
-          for (uint32_t i = 0; i < command_count; ++i) {
-            if (streq(commands[i].name, used)) {
-              client->command = &commands[i];
-              break;
-            }
+            char message[23 + max_client_id_len];
+            sprintf(message, "Client #%d is connected.", client->id);
+            write_log(message, LOG_INFO, conf->allowed_log_levels);
           }
+        } else if (fd.revents & POLLIN) {
+          const respdata_t data = get_resp_data(fd.fd);
 
-          add_transaction(client, data);
+          if (data.type == RDT_CLOSE) {
+            terminate_connection(fd.fd, conf);
+          } else {
+            struct Client *client = get_client(fd.fd);
+            struct Command *commands = get_commands();
+            const uint32_t command_count = get_command_count();
+
+            const char *used = data.value.array[0].value.string.value;
+
+            for (uint32_t i = 0; i < command_count; ++i) {
+              if (streq(commands[i].name, used)) {
+                client->command = &commands[i];
+                break;
+              }
+            }
+
+            add_transaction(client, data);
+          }
+        } else if (fd.revents & (POLLERR | POLLNVAL | POLLHUP)) {
+          terminate_connection(fd.fd, conf);
         }
-      } else if (event.events & (EPOLLRDHUP | EPOLLHUP)) {
-        terminate_connection(event, epfd, conf);
       }
     }
   }

@@ -2,8 +2,7 @@
 #include "resp.h"
 
 #include <stdint.h>
-
-#include <sys/epoll.h>
+#include <time.h>
 
 #ifndef SERVER_H
   #define SERVER_H
@@ -17,7 +16,7 @@
 
   void start_server(struct Configuration *config);
   void close_server();
-  void terminate_connection(struct epoll_event event, int epfd, struct Configuration *conf);
+  void terminate_connection(const int connfd, struct Configuration *conf);
 
   struct Client **get_clients();
   struct Client *get_client(const int input);
