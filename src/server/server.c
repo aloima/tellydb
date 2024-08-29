@@ -51,8 +51,6 @@ void terminate_connection(const int connfd, struct Configuration *conf) {
 }
 
 void close_server() {
-  write_log("Received SIGINT signal, closing the server...", LOG_WARN, conf->allowed_log_levels);
-
   struct Client **clients = get_clients();
   const uint32_t client_count = get_client_count();
   char message[24 + max_client_id_len];
@@ -88,6 +86,7 @@ void close_server() {
 }
 
 static void sigint_signal([[maybe_unused]] int arg) {
+  write_log("Received SIGINT signal, closing the server...", LOG_WARN, conf->allowed_log_levels);
   close_server();
 }
 
