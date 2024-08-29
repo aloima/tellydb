@@ -3,10 +3,11 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <math.h>
 
 #include <unistd.h>
 
-static void run(struct Client *client, respdata_t *data, struct Configuration *conf) {
+static void run(struct Client *client, respdata_t *data, [[maybe_unused]] struct Configuration *conf) {
   if (data->count != 1 && client != NULL) {
     char *subcommand = data->value.array[1].value.string.value;
 
@@ -20,8 +21,25 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
       for (uint32_t i = 0; i < command_count; ++i) {
         struct Command command = commands[i];
 
-        char buf[128];
-        sprintf(buf, "$%ld\r\n%s\r\n*2\r\n$7\r\nsummary\r\n$%ld\r\n%s\r\n", strlen(command.name), command.name, strlen(command.summary), command.summary);
+        char buf[4096];
+        sprintf(buf, (
+          "$%ld\r\n%s\r\n"
+          "*6\r\n"
+            "$7\r\nsummary\r\n"
+            "$%ld\r\n%s\r\n"
+
+            "$5\r\nsince\r\n"
+            "$%ld\r\n%s\r\n"
+
+            "$10\r\ncomplexity\r\n"
+            "$%ld\r\n%s\r\n"
+        ),
+          strlen(command.name), command.name,
+          strlen(command.summary), command.summary,
+          strlen(command.since), command.since,
+          strlen(command.complexity), command.complexity
+        );
+
         strcat(res, buf);
       }
 
@@ -41,15 +59,43 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
 
       write(client->connfd, res, strlen(res));
     } else if (streq("COUNT", subcommand)) {
-      char res[8];
+      const uint32_t command_count = get_command_count();
+      const uint32_t res_len = 4 + log10(command_count);
+      char res[command_count];
+
       sprintf(res, ":%d\r\n", get_command_count());
-      write(client->connfd, res, strlen(res));
+      write(client->connfd, res, res_len + 1);
     }
   }
 }
 
+static struct Subcommand subcommands[] = {
+  (struct Subcommand) {
+    .name = "LIST",
+    .summary = "Returns name list of all commands.",
+    .since = "1.0.0",
+    .complexity = "O(N) where N is count of all commands"
+  },
+  (struct Subcommand) {
+    .name = "COUNT",
+    .summary = "Returns count of all commands in the server.",
+    .since = "1.0.0",
+    .complexity = "O(1)"
+  },
+  (struct Subcommand) {
+    .name = "DOCS",
+    .summary = "Returns documentation about multiple commands.",
+    .since = "1.0.0",
+    .complexity = "O(N) where N is count of commands to look up"
+  }
+};
+
 struct Command cmd_command = {
   .name = "COMMAND",
-  .summary = "Gives detailed information about the commands.",
-  .run = run
+  .summary = "Gives information about the commands in the server.",
+  .since = "1.0.0",
+  .complexity = "O(1)",
+  .subcommands = subcommands,
+  .subcommand_count = 3,
+  .run = run,
 };

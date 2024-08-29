@@ -12,7 +12,7 @@ static void run(struct Client *client, respdata_t *data, [[maybe_unused]] struct
     char *subcommand = data->value.array[1].value.string.value;
 
     if (streq("ID", subcommand)) {
-      const uint32_t len = (4 + (uint32_t) log10(client->id));
+      const uint32_t len = 4 + log10(client->id);
       char res[len + 1];
       sprintf(res, ":%d\r\n", client->id);
 
@@ -34,8 +34,27 @@ static void run(struct Client *client, respdata_t *data, [[maybe_unused]] struct
   }
 }
 
+static struct Subcommand subcommands[] = {
+  (struct Subcommand) {
+    .name = "ID",
+    .summary = "Returns ID number of client.",
+    .since = "1.0.0",
+    .complexity = "O(1)"
+  },
+  (struct Subcommand) {
+    .name = "INFO",
+    .summary = "Returns information about the client.",
+    .since = "1.0.0",
+    .complexity = "O(1)"
+  }
+};
+
 struct Command cmd_client = {
   .name = "CLIENT",
   .summary = "Gives information about client(s).",
+  .since = "1.0.0",
+  .complexity = "O(1)",
+  .subcommands = subcommands,
+  .subcommand_count = 2,
   .run = run
 };

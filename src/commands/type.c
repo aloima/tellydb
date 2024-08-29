@@ -40,5 +40,9 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
 struct Command cmd_type = {
   .name = "TYPE",
   .summary = "Returns type of value of key.",
+  .since = "1.0.0",
+  .complexity = "O(1)",
+  .subcommands = NULL,
+  .subcommand_count = 0,
   .run = run
 };

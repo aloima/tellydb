@@ -39,5 +39,9 @@ static void run(struct Client *client, respdata_t *data, [[maybe_unused]] struct
 struct Command cmd_set = {
   .name = "SET",
   .summary = "Sets value to specified key. If the key already has a value, it is overwritten.",
+  .since = "1.0.0",
+  .complexity = "O(1)",
+  .subcommands = NULL,
+  .subcommand_count = 0,
   .run = run
 };

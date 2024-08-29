@@ -6,7 +6,7 @@
 
 #include <unistd.h>
 
-static void run(struct Client *client, respdata_t *data, struct Configuration *conf) {
+static void run(struct Client *client, [[maybe_unused]] respdata_t *data, struct Configuration *conf) {
   if (client != NULL) {
     char buf[8192];
     sprintf(buf, (
@@ -29,5 +29,9 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
 struct Command cmd_info = {
   .name = "INFO",
   .summary = "Displays server information.",
+  .since = "1.0.0",
+  .complexity = "O(1)",
+  .subcommands = NULL,
+  .subcommand_count = 0,
   .run = run
 };

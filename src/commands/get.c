@@ -68,5 +68,9 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
 struct Command cmd_get = {
   .name = "GET",
   .summary = "Gets value from specified key.",
+  .since = "1.0.0",
+  .complexity = "O(1)",
+  .subcommands = NULL,
+  .subcommand_count = 0,
   .run = run
 };

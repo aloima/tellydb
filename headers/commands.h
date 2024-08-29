@@ -6,10 +6,21 @@
 #ifndef COMMANDS_H
   #define COMMANDS_H
 
+  struct Subcommand {
+    char *name;
+    char *summary;
+    char *since;
+    char *complexity;
+  };
+
   struct Command {
     char *name;
     char *summary;
+    char *since;
+    char *complexity;
     void (*run)(struct Client *client, respdata_t *data, struct Configuration *conf);
+    struct Subcommand *subcommands;
+    uint32_t subcommand_count;
   };
 
   void execute_command(struct Client *client, respdata_t *data, struct Configuration *conf);
