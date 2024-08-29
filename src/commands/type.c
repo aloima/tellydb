@@ -28,6 +28,8 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
             write(client->connfd, "+boolean\r\n", 10);
             break;
         }
+      } else {
+        write(client->connfd, "+key does not exist\r\n", 21);
       }
     } else {
       write(client->connfd, "-invalid argument usage\r\n", 25);
