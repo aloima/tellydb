@@ -57,7 +57,7 @@ void close_server() {
   const uint32_t client_count = get_client_count();
   char message[24 + max_client_id_len];
 
-  if (client_count != nfds) {
+  if (client_count != (nfds - 1)) {
     write_log("Connected client count do not match polling client count", LOG_ERR, conf->allowed_log_levels);
     exit(EXIT_FAILURE);
   } else {
