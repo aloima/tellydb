@@ -2,7 +2,6 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include <math.h>
 
 #include <unistd.h>
 
@@ -26,8 +25,8 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
               break;
 
             case TELLY_INT: {
-              const uint32_t digit_count = 1 + log10(result->value.integer);
-              const uint32_t buf_len = 1 + log10(digit_count) + digit_count + 5;
+              const uint32_t digit_count = get_digit_count(result->value.integer);
+              const uint32_t buf_len = get_digit_count(digit_count) + digit_count + 5;
 
               char buf[buf_len + 1];
               sprintf(buf, "$%d\r\n%d\r\n", digit_count, result->value.integer);
@@ -37,7 +36,7 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
             }
 
             case TELLY_STR: {
-              const uint32_t buf_len = 1 + log10(result->value.string.len) + result->value.string.len + 5;
+              const uint32_t buf_len = get_digit_count(result->value.string.len) + result->value.string.len + 5;
 
               char buf[buf_len + 1];
               sprintf(buf, "$%ld\r\n%s\r\n", result->value.string.len, result->value.string.value);

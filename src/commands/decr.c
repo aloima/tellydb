@@ -1,7 +1,6 @@
 #include "../../headers/telly.h"
 
 #include <stdio.h>
-#include <math.h>
 
 #include <stdint.h>
 #include <unistd.h>
@@ -35,8 +34,8 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
       result->value.integer -= 1;
 
       if (client != NULL) {
-        const uint32_t buf_size = log10(result->value.integer) + 4;
-        char buf[buf_size];
+        const uint32_t buf_size = get_digit_count(result->value.integer) + 3;
+        char buf[buf_size + 1];
 
         sprintf(buf, ":%d\r\n", result->value.integer);
         write(client->connfd, buf, buf_size);

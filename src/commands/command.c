@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <math.h>
 
 #include <unistd.h>
 
@@ -60,11 +59,11 @@ static void run(struct Client *client, respdata_t *data, [[maybe_unused]] struct
       write(client->connfd, res, strlen(res));
     } else if (streq("COUNT", subcommand)) {
       const uint32_t command_count = get_command_count();
-      const uint32_t res_len = 4 + log10(command_count);
-      char res[command_count];
+      const uint32_t res_len = 3 + get_digit_count(command_count);
+      char res[res_len + 1];
 
       sprintf(res, ":%d\r\n", get_command_count());
-      write(client->connfd, res, res_len + 1);
+      write(client->connfd, res, res_len);
     }
   }
 }

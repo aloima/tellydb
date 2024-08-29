@@ -2,7 +2,6 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include <math.h>
 #include <time.h>
 
 #include <unistd.h>
@@ -12,7 +11,7 @@ static void run(struct Client *client, respdata_t *data, [[maybe_unused]] struct
     char *subcommand = data->value.array[1].value.string.value;
 
     if (streq("ID", subcommand)) {
-      const uint32_t len = 4 + log10(client->id);
+      const uint32_t len = 3 + get_digit_count(client->id);
       char res[len + 1];
       sprintf(res, ":%d\r\n", client->id);
 

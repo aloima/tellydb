@@ -5,7 +5,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <signal.h>
-#include <math.h>
 
 #include <pthread.h>
 #include <fcntl.h>
@@ -19,7 +18,7 @@ static uint32_t max_client_id_len;
 static pthread_t thread;
 static int sockfd;
 static struct pollfd *fds = NULL;
-static uint32_t nfds = 0;
+static uint32_t nfds;
 static struct Configuration *conf;
 
 static int setnonblocking(int sockfd) {
@@ -143,7 +142,7 @@ void start_server(struct Configuration *config) {
 
   write_log("Server is ready for accepting connections...", LOG_INFO, conf->allowed_log_levels);
 
-  max_client_id_len = 1 + (uint32_t) log10(conf->max_clients);
+  max_client_id_len = get_digit_count(conf->max_clients);
 
   while (true) {
     int ret = poll(fds, nfds, -1);
