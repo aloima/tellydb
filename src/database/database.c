@@ -28,7 +28,11 @@ struct KVPair *get_data(char *key, struct Configuration *conf) {
   struct KVPair *data = find_kv_from_btree(cache, key);
 
   if (data == NULL) {
-    FILE *file = fopen(conf->data_file, "r");
+    if (file == NULL) {
+      write_log("Database file is not opened.", LOG_ERR, conf->allowed_log_levels);
+      return NULL;
+    }
+
     char *data_key = malloc(33);
     uint32_t data_key_len = 0;
     uint8_t type;
@@ -45,6 +49,7 @@ struct KVPair *get_data(char *key, struct Configuration *conf) {
 
           if (c == EOF) {
             free(data_key);
+            close_database_file();
             write_log("Database file is corrupted.", LOG_ERR, conf->allowed_log_levels);
             return NULL;
           } else if (c != 0x1D) {
@@ -60,6 +65,7 @@ struct KVPair *get_data(char *key, struct Configuration *conf) {
               free(data_key);
 
               if (type != TELLY_BOOL && type != TELLY_STR && type != TELLY_INT && type != TELLY_NULL) {
+                close_database_file();
                 write_log("Database file is corrupted.", LOG_ERR, conf->allowed_log_levels);
                 return NULL;
               }
@@ -117,6 +123,7 @@ struct KVPair *get_data(char *key, struct Configuration *conf) {
                   data = insert_kv_to_btree(cache, key, &c, type);
 
                   if (fgetc(file) != 0x1E) {
+                    close_database_file();
                     write_log("Database file is corrupted.", LOG_ERR, conf->allowed_log_levels);
                     return NULL;
                   }
