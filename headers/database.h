@@ -2,6 +2,7 @@
 #include "resp.h"
 #include "utils.h"
 
+#include <stdio.h>
 #include <stdint.h>
 
 #include <pthread.h>
@@ -32,9 +33,11 @@
     } value;
 
     enum TellyTypes type;
+    uint32_t pos;
   };
 
   void create_cache();
+  struct BTree *get_cache();
   void free_cache();
 
   struct KVPair *get_data(char *key, struct Configuration *conf);
@@ -42,6 +45,7 @@
   void save_data();
 
   void open_database_file(const char *filename);
+  FILE *get_database_file();
   void close_database_file();
 
   pthread_t create_transaction_thread(struct Configuration *config);
