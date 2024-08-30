@@ -1,6 +1,7 @@
 #include "../../headers/telly.h"
 
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 struct KVPair *get_data(char *key, struct Configuration *conf) {
@@ -17,7 +18,8 @@ struct KVPair *get_data(char *key, struct Configuration *conf) {
 
     char *data_key = malloc(33);
     uint32_t data_key_len = 0;
-    uint8_t type;
+    uint32_t pos = 0;
+    enum TellyTypes type;
 
     char c;
 
@@ -55,6 +57,8 @@ struct KVPair *get_data(char *key, struct Configuration *conf) {
               switch (type) {
                 case TELLY_NULL:
                   data = insert_kv_to_btree(cache, key, NULL, type);
+                  data->pos = pos;
+                  pos += data_key_len + 3;
                   break;
 
                 case TELLY_INT: {
@@ -69,7 +73,7 @@ struct KVPair *get_data(char *key, struct Configuration *conf) {
                     }
                   }
 
-                  value[len] = 0x0;
+                  value[len] = 0x00;
 
                   int res = 0;
 
@@ -79,6 +83,9 @@ struct KVPair *get_data(char *key, struct Configuration *conf) {
 
                   data = insert_kv_to_btree(cache, key, &res, TELLY_INT);
                   free(value);
+
+                  data->pos = pos;
+                  pos += data_key_len + len + 3;
                   break;
                 }
 
@@ -97,12 +104,14 @@ struct KVPair *get_data(char *key, struct Configuration *conf) {
                   value[len] = 0x00;
                   data = insert_kv_to_btree(cache, key, value, TELLY_STR);
                   free(value);
+
+                  data->pos = pos;
+                  pos += data_key_len + len + 3;
                   break;
                 }
 
                 case TELLY_BOOL:
                   c = fgetc(file);
-                  data = insert_kv_to_btree(cache, key, &c, type);
 
                   if (fgetc(file) != 0x1E) {
                     close_database_file();
@@ -110,6 +119,10 @@ struct KVPair *get_data(char *key, struct Configuration *conf) {
                     return NULL;
                   }
 
+                  data = insert_kv_to_btree(cache, key, &c, type);
+
+                  data->pos = pos;
+                  pos += data_key_len + 4;
                   break;
               }
 
