@@ -1,5 +1,6 @@
 #include "../../headers/telly.h"
 
+#include <stdint.h>
 #include <stdlib.h>
 
 struct KVPair *add_kv_to_node(struct BTreeNode *node, char *key, void *value, uint32_t type) {
@@ -52,17 +53,20 @@ struct KVPair *insert_kv_to_btree(struct BTree *tree, char *key, void *value, ui
   } else {
     struct BTreeNode *node = tree->root;
     char c = key[0];
+    int32_t leaf_at = -1;
 
     if (node->leaf_count != 0) {
       for (uint32_t i = 0; i < node->size; ++i) {
         if (c <= node->data[i]->key.value[0]) {
+          leaf_at = i;
           node = node->leafs[i];
           break;
         }
       }
 
       if (node->top == NULL) {
-        node = node->leafs[node->leaf_count - 1];
+        leaf_at = node->leaf_count - 1;
+        node = node->leafs[leaf_at];
       }
     }
 
@@ -106,9 +110,18 @@ struct KVPair *insert_kv_to_btree(struct BTree *tree, char *key, void *value, ui
           add_kv_to_node(node->top, tkv->key.value, get_kv_val(tkv, tkv->type), tkv->type);
           del_kv_from_node(node, tkv->key.value);
 
+          struct BTreeNode *empty = node->top->leafs[node->top->leaf_count - 1];
+          const uint32_t leaf_index = leaf_at + 1;
+
+          for (uint32_t i = leaf_index; i < node->top->leaf_count; ++i) {
+            node->top->leafs[i] = node->top->leafs[i - 1];
+          }
+
+          node->top->leafs[leaf_index] = empty;
+
           for (uint32_t i = index + 1; i < tree->max; ++i) {
             struct KVPair *a = node->data[index];
-            add_kv_to_node(node->top->leafs[node->top->leaf_count - 1], a->key.value, get_kv_val(a, a->type), a->type);
+            add_kv_to_node(empty, a->key.value, get_kv_val(a, a->type), a->type);
             del_kv_from_node(node, a->key.value);
           }
         }
