@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-struct KVPair *add_kv_to_node(struct BTreeNode *node, char *key, void *value, uint32_t type) {
+struct KVPair *add_kv_to_node(struct BTreeNode *node, char *key, void *value, enum TellyTypes type) {
   node->size += 1;
 
   if (node->size == 1) {
@@ -46,7 +46,7 @@ struct KVPair *add_kv_to_node(struct BTreeNode *node, char *key, void *value, ui
   return NULL;
 }
 
-struct KVPair *insert_kv_to_btree(struct BTree *tree, char *key, void *value, uint32_t type) {
+struct KVPair *insert_kv_to_btree(struct BTree *tree, char *key, void *value, enum TellyTypes type) {
   if (tree->root == NULL) {
     tree->root = calloc(1, sizeof(struct BTreeNode));
     return add_kv_to_node(tree->root, key, value, type);

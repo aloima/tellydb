@@ -9,10 +9,12 @@
 #ifndef DATABASE_H
   #define DATABASE_H
 
-  #define TELLY_NULL 1
-  #define TELLY_INT 2
-  #define TELLY_STR 3
-  #define TELLY_BOOL 4
+  enum TellyTypes {
+    TELLY_NULL = 1,
+    TELLY_INT,
+    TELLY_STR,
+    TELLY_BOOL
+  };
 
   struct Transaction {
     struct Client *client;
@@ -29,7 +31,7 @@
       void *null;
     } value;
 
-    uint32_t type;
+    enum TellyTypes type;
   };
 
   void create_cache();

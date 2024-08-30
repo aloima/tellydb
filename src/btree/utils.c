@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 
-void set_kv(struct KVPair *pair, char *key, void *value, uint32_t type) {
+void set_kv(struct KVPair *pair, char *key, void *value, enum TellyTypes type) {
   pair->type = type;
   set_string(&pair->key, key, -1);
 
@@ -26,7 +26,7 @@ void set_kv(struct KVPair *pair, char *key, void *value, uint32_t type) {
   }
 }
 
-void *get_kv_val(struct KVPair *pair, uint32_t type) {
+void *get_kv_val(struct KVPair *pair, enum TellyTypes type) {
   switch (type) {
     case TELLY_STR:
       return pair->value.string.value;
@@ -39,9 +39,10 @@ void *get_kv_val(struct KVPair *pair, uint32_t type) {
 
     case TELLY_NULL:
       return NULL;
-  }
 
-  return NULL;
+    default:
+      return NULL;
+  }
 }
 
 void move_kv(struct BTreeNode *node, int32_t index) {
