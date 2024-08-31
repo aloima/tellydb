@@ -16,14 +16,18 @@ struct KVPair *get_data(char *key, struct Configuration *conf) {
       return NULL;
     }
 
+    rewind(file);
+
     char *data_key = malloc(33);
     uint32_t data_key_len = 0;
-    uint32_t pos = 0;
+    uint32_t pos;
     enum TellyTypes type;
 
     char c;
 
     while ((c = fgetc(file)) != EOF) {
+      pos = ftell(file) - 1;
+
       if (c == key[0]) {
         data_key[data_key_len] = c;
         data_key_len += 1;
@@ -58,7 +62,6 @@ struct KVPair *get_data(char *key, struct Configuration *conf) {
                 case TELLY_NULL:
                   data = insert_kv_to_btree(cache, key, NULL, type);
                   data->pos = pos;
-                  pos += data_key_len + 3;
                   break;
 
                 case TELLY_INT: {
@@ -82,10 +85,8 @@ struct KVPair *get_data(char *key, struct Configuration *conf) {
                   }
 
                   data = insert_kv_to_btree(cache, key, &res, TELLY_INT);
-                  free(value);
-
                   data->pos = pos;
-                  pos += data_key_len + len + 3;
+                  free(value);
                   break;
                 }
 
@@ -103,10 +104,8 @@ struct KVPair *get_data(char *key, struct Configuration *conf) {
 
                   value[len] = 0x00;
                   data = insert_kv_to_btree(cache, key, value, TELLY_STR);
-                  free(value);
-
                   data->pos = pos;
-                  pos += data_key_len + len + 3;
+                  free(value);
                   break;
                 }
 
@@ -120,9 +119,7 @@ struct KVPair *get_data(char *key, struct Configuration *conf) {
                   }
 
                   data = insert_kv_to_btree(cache, key, &c, type);
-
                   data->pos = pos;
-                  pos += data_key_len + 4;
                   break;
               }
 
