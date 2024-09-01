@@ -33,7 +33,7 @@
     } value;
 
     enum TellyTypes type;
-    uint32_t pos;
+    int32_t pos;
   };
 
   void create_cache();
@@ -41,7 +41,7 @@
   void free_cache();
 
   struct KVPair *get_data(char *key, struct Configuration *conf);
-  void set_data(struct KVPair pair);
+  void set_data(struct KVPair pair, struct Configuration *conf);
   void save_data();
 
   void open_database_file(const char *filename);

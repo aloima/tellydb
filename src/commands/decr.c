@@ -25,7 +25,7 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
         }
       };
 
-      set_data(pair);
+      set_data(pair, conf);
 
       if (is_client) {
         write(client->connfd, ":0\r\n", 4);

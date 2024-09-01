@@ -31,7 +31,7 @@ static void run(struct Client *client, respdata_t *data, [[maybe_unused]] struct
       res.value.string = data->value.array[2].value.string;
     }
 
-    set_data(res);
+    set_data(res, conf);
     if (client != NULL) write(client->connfd, "+OK\r\n", 5);
   }
 }
