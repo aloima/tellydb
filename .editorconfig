@@ -12,3 +12,6 @@ indent_style = tab
 
 [doc/man3/*]
 indent_size = 4
+
+[.tellydb]
+insert_final_newline = false
