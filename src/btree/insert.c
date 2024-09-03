@@ -110,28 +110,35 @@ struct KVPair *insert_kv_to_btree(struct BTree *tree, char *key, void *value, en
         } else {
           node->top->leaf_count += 1;
           node->top->leafs = realloc(node->top->leafs, node->top->leaf_count * sizeof(struct BTreeNode *));
-          node->top->leafs[node->top->leaf_count - 1] = calloc(1, sizeof(struct BTreeNode));
-          node->top->leafs[node->top->leaf_count - 1]->top = node;
+          node->top->leafs[node->top->leaf_count - 1] = malloc(sizeof(struct BTreeNode));
 
+          const uint32_t leaf_index = leaf_at + 1;
           const uint32_t index = (tree->max - 1) / 2;
           struct KVPair *tkv = node->data[index];
-          add_kv_to_node(node->top, tkv->key.value, get_kv_val(tkv, tkv->type), tkv->type);
-          del_kv_from_node(node, tkv->key.value);
+
+          const uint32_t tkv_index = find_index_of_node(node->top, tkv->key.value);
+          node->top->size += 1;
+          node->top->data = realloc(node->top->data, node->top->size * sizeof(struct KVPair *));
+          move_kv(node->top, tkv_index);
+          node->top->data[tkv_index] = tkv;
+
+          memcpy(node->data + index, node->data + index + 1, (node->size - index - 1) * sizeof(struct KVPair *));
+          node->size -= 1;
+          node->data = realloc(node->data, node->size * sizeof(struct KVPair *));
 
           struct BTreeNode *empty = node->top->leafs[node->top->leaf_count - 1];
-          const uint32_t leaf_index = leaf_at + 1;
+          empty->top = node;
+          empty->leafs = NULL;
+          empty->leaf_count = 0;
+          empty->size = tree->max - index - 1;
+          empty->data = malloc(empty->size * sizeof(struct KVPair *));
+          memcpy(empty->data, node->data + index, empty->size * sizeof(struct KVPair *));
 
-          for (uint32_t i = leaf_index; i < node->top->leaf_count; ++i) {
-            node->top->leafs[i] = node->top->leafs[i - 1];
-          }
-
+          memcpy(node->top->leafs + leaf_index + 1, node->top->leafs + leaf_index, (node->top->leaf_count - leaf_index - 1) * sizeof(struct BTreeNode *));
           node->top->leafs[leaf_index] = empty;
 
-          for (uint32_t i = index + 1; i < tree->max; ++i) {
-            struct KVPair *a = node->data[index];
-            add_kv_to_node(empty, a->key.value, get_kv_val(a, a->type), a->type);
-            del_kv_from_node(node, a->key.value);
-          }
+          node->size -= empty->size;
+          node->data = realloc(node->data, (tree->max - index) * sizeof(struct KVPair *));
         }
       }
     }

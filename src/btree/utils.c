@@ -62,3 +62,13 @@ uint32_t get_total_size_of_node(struct BTreeNode *node) {
     return res;
   } else return 0;
 }
+
+uint32_t find_index_of_node(struct BTreeNode *node, char *key) {
+  const char c = key[0];
+
+  for (uint32_t i = 0; i < node->size; ++i) {
+    if (c <= node->data[i]->key.value[0]) return i;
+  }
+
+  return node->size;
+}
