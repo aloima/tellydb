@@ -27,9 +27,9 @@
 
   void set_kv(struct KVPair *pair, char *key, void *value, enum TellyTypes type);
   void *get_kv_val(struct KVPair *pair, enum TellyTypes type);
-  void move_kv(struct BTreeNode *node, int32_t index);
+  void move_last_kv_to(struct BTreeNode *node, int32_t index);
   uint32_t get_total_size_of_node(struct BTreeNode *node);
-  uint32_t find_index_of_node(struct BTreeNode *node, char *key);
+  uint32_t find_index_of_kv(struct BTreeNode *node, char *key);
 
   struct KVPair *add_kv_to_node(struct BTreeNode *node, char *key, void *value, enum TellyTypes type);
   struct KVPair *insert_kv_to_btree(struct BTree *tree, char *key, void *value, enum TellyTypes type);

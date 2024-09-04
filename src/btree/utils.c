@@ -45,7 +45,7 @@ void *get_kv_val(struct KVPair *pair, enum TellyTypes type) {
   }
 }
 
-void move_kv(struct BTreeNode *node, int32_t index) {
+void move_last_kv_to(struct BTreeNode *node, int32_t index) {
   struct KVPair *last_addr = node->data[node->size - 1];
   memcpy(node->data + index + 1, node->data + index, (node->size - index - 1) * sizeof(struct KVPair *));
   node->data[index] = last_addr;
@@ -63,7 +63,7 @@ uint32_t get_total_size_of_node(struct BTreeNode *node) {
   } else return 0;
 }
 
-uint32_t find_index_of_node(struct BTreeNode *node, char *key) {
+uint32_t find_index_of_kv(struct BTreeNode *node, char *key) {
   const char c = key[0];
 
   for (uint32_t i = 0; i < node->size; ++i) {

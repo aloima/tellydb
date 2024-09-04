@@ -9,13 +9,15 @@ struct KVPair *add_kv_to_node(struct BTreeNode *node, char *key, void *value, en
     node->data = malloc(sizeof(struct KVPair *));
     node->data[0] = calloc(1, sizeof(struct KVPair));
     set_kv(node->data[0], key, value, type);
+
     return node->data[0];
   } else {
-    const uint32_t index = find_index_of_node(node, key);
+    const uint32_t index = find_index_of_kv(node, key);
 
     node->size += 1;
     node->data = realloc(node->data, node->size * sizeof(struct KVPair *));
-    move_kv(node, index);
+
+    move_last_kv_to(node, index);
     node->data[index] = calloc(1, sizeof(struct KVPair));
     set_kv(node->data[index], key, value, type);
 
@@ -95,10 +97,10 @@ struct KVPair *insert_kv_to_btree(struct BTree *tree, char *key, void *value, en
           const uint32_t index = (tree->max - 1) / 2;
           struct KVPair *tkv = node->data[index];
 
-          const uint32_t tkv_index = find_index_of_node(node->top, tkv->key.value);
+          const uint32_t tkv_index = find_index_of_kv(node->top, tkv->key.value);
           node->top->size += 1;
           node->top->data = realloc(node->top->data, node->top->size * sizeof(struct KVPair *));
-          move_kv(node->top, tkv_index);
+          move_last_kv_to(node->top, tkv_index);
           node->top->data[tkv_index] = tkv;
 
           memcpy(node->data + index, node->data + index + 1, (node->size - index - 1) * sizeof(struct KVPair *));
