@@ -4,43 +4,22 @@
 #include <stdlib.h>
 
 struct KVPair *add_kv_to_node(struct BTreeNode *node, char *key, void *value, enum TellyTypes type) {
-  node->size += 1;
-
-  if (node->size == 1) {
+  if (node->size == 0) {
+    node->size += 1;
     node->data = malloc(sizeof(struct KVPair *));
     node->data[0] = calloc(1, sizeof(struct KVPair));
     set_kv(node->data[0], key, value, type);
     return node->data[0];
   } else {
+    const uint32_t index = find_index_of_node(node, key);
+
+    node->size += 1;
     node->data = realloc(node->data, node->size * sizeof(struct KVPair *));
-    node->data[node->size - 1] = calloc(1, sizeof(struct KVPair));
+    move_kv(node, index);
+    node->data[index] = calloc(1, sizeof(struct KVPair));
+    set_kv(node->data[index], key, value, type);
 
-    const char c = key[0];
-
-    if (node->data[node->size - 2]->key.value[0] <= c) {
-      const uint32_t at = node->size - 1;
-      set_kv(node->data[at], key, value, type);
-
-      return node->data[at];
-    } else if (c <= node->data[0]->key.value[0]) {
-      move_kv(node, 0);
-      set_kv(node->data[0], key, value, type);
-
-      return node->data[0];
-    } else {
-      const uint32_t bound = node->size - 2;
-
-      for (uint32_t i = 0; i < bound; ++i) {
-        const uint32_t next = i + 1;
-
-        if (node->data[i]->key.value[0] <= c && c <= node->data[next]->key.value[0]) {
-          move_kv(node, next);
-          set_kv(node->data[next], key, value, type);
-
-          return node->data[next];
-        }
-      }
-    }
+    return node->data[index];
   }
 
   return NULL;
