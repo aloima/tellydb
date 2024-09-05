@@ -17,8 +17,12 @@ static void get_kvs_from_node(struct KVPair **pairs, uint32_t *index, struct BTr
     *index += 1;
   }
 
-  for (uint32_t i = 0; i < node->leaf_count; ++i) {
-    get_kvs_from_node(pairs, index, node->leafs[i]);
+  if (node->leafs != NULL) {
+    for (uint32_t i = 0; i < node->size; ++i) {
+      get_kvs_from_node(pairs, index, node->leafs[i]);
+    }
+
+    get_kvs_from_node(pairs, index, node->leafs[node->size]);
   }
 }
 

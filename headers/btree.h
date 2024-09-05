@@ -12,7 +12,7 @@
     uint32_t size;
 
     struct BTreeNode **leafs;
-    uint32_t leaf_count;
+    // uint32_t leaf_count; // size + 1
 
     struct BTreeNode *top;
   };

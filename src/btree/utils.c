@@ -55,8 +55,12 @@ uint32_t get_total_size_of_node(struct BTreeNode *node) {
   if (node != NULL) {
     uint32_t res = node->size;
 
-    for (uint32_t i = 0; i < node->leaf_count; ++i) {
-      res += get_total_size_of_node(node->leafs[i]);
+    if (node->leafs != NULL) {
+      for (uint32_t i = 0; i < node->size; ++i) {
+        res += get_total_size_of_node(node->leafs[i]);
+      }
+
+      res += get_total_size_of_node(node->leafs[node->size]);
     }
 
     return res;
