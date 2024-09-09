@@ -24,7 +24,6 @@ struct Client *get_client(const int input) {
   return NULL;
 }
 
-
 uint32_t get_client_count() {
   return client_count;
 }
@@ -32,7 +31,6 @@ uint32_t get_client_count() {
 uint32_t get_last_connection_client_id() {
   return last_connection_client_id;
 }
-
 
 struct Client *add_client(const int connfd, const uint32_t max_clients) {
   if (max_clients == client_count) {
@@ -45,17 +43,18 @@ struct Client *add_client(const int connfd, const uint32_t max_clients) {
   if (clients == NULL) {
     clients = malloc(sizeof(struct Client *));
   } else {
-    clients = realloc(clients, client_count * sizeof(struct Client));
+    clients = realloc(clients, client_count * sizeof(struct Client *));
   }
 
-  const uint32_t li = client_count - 1;
-  clients[li] = malloc(sizeof(struct Client));
-  clients[li]->id = last_connection_client_id;
-  clients[li]->connfd = connfd;
-  time(&clients[li]->connected_at);
-  clients[li]->command = NULL;
+  clients[client_count - 1] = malloc(sizeof(struct Client));
 
-  return clients[li];
+  struct Client *client = clients[client_count - 1];
+  client->id = last_connection_client_id;
+  client->connfd = connfd;
+  time(&client->connected_at);
+  client->command = NULL;
+
+  return client;
 }
 
 void remove_client(const int connfd) {
@@ -63,15 +62,14 @@ void remove_client(const int connfd) {
     struct Client *client = clients[i];
 
     if (client->connfd == connfd) {
-      struct Client *last = clients[client_count - 1];
-      memcpy(client, last, sizeof(struct Client));
-
+      free(client);
       client_count -= 1;
 
       if (client_count == 0) {
         free(clients);
         clients = NULL;
       } else {
+        memcpy(clients + i, clients + i + 1, client_count * sizeof(struct Client *));
         clients = realloc(clients, client_count * sizeof(struct Client));
       }
 
