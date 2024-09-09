@@ -8,13 +8,11 @@
 bool is_integer(char *value) {
   if (*value == '-') value += 1;
 
-  while (true) {
-    if (!isdigit(*value)) return false;
+  while (isdigit(*value)) {
     value += 1;
-    if (*value == 0x00) return true;
   }
 
-  return true;
+  return *value == 0x00;
 }
 
 uint32_t get_digit_count(int32_t number) {
