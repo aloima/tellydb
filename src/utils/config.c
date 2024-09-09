@@ -116,11 +116,11 @@ static void get_allowed_log_levels(char *allowed_log_levels, struct Configuratio
   allowed_log_levels[len] = 0;
 }
 
-void get_configuration_string(char *buf, struct Configuration conf) {
+uint32_t get_configuration_string(char *buf, struct Configuration conf) {
   char allowed_log_levels[4];
   get_allowed_log_levels(allowed_log_levels, conf);
 
-  sprintf(buf, (
+  return sprintf(buf, (
     "# TCP server port\n"
     "PORT=%d\n\n"
     "# Specifies max connactable client count, higher values may cause higher resource usage\n"
@@ -131,7 +131,7 @@ void get_configuration_string(char *buf, struct Configuration conf) {
     "# e = error\n\n"
     "# Order of keys does not matter\n"
     "ALLOWED_LOG_LEVELS=%s\n\n"
-    "# Specifies database file where data will be saved\n\n"
+    "# Specifies database file where data will be saved\n"
     "DATA_FILE=%s\n"
   ), conf.port, conf.max_clients, allowed_log_levels, conf.data_file);
 }

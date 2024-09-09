@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -6,8 +7,8 @@
 int main(int argc, char *argv[]) {
   switch (argc) {
     case 1: {
-      struct Configuration *conf = get_configuration(NULL);
-      start_server(conf);
+      struct Configuration *config = get_configuration(NULL);
+      start_server(config);
       return EXIT_SUCCESS;
     }
 
@@ -44,13 +45,13 @@ int main(int argc, char *argv[]) {
         struct Configuration conf = get_default_configuration();
         char buf[1024];
 
-        get_configuration_string(buf, conf);
-        fwrite(buf, sizeof(char), strlen(buf), file);
+        const uint32_t len = get_configuration_string(buf, conf);
+        fwrite(buf, sizeof(char), len, file);
         fclose(file);
 
         return EXIT_SUCCESS;
       } else {
-        puts("invalid argument, use help command");
+        fputs("invalid argument, use help command\n", stderr);
         return EXIT_FAILURE;
       }
     }
@@ -61,13 +62,12 @@ int main(int argc, char *argv[]) {
         start_server(config);
         return EXIT_SUCCESS;
       } else {
-        puts("invalid argument usage, use help command");
+        fputs("invalid argument usage, use help command\n", stderr);
         return EXIT_FAILURE;
       }
 
-    default: {
-      puts("invalid argument count, use help command");
+    default:
+      fputs("invalid argument count, use help command\n", stderr);
       return EXIT_FAILURE;
-    }
   }
 }
