@@ -1,5 +1,6 @@
 #include "../../headers/telly.h"
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <ctype.h>
 
@@ -164,5 +165,32 @@ respdata_t get_resp_data(int connfd) {
     }
 
     usleep(3000);
+  }
+}
+
+void free_resp_data(respdata_t data) {
+  switch (data.type) {
+    case RDT_ARRAY:
+      for (uint32_t i = 0; i < data.count; ++i) {
+        free_resp_data(data.value.array[i]);
+      }
+
+      free(data.value.array);
+      break;
+
+    case RDT_BSTRING:
+      free(data.value.string.value);
+      break;
+
+    case RDT_SSTRING:
+      free(data.value.string.value);
+      break;
+
+    case RDT_ERR:
+      free(data.value.string.value);
+      break;
+
+    default:
+      break;
   }
 }

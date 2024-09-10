@@ -28,4 +28,5 @@
   } respdata_t;
 
   respdata_t get_resp_data(int connfd);
+  void free_resp_data(respdata_t data);
 #endif
