@@ -13,7 +13,7 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
       write(client->connfd, "-missing argument\r\n", 19);
     }
   } else if (data->count == 2) {
-    string_t key = data->value.array[1].value.string;
+    string_t key = data->value.array[1]->value.string;
     struct KVPair *result = get_data(key.value, conf);
 
     if (result == NULL) {

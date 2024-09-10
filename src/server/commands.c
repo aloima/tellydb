@@ -31,7 +31,7 @@ uint32_t get_command_count() {
 
 void execute_command(struct Client *client, respdata_t *data, struct Configuration *conf) {
   if (data->type == RDT_ARRAY) {
-    char *input = data->value.array[0].value.string.value;
+    char *input = data->value.array[0]->value.string.value;
     bool executed = false;
 
     for (uint32_t i = 0; i < command_count; ++i) {
@@ -45,7 +45,7 @@ void execute_command(struct Client *client, respdata_t *data, struct Configurati
     }
 
     if (!executed && client != NULL) {
-      const uint32_t len = 21 + data->value.array[0].value.string.len;
+      const uint32_t len = 21 + data->value.array[0]->value.string.len;
       char res[len + 1];
       sprintf(res, "-unknown command '%s'\r\n", input);
 

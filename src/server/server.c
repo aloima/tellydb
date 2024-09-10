@@ -175,16 +175,16 @@ void start_server(struct Configuration *config) {
             write_log(message, LOG_INFO, conf->allowed_log_levels);
           }
         } else if (fd.revents & POLLIN) {
-          const respdata_t data = get_resp_data(fd.fd);
+          respdata_t *data = get_resp_data(fd.fd);
 
-          if (data.type == RDT_CLOSE) {
+          if (data->type == RDT_CLOSE) {
             terminate_connection(fd.fd, conf);
           } else {
             struct Client *client = get_client(fd.fd);
             struct Command *commands = get_commands();
             const uint32_t command_count = get_command_count();
 
-            const char *used = data.value.array[0].value.string.value;
+            const char *used = data->value.array[0]->value.string.value;
 
             for (uint32_t i = 0; i < command_count; ++i) {
               if (streq(commands[i].name, used)) {

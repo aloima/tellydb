@@ -7,7 +7,7 @@
 static void run(struct Client *client, respdata_t *data, struct Configuration *conf) {
   if (client != NULL) {
     if (data->count == 2) {
-      char *key = data->value.array[1].value.string.value;
+      char *key = data->value.array[1]->value.string.value;
       struct KVPair *res = get_data(key, conf);
 
       if (res != NULL) {

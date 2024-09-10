@@ -6,10 +6,9 @@
 
 #include <unistd.h>
 
-respdata_t parse_resp_array(int connfd, uint8_t type) {
-  respdata_t data = {
-    .type = type
-  };
+respdata_t *parse_resp_array(int connfd, uint8_t type) {
+  respdata_t *data = malloc(sizeof(respdata_t));
+  data->type = type;
 
   char *len = malloc(33);
   uint32_t read_count = 0;
@@ -26,13 +25,13 @@ respdata_t parse_resp_array(int connfd, uint8_t type) {
 
       if (c == '\n') {
         len[read_count] = '\0';
-        data.count = atoi(len);
+        data->count = atoi(len);
         free(len);
 
-        data.value.array = malloc(data.count * sizeof(respdata_t));
+        data->value.array = malloc(data->count * sizeof(respdata_t));
 
-        for (uint32_t i = 0; i < data.count; ++i) {
-          data.value.array[i] = get_resp_data(connfd);
+        for (uint32_t i = 0; i < data->count; ++i) {
+          data->value.array[i] = get_resp_data(connfd);
         }
 
         break;
@@ -51,10 +50,10 @@ respdata_t parse_resp_array(int connfd, uint8_t type) {
   return data;
 }
 
-respdata_t parse_resp_sstring(int connfd, uint8_t type) {
-  respdata_t data = {
-    .type = type
-  };
+respdata_t *parse_resp_sstring(int connfd, uint8_t type) {
+  respdata_t *data = malloc(sizeof(respdata_t));
+  data->type = type;
+  data->count = 0;
 
   string_t string = {
     .value = malloc(33 * sizeof(char)),
@@ -75,7 +74,7 @@ respdata_t parse_resp_sstring(int connfd, uint8_t type) {
       if (c == '\n') {
         string.value[string.len - 1] = '\0';
         string.len -= 1;
-        data.value.string = string;
+        data->value.string = string;
         break;
       } else {
         client_error();
@@ -86,10 +85,10 @@ respdata_t parse_resp_sstring(int connfd, uint8_t type) {
   return data;
 }
 
-respdata_t parse_resp_bstring(int connfd, uint8_t type) {
-  respdata_t data = {
-    .type = type
-  };
+respdata_t *parse_resp_bstring(int connfd, uint8_t type) {
+  respdata_t *data = malloc(sizeof(respdata_t));
+  data->type = type;
+  data->count = 0;
 
   char *len = malloc(33);
   uint32_t read_count = 0;
@@ -110,13 +109,13 @@ respdata_t parse_resp_bstring(int connfd, uint8_t type) {
         uint32_t lend = atoi(len);
         free(len);
 
-        data.value.string = (string_t) {
+        data->value.string = (string_t) {
           .value = malloc(lend + 1),
           .len = lend
         };
 
-        read(connfd, data.value.string.value, lend);
-        data.value.string.value[lend] = '\0';
+        read(connfd, data->value.string.value, lend);
+        data->value.string.value[lend] = '\0';
 
         char buf[2];
         read(connfd, buf, 2);
@@ -135,62 +134,68 @@ respdata_t parse_resp_bstring(int connfd, uint8_t type) {
   return data;
 }
 
-respdata_t get_resp_data(int connfd) {
-  respdata_t data;
+respdata_t *get_resp_data(int connfd) {
+  respdata_t *data;
   uint8_t type;
 
   while (true) {
-    read(connfd, &type, 1);
+    if (read(connfd, &type, 1) == 0) {
+      data = malloc(sizeof(respdata_t));
+      data->type = RDT_CLOSE;
 
-    switch (type) {
-      case RDT_ARRAY:
-        data = parse_resp_array(connfd, type);
-        return data;
+      return data;
+    } else {
+      switch (type) {
+        case RDT_ARRAY:
+          data = parse_resp_array(connfd, type);
+          return data;
 
-      case RDT_SSTRING:
-        data = parse_resp_sstring(connfd, type);
-        return data;
+        case RDT_SSTRING:
+          data = parse_resp_sstring(connfd, type);
+          return data;
 
-      case RDT_BSTRING:
-        data = parse_resp_bstring(connfd, type);
-        return data;
+        case RDT_BSTRING:
+          data = parse_resp_bstring(connfd, type);
+          return data;
 
-      case RDT_ERR:
-        data = parse_resp_sstring(connfd, type);
-        return data;
+        case RDT_ERR:
+          data = parse_resp_sstring(connfd, type);
+          return data;
 
-      case RDT_CLOSE:
-        data.type = type;
-        return data;
+        default:
+          break;
+      }
     }
 
     usleep(3000);
   }
 }
 
-void free_resp_data(respdata_t data) {
-  switch (data.type) {
+void free_resp_data(respdata_t *data) {
+  switch (data->type) {
     case RDT_ARRAY:
-      for (uint32_t i = 0; i < data.count; ++i) {
-        free_resp_data(data.value.array[i]);
+      for (uint32_t i = 0; i < data->count; ++i) {
+        free_resp_data(data->value.array[i]);
       }
 
-      free(data.value.array);
+      free(data->value.array);
       break;
 
     case RDT_BSTRING:
-      free(data.value.string.value);
+      free(data->value.string.value);
       break;
 
     case RDT_SSTRING:
-      free(data.value.string.value);
+      free(data->value.string.value);
       break;
 
     case RDT_ERR:
-      free(data.value.string.value);
+      free(data->value.string.value);
       break;
 
     default:
       break;
   }
+
+  free(data);
 }

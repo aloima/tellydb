@@ -13,7 +13,7 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
         break;
 
       case 2: {
-        char *key = data->value.array[1].value.string.value;
+        char *key = data->value.array[1]->value.string.value;
         struct KVPair *result = get_data(key, conf);
 
         if (result == NULL) {

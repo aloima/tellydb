@@ -21,12 +21,12 @@
       bool boolean;
       int32_t integer;
       double doubl;
-      struct RESPData *array;
+      struct RESPData **array;
     } value;
 
     uint32_t count;
   } respdata_t;
 
-  respdata_t get_resp_data(int connfd);
-  void free_resp_data(respdata_t data);
+  respdata_t *get_resp_data(int connfd);
+  void free_resp_data(respdata_t *data);
 #endif

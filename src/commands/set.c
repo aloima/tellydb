@@ -10,10 +10,10 @@ static void run(struct Client *client, respdata_t *data, [[maybe_unused]] struct
   if (data->count < 3) {
     if (client != NULL) write(client->connfd, "-missing arguments\r\n", 20);
   } else {
-    char *value = data->value.array[2].value.string.value;
+    char *value = data->value.array[2]->value.string.value;
 
     struct KVPair res;
-    res.key = data->value.array[1].value.string;
+    res.key = data->value.array[1]->value.string;
 
     const bool is_true = streq(value, "true");
 
@@ -28,7 +28,7 @@ static void run(struct Client *client, respdata_t *data, [[maybe_unused]] struct
       res.value.null = NULL;
     } else {
       res.type = TELLY_STR;
-      res.value.string = data->value.array[2].value.string;
+      res.value.string = data->value.array[2]->value.string;
     }
 
     set_data(res, conf);

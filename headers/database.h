@@ -51,7 +51,7 @@
   pthread_t create_transaction_thread(struct Configuration *config);
 
   uint32_t get_transaction_count();
-  void add_transaction(struct Client *client, respdata_t data);
+  void add_transaction(struct Client *client, respdata_t *data);
   void remove_transaction(struct Transaction *transaction);
   void free_transactions();
 #endif

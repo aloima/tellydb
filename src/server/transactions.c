@@ -41,7 +41,7 @@ pthread_t create_transaction_thread(struct Configuration *config) {
   return thread;
 }
 
-void add_transaction(struct Client *client, respdata_t data) {
+void add_transaction(struct Client *client, respdata_t *data) {
   transaction_count += 1;
 
   if (transaction_count == 0) {
@@ -55,7 +55,7 @@ void add_transaction(struct Client *client, respdata_t data) {
   transactions[id]->client = client;
 
   transactions[id]->command = malloc(sizeof(respdata_t));
-  memcpy(transactions[id]->command, &data, sizeof(respdata_t));
+  memcpy(transactions[id]->command, data, sizeof(respdata_t));
 }
 
 void remove_transaction(struct Transaction *transaction) {

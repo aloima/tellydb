@@ -8,7 +8,7 @@
 
 static void run(struct Client *client, respdata_t *data, [[maybe_unused]] struct Configuration *conf) {
   if (data->count != 1 && client != NULL) {
-    char *subcommand = data->value.array[1].value.string.value;
+    char *subcommand = data->value.array[1]->value.string.value;
 
     if (streq("ID", subcommand)) {
       const uint32_t len = 3 + get_digit_count(client->id);
