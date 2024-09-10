@@ -167,7 +167,7 @@ void start_server(struct Configuration *config) {
 
             const uint32_t at = nfds - 1;
             fds[at].fd = connfd;
-            fds[at].events = POLLIN | POLLOUT;
+            fds[at].events = POLLIN;
             fds[at].revents = 0;
 
             char message[23 + max_client_id_len];
