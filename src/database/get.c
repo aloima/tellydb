@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-struct KVPair *get_data(char *key, struct Configuration *conf) {
+struct KVPair *get_data(char *key, [[maybe_unused]] struct Configuration *conf) {
   FILE *file = get_database_file();
   struct BTree *cache = get_cache();
 
@@ -12,7 +12,7 @@ struct KVPair *get_data(char *key, struct Configuration *conf) {
 
   if (data == NULL) {
     if (file == NULL) {
-      write_log("Database file is not opened.", LOG_ERR, conf->allowed_log_levels);
+      write_log(LOG_ERR, "Database file is not opened.");
       return NULL;
     }
 
@@ -38,7 +38,7 @@ struct KVPair *get_data(char *key, struct Configuration *conf) {
           if (c == EOF) {
             free(data_key);
             close_database_file();
-            write_log("Database file is corrupted.", LOG_ERR, conf->allowed_log_levels);
+            write_log(LOG_ERR, "Database file is corrupted.");
             return NULL;
           } else if (c != 0x1D) {
             data_key[data_key_len] = c;
@@ -54,7 +54,7 @@ struct KVPair *get_data(char *key, struct Configuration *conf) {
 
               if (type != TELLY_BOOL && type != TELLY_STR && type != TELLY_INT && type != TELLY_NULL) {
                 close_database_file();
-                write_log("Database file is corrupted.", LOG_ERR, conf->allowed_log_levels);
+                write_log(LOG_ERR, "Database file is corrupted.");
                 return NULL;
               }
 
@@ -114,7 +114,7 @@ struct KVPair *get_data(char *key, struct Configuration *conf) {
 
                   if (fgetc(file) != 0x1E) {
                     close_database_file();
-                    write_log("Database file is corrupted.", LOG_ERR, conf->allowed_log_levels);
+                    write_log(LOG_ERR, "Database file is corrupted.");
                     return NULL;
                   }
 

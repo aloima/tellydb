@@ -16,7 +16,7 @@
 
   void start_server(struct Configuration *config);
   void close_server();
-  void terminate_connection(const int connfd, struct Configuration *conf);
+  void terminate_connection(const int connfd);
 
   struct Client **get_clients();
   struct Client *get_client(const int input);

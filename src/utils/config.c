@@ -8,6 +8,7 @@ static struct Configuration default_conf = {
   .port = 6379,
   .max_clients = 128,
   .allowed_log_levels = LOG_INFO | LOG_ERR | LOG_WARN,
+  .max_log_len = 8192,
   .data_file = ".tellydb"
 };
 
@@ -71,6 +72,10 @@ struct Configuration parse_configuration(FILE *file) {
                 break;
             }
           }
+        } else if (streq(buf, "MAX_LOG_LEN")) {
+          memset(buf, 0, 64);
+          parse_value(file, buf);
+          conf.max_log_len = atoi(buf);
         } else {
           return conf;
         }
@@ -131,9 +136,11 @@ uint32_t get_configuration_string(char *buf, struct Configuration conf) {
     "# e = error\n\n"
     "# Order of keys does not matter\n"
     "ALLOWED_LOG_LEVELS=%s\n\n"
+    "# Specifies maximum writeable log length to STDOUT\n"
+    "MAX_LOG_LEN=%d\n\n"
     "# Specifies database file where data will be saved\n"
     "DATA_FILE=%s\n"
-  ), conf.port, conf.max_clients, allowed_log_levels, conf.data_file);
+  ), conf.port, conf.max_clients, allowed_log_levels, conf.max_log_len, conf.data_file);
 }
 
 struct Configuration get_default_configuration() {

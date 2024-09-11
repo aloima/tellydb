@@ -26,11 +26,11 @@ static int setnonblocking(int sockfd) {
   return 0;
 }
 
-void terminate_connection(const int connfd, struct Configuration *conf) {
+void terminate_connection(const int connfd) {
   struct Client *client = get_client(connfd);
   char message[26 + max_client_id_len];
   sprintf(message, "Client #%d is disconnected.", client->id);
-  write_log(message, LOG_INFO, conf->allowed_log_levels);
+  write_log(LOG_INFO, message);
 
   for (uint32_t i = 1; i < nfds; ++i) {
     if (fds[i].fd == connfd && (nfds - 1) != i) {
@@ -49,30 +49,29 @@ void terminate_connection(const int connfd, struct Configuration *conf) {
 void close_server() {
   struct Client **clients = get_clients();
   const uint32_t client_count = get_client_count();
-  char message[24 + max_client_id_len];
 
   if (client_count != (nfds - 1)) {
-    write_log("Connected client count do not match polling client count", LOG_ERR, conf->allowed_log_levels);
+    write_log(LOG_ERR, "Connected client count do not match polling client count");
     exit(EXIT_FAILURE);
   } else {
     for (uint32_t i = 0; i < client_count; ++i) {
       struct Client *client = clients[0];
-      sprintf(message, "Client #%d is terminated.", client->id);
-      write_log(message, LOG_INFO, conf->allowed_log_levels);
+      write_log(LOG_INFO, "Client #%d is terminated.", client->id);
 
       close(client->connfd);
       remove_client(client->connfd);
     }
 
-    write_log("Saving data...", LOG_WARN, conf->allowed_log_levels);
+    write_log(LOG_WARN, "Saving data...");
     save_data();
     close_database_file();
-    write_log("Saved data and closed database file.", LOG_INFO, conf->allowed_log_levels);
+    write_log(LOG_INFO, "Saved data and closed database file.");
 
     pthread_cancel(thread);
     pthread_kill(thread, SIGINT);
     free_transactions();
     free_commands();
+    free_cache();
     close(sockfd);
     free(conf);
     free(fds);
@@ -82,7 +81,7 @@ void close_server() {
 }
 
 static void sigint_signal([[maybe_unused]] int arg) {
-  write_log("Received SIGINT signal, closing the server...", LOG_WARN, conf->allowed_log_levels);
+  write_log(LOG_WARN, "Received SIGINT signal, closing the server...", LOG_WARN);
   close_server();
 }
 
@@ -91,11 +90,12 @@ void start_server(struct Configuration *config) {
   conf = config;
   thread = create_transaction_thread(config);
   signal(SIGINT, sigint_signal);
+  initialize_logs(conf);
 
   struct sockaddr_in servaddr;
 
   if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-    write_log("cannot open socket", LOG_ERR, conf->allowed_log_levels);
+    write_log(LOG_ERR, "cannot open socket");
     pthread_cancel(thread);
     free_commands();
     return;
@@ -106,30 +106,30 @@ void start_server(struct Configuration *config) {
   servaddr.sin_port = htons(conf->port);
 
   if ((bind(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr))) != 0) { 
-    write_log("cannot bind socket and address", LOG_ERR, conf->allowed_log_levels);
+    write_log(LOG_ERR, "cannot bind socket and address");
     pthread_cancel(thread);
     free_commands();
     return;
   }
 
   if (setnonblocking(sockfd) == -1) {
-    write_log("cannot set non-blocking socket", LOG_ERR, conf->allowed_log_levels);
+    write_log(LOG_ERR, "cannot set non-blocking socket");
     pthread_cancel(thread);
     free_commands();
     return;
   }
 
   if (listen(sockfd, 10) != 0) { 
-    write_log("cannot listen socket", LOG_ERR, conf->allowed_log_levels);
+    write_log(LOG_ERR, "cannot listen socket");
     pthread_cancel(thread);
     free_commands();
     return;
   }
 
-  write_log("Creating cache and opening database file...", LOG_INFO, conf->allowed_log_levels);
+  write_log(LOG_INFO, "Creating cache and opening database file...");
   create_cache();
   open_database_file(conf->data_file);
-  write_log("Created cache and opened database file.", LOG_INFO, conf->allowed_log_levels);
+  write_log(LOG_INFO, "Created cache and opened database file.");
 
   nfds = 1;
   fds = malloc(sizeof(struct pollfd));
@@ -137,7 +137,7 @@ void start_server(struct Configuration *config) {
   fds[0].events = POLLIN;
   fds[0].revents = 0;
 
-  write_log("Server is ready for accepting connections...", LOG_INFO, conf->allowed_log_levels);
+  write_log(LOG_INFO, "Server is ready for accepting connections...");
 
   max_client_id_len = get_digit_count(conf->max_clients);
 
@@ -150,8 +150,7 @@ void start_server(struct Configuration *config) {
 
         if (fd.fd == sockfd && fd.revents & POLLIN) {
           if (conf->max_clients == get_client_count()) {
-            char message[] = "A connection request is rejected, because connected client count to the server is maximum.";
-            write_log(message, LOG_WARN, conf->allowed_log_levels);
+            write_log(LOG_WARN, "A connection request is rejected, because connected client count to the server is maximum.");
           } else {
             struct sockaddr_in addr;
             socklen_t addr_len = sizeof(addr);
@@ -167,15 +166,13 @@ void start_server(struct Configuration *config) {
             fds[at].events = POLLIN;
             fds[at].revents = 0;
 
-            char message[23 + max_client_id_len];
-            sprintf(message, "Client #%d is connected.", client->id);
-            write_log(message, LOG_INFO, conf->allowed_log_levels);
+            write_log(LOG_INFO, "Client #%d is connected.", client->id);
           }
         } else if (fd.revents & POLLIN) {
           respdata_t *data = get_resp_data(fd.fd);
 
           if (data->type == RDT_CLOSE) {
-            terminate_connection(fd.fd, conf);
+            terminate_connection(fd.fd);
             free_resp_data(data);
           } else {
             struct Client *client = get_client(fd.fd);
@@ -194,7 +191,7 @@ void start_server(struct Configuration *config) {
             add_transaction(client, data);
           }
         } else if (fd.revents & (POLLERR | POLLNVAL | POLLHUP)) {
-          terminate_connection(fd.fd, conf);
+          terminate_connection(fd.fd);
         }
       }
     }

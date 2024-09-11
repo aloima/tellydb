@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -18,7 +20,8 @@
     LOG_ERR  = 0b100,
   };
 
-  void write_log(const char *message, const enum LogLevel level, const uint8_t allowed_log_levels);
+  void initialize_logs(struct Configuration *config);
+  void write_log(enum LogLevel level, const char *fmt, ...);
 
   bool is_integer(char *value);
   uint32_t get_digit_count(int32_t number);

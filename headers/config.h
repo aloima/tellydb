@@ -7,6 +7,7 @@
     uint16_t port;
     uint16_t max_clients;
     uint8_t allowed_log_levels;
+    uint32_t max_log_len;
     char *data_file;
   };
 
