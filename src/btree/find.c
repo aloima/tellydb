@@ -1,30 +1,23 @@
 #include "../../headers/telly.h"
 
 static struct KVPair *find_kv_from_node(struct BTreeNode *node, const char *key) {
-  if (node != NULL && node->data != NULL) {
-    const char c = key[0];
+  const char c = key[0];
 
-    if (node->leafs != NULL) {
-      for (uint32_t i = 0; i < node->size; ++i) {
-        struct KVPair *pair = node->data[i];
-        const char *pair_key = pair->key.value;
+  if (node->leafs != NULL) {
+    for (uint32_t i = 0; i < node->size; ++i) {
+      struct KVPair *pair = node->data[i];
+      const char *pair_key = pair->key.value;
 
-        if (streq(key, pair_key)) {
-          return pair;
-        } else if (c <= pair_key[0]) {
-          return find_kv_from_node(node->leafs[i], key);
-        }
-      }
+      if (streq(key, pair_key)) return pair;
+      else if (c <= pair_key[0]) return find_kv_from_node(node->leafs[i], key);
+    }
 
-      return find_kv_from_node(node->leafs[node->size], key);
-    } else {
-      for (uint32_t i = 0; i < node->size; ++i) {
-        struct KVPair *pair = node->data[i];
+    return find_kv_from_node(node->leafs[node->size], key);
+  } else {
+    for (uint32_t i = 0; i < node->size; ++i) {
+      struct KVPair *pair = node->data[i];
 
-        if (streq(pair->key.value, key)) {
-          return pair;
-        }
-      }
+      if (streq(pair->key.value, key)) return pair;
     }
   }
 
@@ -32,5 +25,6 @@ static struct KVPair *find_kv_from_node(struct BTreeNode *node, const char *key)
 }
 
 struct KVPair *find_kv_from_btree(struct BTree *tree, const char *key) {
-  return find_kv_from_node(tree->root, key);
+  if (tree->root != NULL) return find_kv_from_node(tree->root, key);
+  else return NULL;
 }
