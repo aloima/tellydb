@@ -28,13 +28,14 @@ static void free_btree_node(struct BTreeNode *node) {
       }
 
       free(pair);
-    }  }
+    }
+  }
 
   free(node->data);
   free(node);
 }
 
 void free_btree(struct BTree *tree) {
-  free_btree_node(tree->root);
+  if (tree->root != NULL) free_btree_node(tree->root);
   free(tree);
 }
