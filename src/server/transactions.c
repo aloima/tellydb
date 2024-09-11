@@ -53,15 +53,13 @@ void add_transaction(struct Client *client, respdata_t *data) {
   const uint32_t id = transaction_count - 1;
   transactions[id] = malloc(sizeof(struct Transaction));
   transactions[id]->client = client;
-
-  transactions[id]->command = malloc(sizeof(respdata_t));
-  memcpy(transactions[id]->command, data, sizeof(respdata_t));
+  transactions[id]->command = data;
 }
 
 void remove_transaction(struct Transaction *transaction) {
   const uint64_t id = transaction - transactions[0];
 
-  free(transaction->command);
+  free_resp_data(transaction->command);
   free(transaction);
 
   transaction_count -= 1;

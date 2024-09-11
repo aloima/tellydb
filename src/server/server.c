@@ -176,6 +176,7 @@ void start_server(struct Configuration *config) {
 
           if (data->type == RDT_CLOSE) {
             terminate_connection(fd.fd, conf);
+            free_resp_data(data);
           } else {
             struct Client *client = get_client(fd.fd);
             struct Command *commands = get_commands();
