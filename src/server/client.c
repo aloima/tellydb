@@ -1,5 +1,6 @@
 #include "../../headers/telly.h"
 
+#include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <time.h>
@@ -69,7 +70,10 @@ void remove_client(const int connfd) {
         free(clients);
         clients = NULL;
       } else {
-        memcpy(clients + i, clients + i + 1, client_count * sizeof(struct Client *));
+        if (client_count != i) {
+          memcpy(clients + i, clients + i + 1, (client_count - i) * sizeof(struct Client *));
+        }
+
         clients = realloc(clients, client_count * sizeof(struct Client));
       }
 
