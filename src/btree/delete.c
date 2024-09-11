@@ -5,19 +5,15 @@
 #include <string.h>
 
 void del_kv_from_node(struct BTreeNode *node, char *key) {
-  for (uint32_t i = 0; i < node->size; ++i) {
-    struct KVPair *pair = node->data[i];
+  const uint32_t at = find_index_of_kv(node, key);
 
-    if (streq(pair->key.value, key)) {
-      memcpy(node->data + i, node->data + i + 1, (node->size - i - 1) * sizeof(struct KVPair *));
-
-      free(pair->key.value);
-      if (pair->type == TELLY_STR) free(pair->value.string.value);
-      free(pair);
-
-      node->size -= 1;
-      node->data = realloc(node->data, node->size * sizeof(struct KVPair *));
-      break;
-    }
+  if (node->size == 1 && streq(node->data[0]->key.value, key)) {
+    free(node->data);
+    node->data = NULL;
+    node->size = 0;
+  } else if (streq(node->data[at]->key.value, key)) {
+    move_kv(node, at, node->size - 1);
+    node->size -= 1;
+    node->data = realloc(node->data, node->size * sizeof(struct KVPair *));
   }
 }

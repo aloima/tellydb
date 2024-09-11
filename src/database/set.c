@@ -14,7 +14,7 @@ void set_data(struct KVPair pair, struct Configuration *conf) {
 
     switch (pair.type) {
       case TELLY_STR:
-        set_string(&data->value.string, pair.value.string.value, pair.value.string.len);
+        set_string(&data->value.string, pair.value.string.value, pair.value.string.len, data->value.string.value == NULL);
         break;
 
       case TELLY_INT:

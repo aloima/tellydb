@@ -2,14 +2,15 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <stdbool.h>
 
 void set_kv(struct KVPair *pair, char *key, void *value, enum TellyTypes type) {
   pair->type = type;
-  set_string(&pair->key, key, -1);
+  set_string(&pair->key, key, -1, true);
 
   switch (type) {
     case TELLY_STR:
-      set_string(&pair->value.string, value, -1);
+      set_string(&pair->value.string, value, -1, true);
       break;
 
     case TELLY_INT:
@@ -45,10 +46,16 @@ void *get_kv_val(struct KVPair *pair, enum TellyTypes type) {
   }
 }
 
-void move_last_kv_to(struct BTreeNode *node, int32_t index) {
-  struct KVPair *last_addr = node->data[node->size - 1];
-  memcpy(node->data + index + 1, node->data + index, (node->size - index - 1) * sizeof(struct KVPair *));
-  node->data[index] = last_addr;
+void move_kv(struct BTreeNode *node, uint32_t at, uint32_t to) {
+  struct KVPair *pair = node->data[at];
+
+  if (to > at) {
+    memcpy(node->data + at, node->data + at + 1, (to - at) * sizeof(struct KVPair *));
+  } else if (at > to) {
+    memcpy(node->data + to + 1, node->data + to, (at - to) * sizeof(struct KVPair *));
+  }
+
+  node->data[to] = pair;
 }
 
 uint32_t get_total_size_of_node(struct BTreeNode *node) {

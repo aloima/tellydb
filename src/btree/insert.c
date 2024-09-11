@@ -3,125 +3,149 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-struct KVPair *add_kv_to_node(struct BTreeNode *node, char *key, void *value, enum TellyTypes type) {
+void add_kv_to_node(struct BTreeNode *node, struct KVPair *pair) {
   if (node->size == 0) {
-    node->size += 1;
+    node->size = 1;
     node->data = malloc(sizeof(struct KVPair *));
-    node->data[0] = calloc(1, sizeof(struct KVPair));
-    set_kv(node->data[0], key, value, type);
-
-    return node->data[0];
+    node->data[0] = pair;
   } else {
-    const uint32_t index = find_index_of_kv(node, key);
+    const uint32_t index = find_index_of_kv(node, pair->key.value);
 
     node->size += 1;
     node->data = realloc(node->data, node->size * sizeof(struct KVPair *));
 
-    move_last_kv_to(node, index);
-    node->data[index] = calloc(1, sizeof(struct KVPair));
-    set_kv(node->data[index], key, value, type);
+    move_kv(node, node->size - 1, index);
+    node->data[index] = pair;
+  }
+}
 
-    return node->data[index];
+static struct KVPair *insert_kv_to_node(struct BTreeNode *node, const uint32_t leaf_at, struct KVPair *pair, const uint32_t max) {
+  add_kv_to_node(node, pair);
+
+  if (node->size == max) {
+    const uint32_t at = (max - 1) / 2;
+
+    if (node->top != NULL) {
+      do {
+        struct KVPair *middle = node->data[at];
+        add_kv_to_node(node->top, middle);
+
+        node->top->leafs = realloc(node->top->leafs, (node->top->size + 1) * sizeof(struct BTreeNode *));
+        node->top->leafs[node->top->size] = malloc(sizeof(struct BTreeNode));
+
+        struct BTreeNode *leaf = node->top->leafs[node->top->size];
+
+        if (node->top->size != leaf_at) {
+          memcpy(node->top->leafs + leaf_at + 2, node->top->leafs + leaf_at + 1, (node->top->size - leaf_at - 1) * sizeof(struct BTreeNode *));
+          node->top->leafs[leaf_at + 1] = leaf;
+        }
+
+        leaf->leafs = NULL;
+        leaf->top = node->top;
+        leaf->size = node->size - at - 1;
+        leaf->data = malloc(leaf->size * sizeof(struct KVPair *));
+        memcpy(leaf->data, node->data + at + 1, leaf->size * sizeof(struct KVPair *));
+
+        leaf = node->top->leafs[leaf_at];
+        leaf->size = at;
+        leaf->data = realloc(leaf->data, leaf->size * sizeof(struct KVPair *));
+
+        node = node->top;
+      } while (node->top != NULL);
+
+      if (node->size == max) {
+        const uint32_t leaf_count = node->size + 1;
+        struct BTreeNode *leafs[leaf_count];
+        memcpy(leafs, node->leafs, leaf_count * sizeof(struct BTreeNode *));
+
+        free(node->leafs);
+        node->leafs = malloc(2 * sizeof(struct BTreeNode *));
+        node->leafs[0] = malloc(sizeof(struct BTreeNode));
+        node->leafs[1] = malloc(sizeof(struct BTreeNode));
+
+        struct BTreeNode *leaf = node->leafs[0];
+        leaf->top = node;
+        leaf->size = at;
+        leaf->data = malloc(leaf->size * sizeof(struct KVPair *));
+        leaf->leafs = malloc((leaf->size + 1) * sizeof(struct BTreeNode *));
+        memcpy(leaf->leafs, leafs, (leaf->size + 1) * sizeof(struct BTreeNode *));
+        memcpy(leaf->data, node->data, leaf->size * sizeof(struct KVPair *));
+
+        leaf = node->leafs[1];
+        leaf->top = node;
+        leaf->size = node->size - at - 1;
+        leaf->data = malloc(leaf->size * sizeof(struct KVPair *));
+        leaf->leafs = malloc((leaf->size + 1) * sizeof(struct BTreeNode *));
+        memcpy(leaf->leafs, leafs + at + 1, (leaf->size + 1) * sizeof(struct BTreeNode *));
+        memcpy(leaf->data, node->data + at + 1, leaf->size * sizeof(struct KVPair *));
+
+        node->size = 1;
+        node->data[0] = node->data[at];
+        node->data = realloc(node->data, node->size * sizeof(struct KVPair *));
+      }
+    } else {
+      node->leafs = malloc(2 * sizeof(struct BTreeNode *));
+      node->leafs[0] = malloc(sizeof(struct BTreeNode));
+      node->leafs[1] = malloc(sizeof(struct BTreeNode));
+
+      struct BTreeNode *leaf = node->leafs[0];
+      leaf->top = node;
+      leaf->leafs = NULL;
+      leaf->size = at;
+      leaf->data = malloc(leaf->size * sizeof(struct KVPair *));
+      memcpy(leaf->data, node->data, leaf->size * sizeof(struct KVPair *));
+
+      leaf = node->leafs[1];
+      leaf->top = node;
+      leaf->leafs = NULL;
+      leaf->size = node->size - at - 1;
+      leaf->data = malloc(leaf->size * sizeof(struct KVPair *));
+      memcpy(leaf->data, node->data + at + 1, leaf->size * sizeof(struct KVPair *));
+
+      node->size = 1;
+      node->data[0] = node->data[at];
+      node->data = realloc(node->data, node->size * sizeof(struct KVPair *));
+    }
   }
 
-  return NULL;
+  return pair;
+}
+
+static struct BTreeNode *find_node_to_insert(struct BTreeNode *node, uint32_t *leaf_at, const char c) {
+  if (node->leafs != NULL) {
+    for (uint32_t i = 0; i < node->size; ++i) {
+      struct KVPair *pair = node->data[i];
+
+      if (c <= pair->key.value[0]) {
+        *leaf_at = i;
+        return find_node_to_insert(node->leafs[i], leaf_at, c);
+      }
+    }
+
+    *leaf_at = node->size;
+    return find_node_to_insert(node->leafs[node->size], leaf_at, c);
+  } else {
+    return node;
+  }
 }
 
 struct KVPair *insert_kv_to_btree(struct BTree *tree, char *key, void *value, enum TellyTypes type) {
+  struct KVPair *pair = malloc(sizeof(struct KVPair));
+  set_kv(pair, key, value, type);
+
   if (tree->root == NULL) {
-    tree->root = calloc(1, sizeof(struct BTreeNode));
-    return add_kv_to_node(tree->root, key, value, type);
+    tree->root = malloc(sizeof(struct BTreeNode));
+    tree->root->size = 0;
+    tree->root->leafs = NULL;
+    tree->root->top = NULL;
+
+    add_kv_to_node(tree->root, pair);
   } else {
-    struct BTreeNode *node = tree->root;
-    char c = key[0];
-    int32_t leaf_at = -1;
+    uint32_t leaf_at = 0;
+    struct BTreeNode *node = find_node_to_insert(tree->root, &leaf_at, key[0]);
 
-    if (node->leafs != NULL) {
-      for (uint32_t i = 0; i < node->size; ++i) {
-        if (c <= node->data[i]->key.value[0]) {
-          leaf_at = i;
-          node = node->leafs[i];
-          break;
-        }
-      }
-
-      if (node->top == NULL) {
-        leaf_at = node->size;
-        node = node->leafs[leaf_at];
-      }
-    }
-
-    struct KVPair *res = add_kv_to_node(node, key, value, type);
-
-    if (node->size == tree->max) {
-      if (node->leafs == NULL) {
-        if (!node->top) {
-          node->leafs = malloc(2 * sizeof(struct BTreeNode *));
-          node->leafs[0] = calloc(1, sizeof(struct BTreeNode));
-          node->leafs[1] = calloc(1, sizeof(struct BTreeNode));
-
-          const uint32_t index = (tree->max - 1) / 2;
-
-          node->leafs[0]->top = node;
-          node->leafs[1]->top = node;
-
-          node->leafs[0]->size = index;
-          node->leafs[0]->data = malloc(node->leafs[0]->size * sizeof(struct KVPair *));
-
-          if (tree->max % 2 == 0) {
-            node->leafs[1]->size = index + 1;
-            node->leafs[1]->data = malloc(node->leafs[1]->size * sizeof(struct KVPair *));
-
-            memcpy(node->leafs[0]->data, node->data, index * sizeof(struct BTreeNode *));
-            memcpy(node->leafs[1]->data, node->data + index + 1, index * sizeof(struct BTreeNode *));
-
-            node->leafs[1]->data[index] = node->data[index + index + 1];
-          } else {
-            node->leafs[1]->size = index;
-            node->leafs[1]->data = malloc(node->leafs[1]->size * sizeof(struct KVPair *));
-
-            memcpy(node->leafs[0]->data, node->data, index * sizeof(struct BTreeNode *));
-            memcpy(node->leafs[1]->data, node->data + index + 1, index * sizeof(struct BTreeNode *));
-          }
-
-          node->data[0] = node->data[index];
-          node->data = realloc(node->data, sizeof(struct BTreeNode *));
-          node->size = 1;
-        } else {
-          const uint32_t leaf_count = node->top->size + 2;
-          node->top->leafs = realloc(node->top->leafs, leaf_count * sizeof(struct BTreeNode *));
-          node->top->leafs[leaf_count - 1] = malloc(sizeof(struct BTreeNode));
-
-          const uint32_t leaf_index = leaf_at + 1;
-          const uint32_t index = (tree->max - 1) / 2;
-          struct KVPair *tkv = node->data[index];
-
-          const uint32_t tkv_index = find_index_of_kv(node->top, tkv->key.value);
-          node->top->size += 1;
-          node->top->data = realloc(node->top->data, node->top->size * sizeof(struct KVPair *));
-          move_last_kv_to(node->top, tkv_index);
-          node->top->data[tkv_index] = tkv;
-
-          memcpy(node->data + index, node->data + index + 1, (node->size - index - 1) * sizeof(struct KVPair *));
-          node->size -= 1;
-          node->data = realloc(node->data, node->size * sizeof(struct KVPair *));
-
-          struct BTreeNode *empty = node->top->leafs[leaf_count - 1];
-          empty->top = node;
-          empty->leafs = NULL;
-          empty->size = tree->max - index - 1;
-          empty->data = malloc(empty->size * sizeof(struct KVPair *));
-          memcpy(empty->data, node->data + index, empty->size * sizeof(struct KVPair *));
-
-          memcpy(node->top->leafs + leaf_index + 1, node->top->leafs + leaf_index, (leaf_count - leaf_index - 1) * sizeof(struct BTreeNode *));
-          node->top->leafs[leaf_index] = empty;
-
-          node->size -= empty->size;
-          node->data = realloc(node->data, (tree->max - index) * sizeof(struct KVPair *));
-        }
-      }
-    }
-
-    return res;
+    insert_kv_to_node(node, leaf_at, pair, tree->max);
   }
+
+  return pair;
 }

@@ -4,11 +4,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-void set_string(string_t *data, char *value, int32_t len) {
+void set_string(string_t *data, char *value, int32_t len, bool unset) {
   data->len = len == -1 ? strlen(value) : (uint32_t) len;
   const uint32_t size = data->len + 1;
 
-  if (data->value != NULL) {
+  if (!unset) {
     data->value = realloc(data->value, size);
   } else {
     data->value = malloc(size);
