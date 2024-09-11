@@ -33,12 +33,9 @@ void terminate_connection(const int connfd, struct Configuration *conf) {
   write_log(message, LOG_INFO, conf->allowed_log_levels);
 
   for (uint32_t i = 1; i < nfds; ++i) {
-    if (fds[i].fd == connfd) {
-      const uint32_t bound = nfds - 1;
-
-      for (uint32_t j = i; j < bound; ++j) {
-        memcpy(&fds[i], &fds[i + 1], sizeof(struct pollfd));
-      }
+    if (fds[i].fd == connfd && (nfds - 1) != i) {
+      memcpy(fds + i, fds + i + 1, (nfds - i - 1) * sizeof(struct pollfd));
+      break;
     }
   }
 
