@@ -13,6 +13,7 @@
   } string_t;
 
   void set_string(string_t *data, char *value, int32_t len, bool unset);
+  void to_uppercase(char *in, char *out);
 
   enum LogLevel {
     LOG_INFO = 0b001,

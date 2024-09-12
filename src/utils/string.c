@@ -1,5 +1,6 @@
 #include "../../headers/telly.h"
 
+#include <ctype.h>
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -15,4 +16,9 @@ void set_string(string_t *data, char *value, int32_t len, bool unset) {
   }
 
   memcpy(data->value, value, size);
+}
+
+void to_uppercase(char *in, char *out) {
+  while (*in != '\0') *(out++) = toupper(*(in++));
+  *out = '\0';
 }

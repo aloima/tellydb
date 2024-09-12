@@ -31,7 +31,11 @@ uint32_t get_command_count() {
 
 void execute_command(struct Client *client, respdata_t *data, struct Configuration *conf) {
   if (data->type == RDT_ARRAY) {
-    char *input = data->value.array[0]->value.string.value;
+    string_t name = data->value.array[0]->value.string;
+
+    char *input = malloc(name.len + 1);
+    to_uppercase(name.value, input);
+
     bool executed = false;
 
     for (uint32_t i = 0; i < command_count; ++i) {
@@ -51,6 +55,8 @@ void execute_command(struct Client *client, respdata_t *data, struct Configurati
 
       write(client->connfd, res, len);
     }
+
+    free(input);
   } else {
     client_error();
   }
