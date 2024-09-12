@@ -83,7 +83,7 @@ void close_server() {
   }
 }
 
-static void sigint_signal([[maybe_unused]] int arg) {
+static void sigint_signal(__attribute__((unused)) int arg) {
   write_log(LOG_WARN, "Received SIGINT signal, closing the server...", LOG_WARN);
   close_server();
 }

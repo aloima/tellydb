@@ -5,7 +5,7 @@
 
 #include <unistd.h>
 
-static void run(struct Client *client, [[maybe_unused]] respdata_t *data, struct Configuration *conf) {
+static void run(struct Client *client, __attribute__((unused)) respdata_t *data, struct Configuration *conf) {
   if (client != NULL) {
     char buf[8192];
     sprintf(buf, (

@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-struct KVPair *get_data(char *key, [[maybe_unused]] struct Configuration *conf) {
+struct KVPair *get_data(char *key, __attribute__((unused)) struct Configuration *conf) {
   FILE *file = get_database_file();
   struct BTree *cache = get_cache();
 
