@@ -9,11 +9,12 @@
 struct Transaction **transactions = NULL;
 uint32_t transaction_count = 0;
 struct Configuration *conf = NULL;
+bool thread_active = true;
 
 void *transaction_thread(void *arg) {
   struct Configuration *conf = arg;
 
-  while (true) {
+  while (thread_active) {
     for (uint32_t i = 0; i < transaction_count; ++i) {
       struct Transaction *transaction = transactions[i];
 
@@ -29,6 +30,10 @@ void *transaction_thread(void *arg) {
 
 uint32_t get_transaction_count() {
   return transaction_count;
+}
+
+void deactive_transaction_thread() {
+  thread_active = false;
 }
 
 pthread_t create_transaction_thread(struct Configuration *config) {

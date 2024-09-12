@@ -49,6 +49,7 @@
   void close_database_file();
 
   pthread_t create_transaction_thread(struct Configuration *config);
+  void deactive_transaction_thread();
 
   uint32_t get_transaction_count();
   void add_transaction(struct Client *client, respdata_t *data);

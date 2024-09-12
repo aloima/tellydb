@@ -67,15 +67,18 @@ void close_server() {
     close_database_file();
     write_log(LOG_INFO, "Saved data and closed database file.");
 
-    pthread_cancel(thread);
-    pthread_kill(thread, SIGINT);
+    deactive_transaction_thread();
+    usleep(15);
+    write_log(LOG_INFO, "Exited transaction thread.");
+
     free_transactions();
     free_commands();
     free_cache();
     close(sockfd);
-    free(conf);
     free(fds);
+    write_log(LOG_INFO, "Free'd all memory blocks and closed the server.");
 
+    free(conf);
     exit(EXIT_SUCCESS);
   }
 }
@@ -86,11 +89,16 @@ static void sigint_signal([[maybe_unused]] int arg) {
 }
 
 void start_server(struct Configuration *config) {
-  load_commands();
   conf = config;
-  thread = create_transaction_thread(config);
-  signal(SIGINT, sigint_signal);
   initialize_logs(conf);
+
+  load_commands();
+  write_log(LOG_INFO, "Initialized commands.");
+
+  thread = create_transaction_thread(config);
+  write_log(LOG_INFO, "Created transaction thread.");
+
+  signal(SIGINT, sigint_signal);
 
   struct sockaddr_in servaddr;
 
