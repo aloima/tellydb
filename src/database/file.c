@@ -95,11 +95,12 @@ uint32_t generate_data_content(char **line, struct KVPair *pair) {
 void save_data() {
   struct BTree *cache = get_cache();
 
-  struct KVPair **pairs = get_kvs_from_btree(cache);
+  struct KVPair **pairs = get_sorted_kvs_from_btree(cache);
   const uint32_t size = get_total_size_of_node(cache->root);
+  sort_kvs_by_pos(pairs, size);
 
   fseek(file, 0, SEEK_END);
-  const uint32_t file_size = ftell(file);
+  uint32_t file_size = ftell(file);
   int32_t diff = 0;
 
   for (uint32_t i = 0; i < size; ++i) {
@@ -109,9 +110,9 @@ void save_data() {
     const uint32_t line_len = generate_data_content(&line, pair);
 
     if (pair->pos != -1) {
-      uint32_t end_pos = pair->pos + 1;// + (diff > 0 ? diff : 0);
+      uint32_t end_pos = pair->pos + 1;
 
-      fseek(file, pair->pos, SEEK_SET);
+      fseek(file, pair->pos + diff, SEEK_SET);
       while (fgetc(file) != 0x1E) end_pos += 1;
 
       const uint32_t line_len_in_file = end_pos - pair->pos;
@@ -119,13 +120,13 @@ void save_data() {
       if (line_len_in_file != line_len) {
         char *buf = malloc(file_size - end_pos);
         fread(buf, sizeof(char), file_size - end_pos, file);
-        fseek(file, pair->pos, SEEK_SET);
+        fseek(file, pair->pos + diff, SEEK_SET);
         fwrite(line, sizeof(char), line_len, file);
         fwrite(buf, sizeof(char), file_size - end_pos, file);
 
         free(buf);
 
-        diff += line_len_in_file - line_len;
+        diff += line_len - line_len_in_file;
       } else {
         fseek(file, pair->pos, SEEK_SET);
         fwrite(line, sizeof(char), line_len, file);
@@ -133,13 +134,14 @@ void save_data() {
     } else {
       fseek(file, 0, SEEK_END);
       fwrite(line, sizeof(char), line_len, file);
+      file_size += line_len;
     }
 
     free(line);
   }
 
-  if (diff > 0) {
-    const int fd = fileno(file);
-    ftruncate(fd, file_size - diff);
-  }
+  const int fd = fileno(file);
+  ftruncate(fd, file_size + diff);
+
+  free(pairs);
 }
