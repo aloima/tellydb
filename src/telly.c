@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
       const char *arg = argv[1];
 
       if (streq(arg, "version")) {
-        puts("tellydb version 0.1.0");
+        puts("tellydb version 0.1.1");
         return EXIT_SUCCESS;
       } else if (streq(arg, "help")) {
         puts((
