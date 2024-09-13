@@ -28,9 +28,7 @@ static int setnonblocking(int sockfd) {
 
 void terminate_connection(const int connfd) {
   struct Client *client = get_client(connfd);
-  char message[26 + max_client_id_len];
-  sprintf(message, "Client #%d is disconnected.", client->id);
-  write_log(LOG_INFO, message);
+  write_log(LOG_INFO, "Client #d is disconnected.", client->id);
 
   for (uint32_t i = 1; i < nfds; ++i) {
     if (fds[i].fd == connfd && (nfds - 1) != i) {
