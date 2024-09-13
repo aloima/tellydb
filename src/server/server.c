@@ -187,7 +187,10 @@ void start_server(struct Configuration *config) {
             struct Command *commands = get_commands();
             const uint32_t command_count = get_command_count();
 
-            const char *used = data->value.array[0]->value.string.value;
+            string_t name = data->value.array[0]->value.string;
+
+            char used[name.len + 1];
+            to_uppercase(name.value, used);
 
             for (uint32_t i = 0; i < command_count; ++i) {
               if (streq(commands[i].name, used)) {
