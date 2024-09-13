@@ -128,7 +128,7 @@ void save_data() {
 
         diff += line_len - line_len_in_file;
       } else {
-        fseek(file, pair->pos, SEEK_SET);
+        fseek(file, pair->pos + diff, SEEK_SET);
         fwrite(line, sizeof(char), line_len, file);
       }
     } else {
