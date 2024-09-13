@@ -28,7 +28,7 @@ static int setnonblocking(int sockfd) {
 
 void terminate_connection(const int connfd) {
   struct Client *client = get_client(connfd);
-  write_log(LOG_INFO, "Client #d is disconnected.", client->id);
+  write_log(LOG_INFO, "Client #%d is disconnected.", client->id);
 
   for (uint32_t i = 1; i < nfds; ++i) {
     if (fds[i].fd == connfd && (nfds - 1) != i) {
@@ -48,37 +48,32 @@ void close_server() {
   struct Client **clients = get_clients();
   const uint32_t client_count = get_client_count();
 
-  if (client_count != (nfds - 1)) {
-    write_log(LOG_ERR, "Connected client count do not match polling client count");
-    exit(EXIT_FAILURE);
-  } else {
-    for (uint32_t i = 0; i < client_count; ++i) {
-      struct Client *client = clients[0];
-      write_log(LOG_INFO, "Client #%d is terminated.", client->id);
+  for (uint32_t i = 0; i < client_count; ++i) {
+    struct Client *client = clients[0];
+    write_log(LOG_INFO, "Client #%d is terminated.", client->id);
 
-      close(client->connfd);
-      remove_client(client->connfd);
-    }
-
-    write_log(LOG_WARN, "Saving data...");
-    save_data();
-    close_database_file();
-    write_log(LOG_INFO, "Saved data and closed database file.");
-
-    deactive_transaction_thread();
-    usleep(15);
-    write_log(LOG_INFO, "Exited transaction thread.");
-
-    free_transactions();
-    free_commands();
-    free_cache();
-    close(sockfd);
-    free(fds);
-    write_log(LOG_INFO, "Free'd all memory blocks and closed the server.");
-
-    free(conf);
-    exit(EXIT_SUCCESS);
+    close(client->connfd);
+    remove_client(client->connfd);
   }
+
+  write_log(LOG_WARN, "Saving data...");
+  save_data();
+  close_database_file();
+  write_log(LOG_INFO, "Saved data and closed database file.");
+
+  deactive_transaction_thread();
+  usleep(15);
+  write_log(LOG_INFO, "Exited transaction thread.");
+
+  free_transactions();
+  free_commands();
+  free_cache();
+  close(sockfd);
+  free(fds);
+  write_log(LOG_INFO, "Free'd all memory blocks and closed the server.");
+
+  free(conf);
+  exit(EXIT_SUCCESS);
 }
 
 static void sigint_signal(__attribute__((unused)) int arg) {
@@ -89,6 +84,7 @@ static void sigint_signal(__attribute__((unused)) int arg) {
 void start_server(struct Configuration *config) {
   conf = config;
   initialize_logs(conf);
+  write_log(LOG_INFO, "Initialized logs and configuration.");
 
   load_commands();
   write_log(LOG_INFO, "Initialized commands.");
@@ -101,9 +97,11 @@ void start_server(struct Configuration *config) {
   struct sockaddr_in servaddr;
 
   if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-    write_log(LOG_ERR, "cannot open socket");
-    pthread_cancel(thread);
+    deactive_transaction_thread();
+    usleep(15);
     free_commands();
+    write_log(LOG_ERR, "Cannot open socket, safely exiting...");
+    free(conf);
     return;
   }
 
@@ -112,27 +110,35 @@ void start_server(struct Configuration *config) {
   servaddr.sin_port = htons(conf->port);
 
   if ((bind(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr))) != 0) { 
-    write_log(LOG_ERR, "cannot bind socket and address");
-    pthread_cancel(thread);
+    deactive_transaction_thread();
+    usleep(15);
     free_commands();
+    close(sockfd);
+    write_log(LOG_ERR, "Cannot bind socket and address, safely exiting...");
+    free(conf);
     return;
   }
 
   if (setnonblocking(sockfd) == -1) {
-    write_log(LOG_ERR, "cannot set non-blocking socket");
-    pthread_cancel(thread);
+    deactive_transaction_thread();
+    usleep(15);
     free_commands();
+    close(sockfd);
+    write_log(LOG_ERR, "Cannot set non-blocking socket, safely exiting...");
+    free(conf);
     return;
   }
 
   if (listen(sockfd, 10) != 0) { 
-    write_log(LOG_ERR, "cannot listen socket");
-    pthread_cancel(thread);
+    deactive_transaction_thread();
+    usleep(15);
     free_commands();
+    close(sockfd);
+    write_log(LOG_ERR, "Cannot listen socket, safely exiting...");
+    free(conf);
     return;
   }
 
-  write_log(LOG_INFO, "Creating cache and opening database file...");
   create_cache();
   open_database_file(conf->data_file);
   write_log(LOG_INFO, "Created cache and opened database file.");
@@ -143,7 +149,7 @@ void start_server(struct Configuration *config) {
   fds[0].events = POLLIN;
   fds[0].revents = 0;
 
-  write_log(LOG_INFO, "Server is ready for accepting connections...");
+  write_log(LOG_INFO, "Server is listening on %d port for accepting connections...", conf->port);
 
   max_client_id_len = get_digit_count(conf->max_clients);
 
