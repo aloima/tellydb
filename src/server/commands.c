@@ -33,7 +33,7 @@ void execute_command(struct Client *client, respdata_t *data, struct Configurati
   if (data->type == RDT_ARRAY) {
     string_t name = data->value.array[0]->value.string;
 
-    char *input = malloc(name.len + 1);
+    char input[name.len + 1];
     to_uppercase(name.value, input);
 
     bool executed = false;
@@ -55,8 +55,6 @@ void execute_command(struct Client *client, respdata_t *data, struct Configurati
 
       write(client->connfd, res, len);
     }
-
-    free(input);
   } else {
     client_error();
   }
