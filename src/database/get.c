@@ -18,120 +18,110 @@ struct KVPair *get_data(char *key, __attribute__((unused)) struct Configuration 
 
     rewind(file);
 
-    char *data_key = malloc(33);
-    uint32_t data_key_len = 0;
-    uint32_t pos;
-    enum TellyTypes type;
+    const uint32_t key_len = strlen(key);
+    uint32_t key_at = 0;
 
     char c;
 
     while ((c = fgetc(file)) != EOF) {
-      pos = ftell(file) - 1;
+      if (key_len == key_at) {
+        if (c != 0x1D) {
+          close_database_file();
+          write_log(LOG_ERR, "Database file is corrupted.");
+          return NULL;
+        }
 
-      if (c == key[0]) {
-        data_key[data_key_len] = c;
-        data_key_len += 1;
+        const enum TellyTypes type = fgetc(file);
+        const uint32_t pos = ftell(file) - key_len - 2;
 
-        while (true) {
-          c = fgetc(file);
+        switch (type) {
+          case TELLY_NULL:
+            data = insert_kv_to_btree(cache, key, NULL, type);
 
-          if (c == EOF) {
-            free(data_key);
+            if (fgetc(file) != 0x1E) {
+              close_database_file();
+              write_log(LOG_ERR, "Database file is corrupted.");
+              return NULL;
+            }
+
+            data->pos = pos;
+            break;
+
+          case TELLY_INT: {
+            char *value = malloc(33);
+            uint32_t len = 0;
+
+            while ((value[len] = fgetc(file)) != 0x1E) {
+              len += 1;
+
+              if (len % 32 == 0) {
+                value = realloc(value, len + 33);
+              }
+            }
+
+            value[len] = 0x00;
+
+            int res = 0;
+
+            for (uint32_t i = 0; i < len; ++i) {
+              res |= (value[i] << (8 * (len - i - 1)));
+            }
+
+            data = insert_kv_to_btree(cache, key, &res, TELLY_INT);
+            data->pos = pos;
+            free(value);
+            break;
+          }
+
+          case TELLY_STR: {
+            char *value = malloc(33);
+            uint32_t len = 0;
+
+            while ((value[len] = fgetc(file)) != 0x1E) {
+              len += 1;
+
+              if (len % 32 == 0) {
+                value = realloc(value, len + 33);
+              }
+            }
+
+            value[len] = 0x00;
+            data = insert_kv_to_btree(cache, key, value, TELLY_STR);
+            data->pos = pos;
+            free(value);
+            break;
+          }
+
+          case TELLY_BOOL:
+            c = fgetc(file);
+
+            if (fgetc(file) != 0x1E) {
+              close_database_file();
+              write_log(LOG_ERR, "Database file is corrupted.");
+              return NULL;
+            }
+
+            data = insert_kv_to_btree(cache, key, &c, type);
+            data->pos = pos;
+            break;
+
+          default:
             close_database_file();
             write_log(LOG_ERR, "Database file is corrupted.");
+            break;
+        }
+
+        return data;
+      } else if (key[key_at] == c) {
+        key_at += 1;
+      } else {
+        while ((c = fgetc(file)) != 0x1E) {
+          if (c == EOF) {
             return NULL;
-          } else if (c != 0x1D) {
-            data_key[data_key_len] = c;
-            data_key_len += 1;
-
-            if (data_key_len % 32 == 0) data_key = realloc(data_key, data_key_len + 33);
-          } else {
-            data_key[data_key_len] = 0;
-            type = fgetc(file);
-
-            if (streq(data_key, key)) {
-              free(data_key);
-
-              if (type != TELLY_BOOL && type != TELLY_STR && type != TELLY_INT && type != TELLY_NULL) {
-                close_database_file();
-                write_log(LOG_ERR, "Database file is corrupted.");
-                return NULL;
-              }
-
-              switch (type) {
-                case TELLY_NULL:
-                  data = insert_kv_to_btree(cache, key, NULL, type);
-                  data->pos = pos;
-                  break;
-
-                case TELLY_INT: {
-                  char *value = malloc(33);
-                  uint32_t len = 0;
-
-                  while ((value[len] = fgetc(file)) != 0x1E) {
-                    len += 1;
-
-                    if (len % 32 == 0) {
-                      value = realloc(value, len + 33);
-                    }
-                  }
-
-                  value[len] = 0x00;
-
-                  int res = 0;
-
-                  for (uint32_t i = 0; i < len; ++i) {
-                    res |= (value[i] << (8 * (len - i - 1)));
-                  }
-
-                  data = insert_kv_to_btree(cache, key, &res, TELLY_INT);
-                  data->pos = pos;
-                  free(value);
-                  break;
-                }
-
-                case TELLY_STR: {
-                  char *value = malloc(33);
-                  uint32_t len = 0;
-
-                  while ((value[len] = fgetc(file)) != 0x1E) {
-                    len += 1;
-
-                    if (len % 32 == 0) {
-                      value = realloc(value, len + 33);
-                    }
-                  }
-
-                  value[len] = 0x00;
-                  data = insert_kv_to_btree(cache, key, value, TELLY_STR);
-                  data->pos = pos;
-                  free(value);
-                  break;
-                }
-
-                case TELLY_BOOL:
-                  c = fgetc(file);
-
-                  if (fgetc(file) != 0x1E) {
-                    close_database_file();
-                    write_log(LOG_ERR, "Database file is corrupted.");
-                    return NULL;
-                  }
-
-                  data = insert_kv_to_btree(cache, key, &c, type);
-                  data->pos = pos;
-                  break;
-              }
-
-              return data;
-            }
           }
         }
-      } else {
-        while (true) {
-          c = fgetc(file);
-          if (c == EOF || c == 0x1E) break;
-        }
+
+        key_at = 0;
       }
     }
 
