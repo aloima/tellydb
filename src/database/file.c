@@ -5,25 +5,21 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <fcntl.h>
 #include <unistd.h>
 
-static FILE *file = NULL;
+static int fd = -1;
 
-void open_database_file(const char *filename) {
-  file = fopen(filename, "r+");
-
-  if (file == NULL) {
-    fclose(fopen(filename, "w"));
-    file = fopen(filename, "r+");
-  }
+void open_database_fd(const char *filename) {
+  fd = open(filename, O_RDWR | O_CREAT, S_IRWXU);
 }
 
-FILE *get_database_file() {
-  return file;
+int get_database_fd() {
+  return fd;
 }
 
-void close_database_file() {
-  fclose(file);
+void close_database_fd() {
+  close(fd);
 }
 
 uint32_t generate_data_content(char **line, struct KVPair *pair) {
@@ -99,8 +95,7 @@ void save_data() {
   const uint32_t size = get_total_size_of_node(cache->root);
   sort_kvs_by_pos(pairs, size);
 
-  fseek(file, 0, SEEK_END);
-  uint32_t file_size = ftell(file);
+  uint32_t file_size = lseek(fd, 0, SEEK_END);
   int32_t diff = 0;
 
   for (uint32_t i = 0; i < size; ++i) {
@@ -112,36 +107,40 @@ void save_data() {
     if (pair->pos != -1) {
       uint32_t end_pos = pair->pos + 1;
 
-      fseek(file, pair->pos + diff, SEEK_SET);
-      while (fgetc(file) != 0x1E) end_pos += 1;
+      lseek(fd, pair->pos + diff, SEEK_SET);
+      while (read_char(fd) != 0x1E) end_pos += 1;
 
       const uint32_t line_len_in_file = end_pos - pair->pos;
 
       if (line_len_in_file != line_len) {
         char *buf = malloc(file_size - end_pos);
-        fread(buf, sizeof(char), file_size - end_pos, file);
-        fseek(file, pair->pos + diff, SEEK_SET);
-        fwrite(line, sizeof(char), line_len, file);
-        fwrite(buf, sizeof(char), file_size - end_pos, file);
+        read(fd, buf, file_size - end_pos);
+        lseek(fd, pair->pos + diff, SEEK_SET);
+        write(fd, line, line_len);
+        write(fd, buf, file_size - end_pos);
 
         free(buf);
 
         diff += line_len - line_len_in_file;
       } else {
-        fseek(file, pair->pos + diff, SEEK_SET);
-        fwrite(line, sizeof(char), line_len, file);
+        lseek(fd, pair->pos + diff, SEEK_SET);
+        write(fd, line, line_len);
       }
     } else {
-      fseek(file, 0, SEEK_END);
-      fwrite(line, sizeof(char), line_len, file);
+      lseek(fd, 0, SEEK_END);
+      write(fd, line, line_len);
       file_size += line_len;
     }
 
     free(line);
   }
 
-  const int fd = fileno(file);
   ftruncate(fd, file_size + diff);
 
   free(pairs);
+}
+
+char read_char(int fd) {
+  char c;
+  return (read(fd, &c, 1) == 0 ? EOF : c);
 }

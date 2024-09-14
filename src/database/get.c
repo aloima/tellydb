@@ -4,42 +4,44 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <unistd.h>
+
 struct KVPair *get_data(char *key, __attribute__((unused)) struct Configuration *conf) {
-  FILE *file = get_database_file();
+  const int fd = get_database_fd();
   struct BTree *cache = get_cache();
 
   struct KVPair *data = find_kv_from_btree(cache, key);
 
   if (data == NULL) {
-    if (file == NULL) {
+    if (fd == -1) {
       write_log(LOG_ERR, "Database file is not opened.");
       return NULL;
     }
 
-    rewind(file);
+    lseek(fd, 0, SEEK_SET);
 
     const uint32_t key_len = strlen(key);
     uint32_t key_at = 0;
 
     char c;
 
-    while ((c = fgetc(file)) != EOF) {
+    while (read(fd, &c, 1) != 0) {
       if (key_len == key_at) {
         if (c != 0x1D) {
-          close_database_file();
+          close_database_fd();
           write_log(LOG_ERR, "Database file is corrupted.");
           return NULL;
         }
 
-        const enum TellyTypes type = fgetc(file);
-        const uint32_t pos = ftell(file) - key_len - 2;
+        const enum TellyTypes type = read_char(fd);
+        const uint32_t pos = lseek(fd, 0, SEEK_CUR) - key_len - 2;
 
         switch (type) {
           case TELLY_NULL:
             data = insert_kv_to_btree(cache, key, NULL, type);
 
-            if (fgetc(file) != 0x1E) {
-              close_database_file();
+            if (read_char(fd) != 0x1E) {
+              close_database_fd();
               write_log(LOG_ERR, "Database file is corrupted.");
               return NULL;
             }
@@ -51,7 +53,7 @@ struct KVPair *get_data(char *key, __attribute__((unused)) struct Configuration 
             char *value = malloc(33);
             uint32_t len = 0;
 
-            while ((value[len] = fgetc(file)) != 0x1E) {
+            while ((value[len] = read_char(fd)) != 0x1E) {
               len += 1;
 
               if (len % 32 == 0) {
@@ -77,7 +79,7 @@ struct KVPair *get_data(char *key, __attribute__((unused)) struct Configuration 
             char *value = malloc(33);
             uint32_t len = 0;
 
-            while ((value[len] = fgetc(file)) != 0x1E) {
+            while ((value[len] = read_char(fd)) != 0x1E) {
               len += 1;
 
               if (len % 32 == 0) {
@@ -93,10 +95,10 @@ struct KVPair *get_data(char *key, __attribute__((unused)) struct Configuration 
           }
 
           case TELLY_BOOL:
-            c = fgetc(file);
+            c = read_char(fd);
 
-            if (fgetc(file) != 0x1E) {
-              close_database_file();
+            if (c == EOF || read_char(fd) != 0x1E) {
+              close_database_fd();
               write_log(LOG_ERR, "Database file is corrupted.");
               return NULL;
             }
@@ -106,7 +108,7 @@ struct KVPair *get_data(char *key, __attribute__((unused)) struct Configuration 
             break;
 
           default:
-            close_database_file();
+            close_database_fd();
             write_log(LOG_ERR, "Database file is corrupted.");
             break;
         }
@@ -115,7 +117,7 @@ struct KVPair *get_data(char *key, __attribute__((unused)) struct Configuration 
       } else if (key[key_at] == c) {
         key_at += 1;
       } else {
-        while ((c = fgetc(file)) != 0x1E) {
+        while ((c = read_char(fd)) != 0x1E) {
           if (c == EOF) {
             return NULL;
           }

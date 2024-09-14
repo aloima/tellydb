@@ -2,7 +2,6 @@
 #include "resp.h"
 #include "utils.h"
 
-#include <stdio.h>
 #include <stdint.h>
 
 #include <pthread.h>
@@ -45,9 +44,10 @@
   void set_data(struct KVPair pair, struct Configuration *conf);
   void save_data();
 
-  void open_database_file(const char *filename);
-  FILE *get_database_file();
-  void close_database_file();
+  void open_database_fd(const char *filename);
+  int get_database_fd();
+  void close_database_fd();
+  char read_char(int fd);
 
   pthread_t create_transaction_thread(struct Configuration *config);
   void deactive_transaction_thread();

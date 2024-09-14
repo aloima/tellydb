@@ -1,7 +1,6 @@
 #include "../../headers/telly.h"
 
 #include <stdint.h>
-#include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -17,7 +16,7 @@ static uint32_t max_client_id_len;
 
 static pthread_t thread;
 static int sockfd;
-static struct pollfd *fds = NULL;
+static struct pollfd *fds;
 static uint32_t nfds;
 static struct Configuration *conf;
 
@@ -58,7 +57,7 @@ void close_server() {
 
   write_log(LOG_WARN, "Saving data...");
   save_data();
-  close_database_file();
+  close_database_fd();
   write_log(LOG_INFO, "Saved data and closed database file.");
 
   deactive_transaction_thread();
@@ -140,7 +139,7 @@ void start_server(struct Configuration *config) {
   }
 
   create_cache();
-  open_database_file(conf->data_file);
+  open_database_fd(conf->data_file);
   write_log(LOG_INFO, "Created cache and opened database file.");
 
   nfds = 1;
