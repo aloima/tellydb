@@ -109,7 +109,7 @@ void start_server(struct Configuration *config) {
   servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
   servaddr.sin_port = htons(conf->port);
 
-  if ((bind(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr))) != 0) { 
+  if ((bind(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr))) != 0) {
     deactive_transaction_thread();
     usleep(15);
     free_commands();

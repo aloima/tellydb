@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
       const char *arg = argv[1];
 
       if (streq(arg, "version")) {
-        puts("tellydb version 0.1.1");
+        puts("tellydb version 0.1.2");
         return EXIT_SUCCESS;
       } else if (streq(arg, "help")) {
         puts((
@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
 
         return EXIT_SUCCESS;
       } else {
-        fputs("invalid argument, use help command\n", stderr);
+        fputs("Invalid argument, use help command\n", stderr);
         return EXIT_FAILURE;
       }
     }
@@ -62,12 +62,12 @@ int main(int argc, char *argv[]) {
         start_server(config);
         return EXIT_SUCCESS;
       } else {
-        fputs("invalid argument usage, use help command\n", stderr);
+        fputs("Invalid argument usage, use help command\n", stderr);
         return EXIT_FAILURE;
       }
 
     default:
-      fputs("invalid argument count, use help command\n", stderr);
+      fputs("Invalid argument count, use help command\n", stderr);
       return EXIT_FAILURE;
   }
 }

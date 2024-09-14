@@ -54,6 +54,8 @@ struct Client *add_client(const int connfd, const uint32_t max_clients) {
   client->connfd = connfd;
   time(&client->connected_at);
   client->command = NULL;
+  client->lib_name = NULL;
+  client->lib_ver = NULL;
 
   return client;
 }
@@ -63,8 +65,11 @@ void remove_client(const int connfd) {
     struct Client *client = clients[i];
 
     if (client->connfd == connfd) {
-      free(client);
       client_count -= 1;
+
+      if (client->lib_name) free(client->lib_name);
+      if (client->lib_ver) free(client->lib_ver);
+      free(client);
 
       if (client_count == 0) {
         free(clients);

@@ -12,6 +12,8 @@
     uint32_t id;
     time_t connected_at;
     struct Command *command;
+    char *lib_name;
+    char *lib_ver;
   };
 
   void start_server(struct Configuration *config);
