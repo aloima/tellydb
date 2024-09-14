@@ -36,6 +36,7 @@
   extern struct Command cmd_get;
   extern struct Command cmd_incr;
   extern struct Command cmd_info;
+  extern struct Command cmd_ping;
   extern struct Command cmd_set;
   extern struct Command cmd_type;
 #endif
