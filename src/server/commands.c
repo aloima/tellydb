@@ -9,12 +9,25 @@
 #include <unistd.h>
 
 static struct Command *commands = NULL;
-static uint32_t command_count = 9;
+static uint32_t command_count = 11;
 
 void load_commands() {
-  struct Command scommands[] = {cmd_client, cmd_command, cmd_decr, cmd_get, cmd_incr, cmd_info, cmd_ping, cmd_set, cmd_type};
-  commands = malloc(sizeof(scommands));
-  memcpy(commands, scommands, sizeof(scommands));
+  struct Command _commands[] = {
+    cmd_client,
+    cmd_command,
+    cmd_decr,
+    cmd_get,
+    cmd_incr,
+    cmd_info,
+    cmd_memory,
+    cmd_ping,
+    cmd_set,
+    cmd_time,
+    cmd_type
+  };
+
+  commands = malloc(sizeof(_commands));
+  memcpy(commands, _commands, sizeof(_commands));
 }
 
 void free_commands() {
