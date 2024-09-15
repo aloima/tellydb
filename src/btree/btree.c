@@ -20,38 +20,44 @@ static void get_sorted_kvs_from_node(struct KVPair **pairs, uint32_t *index, str
     }
 
     get_sorted_kvs_from_node(pairs, index, node->leafs[node->size]);
-  } else {
-    for (uint32_t i = 0; i < node->size; ++i) {
-      pairs[*index] = node->data[i];
-      *index += 1;
-    }
+    return;
+  }
+
+  for (uint32_t i = 0; i < node->size; ++i) {
+    pairs[*index] = node->data[i];
+    *index += 1;
   }
 }
 
 void sort_kvs_by_pos(struct KVPair **pairs, const uint32_t size) {
-  if (size > 1) {
-    const uint32_t bound_top = size - 1;
+  if (size <= 1) {
+    return;
+  }
 
-    for (uint32_t i = 0; i < bound_top; ++i) {
-      const uint32_t bound = size - 1 - i;
+  const uint32_t bound_top = size - 1;
+  for (uint32_t i = 0; i < bound_top; ++i) {
+    const uint32_t bound = size - 1 - i;
 
-      for (uint32_t j = 0; j < bound; ++j) {
-        if (pairs[j]->pos > pairs[j + 1]->pos) {
-          struct KVPair *pair = pairs[j + 1];
-          pairs[j + 1] = pairs[j];
-          pairs[j] = pair;
-        }
+    for (uint32_t j = 0; j < bound; ++j) {
+      if (pairs[j]->pos <= pairs[j + 1]->pos) {
+        continue;
       }
+
+      struct KVPair *pair = pairs[j + 1];
+      pairs[j + 1] = pairs[j];
+      pairs[j] = pair;
     }
   }
 }
 
 struct KVPair **get_sorted_kvs_from_btree(struct BTree *tree) {
-  if (tree->root) {
-    struct KVPair **pairs = malloc(get_total_size_of_node(tree->root) * sizeof(struct KVPair *));
-    uint32_t index = 0;
+  if (!tree->root) {
+    return NULL;
+  }
 
-    get_sorted_kvs_from_node(pairs, &index, tree->root);
-    return pairs;
-  } else return NULL;
+  struct KVPair **pairs = malloc(get_total_size_of_node(tree->root) * sizeof(struct KVPair *));
+  uint32_t index = 0;
+
+  get_sorted_kvs_from_node(pairs, &index, tree->root);
+  return pairs;
 }

@@ -8,15 +8,15 @@ void add_kv_to_node(struct BTreeNode *node, struct KVPair *pair) {
     node->size = 1;
     node->data = malloc(sizeof(struct KVPair *));
     node->data[0] = pair;
-  } else {
-    const uint32_t index = find_index_of_kv(node, pair->key.value);
-
-    node->size += 1;
-    node->data = realloc(node->data, node->size * sizeof(struct KVPair *));
-
-    move_kv(node, node->size - 1, index);
-    node->data[index] = pair;
+    return;
   }
+  const uint32_t index = find_index_of_kv(node, pair->key.value);
+
+  node->size += 1;
+  node->data = realloc(node->data, node->size * sizeof(struct KVPair *));
+
+  move_kv(node, node->size - 1, index);
+  node->data[index] = pair;
 }
 
 static struct KVPair *insert_kv_to_node(struct BTreeNode *node, const uint32_t leaf_at, struct KVPair *pair, const uint32_t max) {
