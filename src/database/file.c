@@ -11,7 +11,15 @@
 static int fd = -1;
 
 void open_database_fd(const char *filename) {
-  fd = open(filename, O_RDWR | O_CREAT, S_IRWXU);
+  #if defined(__linux__)
+    fd = open(filename, O_RDWR | O_CREAT | O_DIRECT, S_IRWXU);
+  #elif defined(__APPLE__)
+    fd = open(filename, O_RDWR | O_CREAT, S_IRWXU);
+
+    if (fcntl(fd, F_NOCACHE, 1) == -1) {
+      write_log(LOG_ERR, "Cannot deactive file caching for database file.");
+    }
+  #endif
 }
 
 int get_database_fd() {
@@ -136,7 +144,6 @@ void save_data() {
   }
 
   ftruncate(fd, file_size + diff);
-
   free(pairs);
 }
 
