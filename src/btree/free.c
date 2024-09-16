@@ -5,14 +5,7 @@
 static void free_btree_node(struct BTreeNode *node) {
   if (node->leafs != NULL) {
     for (uint32_t i = 0; i < node->size; ++i) {
-      struct KVPair *pair = node->data[i];
-      free(pair->key.value);
-
-      if (pair->type == TELLY_STR) {
-        free(pair->value.string.value);
-      }
-
-      free(pair);
+      free_kv(node->data[i]);
       free_btree_node(node->leafs[i]);
     }
 
@@ -20,14 +13,7 @@ static void free_btree_node(struct BTreeNode *node) {
     free(node->leafs);
   } else {
     for (uint32_t i = 0; i < node->size; ++i) {
-      struct KVPair *pair = node->data[i];
-      free(pair->key.value);
-
-      if (pair->type == TELLY_STR) {
-        free(pair->value.string.value);
-      }
-
-      free(pair);
+      free_kv(node->data[i]);
     }
   }
 

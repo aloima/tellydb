@@ -44,6 +44,10 @@
   void set_data(struct KVPair pair, struct Configuration *conf);
   void save_data();
 
+  void set_kv(struct KVPair *pair, char *key, void *value, enum TellyTypes type);
+  void *get_kv_val(struct KVPair *pair, enum TellyTypes type);
+  void free_kv(struct KVPair *pair);
+
   void open_database_fd(const char *filename);
   int get_database_fd();
   void close_database_fd();

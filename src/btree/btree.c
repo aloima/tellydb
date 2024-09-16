@@ -30,18 +30,15 @@ static void get_sorted_kvs_from_node(struct KVPair **pairs, uint32_t *index, str
 }
 
 void sort_kvs_by_pos(struct KVPair **pairs, const uint32_t size) {
-  if (size <= 1) {
-    return;
-  }
+  if (size <= 1) return;
 
   const uint32_t bound_top = size - 1;
+
   for (uint32_t i = 0; i < bound_top; ++i) {
     const uint32_t bound = size - 1 - i;
 
     for (uint32_t j = 0; j < bound; ++j) {
-      if (pairs[j]->pos <= pairs[j + 1]->pos) {
-        continue;
-      }
+      if (pairs[j]->pos <= pairs[j + 1]->pos) continue;
 
       struct KVPair *pair = pairs[j + 1];
       pairs[j + 1] = pairs[j];
