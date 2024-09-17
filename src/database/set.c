@@ -10,6 +10,8 @@ void set_data(struct KVPair pair, struct Configuration *conf) {
   if (data != NULL) {
     if (data->type == TELLY_STR && pair.type != TELLY_STR) {
       free(data->value.string.value);
+    } else if (data->type == TELLY_HASHTABLE && pair.type != TELLY_HASHTABLE) {
+      free_hashtable(data->value.hashtable);
     }
 
     switch (pair.type) {

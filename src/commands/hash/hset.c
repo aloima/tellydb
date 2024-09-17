@@ -27,8 +27,7 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
       .value = {
         .hashtable = table
       },
-      .type = TELLY_HASHTABLE,
-      .pos = -1
+      .type = TELLY_HASHTABLE
     }, conf);
   }
 
