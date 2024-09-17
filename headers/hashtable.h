@@ -1,6 +1,8 @@
 #include "utils.h"
 #include "database.h"
 
+#include <stdint.h>
+
 #ifndef HASHTABLE_H_
   #define HASHTABLE_H_
 
