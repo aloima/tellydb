@@ -9,6 +9,7 @@
 #include "btree.h"
 #include "utils.h"
 #include "server.h"
+#include "hashtable.h"
 
 #include <string.h> // IWYU pragma: keep
 

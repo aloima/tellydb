@@ -17,30 +17,7 @@
     TELLY_HASHTABLE
   };
 
-  struct Transaction {
-    struct Client *client;
-    respdata_t *command;
-  };
-
-
-  struct FVPair {
-    string_t name;
-    union {
-      string_t string;
-      int integer;
-      bool boolean;
-      void *null;
-    } value;
-    enum TellyTypes type;
-  };
-
-  struct HashTable {
-    struct FVPair **pairs;
-    uint64_t count;
-    uint64_t size;
-    double grow_factor;
-  };
-
+  /* DATABASE */
   struct KVPair {
     string_t key;
     union {
@@ -66,16 +43,22 @@
   void set_kv(struct KVPair *pair, char *key, void *value, enum TellyTypes type);
   void *get_kv_val(struct KVPair *pair, enum TellyTypes type);
   void free_kv(struct KVPair *pair);
+  /* /DATABASE */
 
+
+  /* DATABASE FILE */
   void open_database_fd(const char *filename);
   int get_database_fd();
   void close_database_fd();
   char read_char(int fd);
+  /* /DATABASE FULE */
 
-  struct HashTable *create_hashtable(uint64_t default_size, double grow_factor);
-  void set_fv_of_hashtable(struct HashTable *table, char *name, void *value, enum TellyTypes type);
-  struct FVPair *get_fv_from_hashtable(struct HashTable *table, char *name);
-  void free_hashtable(struct HashTable *table);
+
+  /* TRANSACTIONS */
+  struct Transaction {
+    struct Client *client;
+    respdata_t *command;
+  };
 
   pthread_t create_transaction_thread(struct Configuration *config);
   void deactive_transaction_thread();
@@ -84,4 +67,5 @@
   void add_transaction(struct Client *client, respdata_t *data);
   void remove_transaction(struct Transaction *transaction);
   void free_transactions();
+  /* /TRANSACTIONS */
 #endif
