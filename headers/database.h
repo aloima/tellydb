@@ -13,7 +13,8 @@
     TELLY_NULL = 1,
     TELLY_INT,
     TELLY_STR,
-    TELLY_BOOL
+    TELLY_BOOL,
+    TELLY_HASHTABLE
   };
 
   struct Transaction {
@@ -21,16 +22,34 @@
     respdata_t *command;
   };
 
-  struct KVPair {
-    string_t key;
 
+  struct FVPair {
+    string_t name;
     union {
       string_t string;
       int integer;
       bool boolean;
       void *null;
     } value;
+    enum TellyTypes type;
+  };
 
+  struct HashTable {
+    struct FVPair **pairs;
+    uint64_t count;
+    uint64_t size;
+    double grow_factor;
+  };
+
+  struct KVPair {
+    string_t key;
+    union {
+      string_t string;
+      int integer;
+      bool boolean;
+      void *null;
+      struct HashTable *hashtable;
+    } value;
     enum TellyTypes type;
     int32_t pos;
   };
@@ -52,6 +71,11 @@
   int get_database_fd();
   void close_database_fd();
   char read_char(int fd);
+
+  struct HashTable *create_hashtable(uint64_t default_size, double grow_factor);
+  void set_fv_of_hashtable(struct HashTable *table, char *name, void *value, enum TellyTypes type);
+  struct FVPair *get_fv_from_hashtable(struct HashTable *table, char *name);
+  void free_hashtable(struct HashTable *table);
 
   pthread_t create_transaction_thread(struct Configuration *config);
   void deactive_transaction_thread();

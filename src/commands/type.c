@@ -24,6 +24,10 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
             write(client->connfd, "+string\r\n", 9);
             break;
 
+          case TELLY_HASHTABLE:
+            write(client->connfd, "+hash table\r\n", 13);
+            break;
+
           case TELLY_BOOL:
             write(client->connfd, "+boolean\r\n", 10);
             break;

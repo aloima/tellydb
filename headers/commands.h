@@ -34,6 +34,9 @@
   extern struct Command cmd_command;
   extern struct Command cmd_decr;
   extern struct Command cmd_get;
+  extern struct Command cmd_hget;
+  extern struct Command cmd_hset;
+  extern struct Command cmd_htype;
   extern struct Command cmd_incr;
   extern struct Command cmd_info;
   extern struct Command cmd_memory;

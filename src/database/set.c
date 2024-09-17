@@ -25,6 +25,10 @@ void set_data(struct KVPair pair, struct Configuration *conf) {
         data->value.boolean = pair.value.boolean;
         break;
 
+      case TELLY_HASHTABLE:
+        data->value.hashtable = pair.value.hashtable;
+        break;
+
       case TELLY_NULL:
         data->value.null = NULL;
         break;

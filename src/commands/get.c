@@ -51,6 +51,11 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
               } else {
                 write(client->connfd, "$5\r\nfalse\r\n", 11);
               }
+
+              break;
+
+            default:
+              break;
           }
         }
 
