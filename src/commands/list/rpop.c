@@ -16,14 +16,14 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
 
   if (pair) {
     if (client && pair->type != TELLY_LIST) {
-      write(client->connfd, "-Value is not a list\r\n", 22);
+      write(client->connfd, "-Value stored by the key is not a list\r\n", 40);
       return;
-    } else {
-      list = pair->value.list;
-
-      if (client) write_value(client->connfd, list->end->value, list->end->type);
-      rpop_to_list(list);
     }
+
+    list = pair->value.list;
+
+    if (client) write_value(client->connfd, list->end->value, list->end->type);
+    rpop_to_list(list);
   } else {
     write(client->connfd, "$-1\r\n", 5);
   }

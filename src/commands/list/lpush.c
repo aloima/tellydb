@@ -1,11 +1,13 @@
 #include "../../../headers/telly.h"
 
+#include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 #include <unistd.h>
 
 static void run(struct Client *client, respdata_t *data, struct Configuration *conf) {
-  if (client && data->count != 3) {
+  if (client && data->count < 3) {
     write(client->connfd, "-Wrong argument count for 'LPUSH' command\r\n", 43);
     return;
   }
@@ -16,7 +18,7 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
 
   if (pair) {
     if (client && pair->type != TELLY_LIST) {
-      write(client->connfd, "-Value is not a list\r\n", 22);
+      write(client->connfd, "-Value stored by the key is not a list\r\n", 40);
       return;
     } else {
       list = pair->value.list;
@@ -33,22 +35,31 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
     }, conf);
   }
 
-  char *value = data->value.array[2]->value.string.value;
+  const uint32_t value_count = data->count - 2;
 
-  bool is_true = streq(value, "true");
+  for (uint32_t i = 0; i < value_count; ++i) {
+    char *value = data->value.array[2 + i]->value.string.value;
+    bool is_true = streq(value, "true");
 
-  if (is_integer(value)) {
-    int value_as_int = atoi(value);
-    lpush_to_list(list, &value_as_int, TELLY_INT);
-  } else if (is_true || streq(value, "false")) {
-    lpush_to_list(list, &is_true, TELLY_BOOL);
-  } else if (streq(value, "null")) {
-    lpush_to_list(list, NULL, TELLY_NULL);
-  } else {
-    lpush_to_list(list, value, TELLY_STR);
+    if (is_integer(value)) {
+      int value_as_int = atoi(value);
+      lpush_to_list(list, &value_as_int, TELLY_INT);
+    } else if (is_true || streq(value, "false")) {
+      lpush_to_list(list, &is_true, TELLY_BOOL);
+    } else if (streq(value, "null")) {
+      lpush_to_list(list, NULL, TELLY_NULL);
+    } else {
+      lpush_to_list(list, value, TELLY_STR);
+    }
   }
 
-  if (client) write(client->connfd, ":1\r\n", 4);
+  if (client) {
+    const uint32_t buf_len = get_digit_count(value_count) + 3;
+    char buf[buf_len + 1];
+    sprintf(buf, ":%d\r\n", value_count);
+
+    write(client->connfd, buf, buf_len);
+  }
 }
 
 struct Command cmd_lpush = {
