@@ -23,6 +23,10 @@ void set_kv(struct KVPair *pair, char *key, void *value, enum TellyTypes type) {
       pair->value.hashtable = value;
       break;
 
+    case TELLY_LIST:
+      pair->value.list = value;
+      break;
+
     case TELLY_NULL:
       pair->value.null = NULL;
       break;
@@ -43,6 +47,9 @@ void *get_kv_val(struct KVPair *pair, enum TellyTypes type) {
     case TELLY_HASHTABLE:
       return pair->value.hashtable;
 
+    case TELLY_LIST:
+      return pair->value.list;
+
     case TELLY_NULL:
       return NULL;
 
@@ -59,6 +66,10 @@ void free_kv(struct KVPair *pair) {
 
     case TELLY_HASHTABLE:
       free_hashtable(pair->value.hashtable);
+      break;
+
+    case TELLY_LIST:
+      free_list(pair->value.list);
       break;
 
     default:

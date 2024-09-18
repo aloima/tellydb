@@ -3,7 +3,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-void set_data(struct KVPair pair, struct Configuration *conf) {
+struct KVPair *set_data(struct KVPair pair, struct Configuration *conf) {
   struct BTree *cache = get_cache();
   struct KVPair *data = get_data(pair.key.value, conf);
 
@@ -31,6 +31,10 @@ void set_data(struct KVPair pair, struct Configuration *conf) {
         data->value.hashtable = pair.value.hashtable;
         break;
 
+      case TELLY_LIST:
+        data->value.list = pair.value.list;
+        break;
+
       case TELLY_NULL:
         data->value.null = NULL;
         break;
@@ -42,4 +46,6 @@ void set_data(struct KVPair pair, struct Configuration *conf) {
     struct KVPair *data = insert_kv_to_btree(cache, pair.key.value, value, pair.type);
     data->pos = -1;
   }
+
+  return data;
 }

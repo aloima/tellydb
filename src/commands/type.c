@@ -5,12 +5,12 @@
 #include <unistd.h>
 
 static void run(struct Client *client, respdata_t *data, struct Configuration *conf) {
-  if (client != NULL) {
+  if (client) {
     if (data->count == 2) {
       char *key = data->value.array[1]->value.string.value;
       struct KVPair *res = get_data(key, conf);
 
-      if (res != NULL) {
+      if (res) {
         switch (res->type) {
           case TELLY_NULL:
             write(client->connfd, "+null\r\n", 7);
@@ -28,12 +28,16 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
             write(client->connfd, "+hash table\r\n", 13);
             break;
 
+          case TELLY_LIST:
+            write(client->connfd, "+a list\r\n", 9);
+            break;
+
           case TELLY_BOOL:
             write(client->connfd, "+boolean\r\n", 10);
             break;
         }
       } else {
-        write(client->connfd, "+key does not exist\r\n", 21);
+        write(client->connfd, "$-1\r\n", 5);
       }
     } else {
       write(client->connfd, "-invalid argument usage\r\n", 25);

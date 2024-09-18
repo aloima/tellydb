@@ -8,7 +8,7 @@
 
 static void run(struct Client *client, respdata_t *data, __attribute__((unused)) struct Configuration *conf) {
   if (data->count < 3) {
-    if (client != NULL) write(client->connfd, "-missing arguments\r\n", 20);
+    if (client) write(client->connfd, "-missing arguments\r\n", 20);
   } else {
     char *value = data->value.array[2]->value.string.value;
 
@@ -32,7 +32,7 @@ static void run(struct Client *client, respdata_t *data, __attribute__((unused))
     }
 
     set_data(res, conf);
-    if (client != NULL) write(client->connfd, "+OK\r\n", 5);
+    if (client) write(client->connfd, "+OK\r\n", 5);
   }
 }
 

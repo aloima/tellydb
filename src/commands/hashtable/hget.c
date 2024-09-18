@@ -19,44 +19,7 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
     struct FVPair *field = get_fv_from_hashtable(pair->value.hashtable, name);
 
     if (field) {
-      switch (field->type) {
-        case TELLY_NULL:
-          write(client->connfd, "$-1\r\n", 5);
-          break;
-
-        case TELLY_INT: {
-          const uint32_t digit_count = get_digit_count(field->value.integer);
-          const uint32_t buf_len = get_digit_count(digit_count) + digit_count + 5;
-
-          char buf[buf_len + 1];
-          sprintf(buf, "$%d\r\n%d\r\n", digit_count, field->value.integer);
-
-          write(client->connfd, buf, buf_len);
-          break;
-        }
-
-        case TELLY_STR: {
-          const uint32_t buf_len = get_digit_count(field->value.string.len) + field->value.string.len + 5;
-
-          char buf[buf_len + 1];
-          sprintf(buf, "$%ld\r\n%s\r\n", field->value.string.len, field->value.string.value);
-
-          write(client->connfd, buf, buf_len);
-          break;
-        }
-
-        case TELLY_BOOL:
-          if (field->value.boolean) {
-            write(client->connfd, "$4\r\ntrue\r\n", 10);
-          } else {
-            write(client->connfd, "$5\r\nfalse\r\n", 11);
-          }
-
-          break;
-
-        default:
-          break;
-      }
+      write_value(client->connfd, field->value, field->type);
     } else {
       write(client->connfd, "$-1\r\n", 5);
     }

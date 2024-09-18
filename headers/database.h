@@ -9,24 +9,10 @@
 #ifndef DATABASE_H
   #define DATABASE_H
 
-  enum TellyTypes {
-    TELLY_NULL = 1,
-    TELLY_INT,
-    TELLY_STR,
-    TELLY_BOOL,
-    TELLY_HASHTABLE
-  };
-
   /* DATABASE */
   struct KVPair {
     string_t key;
-    union {
-      string_t string;
-      int integer;
-      bool boolean;
-      void *null;
-      struct HashTable *hashtable;
-    } value;
+    value_t value;
     enum TellyTypes type;
     int32_t pos;
   };
@@ -37,7 +23,7 @@
   void free_cache();
 
   struct KVPair *get_data(char *key, struct Configuration *conf);
-  void set_data(struct KVPair pair, struct Configuration *conf);
+  struct KVPair *set_data(struct KVPair pair, struct Configuration *conf);
   void save_data();
 
   void set_kv(struct KVPair *pair, char *key, void *value, enum TellyTypes type);

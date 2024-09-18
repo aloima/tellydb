@@ -10,6 +10,7 @@
 #include "utils.h"
 #include "server.h"
 #include "hashtable.h"
+#include "list.h"
 
 #include <string.h> // IWYU pragma: keep
 

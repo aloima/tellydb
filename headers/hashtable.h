@@ -8,12 +8,7 @@
 
   struct FVPair {
     string_t name;
-    union {
-      string_t string;
-      int integer;
-      bool boolean;
-      void *null;
-    } value;
+    value_t value;
     enum TellyTypes type;
   };
 

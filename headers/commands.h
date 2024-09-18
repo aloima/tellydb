@@ -40,8 +40,12 @@
   extern struct Command cmd_htype;
   extern struct Command cmd_incr;
   extern struct Command cmd_info;
+  extern struct Command cmd_lpop;
+  extern struct Command cmd_lpush;
   extern struct Command cmd_memory;
   extern struct Command cmd_ping;
+  extern struct Command cmd_rpop;
+  extern struct Command cmd_rpush;
   extern struct Command cmd_set;
   extern struct Command cmd_time;
   extern struct Command cmd_type;
