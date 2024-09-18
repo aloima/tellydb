@@ -30,23 +30,39 @@
   uint32_t get_command_count();
   void free_commands();
 
-  extern struct Command cmd_client;
-  extern struct Command cmd_command;
-  extern struct Command cmd_decr;
-  extern struct Command cmd_get;
+
+  /* HASHTABLE COMMANDS */
   extern struct Command cmd_hget;
   extern struct Command cmd_hlen;
   extern struct Command cmd_hset;
   extern struct Command cmd_htype;
-  extern struct Command cmd_incr;
-  extern struct Command cmd_info;
+  /* /HASHTABLE COMMANDS */
+
+
+  /* LIST COMMANDS */
+  extern struct Command cmd_llen;
   extern struct Command cmd_lpop;
   extern struct Command cmd_lpush;
-  extern struct Command cmd_memory;
-  extern struct Command cmd_ping;
   extern struct Command cmd_rpop;
   extern struct Command cmd_rpush;
-  extern struct Command cmd_set;
+  /* /LIST COMMANDS */
+
+
+  /* UTILS COMMANDS */
+  extern struct Command cmd_client;
+  extern struct Command cmd_command;
+  extern struct Command cmd_info;
+  extern struct Command cmd_memory;
+  extern struct Command cmd_ping;
   extern struct Command cmd_time;
+  /* /UTILS COMMANDS */
+
+
+  /* UNCATEGORIZED COMMANDS */
+  extern struct Command cmd_decr;
+  extern struct Command cmd_get;
+  extern struct Command cmd_incr;
+  extern struct Command cmd_set;
   extern struct Command cmd_type;
+  /* /UNCATEGORIZED COMMANDS */
 #endif

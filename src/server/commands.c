@@ -9,28 +9,36 @@
 #include <unistd.h>
 
 static struct Command *commands = NULL;
-static uint32_t command_count = 19;
+static uint32_t command_count = 20;
 
 void load_commands() {
   struct Command _commands[] = {
-    cmd_client,
-    cmd_command,
-    cmd_decr,
-    cmd_get,
+    // Hashtable commands
     cmd_hget,
     cmd_hlen,
     cmd_hset,
     cmd_htype,
-    cmd_incr,
-    cmd_info,
+
+    // List commands
+    cmd_llen,
     cmd_lpop,
     cmd_lpush,
-    cmd_memory,
-    cmd_ping,
     cmd_rpop,
     cmd_rpush,
-    cmd_set,
+
+    // Utils commands
+    cmd_client,
+    cmd_command,
+    cmd_info,
+    cmd_memory,
+    cmd_ping,
     cmd_time,
+
+    // Uncategorized commands
+    cmd_decr,
+    cmd_get,
+    cmd_incr,
+    cmd_set,
     cmd_type
   };
 
