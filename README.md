@@ -1,14 +1,16 @@
 # tellydb
-A toy key-value database project for educational purposes.
+A key-value database project for educational purposes.
 
 ## Features
-+ Partially implemented [RESP2](https://redis.io/docs/latest/develop/reference/protocol-spec/) from redis.
-+ Includes B-Tree for caching.
-+ Fully configurable via [.tellyconf](./FILE.md).
-+ Includes transaction/command queue system.
++ Follows [RESP2](https://redis.io/docs/latest/develop/reference/protocol-spec/) specification from redis
++ Includes B-Tree for caching
++ Fully configurable via [.tellyconf](./FILE.md)
++ Includes transaction/command queue system
++ Supports integer, string, null, boolean, list and hash table types
++ Provides atomicity when saving to the database file
 
 ## Usage
-Start the server, install a tool that you can connect to redis server like redis-cli. Start to use!
+Start the server, install a client that you can connect to redis/tellydb server like redis-cli. Start to use!
 
 ## Quick Start
 To get information about server, use `telly help`.

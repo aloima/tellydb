@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS := -O2 -Wall -Wextra
+CFLAGS := -O3 -Wall -Wextra
 LIBRARIES := -lm -lpthread
 
 compile:
