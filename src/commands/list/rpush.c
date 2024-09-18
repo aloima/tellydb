@@ -6,6 +6,19 @@
 
 #include <unistd.h>
 
+static void rpush_to_list(struct List *list, void *value, enum TellyTypes type) {
+  struct ListNode *node = create_listnode(value, type);
+  node->prev = list->end;
+  list->end = node;
+  list->size += 1;
+
+  if (list->size == 1) {
+    list->begin = node;
+  } else {
+    node->prev->next = node;
+  }
+}
+
 static void run(struct Client *client, respdata_t *data, struct Configuration *conf) {
   if (client && data->count < 3) {
     write(client->connfd, "-Wrong argument count for 'RPUSH' command\r\n", 43);

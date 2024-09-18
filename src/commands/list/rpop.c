@@ -10,9 +10,8 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
     return;
   }
 
-  string_t key = data->value.array[1]->value.string;
+  const string_t key = data->value.array[1]->value.string;
   struct KVPair *pair = get_data(key.value, conf);
-  struct List *list;
 
   if (pair) {
     if (client && pair->type != TELLY_LIST) {
@@ -20,10 +19,21 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
       return;
     }
 
-    list = pair->value.list;
+    struct List *list = pair->value.list;
+    struct ListNode *node = list->end;
 
     if (client) write_value(client->connfd, list->end->value, list->end->type);
-    rpop_to_list(list);
+
+    if (list->size == 1) {
+      free_list(list);
+      // delete from btree
+    } else {
+      list->end = list->end->prev;
+      list->end->next = NULL;
+    }
+
+    list->size -= 1;
+    free_listnode(node);
   } else {
     write(client->connfd, "$-1\r\n", 5);
   }
