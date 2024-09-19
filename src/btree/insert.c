@@ -10,6 +10,7 @@ void add_kv_to_node(struct BTreeNode *node, struct KVPair *pair) {
     node->data[0] = pair;
     return;
   }
+
   const uint32_t index = find_index_of_kv(node, pair->key.value);
 
   node->size += 1;

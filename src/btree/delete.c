@@ -5,7 +5,7 @@
 
 void del_kv_from_node(struct BTreeNode *node, char *key) {
   const uint32_t at = find_index_of_kv(node, key);
-  if (at > node->size) return;
+  if (at >= node->size) return;
 
   struct KVPair *pair = node->data[at];
 
