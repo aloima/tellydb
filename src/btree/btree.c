@@ -5,6 +5,7 @@
 
 struct BTree *create_btree(const uint32_t max) {
   struct BTree *tree = malloc(sizeof(struct BTree));
+  tree->size = 0;
   tree->max = max;
   tree->root = NULL;
 
@@ -52,7 +53,7 @@ struct KVPair **get_sorted_kvs_from_btree(struct BTree *tree) {
     return NULL;
   }
 
-  struct KVPair **pairs = malloc(get_total_size_of_node(tree->root) * sizeof(struct KVPair *));
+  struct KVPair **pairs = malloc(tree->size * sizeof(struct KVPair *));
   uint32_t index = 0;
 
   get_sorted_kvs_from_node(pairs, &index, tree->root);

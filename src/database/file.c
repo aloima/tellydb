@@ -100,7 +100,7 @@ void save_data() {
   struct BTree *cache = get_cache();
 
   struct KVPair **pairs = get_sorted_kvs_from_btree(cache);
-  const uint32_t size = get_total_size_of_node(cache->root);
+  const uint32_t size = cache->size;
   sort_kvs_by_pos(pairs, size);
 
   uint32_t file_size = lseek(fd, 0, SEEK_END);
