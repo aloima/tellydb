@@ -2,9 +2,8 @@
 
 #include <stdint.h>
 #include <string.h>
-#include <stdbool.h>
 
-void move_kv(struct BTreeNode *node, uint32_t at, uint32_t to) {
+void move_kv(struct BTreeNode *node, const uint32_t at, const uint32_t to) {
   struct KVPair *pair = node->data[at];
 
   if (to > at) {
@@ -16,12 +15,28 @@ void move_kv(struct BTreeNode *node, uint32_t at, uint32_t to) {
   node->data[to] = pair;
 }
 
-uint32_t find_index_of_kv(struct BTreeNode *node, char *key) {
-  const char c = key[0];
-
+uint32_t find_index_of_kv(struct BTreeNode *node, const char *key) {
   for (uint32_t i = 0; i < node->size; ++i) {
-    if (c <= node->data[i]->key.value[0]) return i;
+    if (strcmp(key, node->data[i]->key.value) <= 0) return i;
   }
 
   return node->size;
+}
+
+struct BTreeNode *find_node_of_kv(struct BTreeNode *node, uint32_t *leaf_at, const char *key) {
+  if (node->leafs) {
+    for (uint32_t i = 0; i < node->size; ++i) {
+      struct KVPair *kv = node->data[i];
+
+      if (strcmp(key, kv->key.value) <= 0) {
+        *leaf_at = i;
+        return find_node_of_kv(node->leafs[i], leaf_at, key);
+      }
+    }
+
+    *leaf_at = node->size;
+    return find_node_of_kv(node->leafs[node->size], leaf_at, key);
+  }
+
+  return node;
 }

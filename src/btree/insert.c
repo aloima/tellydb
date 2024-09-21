@@ -114,24 +114,6 @@ static struct KVPair *insert_kv_to_node(struct BTree *tree, struct BTreeNode *no
   return kv;
 }
 
-static struct BTreeNode *find_node_to_insert(struct BTreeNode *node, uint32_t *leaf_at, const char c) {
-  if (node->leafs) {
-    for (uint32_t i = 0; i < node->size; ++i) {
-      struct KVPair *pair = node->data[i];
-
-      if (c <= pair->key.value[0]) {
-        *leaf_at = i;
-        return find_node_to_insert(node->leafs[i], leaf_at, c);
-      }
-    }
-
-    *leaf_at = node->size;
-    return find_node_to_insert(node->leafs[node->size], leaf_at, c);
-  }
-
-  return node;
-}
-
 struct KVPair *insert_kv_to_btree(struct BTree *tree, char *key, void *value, enum TellyTypes type) {
   struct KVPair *kv = malloc(sizeof(struct KVPair));
   set_kv(kv, key, value, type);
@@ -145,7 +127,7 @@ struct KVPair *insert_kv_to_btree(struct BTree *tree, char *key, void *value, en
     add_kv_to_node(tree, tree->root, kv);
   } else {
     uint32_t leaf_at = 0;
-    struct BTreeNode *node = find_node_to_insert(tree->root, &leaf_at, key[0]);
+    struct BTreeNode *node = find_node_of_kv(tree->root, &leaf_at, key);
 
     insert_kv_to_node(tree, node, leaf_at, kv);
   }
