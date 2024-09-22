@@ -10,12 +10,18 @@
     string_t name;
     value_t value;
     enum TellyTypes type;
+    struct FVPair *next;
+  };
+
+  struct HashTableSize {
+    uint64_t allocated; // total allocated size
+    uint64_t filled; // filled allocated block count
+    uint64_t all; // contains next values.
   };
 
   struct HashTable {
     struct FVPair **pairs;
-    uint64_t count;
-    uint64_t size;
+    struct HashTableSize size;
     double grow_factor;
   };
 
@@ -27,6 +33,6 @@
   void set_fv_value(struct FVPair *pair, void *value);
   void free_fv(struct FVPair *pair);
 
-  void grow_hashtable(struct HashTable *table);
+  // void grow_hashtable(struct HashTable *table);
   void set_fv_of_hashtable(struct HashTable *table, char *name, void *value, enum TellyTypes type);
 #endif
