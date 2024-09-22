@@ -13,6 +13,19 @@ static void run(struct Client *client, respdata_t *data, __attribute__((unused))
   }
 
   char *value = data->value.array[2]->value.string.value;
+  bool get = false;
+
+  for (uint32_t i = 3; i < data->count; ++i) {
+    string_t input = data->value.array[i]->value.string;
+    char arg[input.len + 1];
+    to_uppercase(input.value, arg);
+
+    if (streq(arg, "GET")) get = true;
+    else {
+      write(client->connfd, "-Invalid argument(s) for 'SET' command\r\n", 40);
+      return;
+    }
+  }
 
   struct KVPair kv;
   kv.key = data->value.array[1]->value.string;
@@ -33,8 +46,14 @@ static void run(struct Client *client, respdata_t *data, __attribute__((unused))
     kv.value.string = data->value.array[2]->value.string;
   }
 
-  set_data(kv, conf);
-  if (client) write(client->connfd, "+OK\r\n", 5);
+  if (get && client) {
+    struct KVPair *val = get_data(data->value.array[1]->value.string.value, conf);
+    write_value(client->connfd, val->value, val->type);
+    set_data(kv, conf);
+  } else if (!get) {
+    set_data(kv, conf);
+    if (client) write(client->connfd, "+OK\r\n", 5);
+  }
 }
 
 struct Command cmd_set = {
