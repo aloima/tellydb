@@ -4,22 +4,22 @@
 #include <string.h>
 #include <stdlib.h>
 
-void set_fv_value(struct FVPair *pair, void *value) {
-  switch (pair->type) {
+void set_fv_value(struct FVPair *fv, void *value) {
+  switch (fv->type) {
     case TELLY_STR:
-      set_string(&pair->value.string, value, strlen(value), true);
+      set_string(&fv->value.string, value, strlen(value), true);
       break;
 
     case TELLY_INT:
-      pair->value.integer = *((int *) value);
+      fv->value.integer = *((int *) value);
       break;
 
     case TELLY_BOOL:
-      pair->value.boolean = *((bool *) value);
+      fv->value.boolean = *((bool *) value);
       break;
 
     case TELLY_NULL:
-      pair->value.null = NULL;
+      fv->value.null = NULL;
       break;
 
     default:
@@ -27,11 +27,9 @@ void set_fv_value(struct FVPair *pair, void *value) {
   }
 }
 
-void free_fv(struct FVPair *pair) {
-  if (pair->type == TELLY_STR) {
-    free(pair->value.string.value);
-  }
+void free_fv(struct FVPair *fv) {
+  if (fv->type == TELLY_STR) free(fv->value.string.value);
 
-  free(pair->name.value);
-  free(pair);
+  free(fv->name.value);
+  free(fv);
 }
