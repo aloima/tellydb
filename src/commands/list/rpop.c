@@ -6,7 +6,7 @@
 
 static void run(struct Client *client, respdata_t *data, struct Configuration *conf) {
   if (client && data->count != 2) {
-    write(client->connfd, "-Wrong argument count for 'RPOP' command\r\n", 42);
+    WRONG_ARGUMENT_ERROR(client->connfd, "RPOP", 4);
     return;
   }
 
@@ -15,7 +15,7 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
 
   if (pair) {
     if (client && pair->type != TELLY_LIST) {
-      write(client->connfd, "-Value stored by the key is not a list\r\n", 40);
+      write(client->connfd, "-Value stored at the key is not a list\r\n", 40);
       return;
     }
 

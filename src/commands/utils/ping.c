@@ -25,7 +25,7 @@ static void run(struct Client *client, respdata_t *data, __attribute__((unused))
       }
 
       default:
-        write(client->connfd, "-Wrong argument count for 'PING' command\r\n", 42);
+        WRONG_ARGUMENT_ERROR(client->connfd, "PING", 4);
         break;
     }
   }

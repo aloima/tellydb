@@ -6,45 +6,37 @@
 #include <unistd.h>
 
 static void run(struct Client *client, respdata_t *data, struct Configuration *conf) {
-  const bool is_client = client != NULL;
+  if (data->count != 2 && client) {
+    WRONG_ARGUMENT_ERROR(client->connfd, "INCR", 4);
+    return;
+  }
 
-  if (data->count == 1) {
-    if (is_client) {
-      write(client->connfd, "-missing argument\r\n", 19);
-    }
-  } else if (data->count == 2) {
-    string_t key = data->value.array[1]->value.string;
-    struct KVPair *result = get_data(key.value, conf);
+  string_t key = data->value.array[1]->value.string;
+  struct KVPair *result = get_data(key.value, conf);
 
-    if (result == NULL) {
-      struct KVPair pair = {
-        .key = key,
-        .type = TELLY_INT,
-        .value = {
-          .integer = 0
-        }
-      };
-
-      set_data(pair, conf);
-
-      if (is_client) {
-        write(client->connfd, ":0\r\n", 4);
+  if (result == NULL) {
+    struct KVPair pair = {
+      .key = key,
+      .type = TELLY_INT,
+      .value = {
+        .integer = 0
       }
-    } else if (result->type == TELLY_INT) {
-      result->value.integer += 1;
+    };
 
-      if (client != NULL) {
-        const uint32_t buf_size = get_digit_count(result->value.integer) + 3;
-        char buf[buf_size + 1];
+    set_data(pair, conf);
+    if (client) write(client->connfd, ":0\r\n", 4);
+  } else if (result->type == TELLY_INT) {
+    result->value.integer += 1;
 
-        sprintf(buf, ":%d\r\n", result->value.integer);
-        write(client->connfd, buf, buf_size);
-      }
-    } else if (is_client) {
-      write(client->connfd, "-invalid type for INCR command\r\n", 32);
+    if (client != NULL) {
+      const uint32_t buf_size = get_digit_count(result->value.integer) + 3;
+      char buf[buf_size + 1];
+
+      sprintf(buf, ":%d\r\n", result->value.integer);
+      write(client->connfd, buf, buf_size);
     }
-  } else if (is_client) {
-    write(client->connfd, "-additional argument(s)\r\n", 25);
+  } else if (client) {
+    write(client->connfd, "-Invalid type for 'INCR' command\r\n", 34);
   }
 }
 

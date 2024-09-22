@@ -8,7 +8,7 @@
 static void run(struct Client *client, respdata_t *data, struct Configuration *conf) {
   if (client) {
     if (data->count != 2) {
-      write(client->connfd, "-Wrong argument count for 'LLEN' command\r\n", 42);
+      WRONG_ARGUMENT_ERROR(client->connfd, "LLEN", 4);
       return;
     }
 
@@ -19,7 +19,7 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
       write(client->connfd, ":0\r\n", 4);
       return;
     } else if (pair->type != TELLY_LIST) {
-      write(client->connfd, "-Value stored by the key is not a list\r\n", 40);
+      write(client->connfd, "-Value stored at the key is not a list\r\n", 40);
       return;
     }
 

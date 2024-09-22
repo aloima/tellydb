@@ -7,7 +7,7 @@
 static void run(struct Client *client, respdata_t *data, struct Configuration *conf) {
   if (client) {
     if (data->count != 3) {
-      write(client->connfd, "-Wrong argument count for 'HTYPE' command\r\n", 43);
+      WRONG_ARGUMENT_ERROR(client->connfd, "HTYPE", 5);
       return;
     }
 

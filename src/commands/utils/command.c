@@ -7,7 +7,7 @@
 #include <unistd.h>
 
 static void run(struct Client *client, respdata_t *data, __attribute__((unused)) struct Configuration *conf) {
-  if (data->count != 1 && client != NULL) {
+  if (data->count != 1 && client) {
     char *subcommand = data->value.array[1]->value.string.value;
 
     if (streq("DOCS", subcommand)) {

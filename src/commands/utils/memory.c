@@ -2,12 +2,11 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include <stdlib.h>
 
 #include <unistd.h>
 
 static void run(struct Client *client, respdata_t *data, __attribute__((unused)) struct Configuration *conf) {
-  if (client != NULL) {
+  if (client) {
     if (data->count != 1) {
       string_t subcommand_string = data->value.array[1]->value.string;
       char subcommand[subcommand_string.len + 1];
@@ -31,13 +30,13 @@ static void run(struct Client *client, respdata_t *data, __attribute__((unused))
             write(client->connfd, "$-1\r\n", 5);
           }
         } else {
-          write(client->connfd, "-Wrong argument count for 'MEMORY USAGE' command\r\n", 50);
+          WRONG_ARGUMENT_ERROR(client->connfd, "MEMORY USAGE", 12);
         }
       } else {
-        write(client->connfd, "-Wrong subcommand for 'MEMORY' command\r\n", 40);
+        WRONG_ARGUMENT_ERROR(client->connfd, "MEMORY", 6);
       }
     } else {
-      write(client->connfd, "-Wrong argument count for 'MEMORY' command\r\n", 44);
+      WRONG_ARGUMENT_ERROR(client->connfd, "MEMORY", 6);
     }
   }
 }

@@ -7,7 +7,7 @@
 
 static void run(struct Client *client, respdata_t *data, struct Configuration *conf) {
   if (client && data->count != 3) {
-    write(client->connfd, "-Wrong argument count for 'HGET' command\r\n", 42);
+    WRONG_ARGUMENT_ERROR(client->connfd, "HGET", 4);
     return;
   }
 

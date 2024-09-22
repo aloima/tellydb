@@ -66,11 +66,11 @@ static void run(struct Client *client, respdata_t *data, __attribute__((unused))
             write(client->connfd, "-Unknown property\r\n", 19);
           }
         } else {
-          write(client->connfd, "-Wrong argument count for 'CLIENT SETINFO' command\r\n", 52);
+          WRONG_ARGUMENT_ERROR(client->connfd, "CLIENT SETINFO", 14);
         }
       }
     } else {
-      write(client->connfd, "-Wrong argument count for 'CLIENT' command\r\n", 44);
+      WRONG_ARGUMENT_ERROR(client->connfd, "CLIENT", 6);
     }
   }
 }

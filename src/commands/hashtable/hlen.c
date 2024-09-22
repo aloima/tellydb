@@ -8,7 +8,7 @@
 static void run(struct Client *client, respdata_t *data, struct Configuration *conf) {
   if (client) {
     if (data->count != 2) {
-      write(client->connfd, "-Wrong argument count for 'HLEN' command\r\n", 42);
+      WRONG_ARGUMENT_ERROR(client->connfd, "HLEN", 4);
       return;
     }
 

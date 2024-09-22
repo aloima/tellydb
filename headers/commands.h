@@ -3,8 +3,12 @@
 
 #include <stdint.h>
 
+#include <unistd.h>
+
 #ifndef COMMANDS_H
   #define COMMANDS_H
+
+  #define WRONG_ARGUMENT_ERROR(connfd, name, len) (write((connfd), "-Wrong argument count for '" name "' command\r\n", 38 + (len)))
 
   struct Subcommand {
     char *name;

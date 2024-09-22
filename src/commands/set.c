@@ -7,33 +7,34 @@
 #include <unistd.h>
 
 static void run(struct Client *client, respdata_t *data, __attribute__((unused)) struct Configuration *conf) {
-  if (data->count < 3) {
-    if (client) write(client->connfd, "-missing arguments\r\n", 20);
-  } else {
-    char *value = data->value.array[2]->value.string.value;
-
-    struct KVPair res;
-    res.key = data->value.array[1]->value.string;
-
-    const bool is_true = streq(value, "true");
-
-    if (is_integer(value)) {
-      res.type = TELLY_INT;
-      res.value.integer = atoi(value);
-    } else if (is_true || streq(value, "false")) {
-      res.type = TELLY_BOOL;
-      res.value.boolean = is_true;
-    } else if (streq(value, "null")) {
-      res.type = TELLY_NULL;
-      res.value.null = NULL;
-    } else {
-      res.type = TELLY_STR;
-      res.value.string = data->value.array[2]->value.string;
-    }
-
-    set_data(res, conf);
-    if (client) write(client->connfd, "+OK\r\n", 5);
+  if (data->count < 3 && client) {
+    WRONG_ARGUMENT_ERROR(client->connfd, "SET", 3);
+    return;
   }
+
+  char *value = data->value.array[2]->value.string.value;
+
+  struct KVPair kv;
+  kv.key = data->value.array[1]->value.string;
+
+  const bool is_true = streq(value, "true");
+
+  if (is_integer(value)) {
+    kv.type = TELLY_INT;
+    kv.value.integer = atoi(value);
+  } else if (is_true || streq(value, "false")) {
+    kv.type = TELLY_BOOL;
+    kv.value.boolean = is_true;
+  } else if (streq(value, "null")) {
+    kv.type = TELLY_NULL;
+    kv.value.null = NULL;
+  } else {
+    kv.type = TELLY_STR;
+    kv.value.string = data->value.array[2]->value.string;
+  }
+
+  set_data(kv, conf);
+  if (client) write(client->connfd, "+OK\r\n", 5);
 }
 
 struct Command cmd_set = {

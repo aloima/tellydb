@@ -6,7 +6,7 @@
 #include <unistd.h>
 
 static void run(struct Client *client, __attribute__((unused)) respdata_t *data, struct Configuration *conf) {
-  if (client != NULL) {
+  if (client) {
     char buf[8192];
     sprintf(buf, (
       "# Clients\r\n"

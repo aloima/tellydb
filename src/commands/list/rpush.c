@@ -21,7 +21,7 @@ static void rpush_to_list(struct List *list, void *value, enum TellyTypes type) 
 
 static void run(struct Client *client, respdata_t *data, struct Configuration *conf) {
   if (client && data->count < 3) {
-    write(client->connfd, "-Wrong argument count for 'RPUSH' command\r\n", 43);
+    WRONG_ARGUMENT_ERROR(client->connfd, "RPUSH", 5);
     return;
   }
 
@@ -31,7 +31,7 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
 
   if (pair) {
     if (client && pair->type != TELLY_LIST) {
-      write(client->connfd, "-Value stored by the key is not a list\r\n", 40);
+      write(client->connfd, "-Value stored at the key is not a list\r\n", 40);
       return;
     }
 

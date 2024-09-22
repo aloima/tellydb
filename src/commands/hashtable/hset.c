@@ -9,7 +9,7 @@
 
 static void run(struct Client *client, respdata_t *data, struct Configuration *conf) {
   if (client && (data->count == 2 || data->count % 2 != 0)) {
-    write(client->connfd, "-Wrong argument count for 'HSET' command\r\n", 42);
+    WRONG_ARGUMENT_ERROR(client->connfd, "HSET", 4);
     return;
   }
 

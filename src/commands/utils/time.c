@@ -7,22 +7,23 @@
 #include <unistd.h>
 
 static void run(struct Client *client, respdata_t *data, __attribute__((unused)) struct Configuration *conf) {
-  if (client != NULL) {
-    if (data->count == 1) {
-      struct timeval timestamp;
-		  gettimeofday(&timestamp, NULL);
-
-      const uint32_t sec_len = get_digit_count(timestamp.tv_sec);
-      const uint32_t usec_len = get_digit_count(timestamp.tv_usec);
-
-      const uint32_t buf_len = 10 + sec_len + usec_len;
-      char buf[buf_len + 1];
-      sprintf(buf, "*2\r\n:%ld\r\n:%ld\r\n", timestamp.tv_sec, timestamp.tv_usec);
-
-      write(client->connfd, buf, buf_len);
-    } else {
-      write(client->connfd, "-Wrong argument count for 'TIME' command\r\n", 42);
+  if (client) {
+    if (data->count != 1) {
+      WRONG_ARGUMENT_ERROR(client->connfd, "TIME", 4);
+      return;
     }
+
+    struct timeval timestamp;
+    gettimeofday(&timestamp, NULL);
+
+    const uint32_t sec_len = get_digit_count(timestamp.tv_sec);
+    const uint32_t usec_len = get_digit_count(timestamp.tv_usec);
+
+    const uint32_t buf_len = 10 + sec_len + usec_len;
+    char buf[buf_len + 1];
+    sprintf(buf, "*2\r\n:%ld\r\n:%ld\r\n", timestamp.tv_sec, timestamp.tv_usec);
+
+    write(client->connfd, buf, buf_len);
   }
 }
 
