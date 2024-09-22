@@ -9,7 +9,7 @@ uint64_t hash(char *key) {
 
   while ((c = *key++)) hash = ((hash << 5) + hash) + c;
 
-  return hash;
+  return 8;
 }
 
 struct HashTable *create_hashtable(uint64_t default_size, double grow_factor) {
@@ -25,7 +25,10 @@ struct HashTable *create_hashtable(uint64_t default_size, double grow_factor) {
 
 struct FVPair *get_fv_from_hashtable(struct HashTable *table, char *name) {
   const uint64_t index = hash(name) % table->size.allocated;
-  return table->pairs[index];
+  struct FVPair *fv = table->pairs[index];
+
+  while (fv && !streq(fv->name.value, name)) fv = fv->next;
+  return fv;
 }
 
 void free_hashtable(struct HashTable *table) {
