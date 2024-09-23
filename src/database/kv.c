@@ -2,53 +2,53 @@
 
 #include <stdlib.h>
 
-void set_kv(struct KVPair *pair, char *key, void *value, enum TellyTypes type) {
-  pair->type = type;
-  set_string(&pair->key, key, -1, true);
+void set_kv(struct KVPair *kv, char *key, void *value, enum TellyTypes type) {
+  kv->type = type;
+  set_string(&kv->key, key, -1, true);
 
   switch (type) {
     case TELLY_STR:
-      set_string(&pair->value.string, value, -1, true);
+      set_string(&kv->value.string, value, -1, true);
       break;
 
     case TELLY_INT:
-      pair->value.integer = *((int *) value);
+      kv->value.integer = *((int *) value);
       break;
 
     case TELLY_BOOL:
-      pair->value.boolean = *((bool *) value);
+      kv->value.boolean = *((bool *) value);
       break;
 
     case TELLY_HASHTABLE:
-      pair->value.hashtable = value;
+      kv->value.hashtable = value;
       break;
 
     case TELLY_LIST:
-      pair->value.list = value;
+      kv->value.list = value;
       break;
 
     case TELLY_NULL:
-      pair->value.null = NULL;
+      kv->value.null = NULL;
       break;
   }
 }
 
-void *get_kv_val(struct KVPair *pair, enum TellyTypes type) {
+void *get_kv_val(struct KVPair *kv, enum TellyTypes type) {
   switch (type) {
     case TELLY_STR:
-      return pair->value.string.value;
+      return kv->value.string.value;
 
     case TELLY_INT:
-      return &pair->value.integer;
+      return &kv->value.integer;
 
     case TELLY_BOOL:
-      return &pair->value.boolean;
+      return &kv->value.boolean;
 
     case TELLY_HASHTABLE:
-      return pair->value.hashtable;
+      return kv->value.hashtable;
 
     case TELLY_LIST:
-      return pair->value.list;
+      return kv->value.list;
 
     case TELLY_NULL:
       return NULL;
@@ -58,24 +58,24 @@ void *get_kv_val(struct KVPair *pair, enum TellyTypes type) {
   }
 }
 
-void free_kv(struct KVPair *pair) {
-  switch (pair->type) {
+void free_kv(struct KVPair *kv) {
+  switch (kv->type) {
     case TELLY_STR:
-      free(pair->value.string.value);
+      free(kv->value.string.value);
       break;
 
     case TELLY_HASHTABLE:
-      free_hashtable(pair->value.hashtable);
+      free_hashtable(kv->value.hashtable);
       break;
 
     case TELLY_LIST:
-      free_list(pair->value.list);
+      free_list(kv->value.list);
       break;
 
     default:
       break;
   }
 
-  free(pair->key.value);
-  free(pair);
+  free(kv->key.value);
+  free(kv);
 }
