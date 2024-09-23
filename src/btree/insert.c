@@ -28,10 +28,13 @@ static struct KVPair *insert_kv_to_node(struct BTree *tree, struct BTreeNode *no
   if (node->size == tree->max) {
     const uint32_t at = (tree->max - 1) / 2;
 
-    if (node->top != NULL) {
+    if (node->top) {
       do {
         struct KVPair *middle = node->data[at];
-        add_kv_to_node(tree, node->top, middle);
+        node->top->size += 1;
+        node->top->data = realloc(node->top->data, node->top->size * sizeof(struct KVPair *));
+        move_kv(node->top, node->top->size - 1, leaf_at);
+        node->top->data[leaf_at] = middle;
 
         node->top->leafs = realloc(node->top->leafs, (node->top->size + 1) * sizeof(struct BTreeNode *));
         node->top->leafs[node->top->size] = malloc(sizeof(struct BTreeNode));
@@ -54,7 +57,7 @@ static struct KVPair *insert_kv_to_node(struct BTree *tree, struct BTreeNode *no
         leaf->data = realloc(leaf->data, leaf->size * sizeof(struct KVPair *));
 
         node = node->top;
-      } while (node->top != NULL);
+      } while (node->top);
 
       if (node->size == tree->max) {
         const uint32_t leaf_count = node->size + 1;
