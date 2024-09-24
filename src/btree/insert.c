@@ -69,21 +69,28 @@ static struct KVPair *insert_kv_to_node(struct BTree *tree, struct BTreeNode *no
         node->leafs[0] = malloc(sizeof(struct BTreeNode));
         node->leafs[1] = malloc(sizeof(struct BTreeNode));
 
-        struct BTreeNode *leaf = node->leafs[0];
+        struct BTreeNode *leaf;
+        uint32_t leaf_count_of_leaf;
+
+        leaf = node->leafs[0];
         leaf->top = node;
         leaf->size = at;
+        leaf_count_of_leaf = (leaf->size + 1);
         leaf->data = malloc(leaf->size * sizeof(struct KVPair *));
-        leaf->leafs = malloc((leaf->size + 1) * sizeof(struct BTreeNode *));
-        memcpy(leaf->leafs, leafs, (leaf->size + 1) * sizeof(struct BTreeNode *));
+        leaf->leafs = malloc(leaf_count_of_leaf * sizeof(struct BTreeNode *));
+        memcpy(leaf->leafs, leafs, leaf_count_of_leaf * sizeof(struct BTreeNode *));
         memcpy(leaf->data, node->data, leaf->size * sizeof(struct KVPair *));
+        for (uint32_t i = 0; i < leaf_count_of_leaf; ++i) leaf->leafs[i]->top = leaf;
 
         leaf = node->leafs[1];
         leaf->top = node;
         leaf->size = node->size - at - 1;
+        leaf_count_of_leaf = (leaf->size + 1);
         leaf->data = malloc(leaf->size * sizeof(struct KVPair *));
-        leaf->leafs = malloc((leaf->size + 1) * sizeof(struct BTreeNode *));
-        memcpy(leaf->leafs, leafs + at + 1, (leaf->size + 1) * sizeof(struct BTreeNode *));
+        leaf->leafs = malloc(leaf_count_of_leaf * sizeof(struct BTreeNode *));
+        memcpy(leaf->leafs, leafs + at + 1, leaf_count_of_leaf * sizeof(struct BTreeNode *));
         memcpy(leaf->data, node->data + at + 1, leaf->size * sizeof(struct KVPair *));
+        for (uint32_t i = 0; i < leaf_count_of_leaf; ++i) leaf->leafs[i]->top = leaf;
 
         node->size = 1;
         node->data[0] = node->data[at];
