@@ -23,19 +23,17 @@ uint32_t find_index_of_kv(struct BTreeNode *node, const char *key) {
   return node->size;
 }
 
-struct BTreeNode *find_node_of_kv(struct BTreeNode *node, uint32_t *leaf_at, const char *key) {
+struct BTreeNode *find_node_of_kv(struct BTreeNode *node, const char *key) {
   if (node->leafs) {
     for (uint32_t i = 0; i < node->size; ++i) {
       struct KVPair *kv = node->data[i];
 
       if (strcmp(key, kv->key.value) <= 0) {
-        *leaf_at = i;
-        return find_node_of_kv(node->leafs[i], leaf_at, key);
+        return find_node_of_kv(node->leafs[i], key);
       }
     }
 
-    *leaf_at = node->size;
-    return find_node_of_kv(node->leafs[node->size], leaf_at, key);
+    return find_node_of_kv(node->leafs[node->size], key);
   }
 
   return node;

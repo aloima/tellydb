@@ -13,6 +13,7 @@
 
     struct BTreeNode **leafs;
     struct BTreeNode *top;
+    uint32_t leaf_at;
   };
 
   struct BTree {
@@ -26,7 +27,7 @@
 
   void move_kv(struct BTreeNode *node, const uint32_t at, const uint32_t to);
   uint32_t find_index_of_kv(struct BTreeNode *node, const char *key);
-  struct BTreeNode *find_node_of_kv(struct BTreeNode *node, uint32_t *leaf_at, const char *key);
+  struct BTreeNode *find_node_of_kv(struct BTreeNode *node, const char *key);
 
   void sort_kvs_by_pos(struct KVPair **pairs, const uint32_t size);
 
