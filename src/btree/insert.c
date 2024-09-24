@@ -57,7 +57,7 @@ static struct KVPair *insert_kv_to_node(struct BTree *tree, struct BTreeNode *no
         leaf->data = realloc(leaf->data, leaf->size * sizeof(struct KVPair *));
 
         node = node->top;
-      } while (node->top);
+      } while (node->top && node->top->size == tree->max);
 
       if (node->size == tree->max) {
         const uint32_t leaf_count = node->size + 1;
