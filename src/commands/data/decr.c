@@ -1,4 +1,4 @@
-#include "../../headers/telly.h"
+#include "../../../headers/telly.h"
 
 #include <stdio.h>
 
