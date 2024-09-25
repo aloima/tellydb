@@ -14,7 +14,12 @@ static void run(struct Client *client, __attribute__((unused)) respdata_t *data,
       "Max clients: %d\r\n"
       "Transaction count: %d\r\n"
       "Total connection count: %d\r\n"
-    ), get_client_count(), conf->max_clients, get_transaction_count(), get_last_connection_client_id());
+      "\r\n"
+      "# Server\r\n"
+      "Version: " VERSION "\r\n"
+      "Process ID: %d\r\n"
+      "Git hash: " GIT_HASH "\r\n"
+    ), get_client_count(), conf->max_clients, get_transaction_count(), get_last_connection_client_id(), getpid());
 
     const uint32_t buf_len = strlen(buf);
     const uint32_t res_len = buf_len + 5 + get_digit_count(buf_len);

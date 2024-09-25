@@ -1,6 +1,7 @@
 CC := gcc
-CFLAGS := -O3 -Wall -Wextra
 LIBRARIES := -lm -lpthread
+CFLAGS := -O3 -Wall -Wextra \
+-DGIT_HASH=\"$(shell git rev-parse HEAD)\" -DVERSION=\"$(shell git describe --abbrev=0 --tags)\"
 
 compile:
 	$(CC) $(CFLAGS) ./src/*.c ./src/**/*.c ./src/**/**/*.c -o ./telly $(LIBRARIES)
