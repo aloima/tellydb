@@ -74,19 +74,19 @@ static struct Subcommand subcommands[] = {
   (struct Subcommand) {
     .name = "LIST",
     .summary = "Returns name list of all commands.",
-    .since = "1.0.0",
+    .since = "0.1.0",
     .complexity = "O(N) where N is count of all commands"
   },
   (struct Subcommand) {
     .name = "COUNT",
     .summary = "Returns count of all commands in the server.",
-    .since = "1.0.0",
+    .since = "0.1.0",
     .complexity = "O(1)"
   },
   (struct Subcommand) {
     .name = "DOCS",
     .summary = "Returns documentation about multiple commands.",
-    .since = "1.0.0",
+    .since = "0.1.0",
     .complexity = "O(N) where N is count of commands to look up"
   }
 };
@@ -94,7 +94,7 @@ static struct Subcommand subcommands[] = {
 struct Command cmd_command = {
   .name = "COMMAND",
   .summary = "Gives information about the commands in the server.",
-  .since = "1.0.0",
+  .since = "0.1.0",
   .complexity = "O(1)",
   .subcommands = subcommands,
   .subcommand_count = 3,

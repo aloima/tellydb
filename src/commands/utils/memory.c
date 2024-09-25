@@ -45,7 +45,7 @@ static struct Subcommand subcommands[] = {
   (struct Subcommand) {
     .name = "USAGE",
     .summary = "Gives how many bytes are used in the memory for the key.",
-    .since = "1.0.2",
+    .since = "0.1.2",
     .complexity = "O(1)"
   }
 };
@@ -53,7 +53,7 @@ static struct Subcommand subcommands[] = {
 struct Command cmd_memory = {
   .name = "MEMORY",
   .summary = "Gives information about the memory.",
-  .since = "1.0.2",
+  .since = "0.1.2",
   .complexity = "O(1)",
   .subcommands = subcommands,
   .subcommand_count = 1,

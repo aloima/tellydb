@@ -34,7 +34,7 @@ static void run(struct Client *client, respdata_t *data, __attribute__((unused))
 struct Command cmd_ping = {
   .name = "PING",
   .summary = "Pings the server and returns a simple/bulk string.",
-  .since = "1.0.2",
+  .since = "0.1.2",
   .complexity = "O(1)",
   .subcommands = NULL,
   .subcommand_count = 0,

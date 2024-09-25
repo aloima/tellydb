@@ -31,7 +31,7 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
 struct Command cmd_hget = {
   .name = "HGET",
   .summary = "Gets a field from the hash table for the key.",
-  .since = "1.1.0",
+  .since = "0.1.3",
   .complexity = "O(1)",
   .subcommands = NULL,
   .subcommand_count = 0,

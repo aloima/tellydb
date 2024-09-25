@@ -78,7 +78,7 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
 struct Command cmd_lpush = {
   .name = "LPUSH",
   .summary = "Pushes element(s) to beginning of the list and returns pushed element count.",
-  .since = "1.1.0",
+  .since = "0.1.3",
   .complexity = "O(1)",
   .subcommands = NULL,
   .subcommand_count = 0,

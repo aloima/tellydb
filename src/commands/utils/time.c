@@ -30,7 +30,7 @@ static void run(struct Client *client, respdata_t *data, __attribute__((unused))
 struct Command cmd_time = {
   .name = "TIME",
   .summary = "Returns the current server time as two elements in a array, a Unix timestamp and microseconds already elapsed in the current second.",
-  .since = "1.0.2",
+  .since = "0.1.2",
   .complexity = "O(1)",
   .subcommands = NULL,
   .subcommand_count = 0,

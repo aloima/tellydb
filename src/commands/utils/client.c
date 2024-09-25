@@ -79,19 +79,19 @@ static struct Subcommand subcommands[] = {
   (struct Subcommand) {
     .name = "ID",
     .summary = "Returns ID number of client.",
-    .since = "1.0.0",
+    .since = "0.1.0",
     .complexity = "O(1)"
   },
   (struct Subcommand) {
     .name = "INFO",
     .summary = "Returns information about the client.",
-    .since = "1.0.0",
+    .since = "0.1.0",
     .complexity = "O(1)"
   },
   (struct Subcommand) {
     .name = "SETINFO",
     .summary = "Sets properties for the client.",
-    .since = "1.0.2",
+    .since = "0.1.2",
     .complexity = "O(1)"
   }
 };
@@ -99,7 +99,7 @@ static struct Subcommand subcommands[] = {
 struct Command cmd_client = {
   .name = "CLIENT",
   .summary = "Gives information about client(s).",
-  .since = "1.0.0",
+  .since = "0.1.0",
   .complexity = "O(1)",
   .subcommands = subcommands,
   .subcommand_count = 3,
