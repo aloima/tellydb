@@ -8,20 +8,22 @@
 
 static void run(struct Client *client, respdata_t *data, __attribute__((unused)) struct Configuration *conf) {
   if (data->count != 1 && client) {
-    char *subcommand = data->value.array[1]->value.string.value;
+    string_t input = data->value.array[1]->value.string;
+    char subcommand[input.len + 1];
+    to_uppercase(input.value, subcommand);
 
     if (streq("DOCS", subcommand)) {
-      struct Command *commands = get_commands();
+      const struct Command *commands = get_commands();
       const uint32_t command_count = get_command_count();
 
       char res[16384];
-      sprintf(res, "*%d\r\n", command_count * 2);
+      uint32_t res_len = sprintf(res, "*%d\r\n", command_count * 2);
 
       for (uint32_t i = 0; i < command_count; ++i) {
         struct Command command = commands[i];
 
         char buf[4096];
-        sprintf(buf, (
+        res_len += sprintf(buf, (
           "$%ld\r\n%s\r\n"
           "*6\r\n"
             "$7\r\nsummary\r\n"
@@ -42,21 +44,21 @@ static void run(struct Client *client, respdata_t *data, __attribute__((unused))
         strcat(res, buf);
       }
 
-      write(client->connfd, res, strlen(res));
+      write(client->connfd, res, res_len);
     } else if (streq("LIST", subcommand)) {
-      struct Command *commands = get_commands();
-      uint32_t command_count = get_command_count();
+      const struct Command *commands = get_commands();
+      const uint32_t command_count = get_command_count();
 
       char res[16384];
-      sprintf(res, "*%d\r\n", command_count);
+      uint32_t res_len = sprintf(res, "*%d\r\n", command_count);
 
       for (uint32_t i = 0; i < command_count; ++i) {
         char buf[128];
-        sprintf(buf, "+%s\r\n", commands[i].name);
+        res_len += sprintf(buf, "+%s\r\n", commands[i].name);
         strcat(res, buf);
       }
 
-      write(client->connfd, res, strlen(res));
+      write(client->connfd, res, res_len);
     } else if (streq("COUNT", subcommand)) {
       const uint32_t command_count = get_command_count();
       const uint32_t res_len = 3 + get_digit_count(command_count);
