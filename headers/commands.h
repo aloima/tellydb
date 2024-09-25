@@ -35,6 +35,15 @@
   void free_commands();
 
 
+  /* DATA COMMANDS */
+  extern struct Command cmd_decr;
+  extern struct Command cmd_get;
+  extern struct Command cmd_exists;
+  extern struct Command cmd_incr;
+  extern struct Command cmd_set;
+  extern struct Command cmd_type;
+  /* /DATA COMMANDS */
+
   /* HASHTABLE COMMANDS */
   extern struct Command cmd_hget;
   extern struct Command cmd_hlen;
@@ -60,13 +69,4 @@
   extern struct Command cmd_ping;
   extern struct Command cmd_time;
   /* /UTILS COMMANDS */
-
-
-  /* UNCATEGORIZED COMMANDS */
-  extern struct Command cmd_decr;
-  extern struct Command cmd_get;
-  extern struct Command cmd_incr;
-  extern struct Command cmd_set;
-  extern struct Command cmd_type;
-  /* /UNCATEGORIZED COMMANDS */
 #endif
