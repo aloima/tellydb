@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 static struct Command *commands = NULL;
-static uint32_t command_count = 21;
+static uint32_t command_count = 22;
 
 void load_commands() {
   struct Command _commands[] = {
@@ -20,6 +20,7 @@ void load_commands() {
     cmd_htype,
 
     // List commands
+    cmd_lindex,
     cmd_llen,
     cmd_lpop,
     cmd_lpush,

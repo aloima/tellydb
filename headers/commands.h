@@ -53,6 +53,7 @@
 
 
   /* LIST COMMANDS */
+  extern struct Command cmd_lindex;
   extern struct Command cmd_llen;
   extern struct Command cmd_lpop;
   extern struct Command cmd_lpush;

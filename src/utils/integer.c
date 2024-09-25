@@ -6,7 +6,11 @@
 #include <math.h>
 
 bool is_integer(char *value) {
-  if (*value == '-') value += 1;
+  if (*value == '-') {
+    value += 1;
+
+    if (*value == '0') return false;
+  }
 
   while (isdigit(*value)) {
     value += 1;
