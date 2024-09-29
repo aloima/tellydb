@@ -32,10 +32,8 @@
   void sort_kvs_by_pos(struct KVPair **pairs, const uint32_t size);
 
   struct KVPair *insert_kv_to_btree(struct BTree *tree, char *key, void *value, enum TellyTypes type);
-
   struct KVPair *find_kv_from_btree(struct BTree *tree, const char *key);
-
-  void del_kv_from_node(struct BTreeNode *node, char *key);
+  bool delete_kv_from_btree(struct BTree *tree, const char *key);
 
   void free_btree(struct BTree *tree);
 #endif
