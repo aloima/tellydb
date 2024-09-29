@@ -5,18 +5,20 @@
 #include <stdint.h>
 #include <math.h>
 
-bool is_integer(char *value) {
+bool is_integer(const char *value) {
+  char *_value = (char *) value;
+
   if (*value == '-') {
-    value += 1;
+    _value += 1;
 
-    if (*value == '0') return false;
+    if (*_value == '0' || *_value == '\0') return false;
   }
 
-  while (isdigit(*value)) {
-    value += 1;
+  while (isdigit(*_value)) {
+    _value += 1;
   }
 
-  return *value == 0x00;
+  return (_value != value) && (*_value == 0x00);
 }
 
 uint32_t get_digit_count(int32_t number) {
