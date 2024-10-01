@@ -4,15 +4,15 @@
 #include <string.h>
 
 void move_kv(struct BTreeNode *node, const uint32_t at, const uint32_t to) {
-  struct KVPair *pair = node->data[at];
+  struct KVPair *kv = node->data[at];
 
   if (to > at) {
-    memcpy(node->data + at, node->data + at + 1, (to - at) * sizeof(struct KVPair *));
+    memcpy(node->data + at, node->data + at + 1, (to - at) << 3);
+    node->data[to] = kv;
   } else if (at > to) {
-    memcpy(node->data + to + 1, node->data + to, (at - to) * sizeof(struct KVPair *));
+    memcpy(node->data + to + 1, node->data + to, (at - to) << 3);
+    node->data[to] = kv;
   }
-
-  node->data[to] = pair;
 }
 
 uint32_t find_index_of_kv(struct BTreeNode *node, const char *key) {

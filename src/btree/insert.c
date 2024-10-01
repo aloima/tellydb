@@ -58,13 +58,16 @@ static struct KVPair *insert_kv_to_node(struct BTree *tree, struct BTreeNode *no
 
         leaf->top = node->top;
         leaf->size = node->size - at - 1;
-        leaf->data = malloc(leaf->size * sizeof(struct KVPair *));
-        memcpy(leaf->data, node->data + at + 1, leaf->size * sizeof(struct KVPair *));
+
+        const uint8_t size_n = leaf->size * sizeof(struct KVPair *);
+        leaf->data = malloc(size_n);
+        memcpy(leaf->data, node->data + at + 1, size_n);
 
         if (node->leafs) {
           const uint32_t leaf_count = (leaf->size + 1);
-          leaf->leafs = malloc(leaf_count * sizeof(struct BTreeNode *));
-          memcpy(leaf->leafs, node->leafs + at + 1, leaf_count * sizeof(struct BTreeNode *));
+          const uint8_t leaf_count_n = leaf_count * sizeof(struct BTreeNode *);
+          leaf->leafs = malloc(leaf_count_n);
+          memcpy(leaf->leafs, node->leafs + at + 1, leaf_count_n);
 
           for (uint32_t i = 0; i < leaf_count; ++i) {
             leaf->leafs[i]->top = leaf;
@@ -95,17 +98,21 @@ static struct KVPair *insert_kv_to_node(struct BTree *tree, struct BTreeNode *no
         node->leafs[1] = malloc(sizeof(struct BTreeNode));
 
         struct BTreeNode *leaf;
-        uint32_t leaf_count_of_leaf;
+        uint8_t leaf_count_of_leaf, size_n, leaf_count_n;
 
         leaf = node->leafs[0];
         leaf->top = node;
         leaf->leaf_at = 0;
         leaf->size = at;
         leaf_count_of_leaf = (leaf->size + 1);
-        leaf->data = malloc(leaf->size * sizeof(struct KVPair *));
-        leaf->leafs = malloc(leaf_count_of_leaf * sizeof(struct BTreeNode *));
-        memcpy(leaf->leafs, leafs, leaf_count_of_leaf * sizeof(struct BTreeNode *));
-        memcpy(leaf->data, node->data, leaf->size * sizeof(struct KVPair *));
+
+        size_n = leaf->size * sizeof(struct KVPair *);
+        leaf->data = malloc(size_n);
+        memcpy(leaf->data, node->data, size_n);
+
+        leaf_count_n = leaf_count_of_leaf * sizeof(struct BTreeNode *);
+        leaf->leafs = malloc(leaf_count_n);
+        memcpy(leaf->leafs, leafs, leaf_count_n);
 
         for (uint32_t i = 0; i < leaf_count_of_leaf; ++i) {
           leaf->leafs[i]->top = leaf;
@@ -117,10 +124,14 @@ static struct KVPair *insert_kv_to_node(struct BTree *tree, struct BTreeNode *no
         leaf->leaf_at = 1;
         leaf->size = node->size - at - 1;
         leaf_count_of_leaf = (leaf->size + 1);
-        leaf->data = malloc(leaf->size * sizeof(struct KVPair *));
-        leaf->leafs = malloc(leaf_count_of_leaf * sizeof(struct BTreeNode *));
-        memcpy(leaf->leafs, leafs + at + 1, leaf_count_of_leaf * sizeof(struct BTreeNode *));
-        memcpy(leaf->data, node->data + at + 1, leaf->size * sizeof(struct KVPair *));
+
+        size_n = leaf->size * sizeof(struct KVPair *);
+        leaf->data = malloc(size_n);
+        memcpy(leaf->data, node->data + at + 1, size_n);
+
+        leaf_count_n = leaf_count_of_leaf * sizeof(struct BTreeNode *);
+        leaf->leafs = malloc(leaf_count_n);
+        memcpy(leaf->leafs, leafs + at + 1, leaf_count_n);
 
         for (uint32_t i = 0; i < leaf_count_of_leaf; ++i) {
           leaf->leafs[i]->top = leaf;
@@ -141,16 +152,20 @@ static struct KVPair *insert_kv_to_node(struct BTree *tree, struct BTreeNode *no
       leaf->leaf_at = 0;
       leaf->leafs = NULL;
       leaf->size = at;
-      leaf->data = malloc(leaf->size * sizeof(struct KVPair *));
-      memcpy(leaf->data, node->data, leaf->size * sizeof(struct KVPair *));
+
+      uint8_t size_n = leaf->size * sizeof(struct KVPair *);
+      leaf->data = malloc(size_n);
+      memcpy(leaf->data, node->data, size_n);
 
       leaf = node->leafs[1];
       leaf->top = node;
       leaf->leaf_at = 1;
       leaf->leafs = NULL;
       leaf->size = node->size - at - 1;
-      leaf->data = malloc(leaf->size * sizeof(struct KVPair *));
-      memcpy(leaf->data, node->data + at + 1, leaf->size * sizeof(struct KVPair *));
+
+      size_n = leaf->size * sizeof(struct KVPair *);
+      leaf->data = malloc(size_n);
+      memcpy(leaf->data, node->data + at + 1, size_n);
 
       node->size = 1;
       node->data[0] = node->data[at];

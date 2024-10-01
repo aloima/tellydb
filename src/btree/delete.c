@@ -21,8 +21,11 @@ static void delete_from_leaf(struct BTree *tree, struct BTreeNode *node, struct 
 
         next->size += 1;
         next->data = realloc(next->data, next->size * sizeof(struct KVPair *));
-        move_kv(next, next->size - 1, 0);
-        next->data[0] = top->data[0];
+
+        const uint8_t at = (next->size - 1);
+        struct KVPair *last = (next->data[at] = top->data[0]);
+        memcpy(next->data + 1, next->data, at * sizeof(struct KVPair *));
+        next->data[0] = last;
 
         const uint32_t leaf_count = top->size;
         top->size -= 1;
@@ -41,11 +44,13 @@ static void delete_from_leaf(struct BTree *tree, struct BTreeNode *node, struct 
           free(top->leafs);
           free(top);
         } else {
-          memcpy(top->data, top->data + 1, top->size * sizeof(struct KVPair *));
-          top->data = realloc(top->data, top->size * sizeof(struct KVPair *));
+          const uint8_t size_n = top->size * sizeof(struct KVPair *);
+          memcpy(top->data, top->data + 1, size_n);
+          top->data = realloc(top->data, size_n);
 
-          memcpy(top->leafs, top->leafs + 1, leaf_count * sizeof(struct BTreeNode *));
-          top->leafs = realloc(top->leafs, leaf_count * sizeof(struct KVPair *));
+          const uint8_t leaf_count_n = leaf_count * sizeof(struct BTreeNode *);
+          memcpy(top->leafs, top->leafs + 1, leaf_count_n);
+          top->leafs = realloc(top->leafs, leaf_count_n);
 
           for (uint32_t i = 0; i < leaf_count; ++i) {
             top->leafs[i]->leaf_at = i;
@@ -57,8 +62,9 @@ static void delete_from_leaf(struct BTree *tree, struct BTreeNode *node, struct 
         top->data[0] = next->data[0];
 
         next->size -= 1;
-        memcpy(next->data, next->data + 1, next->size * sizeof(struct KVPair *));
-        next->data = realloc(next->data, next->size * sizeof(struct KVPair *));
+        const uint8_t size_n = next->size * sizeof(struct KVPair *);
+        memcpy(next->data, next->data + 1, size_n);
+        next->data = realloc(next->data, size_n);
       }
     } else if (is_last_leaf) {
       struct BTreeNode *prev = top->leafs[prev_at];
@@ -117,8 +123,10 @@ static void delete_from_leaf(struct BTree *tree, struct BTreeNode *node, struct 
 
         top->data[node->leaf_at] = next->data[0];
         next->size -= 1;
-        move_kv(next, 0, next->size);
-        next->data = realloc(next->data, next->size * sizeof(struct KVPair *));
+
+        const uint8_t size_n = next->size * sizeof(struct KVPair *);
+        memcpy(next->data, next->data + 1, size_n);
+        next->data = realloc(next->data, size_n);
       }
     }
   } else {
