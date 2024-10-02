@@ -9,6 +9,7 @@
     uint8_t allowed_log_levels;
     uint32_t max_log_len;
     char *data_file;
+    char *log_file;
   };
 
   struct Configuration *get_configuration(const char *filename);

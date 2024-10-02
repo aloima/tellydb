@@ -71,6 +71,8 @@ void close_server() {
   free(fds);
   write_log(LOG_INFO, "Free'd all memory blocks and closed the server.");
 
+  write_log(LOG_INFO, "Closing log file, free'ing configuration and exiting the process...");
+  close_logs();
   free(conf);
   exit(EXIT_SUCCESS);
 }

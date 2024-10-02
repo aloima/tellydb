@@ -9,7 +9,8 @@ static struct Configuration default_conf = {
   .max_clients = 128,
   .allowed_log_levels = LOG_INFO | LOG_ERR | LOG_WARN,
   .max_log_len = 8192,
-  .data_file = ".tellydb"
+  .data_file = ".tellydb",
+  .log_file = ".tellylog"
 };
 
 static void pass_line(FILE *file, char c) {
@@ -139,8 +140,10 @@ uint32_t get_configuration_string(char *buf, struct Configuration conf) {
     "# Specifies maximum writeable log length to STDOUT\n"
     "MAX_LOG_LEN=%d\n\n"
     "# Specifies database file where data will be saved\n"
-    "DATA_FILE=%s\n"
-  ), conf.port, conf.max_clients, allowed_log_levels, conf.max_log_len, conf.data_file);
+    "DATA_FILE=%s\n\n"
+    "# Specifies log file where logs will be appended\n"
+    "LOG_FILE=%s\n"
+  ), conf.port, conf.max_clients, allowed_log_levels, conf.max_log_len, conf.data_file, conf.log_file);
 }
 
 struct Configuration get_default_configuration() {
