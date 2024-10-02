@@ -20,15 +20,14 @@ static void pass_line(FILE *file, char c) {
 static void parse_value(FILE *file, char *buf) {
   char c = 1;
 
-  do {
-    c = fgetc(file);
+  while ((c = fgetc(file)) != EOF && c != '\n') {
     strncat(buf, &c, 1);
-  } while (c != EOF && c != '\n');
+  }
 }
 
 struct Configuration parse_configuration(FILE *file) {
   struct Configuration conf = {0};
-  char buf[64] = {0};
+  char buf[49] = {0};
   char c;
 
   do {
@@ -45,15 +44,15 @@ struct Configuration parse_configuration(FILE *file) {
 
       case '=':
         if (streq(buf, "PORT")) {
-          memset(buf, 0, 64);
+          memset(buf, 0, 49);
           parse_value(file, buf);
           conf.port = atoi(buf);
         } else if (streq(buf, "MAX_CLIENTS")) {
-          memset(buf, 0, 64);
+          memset(buf, 0, 49);
           parse_value(file, buf);
           conf.max_clients = atoi(buf);
         } else if (streq(buf, "ALLOWED_LOG_LEVELS")) {
-          memset(buf, 0, 64);
+          memset(buf, 0, 49);
           parse_value(file, buf);
 
           const uint32_t len = strlen(buf);
@@ -74,14 +73,20 @@ struct Configuration parse_configuration(FILE *file) {
             }
           }
         } else if (streq(buf, "MAX_LOG_LEN")) {
-          memset(buf, 0, 64);
+          memset(buf, 0, 49);
           parse_value(file, buf);
           conf.max_log_len = atoi(buf);
+        } else if (streq(buf, "DATA_FILE")) {
+          memset(conf.data_file, 0, 49);
+          parse_value(file, conf.data_file);
+        } else if (streq(buf, "LOG_FILE")) {
+          memset(conf.log_file, 0, 49);
+          parse_value(file, conf.log_file);
         } else {
           return conf;
         }
 
-        memset(buf, 0, 64);
+        memset(buf, 0, 49);
         break;
 
       default:
@@ -178,4 +183,8 @@ struct Configuration *get_configuration(const char *filename) {
       return get_configuration(NULL);
     }
   }
+}
+
+void free_configuration(struct Configuration *conf) {
+  free(conf);
 }

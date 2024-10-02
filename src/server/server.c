@@ -73,7 +73,7 @@ void close_server() {
 
   write_log(LOG_INFO, "Closing log file, free'ing configuration and exiting the process...");
   close_logs();
-  free(conf);
+  free_configuration(conf);
   exit(EXIT_SUCCESS);
 }
 
