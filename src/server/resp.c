@@ -56,7 +56,7 @@ respdata_t *parse_resp_sstring(int connfd, uint8_t type) {
   data->count = 0;
 
   string_t string = {
-    .value = malloc(33 * sizeof(char)),
+    .value = malloc(33),
     .len = 0
   };
 
@@ -138,36 +138,32 @@ respdata_t *get_resp_data(int connfd) {
   respdata_t *data;
   uint8_t type;
 
-  while (true) {
-    if (read(connfd, &type, 1) == 0) {
-      data = malloc(sizeof(respdata_t));
-      data->type = RDT_CLOSE;
+  if (read(connfd, &type, 1) == 0) {
+    data = malloc(sizeof(respdata_t));
+    data->type = RDT_CLOSE;
 
-      return data;
-    } else {
-      switch (type) {
-        case RDT_ARRAY:
-          data = parse_resp_array(connfd, type);
-          return data;
+    return data;
+  } else {
+    switch (type) {
+      case RDT_ARRAY:
+        data = parse_resp_array(connfd, type);
+        return data;
 
-        case RDT_SSTRING:
-          data = parse_resp_sstring(connfd, type);
-          return data;
+      case RDT_SSTRING:
+        data = parse_resp_sstring(connfd, type);
+        return data;
 
-        case RDT_BSTRING:
-          data = parse_resp_bstring(connfd, type);
-          return data;
+      case RDT_BSTRING:
+        data = parse_resp_bstring(connfd, type);
+        return data;
 
-        case RDT_ERR:
-          data = parse_resp_sstring(connfd, type);
-          return data;
+      case RDT_ERR:
+        data = parse_resp_sstring(connfd, type);
+        return data;
 
-        default:
-          break;
-      }
+      default:
+        return NULL;
     }
-
-    usleep(3000);
   }
 }
 
