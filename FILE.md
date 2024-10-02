@@ -1,6 +1,6 @@
 ## Introduction
 This file is a small documentation for files that provided by tellydb. Specified file names are default file names.
-They can be changed from configuration file. Configuration file can be specified as command argument.
+They can be changed from configuration file. Configuration file is changeable via command argument.
 
 ## Database file | `.tellydb`
 It consists of lines and a line is as follows:
@@ -21,3 +21,5 @@ A value line is as follows:
 ```
 KEY=VALUE
 ```
+
+Maximum key length and maximum value length is 48.

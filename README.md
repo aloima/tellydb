@@ -5,7 +5,7 @@ A key-value database project for educational purposes.
 + Follows [RESP2](https://redis.io/docs/latest/develop/reference/protocol-spec/) specification from redis
 + Includes B-Tree for caching
 + Fully configurable via [.tellyconf](./FILE.md)
-+ Includes transaction/command queue system
++ Includes command queue system
 + Supports integer, string, null, boolean, list and hash table types
 + Provides atomicity when saving to the database file
 

@@ -26,12 +26,12 @@ static void run(struct Client *client, respdata_t *data, __attribute__((unused))
 
         char buf[512];
         sprintf(buf, (
-          "id: %d\r\n"
-          "socket file descriptor: %d\r\n"
-          "connected at: %.24s\r\n"
-          "last used command: %s\r\n"
-          "library name: %s\r\n"
-          "library version: %s\r\n"
+          "ID: %d\r\n"
+          "Socket file descriptor: %d\r\n"
+          "Connected at: %.24s\r\n"
+          "Last used command: %s\r\n"
+          "Library name: %s\r\n"
+          "Library version: %s\r\n"
         ),
         client->id, client->connfd, ctime(&client->connected_at),
         client->command->name, lib_name, lib_ver);
