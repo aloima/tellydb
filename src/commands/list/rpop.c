@@ -11,22 +11,21 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
   }
 
   const string_t key = data->value.array[1]->value.string;
-  struct KVPair *pair = get_data(key.value, conf);
+  struct KVPair *kv = get_data(key.value, conf);
 
-  if (pair) {
-    if (client && pair->type != TELLY_LIST) {
+  if (kv) {
+    if (client && kv->type != TELLY_LIST) {
       write(client->connfd, "-Value stored at the key is not a list\r\n", 40);
       return;
     }
 
-    struct List *list = pair->value.list;
+    struct List *list = kv->value.list;
     struct ListNode *node = list->end;
 
     if (client) write_value(client->connfd, list->end->value, list->end->type);
 
     if (list->size == 1) {
-      free_list(list);
-      // delete from btree
+      delete_kv_from_btree(get_cache(), key.value);
     } else {
       list->end = list->end->prev;
       list->end->next = NULL;
