@@ -1,5 +1,3 @@
-// B-Tree implementation
-
 #include "database.h"
 
 #include <stdint.h>

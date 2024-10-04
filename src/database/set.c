@@ -3,9 +3,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-struct KVPair *set_data(string_t key, value_t value, enum TellyTypes type, struct Configuration *conf) {
+struct KVPair *set_data(struct KVPair *data, string_t key, value_t value, enum TellyTypes type) {
   struct BTree *cache = get_cache();
-  struct KVPair *data = get_data(key.value, conf);
 
   if (data) {
     if (data->type == TELLY_STR && type != TELLY_STR) {

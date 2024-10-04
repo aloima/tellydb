@@ -16,7 +16,7 @@
   struct HashTableSize {
     uint64_t allocated; // total allocated size
     uint64_t filled; // filled allocated block count
-    uint64_t all; // contains next values.
+    uint64_t all; // contains next values
   };
 
   struct HashTable {

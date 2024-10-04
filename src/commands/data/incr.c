@@ -14,15 +14,15 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
   string_t key = data->value.array[1]->value.string;
   struct KVPair *result = get_data(key.value, conf);
 
-  if (result == NULL) {
-    set_data(key, (value_t) {
+  if (!result) {
+    set_data(NULL, key, (value_t) {
       .integer = 0
-    }, TELLY_INT, conf);
+    }, TELLY_INT);
     if (client) write(client->connfd, ":0\r\n", 4);
   } else if (result->type == TELLY_INT) {
     result->value->integer += 1;
 
-    if (client != NULL) {
+    if (client) {
       const uint32_t buf_len = get_digit_count(result->value->integer) + 3;
       char buf[buf_len + 1];
 

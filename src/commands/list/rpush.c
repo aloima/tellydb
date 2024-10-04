@@ -38,9 +38,9 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
     list = res->value->list;
   } else {
     list = create_list();
-    set_data(key, (value_t) {
+    set_data(NULL, key, (value_t) {
       .list = list
-    }, TELLY_LIST, conf);
+    }, TELLY_LIST);
   }
 
   const uint32_t value_count = data->count - 2;

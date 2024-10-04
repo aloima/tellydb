@@ -14,16 +14,16 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
   }
 
   string_t key = data->value.array[1]->value.string;
-  struct KVPair *pair = get_data(key.value, conf);
+  struct KVPair *kv = get_data(key.value, conf);
   struct HashTable *table;
 
-  if (pair && pair->type == TELLY_HASHTABLE) {
-    table = pair->value->hashtable;
+  if (kv && kv->type == TELLY_HASHTABLE) {
+    table = kv->value->hashtable;
   } else {
     table = create_hashtable(32, 0.6);
-    set_data(key, (value_t) {
+    set_data(NULL, key, (value_t) {
       .hashtable = table
-    }, TELLY_HASHTABLE, conf);
+    }, TELLY_HASHTABLE);
   }
 
   const uint64_t fv_count = (data->count / 2) - 1;

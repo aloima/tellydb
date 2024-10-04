@@ -25,7 +25,7 @@
 
   void get_all_keys();
   struct KVPair *get_data(char *key, struct Configuration *conf);
-  struct KVPair *set_data(string_t key, value_t value, enum TellyTypes type, struct Configuration *conf);
+  struct KVPair *set_data(struct KVPair *data, string_t key, value_t value, enum TellyTypes type);
   void save_data();
 
   void set_kv(struct KVPair *kv, string_t key, value_t *value, enum TellyTypes type, const off_t pos);

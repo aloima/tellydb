@@ -6,7 +6,7 @@
 
 #include <unistd.h>
 
-static void run(struct Client *client, respdata_t *data, __attribute__((unused)) struct Configuration *conf) {
+static void run(struct Client *client, respdata_t *data, struct Configuration *conf) {
   if (data->count < 3 && client) {
     WRONG_ARGUMENT_ERROR(client->connfd, "SET", 3);
     return;
@@ -14,6 +14,7 @@ static void run(struct Client *client, respdata_t *data, __attribute__((unused))
 
   char *value_in = data->value.array[2]->value.string.value;
   bool get = false;
+  bool nx = false, xx = false;
 
   for (uint32_t i = 3; i < data->count; ++i) {
     string_t input = data->value.array[i]->value.string;
@@ -21,15 +22,36 @@ static void run(struct Client *client, respdata_t *data, __attribute__((unused))
     to_uppercase(input.value, arg);
 
     if (streq(arg, "GET")) get = true;
-    else {
+    else if (streq(arg, "NX")) nx = true;
+    else if (streq(arg, "XX")) xx = true;
+    else if (client) {
       write(client->connfd, "-Invalid argument(s) for 'SET' command\r\n", 40);
       return;
     }
   }
 
+  if (nx && xx) {
+    if (client) {
+      write(client->connfd, "-XX and NX arguments cannot be specified simultaneously for 'SET' command\r\n", 75);
+    }
+
+    return;
+  }
+
   string_t key = data->value.array[1]->value.string;
   value_t value;
   enum TellyTypes type;
+  struct KVPair *res = get_data(key.value, conf);
+
+  if (nx && res) {
+    if (client) write(client->connfd, "$-1\r\n", 5);
+    return;
+  }
+
+  if (xx && !res) {
+    if (client) write(client->connfd, "$-1\r\n", 5);
+    return;
+  }
 
   bool is_true = streq(value_in, "true");
 
@@ -49,9 +71,9 @@ static void run(struct Client *client, respdata_t *data, __attribute__((unused))
   if (get && client) {
     struct KVPair *val = get_data(data->value.array[1]->value.string.value, conf);
     write_value(client->connfd, *val->value, val->type);
-    set_data(key, value, type, conf);
+    set_data(res, key, value, type);
   } else if (!get) {
-    set_data(key, value, type, conf);
+    set_data(res, key, value, type);
     if (client) write(client->connfd, "+OK\r\n", 5);
   }
 }
