@@ -34,7 +34,7 @@ static struct KVPair *insert_kv_to_node(struct BTree *tree, struct BTreeNode *no
 
         node->top->size += 1;
         node->top->data = realloc(node->top->data, node->top->size * sizeof(struct KVPair *));
-        move_kv(node->top, node->top->size - 1, node->leaf_at);
+        memcpy(node->top->data + node->leaf_at + 1, node->top->data + node->leaf_at, (node->top->size - 1 - node->leaf_at) * sizeof(struct KVPair *));
         node->top->data[node->leaf_at] = middle;
 
         node->top->leafs = realloc(node->top->leafs, (node->top->size + 1) * sizeof(struct BTreeNode *));
