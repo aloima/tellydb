@@ -24,7 +24,7 @@
   void free_cache();
 
   void get_all_keys();
-  struct KVPair *get_data(char *key, struct Configuration *conf);
+  struct KVPair *get_data(const char *key);
   struct KVPair *set_data(struct KVPair *data, string_t key, value_t value, enum TellyTypes type);
   void save_data();
 

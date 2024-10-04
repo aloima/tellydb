@@ -6,7 +6,7 @@
 
 #include <unistd.h>
 
-static void run(struct Client *client, respdata_t *data, struct Configuration *conf) {
+static void run(struct Client *client, respdata_t *data, __attribute__((unused)) struct Configuration *conf) {
   if (data->count < 3 && client) {
     WRONG_ARGUMENT_ERROR(client->connfd, "SET", 3);
     return;
@@ -41,7 +41,7 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
   string_t key = data->value.array[1]->value.string;
   value_t value;
   enum TellyTypes type;
-  struct KVPair *res = get_data(key.value, conf);
+  struct KVPair *res = get_data(key.value);
 
   if (nx && res) {
     if (client) write(client->connfd, "$-1\r\n", 5);
@@ -68,10 +68,13 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
     value.string = data->value.array[2]->value.string;
   }
 
-  if (get && client) {
-    struct KVPair *val = get_data(data->value.array[1]->value.string.value, conf);
-    write_value(client->connfd, *val->value, val->type);
-    set_data(res, key, value, type);
+  if (get) {
+    if (res) {
+      if (client) write_value(client->connfd, *res->value, res->type);
+      set_data(res, key, value, type);
+    } else if (client) {
+      write(client->connfd, "$-1\r\n", 5);
+    }
   } else if (!get) {
     set_data(res, key, value, type);
     if (client) write(client->connfd, "+OK\r\n", 5);

@@ -5,14 +5,14 @@
 
 #include <unistd.h>
 
-static void run(struct Client *client, respdata_t *data, struct Configuration *conf) {
+static void run(struct Client *client, respdata_t *data, __attribute__((unused)) struct Configuration *conf) {
   if (data->count != 2 && client) {
     WRONG_ARGUMENT_ERROR(client->connfd, "INCR", 4);
     return;
   }
 
   string_t key = data->value.array[1]->value.string;
-  struct KVPair *result = get_data(key.value, conf);
+  struct KVPair *result = get_data(key.value);
 
   if (!result) {
     set_data(NULL, key, (value_t) {

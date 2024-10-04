@@ -19,26 +19,26 @@ static void rpush_to_list(struct List *list, void *value, enum TellyTypes type) 
   }
 }
 
-static void run(struct Client *client, respdata_t *data, struct Configuration *conf) {
+static void run(struct Client *client, respdata_t *data, __attribute__((unused)) struct Configuration *conf) {
   if (client && data->count < 3) {
     WRONG_ARGUMENT_ERROR(client->connfd, "RPUSH", 5);
     return;
   }
 
   string_t key = data->value.array[1]->value.string;
-  struct KVPair *res = get_data(key.value, conf);
+  struct KVPair *kv = get_data(key.value);
   struct List *list;
 
-  if (res) {
-    if (client && res->type != TELLY_LIST) {
+  if (kv) {
+    if (client && kv->type != TELLY_LIST) {
       write(client->connfd, "-Value stored at the key is not a list\r\n", 40);
       return;
     }
 
-    list = res->value->list;
+    list = kv->value->list;
   } else {
     list = create_list();
-    set_data(NULL, key, (value_t) {
+    set_data(kv, key, (value_t) {
       .list = list
     }, TELLY_LIST);
   }

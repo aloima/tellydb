@@ -4,7 +4,7 @@
 
 #include <unistd.h>
 
-static void run(struct Client *client, respdata_t *data, struct Configuration *conf) {
+static void run(struct Client *client, respdata_t *data, __attribute__((unused)) struct Configuration *conf) {
   if (client) {
     if (data->count != 2) {
       WRONG_ARGUMENT_ERROR(client->connfd, "TYPE", 4);
@@ -12,7 +12,7 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
     }
 
     char *key = data->value.array[1]->value.string.value;
-    struct KVPair *res = get_data(key, conf);
+    struct KVPair *res = get_data(key);
 
     if (res) {
       switch (res->type) {

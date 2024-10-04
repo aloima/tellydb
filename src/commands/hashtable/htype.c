@@ -4,7 +4,7 @@
 
 #include <unistd.h>
 
-static void run(struct Client *client, respdata_t *data, struct Configuration *conf) {
+static void run(struct Client *client, respdata_t *data, __attribute__((unused)) struct Configuration *conf) {
   if (client) {
     if (data->count != 3) {
       WRONG_ARGUMENT_ERROR(client->connfd, "HTYPE", 5);
@@ -14,7 +14,7 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
     char *key = data->value.array[1]->value.string.value;
     char *name = data->value.array[2]->value.string.value;
 
-    struct KVPair *kv = get_data(key, conf);
+    struct KVPair *kv = get_data(key);
 
     if (kv && kv->type == TELLY_HASHTABLE) {
       struct FVPair *fv = get_fv_from_hashtable(kv->value->hashtable, name);

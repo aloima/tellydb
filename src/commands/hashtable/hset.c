@@ -7,21 +7,21 @@
 
 #include <unistd.h>
 
-static void run(struct Client *client, respdata_t *data, struct Configuration *conf) {
+static void run(struct Client *client, respdata_t *data, __attribute__((unused)) struct Configuration *conf) {
   if (client && (data->count == 2 || data->count % 2 != 0)) {
     WRONG_ARGUMENT_ERROR(client->connfd, "HSET", 4);
     return;
   }
 
   string_t key = data->value.array[1]->value.string;
-  struct KVPair *kv = get_data(key.value, conf);
+  struct KVPair *kv = get_data(key.value);
   struct HashTable *table;
 
   if (kv && kv->type == TELLY_HASHTABLE) {
     table = kv->value->hashtable;
   } else {
     table = create_hashtable(32, 0.6);
-    set_data(NULL, key, (value_t) {
+    set_data(kv, key, (value_t) {
       .hashtable = table
     }, TELLY_HASHTABLE);
   }

@@ -5,7 +5,7 @@
 
 #include <unistd.h>
 
-static void run(struct Client *client, respdata_t *data, struct Configuration *conf) {
+static void run(struct Client *client, respdata_t *data, __attribute__((unused)) struct Configuration *conf) {
   if (client) {
     if (data->count == 1) {
       WRONG_ARGUMENT_ERROR(client->connfd, "EXISTS", 6);
@@ -21,7 +21,7 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
     for (uint32_t i = 1; i <= key_count; ++i) {
       char *key = data->value.array[i]->value.string.value;
 
-      if (get_data(key, conf)) {
+      if (get_data(key)) {
         existed += 1;
         strcat(buf, "+exists\r\n");
       } else {

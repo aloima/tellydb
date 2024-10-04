@@ -43,7 +43,7 @@ void get_all_keys() {
   free(key.value);
 }
 
-struct KVPair *get_data(char *key, __attribute__((unused)) struct Configuration *conf) {
+struct KVPair *get_data(const char *key) {
   const int fd = get_database_fd();
   struct BTree *cache = get_cache();
 

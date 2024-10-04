@@ -5,7 +5,7 @@
 
 #include <unistd.h>
 
-static void run(struct Client *client, respdata_t *data, struct Configuration *conf) {
+static void run(struct Client *client, respdata_t *data, __attribute__((unused)) struct Configuration *conf) {
   if (client) {
     if (data->count != 2) {
       WRONG_ARGUMENT_ERROR(client->connfd, "HLEN", 4);
@@ -13,7 +13,7 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
     }
 
     char *key = data->value.array[1]->value.string.value;
-    struct KVPair *kv = get_data(key, conf);
+    struct KVPair *kv = get_data(key);
     uint64_t count = (kv && kv->type == TELLY_HASHTABLE) ? kv->value->hashtable->size.all : 0;
 
     uint32_t buf_len = 3 + get_digit_count(count);

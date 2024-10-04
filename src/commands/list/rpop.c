@@ -4,14 +4,14 @@
 
 #include <unistd.h>
 
-static void run(struct Client *client, respdata_t *data, struct Configuration *conf) {
+static void run(struct Client *client, respdata_t *data, __attribute__((unused)) struct Configuration *conf) {
   if (client && data->count != 2) {
     WRONG_ARGUMENT_ERROR(client->connfd, "RPOP", 4);
     return;
   }
 
   const string_t key = data->value.array[1]->value.string;
-  struct KVPair *kv = get_data(key.value, conf);
+  struct KVPair *kv = get_data(key.value);
 
   if (kv) {
     if (client && kv->type != TELLY_LIST) {
