@@ -11,6 +11,19 @@
 static struct Configuration *conf;
 static int fd = -1;
 
+static const char month_name[][4] = {
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+};
+
+static void number_pad(char *res, const uint32_t value) {
+  if (value < 10) {
+    sprintf(res, "0%u", value);
+  } else if (value < 100) {
+    sprintf(res, "%u", value);
+  }
+}
+
 void initialize_logs(struct Configuration *config) {
   conf = config;
 
@@ -27,8 +40,19 @@ void initialize_logs(struct Configuration *config) {
 
 void write_log(enum LogLevel level, const char *fmt, ...) {
   const uint8_t check = conf->allowed_log_levels & level;
-  time_t raw;
-  time(&raw);
+
+  time_t rawtime = time(NULL);
+  struct tm *tm = localtime(&rawtime);
+  
+  char date[3], mon[4], hour[3], min[3], sec[3];
+  number_pad(date, tm->tm_mday);
+  sprintf(mon, "%.3s", month_name[tm->tm_mon]);
+  number_pad(hour, tm->tm_hour);
+  number_pad(min, tm->tm_min);
+  number_pad(sec, tm->tm_sec);
+
+  char time_text[28]; // tm->tm_year is integer, not 4-digit
+  sprintf(time_text, "%s %s %d %s:%s:%s", date, mon, 1900 + tm->tm_year, hour, min, sec);
 
   const uint32_t buf_size = conf->max_log_len + 1;
   char buf[buf_size];
@@ -38,20 +62,20 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
   vsnprintf(buf, buf_size, fmt, args);
   va_end(args);
 
-  uint32_t message_len = conf->max_log_len + 36;
+  uint32_t message_len = conf->max_log_len + 41;
   char message[message_len + 1];
 
   switch (check) {
     case LOG_INFO:
-      message_len = sprintf(message, "[%.24s / INFO]: %s\n", ctime(&raw), buf);
+      message_len = sprintf(message, "[%s / INFO] | %s\n", time_text, buf);
       break;
 
     case LOG_WARN:
-      message_len = sprintf(message, "[%.24s / WARN]: %s\n", ctime(&raw), buf);
+      message_len = sprintf(message, "[%s / WARN] | %s\n", time_text, buf);
       break;
 
     case LOG_ERR:
-      message_len = sprintf(message, "[%.24s / ERR]: %s\n", ctime(&raw), buf);
+      message_len = sprintf(message, "[%s / ERR]  | %s\n", time_text, buf);
       break;
   }
 
