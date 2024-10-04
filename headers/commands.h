@@ -22,12 +22,12 @@
     char *summary;
     char *since;
     char *complexity;
-    void (*run)(struct Client *client, respdata_t *data, struct Configuration *conf);
+    void (*run)(struct Client *client, respdata_t *data);
     struct Subcommand *subcommands;
     uint32_t subcommand_count;
   };
 
-  void execute_command(struct Client *client, respdata_t *data, struct Configuration *conf);
+  void execute_command(struct Client *client, respdata_t *data);
 
   void load_commands();
   struct Command *get_commands();

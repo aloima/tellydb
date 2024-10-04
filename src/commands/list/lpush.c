@@ -19,7 +19,7 @@ static void lpush_to_list(struct List *list, void *value, enum TellyTypes type) 
   }
 }
 
-static void run(struct Client *client, respdata_t *data, __attribute__((unused)) struct Configuration *conf) {
+static void run(struct Client *client, respdata_t *data) {
   if (client && data->count < 3) {
     WRONG_ARGUMENT_ERROR(client->connfd, "LPUSH", 5);
     return;

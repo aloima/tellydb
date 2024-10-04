@@ -60,7 +60,7 @@ uint32_t get_command_count() {
   return command_count;
 }
 
-void execute_command(struct Client *client, respdata_t *data, struct Configuration *conf) {
+void execute_command(struct Client *client, respdata_t *data) {
   if (data->type == RDT_ARRAY) {
     string_t name = data->value.array[0]->value.string;
 
@@ -73,7 +73,7 @@ void execute_command(struct Client *client, respdata_t *data, struct Configurati
       struct Command command = commands[i];
 
       if (streq(input, command.name)) {
-        command.run(client, data, conf);
+        command.run(client, data);
         executed = true;
         break;
       }

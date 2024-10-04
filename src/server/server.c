@@ -20,12 +20,16 @@ static struct pollfd *fds;
 static uint32_t nfds;
 static struct Configuration *conf;
 
+struct Configuration *get_server_configuration() {
+  return conf;
+}
+
 static int setnonblocking(int sockfd) {
   if (fcntl(sockfd, F_SETFL, fcntl(sockfd, F_GETFL, 0) | O_NONBLOCK) == -1) return -1;
   return 0;
 }
 
-void terminate_connection(const int connfd) {
+static void terminate_connection(const int connfd) {
   struct Client *client = get_client(connfd);
   write_log(LOG_INFO, "Client #%d is disconnected.", client->id);
 
@@ -43,7 +47,7 @@ void terminate_connection(const int connfd) {
   remove_client(connfd);
 }
 
-void close_server() {
+static void close_server() {
   struct Client **clients = get_clients();
   const uint32_t client_count = get_client_count();
 

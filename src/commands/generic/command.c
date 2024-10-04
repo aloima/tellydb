@@ -6,7 +6,7 @@
 
 #include <unistd.h>
 
-static void run(struct Client *client, respdata_t *data, __attribute__((unused)) struct Configuration *conf) {
+static void run(struct Client *client, respdata_t *data) {
   if (data->count != 1 && client) {
     string_t input = data->value.array[1]->value.string;
     char subcommand[input.len + 1];

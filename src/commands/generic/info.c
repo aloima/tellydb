@@ -34,9 +34,10 @@ static bool get_section(char *section, struct Configuration *conf, char *name) {
   return true;
 }
 
-static void run(struct Client *client, respdata_t *data, struct Configuration *conf) {
+static void run(struct Client *client, respdata_t *data) {
   if (client) {
-    uint32_t count = data->count - 1;
+    struct Configuration *conf = get_server_configuration();
+    const uint32_t count = data->count - 1;
 
     char buf[8192], section[2048];
     buf[0] = '\0';

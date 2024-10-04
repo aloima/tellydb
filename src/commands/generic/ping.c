@@ -6,7 +6,7 @@
 
 #include <unistd.h>
 
-static void run(struct Client *client, respdata_t *data, __attribute__((unused)) struct Configuration *conf) {
+static void run(struct Client *client, respdata_t *data) {
   if (client != NULL) {
     switch (data->count) {
       case 1:

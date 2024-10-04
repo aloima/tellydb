@@ -5,7 +5,7 @@
 
 #include <unistd.h>
 
-static void run(struct Client *client, respdata_t *data, __attribute__((unused)) struct Configuration *conf) {
+static void run(struct Client *client, respdata_t *data) {
   if (data->count != 2 && client) {
     WRONG_ARGUMENT_ERROR(client->connfd, "INCR", 4);
     return;

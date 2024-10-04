@@ -11,14 +11,12 @@ uint32_t transaction_count = 0;
 struct Configuration *conf = NULL;
 bool thread_active = true;
 
-void *transaction_thread(void *arg) {
-  struct Configuration *conf = arg;
-
+void *transaction_thread() {
   while (thread_active) {
     for (uint32_t i = 0; i < transaction_count; ++i) {
       struct Transaction *transaction = transactions[i];
 
-      execute_command(transaction->client, transaction->command, conf);
+      execute_command(transaction->client, transaction->command);
       remove_transaction(transaction);
     }
 
@@ -40,7 +38,7 @@ pthread_t create_transaction_thread(struct Configuration *config) {
   conf = config;
 
   pthread_t thread;
-  pthread_create(&thread, NULL, transaction_thread, conf);
+  pthread_create(&thread, NULL, transaction_thread, NULL);
   pthread_detach(thread);
 
   return thread;
