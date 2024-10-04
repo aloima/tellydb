@@ -44,13 +44,21 @@
   extern struct Command cmd_type;
   /* /DATA COMMANDS */
 
+  /* GENERIC COMMANDS */
+  extern struct Command cmd_client;
+  extern struct Command cmd_command;
+  extern struct Command cmd_info;
+  extern struct Command cmd_memory;
+  extern struct Command cmd_ping;
+  extern struct Command cmd_time;
+  /* /GENERIC COMMANDS */
+
   /* HASHTABLE COMMANDS */
   extern struct Command cmd_hget;
   extern struct Command cmd_hlen;
   extern struct Command cmd_hset;
   extern struct Command cmd_htype;
   /* /HASHTABLE COMMANDS */
-
 
   /* LIST COMMANDS */
   extern struct Command cmd_lindex;
@@ -60,14 +68,4 @@
   extern struct Command cmd_rpop;
   extern struct Command cmd_rpush;
   /* /LIST COMMANDS */
-
-
-  /* UTILS COMMANDS */
-  extern struct Command cmd_client;
-  extern struct Command cmd_command;
-  extern struct Command cmd_info;
-  extern struct Command cmd_memory;
-  extern struct Command cmd_ping;
-  extern struct Command cmd_time;
-  /* /UTILS COMMANDS */
 #endif

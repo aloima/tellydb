@@ -19,6 +19,14 @@ void load_commands() {
     cmd_hset,
     cmd_htype,
 
+    // Generic commands
+    cmd_client,
+    cmd_command,
+    cmd_info,
+    cmd_memory,
+    cmd_ping,
+    cmd_time,
+
     // List commands
     cmd_lindex,
     cmd_llen,
@@ -26,14 +34,6 @@ void load_commands() {
     cmd_lpush,
     cmd_rpop,
     cmd_rpush,
-
-    // Utils commands
-    cmd_client,
-    cmd_command,
-    cmd_info,
-    cmd_memory,
-    cmd_ping,
-    cmd_time,
 
     // Uncategorized commands
     cmd_decr,
