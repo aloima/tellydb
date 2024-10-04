@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifndef CONFIG_H
   #define CONFIG_H
@@ -10,6 +11,7 @@
     uint32_t max_log_len;
     char data_file[49];
     char log_file[49];
+    bool default_conf;
   };
 
   struct Configuration *get_configuration(const char *filename);

@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <time.h>
 
 #include <pthread.h>
 #include <fcntl.h>
@@ -59,10 +60,10 @@ static void close_server() {
     remove_client(client->connfd);
   }
 
-  write_log(LOG_WARN, "Saving data...");
+  clock_t start = clock();
   save_data();
   close_database_fd();
-  write_log(LOG_INFO, "Saved data and closed database file.");
+  write_log(LOG_INFO, "Saved data and closed database file in %.2f seconds.", ((float) clock() - start) / CLOCKS_PER_SEC);
 
   deactive_transaction_thread();
   usleep(15);
@@ -90,6 +91,14 @@ void start_server(struct Configuration *config) {
   conf = config;
   initialize_logs(conf);
   write_log(LOG_INFO, "Initialized logs and configuration.");
+  write_log(LOG_INFO, "version=" VERSION ", commit hash=" GIT_HASH);
+
+  if (conf->default_conf) {
+    write_log(LOG_WARN, (
+      "There is no configuration file, using default configuration. "
+      "To specify, create .tellyconf file or use `telly config /path/to/file`."
+    ));
+  }
 
   load_commands();
   write_log(LOG_INFO, "Initialized commands.");
@@ -144,12 +153,12 @@ void start_server(struct Configuration *config) {
     return;
   }
 
-  create_cache();
+  struct BTree *cache = create_cache();
   open_database_fd(conf->data_file);
   write_log(LOG_INFO, "Created cache and opened database file.");
 
   get_all_keys();
-  write_log(LOG_INFO, "Read database file to create keyspace.");
+  write_log(LOG_INFO, "Read database file to create keyspace. Loaded key count: %d", cache->size);
 
   nfds = 1;
   fds = malloc(sizeof(struct pollfd));

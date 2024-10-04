@@ -18,7 +18,7 @@
     off_t pos;
   };
 
-  void create_cache();
+  struct BTree *create_cache();
   struct BTree *get_cache();
   struct KVPair *get_kv_from_cache(const char *key);
   void free_cache();

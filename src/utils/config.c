@@ -10,7 +10,8 @@ static struct Configuration default_conf = {
   .allowed_log_levels = LOG_INFO | LOG_ERR | LOG_WARN,
   .max_log_len = 8192,
   .data_file = ".tellydb",
-  .log_file = ".tellylog"
+  .log_file = ".tellylog",
+  .default_conf = true
 };
 
 static void pass_line(FILE *file, char c) {

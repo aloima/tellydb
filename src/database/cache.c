@@ -2,8 +2,8 @@
 
 static struct BTree *cache = NULL;
 
-void create_cache() {
-  cache = create_btree(3);
+struct BTree *create_cache() {
+  return (cache = create_btree(3));
 }
 
 struct BTree *get_cache() {
