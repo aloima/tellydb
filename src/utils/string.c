@@ -9,10 +9,10 @@ void set_string(string_t *data, char *value, int32_t len, bool unset) {
   data->len = len == -1 ? strlen(value) : (uint32_t) len;
   const uint32_t size = data->len + 1;
 
-  if (!unset) {
-    data->value = realloc(data->value, size);
-  } else {
+  if (unset) {
     data->value = malloc(size);
+  } else {
+    data->value = realloc(data->value, size);
   }
 
   memcpy(data->value, value, size);

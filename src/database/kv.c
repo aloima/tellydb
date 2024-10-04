@@ -15,7 +15,9 @@ void set_kv(struct KVPair *kv, string_t key, value_t *value, enum TellyTypes typ
     set_string(kv->key, key.value, key.len, false);
   }
 
-  if (!kv->value) kv->value = malloc(sizeof(value_t));
+  if (!kv->value && type != TELLY_UNSPECIFIED) {
+    kv->value = malloc(sizeof(value_t));
+  }
 
   switch (type) {
     case TELLY_STR:
