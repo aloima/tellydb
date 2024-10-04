@@ -18,7 +18,7 @@ static void add_kv_to_node(struct BTree *tree, struct BTreeNode *node, struct KV
   node->size += 1;
   node->data = realloc(node->data, node->size * sizeof(struct KVPair *));
 
-  move_kv(node, node->size - 1, index);
+  memcpy(node->data + index + 1, node->data + index, (node->size - index - 1) * sizeof(struct KVPair *));
   node->data[index] = kv;
 }
 
@@ -182,7 +182,7 @@ struct KVPair *insert_kv_to_btree(struct BTree *tree, string_t key, value_t *val
   kv->value = NULL;
   set_kv(kv, key, value, type, pos);
 
-  if (tree->root == NULL) {
+  if (!tree->root) {
     tree->root = malloc(sizeof(struct BTreeNode));
     tree->root->size = 0;
     tree->root->leafs = NULL;

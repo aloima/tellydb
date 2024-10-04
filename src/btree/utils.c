@@ -7,10 +7,10 @@ void move_kv(struct BTreeNode *node, const uint32_t at, const uint32_t to) {
   struct KVPair *kv = node->data[at];
 
   if (to > at) {
-    memcpy(node->data + at, node->data + at + 1, (to - at) << 3);
+    memcpy(node->data + at, node->data + at + 1, (to - at) * sizeof(struct KVPair *));
     node->data[to] = kv;
   } else if (at > to) {
-    memcpy(node->data + to + 1, node->data + to, (at - to) << 3);
+    memcpy(node->data + to + 1, node->data + to, (at - to) * sizeof(struct KVPair *));
     node->data[to] = kv;
   }
 }
