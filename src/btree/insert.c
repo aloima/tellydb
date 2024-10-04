@@ -13,7 +13,7 @@ static void add_kv_to_node(struct BTree *tree, struct BTreeNode *node, struct KV
     return;
   }
 
-  const uint32_t index = find_index_of_kv(node, kv->key.value);
+  const uint32_t index = find_index_of_kv(node, kv->key->value);
 
   node->size += 1;
   node->data = realloc(node->data, node->size * sizeof(struct KVPair *));
@@ -176,9 +176,11 @@ static struct KVPair *insert_kv_to_node(struct BTree *tree, struct BTreeNode *no
   return kv;
 }
 
-struct KVPair *insert_kv_to_btree(struct BTree *tree, char *key, void *value, enum TellyTypes type) {
+struct KVPair *insert_kv_to_btree(struct BTree *tree, string_t key, value_t *value, const enum TellyTypes type, const off_t pos) {
   struct KVPair *kv = malloc(sizeof(struct KVPair));
-  set_kv(kv, key, value, type);
+  kv->key = NULL;
+  kv->value = NULL;
+  set_kv(kv, key, value, type, pos);
 
   if (tree->root == NULL) {
     tree->root = malloc(sizeof(struct BTreeNode));
@@ -189,7 +191,7 @@ struct KVPair *insert_kv_to_btree(struct BTree *tree, char *key, void *value, en
 
     add_kv_to_node(tree, tree->root, kv);
   } else {
-    struct BTreeNode *node = find_node_of_kv(tree->root, key);
+    struct BTreeNode *node = find_node_of_kv(tree->root, key.value);
     insert_kv_to_node(tree, node, kv);
   }
 

@@ -4,6 +4,8 @@
 
 #include <stdint.h>
 
+#include <unistd.h>
+
 #ifndef BTREE_H
   #define BTREE_H
 
@@ -31,7 +33,7 @@
 
   void sort_kvs_by_pos(struct KVPair **pairs, const uint32_t size);
 
-  struct KVPair *insert_kv_to_btree(struct BTree *tree, char *key, void *value, enum TellyTypes type);
+  struct KVPair *insert_kv_to_btree(struct BTree *tree, string_t key, value_t *value, enum TellyTypes type, const off_t pos);
   struct KVPair *find_kv_from_btree(struct BTree *tree, const char *key);
   bool delete_kv_from_btree(struct BTree *tree, const char *key);
 

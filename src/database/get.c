@@ -6,129 +6,106 @@
 
 #include <unistd.h>
 
+void get_all_keys() {
+  const int fd = get_database_fd();
+  char c;
+
+  struct BTree *cache = get_cache();
+  string_t key = {
+    .value = malloc(33),
+    .len = 0
+  };
+
+  while (read(fd, &c, 1) != 0) {
+    if (c != 0x1D) {
+      key.value[key.len] = c;
+      key.len += 1;
+
+      if (key.len % 32 == 0) {
+        key.value = realloc(key.value, key.len + 33);
+      }
+    } else {
+      const off_t pos = lseek(fd, 0, SEEK_CUR);
+      key.value = realloc(key.value, key.len + 1);
+      key.value[key.len] = '\0';
+      insert_kv_to_btree(cache, key, NULL, TELLY_UNSPECIFIED, pos);
+      free(key.value);
+
+      key = (string_t) {
+        .value = malloc(33),
+        .len = 0
+      };
+
+      while (read(fd, &c, 1) == 1 && c != 0x1E);
+    }
+  }
+
+  free(key.value);
+}
+
 struct KVPair *get_data(char *key, __attribute__((unused)) struct Configuration *conf) {
   const int fd = get_database_fd();
   struct BTree *cache = get_cache();
 
   struct KVPair *data = find_kv_from_btree(cache, key);
 
-  if (data == NULL) {
-    if (fd == -1) {
-      write_log(LOG_ERR, "Database file is not opened.");
-      return NULL;
-    }
+  if (data && data->type == TELLY_UNSPECIFIED) {
+    data->value = malloc(sizeof(value_t));
+    lseek(fd, data->pos, SEEK_SET);
+    read(fd, &data->type, 1);
 
-    lseek(fd, 0, SEEK_SET);
-
-    const uint32_t key_len = strlen(key);
-    uint32_t key_at = 0;
-
-    char c;
-
-    while (read(fd, &c, 1) != 0) {
-      if (key_len == key_at) {
-        if (c != 0x1D) {
-          close_database_fd();
-          write_log(LOG_ERR, "Database file is corrupted.");
-          return NULL;
-        }
-
-        const enum TellyTypes type = read_char(fd);
-        const uint32_t pos = lseek(fd, 0, SEEK_CUR) - key_len - 2;
-
-        switch (type) {
-          case TELLY_NULL:
-            data = insert_kv_to_btree(cache, key, NULL, type);
-
-            if (read_char(fd) != 0x1E) {
-              close_database_fd();
-              write_log(LOG_ERR, "Database file is corrupted.");
-              return NULL;
-            }
-
-            data->pos = pos;
-            break;
-
-          case TELLY_INT: {
-            char *value = malloc(33);
-            uint32_t len = 0;
-
-            while ((value[len] = read_char(fd)) != 0x1E) {
-              len += 1;
-
-              if (len % 32 == 0) {
-                value = realloc(value, len + 33);
-              }
-            }
-
-            value[len] = 0x00;
-
-            int res = 0;
-
-            for (uint32_t i = 0; i < len; ++i) {
-              res |= (value[i] << (8 * (len - i - 1)));
-            }
-
-            data = insert_kv_to_btree(cache, key, &res, TELLY_INT);
-            data->pos = pos;
-            free(value);
-            break;
-          }
-
-          case TELLY_STR: {
-            char *value = malloc(33);
-            uint32_t len = 0;
-
-            while ((value[len] = read_char(fd)) != 0x1E) {
-              len += 1;
-
-              if (len % 32 == 0) {
-                value = realloc(value, len + 33);
-              }
-            }
-
-            value[len] = 0x00;
-            data = insert_kv_to_btree(cache, key, value, TELLY_STR);
-            data->pos = pos;
-            free(value);
-            break;
-          }
-
-          case TELLY_BOOL:
-            c = read_char(fd);
-
-            if (c == EOF || read_char(fd) != 0x1E) {
-              close_database_fd();
-              write_log(LOG_ERR, "Database file is corrupted.");
-              return NULL;
-            }
-
-            data = insert_kv_to_btree(cache, key, &c, type);
-            data->pos = pos;
-            break;
-
-          default:
-            close_database_fd();
-            write_log(LOG_ERR, "Database file is corrupted.");
-            break;
-        }
-
-        return data;
-      } else if (key[key_at] == c) {
-        key_at += 1;
-      } else {
-        while ((c = read_char(fd)) != 0x1E) {
-          if (c == EOF) {
-            return NULL;
-          }
-        }
-
-        key_at = 0;
+    switch (data->type) {
+      case TELLY_NULL: {
+        uint8_t c;
+        data->value->null = NULL;
+        read(fd, &c, 1);
+        break;
       }
-    }
 
-    return NULL;
-  } else {
-    return data;
+      case TELLY_INT: {
+        uint8_t c;
+        data->value->integer = 0;
+
+        while (read(fd, &c, 1) != 0 && c != 0x1E) {
+          data->value->integer = (data->value->integer << 8) | c;
+        }
+
+        break;
+      }
+
+      case TELLY_STR: {
+        data->value->string.len = 0;
+        data->value->string.value = malloc(33);
+
+        while (
+          read(fd, &data->value->string.value[data->value->string.len], 1) != 0
+          &&
+          data->value->string.value[data->value->string.len] != 0x1E
+        ) {
+          data->value->string.len += 1;
+
+          if (data->value->string.len % 32 == 0) {
+            data->value->string.value = realloc(data->value->string.value, data->value->string.len + 33);
+          }
+        }
+
+        data->value->string.value = realloc(data->value->string.value, data->value->string.len + 1);
+        data->value->string.value[data->value->string.len] = '\0';
+
+        break;
+      }
+
+      case TELLY_BOOL: {
+        uint8_t c;
+        read(fd, &data->value->boolean, 1);
+        read(fd, &c, 1);
+        break;
+      }
+
+      default:
+        break;
+    }
   }
+
+  return data;
 }

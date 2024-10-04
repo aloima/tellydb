@@ -1,23 +1,25 @@
 #include "../../headers/telly.h"
 
+#include <stddef.h>
+
 static struct KVPair *find_kv_from_node(struct BTreeNode *node, const char *key) {
   const char c = key[0];
 
   if (node->leafs != NULL) {
     for (uint32_t i = 0; i < node->size; ++i) {
-      struct KVPair *pair = node->data[i];
-      const char *pair_key = pair->key.value;
+      struct KVPair *kv = node->data[i];
+      const char *kv_key = kv->key->value;
 
-      if (streq(key, pair_key)) return pair;
-      else if (c <= pair_key[0]) return find_kv_from_node(node->leafs[i], key);
+      if (streq(key, kv_key)) return kv;
+      else if (c <= kv_key[0]) return find_kv_from_node(node->leafs[i], key);
     }
 
     return find_kv_from_node(node->leafs[node->size], key);
   } else {
     for (uint32_t i = 0; i < node->size; ++i) {
-      struct KVPair *pair = node->data[i];
+      struct KVPair *kv = node->data[i];
 
-      if (streq(pair->key.value, key)) return pair;
+      if (streq(kv->key->value, key)) return kv;
     }
   }
 

@@ -144,6 +144,9 @@ void start_server(struct Configuration *config) {
   open_database_fd(conf->data_file);
   write_log(LOG_INFO, "Created cache and opened database file.");
 
+  get_all_keys();
+  write_log(LOG_INFO, "Read database file to create keyspace.");
+
   nfds = 1;
   fds = malloc(sizeof(struct pollfd));
   fds[0].fd = sockfd;

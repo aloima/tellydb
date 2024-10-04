@@ -16,7 +16,8 @@
   void to_uppercase(char *in, char *out);
 
   enum TellyTypes {
-    TELLY_NULL = 1,
+    TELLY_UNSPECIFIED = 0,
+    TELLY_NULL,
     TELLY_INT,
     TELLY_STR,
     TELLY_BOOL,

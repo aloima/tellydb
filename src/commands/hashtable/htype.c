@@ -17,7 +17,7 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
     struct KVPair *kv = get_data(key, conf);
 
     if (kv && kv->type == TELLY_HASHTABLE) {
-      struct FVPair *fv = get_fv_from_hashtable(kv->value.hashtable, name);
+      struct FVPair *fv = get_fv_from_hashtable(kv->value->hashtable, name);
 
       switch (fv->type) {
         case TELLY_NULL:

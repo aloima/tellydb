@@ -26,26 +26,21 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
   }
 
   string_t key = data->value.array[1]->value.string;
-  struct KVPair *pair = get_data(key.value, conf);
+  struct KVPair *res = get_data(key.value, conf);
   struct List *list;
 
-  if (pair) {
-    if (client && pair->type != TELLY_LIST) {
+  if (res) {
+    if (client && res->type != TELLY_LIST) {
       write(client->connfd, "-Value stored at the key is not a list\r\n", 40);
       return;
     } else {
-      list = pair->value.list;
+      list = res->value->list;
     }
   } else {
     list = create_list();
-
-    pair = set_data((struct KVPair) {
-      .key = key,
-      .value = {
-        .list = list
-      },
-      .type = TELLY_LIST
-    }, conf);
+    set_data(key, (value_t) {
+      .list = list
+    }, TELLY_LIST, conf);
   }
 
   const uint32_t value_count = data->count - 2;

@@ -18,17 +18,12 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
   struct HashTable *table;
 
   if (pair && pair->type == TELLY_HASHTABLE) {
-    table = pair->value.hashtable;
+    table = pair->value->hashtable;
   } else {
     table = create_hashtable(32, 0.6);
-
-    set_data((struct KVPair) {
-      .key = key,
-      .value = {
-        .hashtable = table
-      },
-      .type = TELLY_HASHTABLE
-    }, conf);
+    set_data(key, (value_t) {
+      .hashtable = table
+    }, TELLY_HASHTABLE, conf);
   }
 
   const uint64_t fv_count = (data->count / 2) - 1;

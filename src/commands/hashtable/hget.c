@@ -16,7 +16,7 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
 
   if (pair && pair->type == TELLY_HASHTABLE) {
     char *name = data->value.array[2]->value.string.value;
-    struct FVPair *field = get_fv_from_hashtable(pair->value.hashtable, name);
+    struct FVPair *field = get_fv_from_hashtable(pair->value->hashtable, name);
 
     if (field) {
       write_value(client->connfd, field->value, field->type);

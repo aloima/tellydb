@@ -17,7 +17,7 @@ void move_kv(struct BTreeNode *node, const uint32_t at, const uint32_t to) {
 
 uint32_t find_index_of_kv(struct BTreeNode *node, const char *key) {
   for (uint32_t i = 0; i < node->size; ++i) {
-    if (strcmp(key, node->data[i]->key.value) <= 0) return i;
+    if (strcmp(key, node->data[i]->key->value) <= 0) return i;
   }
 
   return node->size;
@@ -28,7 +28,7 @@ struct BTreeNode *find_node_of_kv(struct BTreeNode *node, const char *key) {
     for (uint32_t i = 0; i < node->size; ++i) {
       struct KVPair *kv = node->data[i];
 
-      if (strcmp(key, kv->key.value) <= 0) {
+      if (strcmp(key, kv->key->value) <= 0) {
         return find_node_of_kv(node->leafs[i], key);
       }
     }

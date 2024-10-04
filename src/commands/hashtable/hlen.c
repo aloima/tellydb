@@ -14,7 +14,7 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
 
     char *key = data->value.array[1]->value.string.value;
     struct KVPair *kv = get_data(key, conf);
-    uint64_t count = (kv && kv->type == TELLY_HASHTABLE) ? kv->value.hashtable->size.all : 0;
+    uint64_t count = (kv && kv->type == TELLY_HASHTABLE) ? kv->value->hashtable->size.all : 0;
 
     uint32_t buf_len = 3 + get_digit_count(count);
     char buf[buf_len + 1];

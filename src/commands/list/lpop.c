@@ -19,7 +19,7 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
       return;
     }
 
-    struct List *list = kv->value.list;
+    struct List *list = kv->value->list;
     struct ListNode *node = list->begin;
 
     if (client) write_value(client->connfd, node->value, node->type);

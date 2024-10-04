@@ -23,8 +23,8 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
       return;
     }
 
-    const uint64_t size = pair->value.list->size;
-    const uint32_t buf_len = 3 + get_digit_count(pair->value.list->size);
+    const uint64_t size = pair->value->list->size;
+    const uint32_t buf_len = 3 + get_digit_count(pair->value->list->size);
     char buf[buf_len + 1];
     sprintf(buf, ":%ld\r\n", size);
 

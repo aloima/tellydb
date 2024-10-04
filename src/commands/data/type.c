@@ -39,6 +39,9 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
         case TELLY_BOOL:
           write(client->connfd, "+boolean\r\n", 10);
           break;
+
+        default:
+          break;
       }
     } else {
       write(client->connfd, "$-1\r\n", 5);

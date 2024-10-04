@@ -4,6 +4,7 @@
 
 #include <stdint.h>
 
+#include <unistd.h>
 #include <pthread.h>
 
 #ifndef DATABASE_H
@@ -11,10 +12,10 @@
 
   /* DATABASE */
   struct KVPair {
-    string_t key;
-    value_t value;
+    string_t *key;
+    value_t *value;
     enum TellyTypes type;
-    int32_t pos;
+    off_t pos;
   };
 
   void create_cache();
@@ -22,12 +23,12 @@
   struct KVPair *get_kv_from_cache(const char *key);
   void free_cache();
 
+  void get_all_keys();
   struct KVPair *get_data(char *key, struct Configuration *conf);
-  struct KVPair *set_data(struct KVPair pair, struct Configuration *conf);
+  struct KVPair *set_data(string_t key, value_t value, enum TellyTypes type, struct Configuration *conf);
   void save_data();
 
-  void set_kv(struct KVPair *kv, char *key, void *value, enum TellyTypes type);
-  void *get_kv_val(struct KVPair *kv, enum TellyTypes type);
+  void set_kv(struct KVPair *kv, string_t key, value_t *value, enum TellyTypes type, const off_t pos);
   void free_kv(struct KVPair *kv);
   /* /DATABASE */
 

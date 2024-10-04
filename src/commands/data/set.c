@@ -12,7 +12,7 @@ static void run(struct Client *client, respdata_t *data, __attribute__((unused))
     return;
   }
 
-  char *value = data->value.array[2]->value.string.value;
+  char *value_in = data->value.array[2]->value.string.value;
   bool get = false;
 
   for (uint32_t i = 3; i < data->count; ++i) {
@@ -27,31 +27,31 @@ static void run(struct Client *client, respdata_t *data, __attribute__((unused))
     }
   }
 
-  struct KVPair kv;
-  kv.key = data->value.array[1]->value.string;
+  string_t key = data->value.array[1]->value.string;
+  value_t value;
+  enum TellyTypes type;
 
-  const bool is_true = streq(value, "true");
+  bool is_true = streq(value_in, "true");
 
-  if (is_integer(value)) {
-    kv.type = TELLY_INT;
-    kv.value.integer = atoi(value);
-  } else if (is_true || streq(value, "false")) {
-    kv.type = TELLY_BOOL;
-    kv.value.boolean = is_true;
-  } else if (streq(value, "null")) {
-    kv.type = TELLY_NULL;
-    kv.value.null = NULL;
+  if (is_integer(value_in)) {
+    type = TELLY_INT;
+    value.integer = atoi(value_in);
+  } else if (is_true || streq(value_in, "false")) {
+    type = TELLY_BOOL;
+    value.boolean = is_true;
+  } else if (streq(value_in, "null")) {
+    type = TELLY_NULL;
   } else {
-    kv.type = TELLY_STR;
-    kv.value.string = data->value.array[2]->value.string;
+    type = TELLY_STR;
+    value.string = data->value.array[2]->value.string;
   }
 
   if (get && client) {
     struct KVPair *val = get_data(data->value.array[1]->value.string.value, conf);
-    write_value(client->connfd, val->value, val->type);
-    set_data(kv, conf);
+    write_value(client->connfd, *val->value, val->type);
+    set_data(key, value, type, conf);
   } else if (!get) {
-    set_data(kv, conf);
+    set_data(key, value, type, conf);
     if (client) write(client->connfd, "+OK\r\n", 5);
   }
 }

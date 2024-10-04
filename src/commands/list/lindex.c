@@ -27,7 +27,7 @@ static void run(struct Client *client, respdata_t *data, struct Configuration *c
       return;
     }
 
-    struct List *list = pair->value.list;
+    struct List *list = pair->value->list;
     struct ListNode *node;
 
     if (index_str[0] != '-') {
