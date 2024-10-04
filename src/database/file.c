@@ -30,63 +30,55 @@ void close_database_fd() {
   close(fd);
 }
 
-uint32_t generate_data_content(char **line, struct KVPair *pair) {
+static uint32_t generate_value(char **line, struct KVPair *kv) {
   uint32_t len;
 
-  switch (pair->type) {
+  switch (kv->type) {
     case TELLY_STR:
-      len = pair->key->len + pair->value->string.len + 3;
+      len = kv->value->string.len + 2;
       *line = malloc(len + 1);
 
-      memcpy(*line, pair->key->value, pair->key->len);
-      (*line)[pair->key->len] = 0x1D;
-      (*line)[pair->key->len + 1] = TELLY_STR;
-      memcpy(*line + pair->key->len + 2, pair->value->string.value, pair->value->string.len);
-      (*line)[pair->key->len + 2 + pair->value->string.len] = 0x1E;
-      (*line)[pair->key->len + 3 + pair->value->string.len] = 0x00;
+      (*line)[0] = TELLY_STR;
+      memcpy(*line + 1, kv->value->string.value, kv->value->string.len);
+      (*line)[1 + kv->value->string.len] = 0x1E;
+      (*line)[2 + kv->value->string.len] = 0x00;
       break;
 
     case TELLY_INT: {
-      const uint32_t bit_count = log2(pair->value->integer) + 1;
+      const uint32_t bit_count = log2(kv->value->integer) + 1;
       const uint32_t byte_count = (bit_count / 8) + 1;
 
-      len = pair->key->len + byte_count + 3;
+      len = byte_count + 2;
       *line = malloc(len + 1);
 
-      memcpy(*line, pair->key->value, pair->key->len);
-      (*line)[pair->key->len] = 0x1D;
-      (*line)[pair->key->len + 1] = TELLY_INT;
+      (*line)[0] = TELLY_INT;
 
       for (uint32_t i = 1; i <= byte_count; ++i) {
-        (*line)[pair->key->len + 1 + i] = (pair->value->integer >> (8 * (byte_count - i))) & 0xFF;
+        (*line)[i] = (kv->value->integer >> (8 * (byte_count - i))) & 0xFF;
       }
 
-      (*line)[pair->key->len + 2 + byte_count] = 0x1E;
-      (*line)[pair->key->len + 3 + byte_count] = 0x00;
+      (*line)[1 + byte_count] = 0x1E;
+      (*line)[2 + byte_count] = 0x00;
       break;
     }
 
     case TELLY_BOOL:
-      len = pair->key->len + 4;
+      len = 3;
       *line = malloc(len + 1);
 
-      memcpy(*line, pair->key->value, pair->key->len);
-      (*line)[pair->key->len] = 0x1D;
-      (*line)[pair->key->len + 1] = TELLY_BOOL;
-      (*line)[pair->key->len + 2] = pair->value->boolean;
-      (*line)[pair->key->len + 3] = 0x1E;
-      (*line)[pair->key->len + 4] = 0x00;
+      (*line)[0] = TELLY_BOOL;
+      (*line)[1] = kv->value->boolean;
+      (*line)[2] = 0x1E;
+      (*line)[3] = 0x00;
       break;
 
     case TELLY_NULL:
-      len = pair->key->len + 3;
+      len = 2;
       *line = malloc(len + 1);
 
-      memcpy(*line, pair->key->value, pair->key->len);
-      (*line)[pair->key->len] = 0x1D;
-      (*line)[pair->key->len + 1] = TELLY_NULL;
-      (*line)[pair->key->len + 2] = 0x1E;
-      (*line)[pair->key->len + 3] = 0x00;
+      (*line)[0] = TELLY_NULL;
+      (*line)[1] = 0x1E;
+      (*line)[2] = 0x00;
       break;
 
     default:
@@ -99,32 +91,32 @@ uint32_t generate_data_content(char **line, struct KVPair *pair) {
 void save_data() {
   struct BTree *cache = get_cache();
 
-  struct KVPair **pairs = get_sorted_kvs_from_btree(cache);
+  struct KVPair **kvs = get_sorted_kvs_from_btree(cache);
   const uint32_t size = cache->size;
-  sort_kvs_by_pos(pairs, size);
+  sort_kvs_by_pos(kvs, size);
 
   uint32_t file_size = lseek(fd, 0, SEEK_END);
   int32_t diff = 0;
 
   for (uint32_t i = 0; i < size; ++i) {
-    struct KVPair *pair = pairs[i];
+    struct KVPair *kv = kvs[i];
 
     char *line = NULL;
-    const uint32_t line_len = generate_data_content(&line, pair);
+    const uint32_t line_len = generate_value(&line, kv);
 
     if (line_len != 0) {
-      if (pair->pos != -1) {
-        uint32_t end_pos = pair->pos + 1;
+      if (kv->pos != -1) {
+        uint32_t end_pos = kv->pos + 1;
 
-        lseek(fd, pair->pos + diff, SEEK_SET);
+        lseek(fd, kv->pos + diff, SEEK_SET);
         while (read_char(fd) != 0x1E) end_pos += 1;
 
-        const uint32_t line_len_in_file = end_pos - pair->pos;
+        const uint32_t line_len_in_file = end_pos - kv->pos;
 
         if (line_len_in_file != line_len) {
           char *buf = malloc(file_size - end_pos);
           read(fd, buf, file_size - end_pos);
-          lseek(fd, pair->pos + diff, SEEK_SET);
+          lseek(fd, kv->pos + diff, SEEK_SET);
           write(fd, line, line_len);
           write(fd, buf, file_size - end_pos);
 
@@ -132,13 +124,20 @@ void save_data() {
 
           diff += line_len - line_len_in_file;
         } else {
-          lseek(fd, pair->pos + diff, SEEK_SET);
+          lseek(fd, kv->pos + diff, SEEK_SET);
           write(fd, line, line_len);
         }
       } else {
         lseek(fd, 0, SEEK_END);
-        write(fd, line, line_len);
-        file_size += line_len;
+
+        const uint32_t buf_len = kv->key->len + line_len + 1;
+        char buf[buf_len + 1];
+        memcpy(buf, kv->key->value, kv->key->len);
+        buf[kv->key->len] = 0x1D;
+        memcpy(buf + kv->key->len + 1, line, line_len);
+
+        write(fd, buf, buf_len);
+        file_size += buf_len;
       }
 
       free(line);
@@ -146,7 +145,7 @@ void save_data() {
   }
 
   ftruncate(fd, file_size + diff);
-  free(pairs);
+  free(kvs);
 }
 
 char read_char(int fd) {

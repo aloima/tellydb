@@ -29,7 +29,7 @@
   uint32_t find_index_of_kv(struct BTreeNode *node, const char *key);
   struct BTreeNode *find_node_of_kv(struct BTreeNode *node, const char *key);
 
-  void sort_kvs_by_pos(struct KVPair **pairs, const uint32_t size);
+  void sort_kvs_by_pos(struct KVPair **kvs, const uint32_t size);
 
   struct KVPair *insert_kv_to_btree(struct BTree *tree, string_t key, value_t *value, enum TellyTypes type, const off_t pos);
   struct KVPair *find_kv_from_btree(struct BTree *tree, const char *key);
