@@ -114,7 +114,12 @@ respdata_t *parse_resp_bstring(int connfd, uint8_t type) {
           .len = lend
         };
 
-        read(connfd, data->value.string.value, lend);
+        uint64_t total = lend;
+
+        while (total != 0) {
+          total -= read(connfd, data->value.string.value + lend - total, total);
+        }
+
         data->value.string.value[lend] = '\0';
 
         char buf[2];
