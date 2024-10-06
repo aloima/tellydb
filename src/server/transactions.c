@@ -2,25 +2,38 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <errno.h>
+#include <signal.h>
 
 #include <unistd.h>
 #include <pthread.h>
 
-struct Transaction **transactions = NULL;
+struct Transaction **transactions;
 uint32_t transaction_count = 0;
-struct Configuration *conf = NULL;
-bool thread_active = true;
+struct Configuration *conf;
+
+pthread_t thread;
+pthread_cond_t cond;
+pthread_mutex_t mutex;
+bool thread_loop = true;
 
 void *transaction_thread() {
-  while (thread_active) {
-    for (uint32_t i = 0; i < transaction_count; ++i) {
-      struct Transaction *transaction = transactions[i];
+  sigset_t set;
+  sigemptyset(&set);
+  sigaddset(&set, SIGINT);
+  pthread_sigmask(SIG_BLOCK, &set, NULL);
 
+  while (thread_loop) {
+    pthread_mutex_lock(&mutex);
+    pthread_cond_wait(&cond, &mutex);
+
+    if (transaction_count != 0) {
+      struct Transaction *transaction = transactions[0];
       execute_command(transaction->client, transaction->command);
       remove_transaction(transaction);
+      pthread_mutex_unlock(&mutex);
     }
-
-    usleep(10);
   }
 
   return NULL;
@@ -31,23 +44,30 @@ uint32_t get_transaction_count() {
 }
 
 void deactive_transaction_thread() {
-  thread_active = false;
+  thread_loop = false;
+
+  while (pthread_mutex_trylock(&mutex) != EBUSY) {
+    pthread_cond_signal(&cond);
+    pthread_mutex_unlock(&mutex);
+    pthread_cond_destroy(&cond);
+    pthread_mutex_destroy(&mutex);
+    pthread_cancel(thread);
+  }
 }
 
-pthread_t create_transaction_thread(struct Configuration *config) {
+void create_transaction_thread(struct Configuration *config) {
   conf = config;
 
-  pthread_t thread;
+  pthread_mutex_init(&mutex, NULL);
+  pthread_cond_init(&cond, NULL);
   pthread_create(&thread, NULL, transaction_thread, NULL);
   pthread_detach(thread);
-
-  return thread;
 }
 
 void add_transaction(struct Client *client, respdata_t *data) {
   transaction_count += 1;
 
-  if (transaction_count == 0) {
+  if (transaction_count == 1) {
     transactions = malloc(sizeof(struct Transaction *));
   } else {
     transactions = realloc(transactions, transaction_count * sizeof(struct Transaction *));
@@ -57,6 +77,10 @@ void add_transaction(struct Client *client, respdata_t *data) {
   transactions[id] = malloc(sizeof(struct Transaction));
   transactions[id]->client = client;
   transactions[id]->command = data;
+
+  pthread_mutex_lock(&mutex);
+  pthread_cond_signal(&cond);
+  pthread_mutex_unlock(&mutex);
 }
 
 void remove_transaction(struct Transaction *transaction) {
@@ -70,19 +94,25 @@ void remove_transaction(struct Transaction *transaction) {
 
   if (transaction_count == 0) {
     free(transactions);
-    transactions = NULL;
   } else {
     transactions = realloc(transactions, sizeof(struct Transaction *) * transaction_count);
   }
 }
 
 void free_transactions() {
-  for (uint32_t i = 0; i < transaction_count; ++i) {
-    struct Transaction *transaction = transactions[i];
+  if (transaction_count != 0) {
+    for (uint32_t i = 1; i < transaction_count; ++i) {
+      struct Transaction *transaction = transactions[i];
 
-    free(transaction->command);
+      free_resp_data(transaction->command);
+      free(transaction);
+    }
+
+    struct Transaction *transaction = transactions[0];
+
+    free_resp_data(transaction->command);
     free(transaction);
-  }
 
-  free(transactions);
+    free(transactions);
+  }
 }

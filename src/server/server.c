@@ -15,7 +15,6 @@
 
 static uint32_t max_client_id_len;
 
-static pthread_t thread;
 static int sockfd;
 static struct pollfd *fds;
 static uint32_t nfds;
@@ -103,7 +102,7 @@ void start_server(struct Configuration *config) {
   load_commands();
   write_log(LOG_INFO, "Initialized commands.");
 
-  thread = create_transaction_thread(config);
+  create_transaction_thread(config);
   write_log(LOG_INFO, "Created transaction thread.");
 
   signal(SIGINT, sigint_signal);

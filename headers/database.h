@@ -47,7 +47,7 @@
     respdata_t *command;
   };
 
-  pthread_t create_transaction_thread(struct Configuration *config);
+  void create_transaction_thread(struct Configuration *config);
   void deactive_transaction_thread();
 
   uint32_t get_transaction_count();
