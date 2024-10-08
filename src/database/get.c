@@ -26,18 +26,18 @@ void get_all_keys() {
         key.value = realloc(key.value, key.len + 33);
       }
     } else {
-      const off_t pos = lseek(fd, 0, SEEK_CUR);
-      key.value = realloc(key.value, key.len + 1);
+      const off_t start_at = lseek(fd, 0, SEEK_CUR);
+      while (read(fd, &c, 1) == 1 && c != 0x1E);
+      const off_t end_at = lseek(fd, 0, SEEK_CUR);
+
       key.value[key.len] = '\0';
-      insert_kv_to_btree(cache, key, NULL, TELLY_UNSPECIFIED, pos);
+      insert_kv_to_btree(cache, key, NULL, TELLY_UNSPECIFIED, start_at, end_at);
       free(key.value);
 
       key = (string_t) {
         .value = malloc(33),
         .len = 0
       };
-
-      while (read(fd, &c, 1) == 1 && c != 0x1E);
     }
   }
 
@@ -52,7 +52,7 @@ struct KVPair *get_data(const char *key) {
 
   if (data && data->type == TELLY_UNSPECIFIED) {
     data->value = malloc(sizeof(value_t));
-    lseek(fd, data->pos, SEEK_SET);
+    lseek(fd, data->pos.start_at, SEEK_SET);
     read(fd, &data->type, 1);
 
     switch (data->type) {

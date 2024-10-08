@@ -1,9 +1,5 @@
 #pragma once
 
-#if defined(__linux__) && !defined(_GNU_SOURCE)
-  #define _GNU_SOURCE
-#endif
-
 #include "config.h"
 #include "resp.h"
 #include "utils.h"
@@ -18,7 +14,11 @@ struct KVPair {
   string_t *key;
   value_t *value;
   enum TellyTypes type;
-  off_t pos;
+
+  struct {
+    off_t start_at;
+    off_t end_at;
+  } pos;
 };
 
 struct BTree *create_cache();
@@ -31,7 +31,7 @@ struct KVPair *get_data(const char *key);
 struct KVPair *set_data(struct KVPair *data, string_t key, value_t value, enum TellyTypes type);
 void save_data();
 
-void set_kv(struct KVPair *kv, string_t key, value_t *value, enum TellyTypes type, const off_t pos);
+void set_kv(struct KVPair *kv, string_t key, value_t *value, enum TellyTypes type, const off_t start_at, const off_t end_at);
 void free_kv(struct KVPair *kv);
 /* /DATABASE */
 

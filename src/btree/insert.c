@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <unistd.h>
+
 static void add_kv_to_node(struct BTree *tree, struct BTreeNode *node, struct KVPair *kv) {
   tree->size += 1;
 
@@ -178,11 +180,11 @@ static struct KVPair *insert_kv_to_node(struct BTree *tree, struct BTreeNode *no
   return kv;
 }
 
-struct KVPair *insert_kv_to_btree(struct BTree *tree, string_t key, value_t *value, const enum TellyTypes type, const off_t pos) {
+struct KVPair *insert_kv_to_btree(struct BTree *tree, string_t key, value_t *value, const enum TellyTypes type, const off_t start_at, const off_t end_at) {
   struct KVPair *kv = malloc(sizeof(struct KVPair));
   kv->key = NULL;
   kv->value = NULL;
-  set_kv(kv, key, value, type, pos);
+  set_kv(kv, key, value, type, start_at, end_at);
 
   if (!tree->root) {
     tree->root = malloc(sizeof(struct BTreeNode));

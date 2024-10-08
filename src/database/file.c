@@ -107,26 +107,22 @@ void save_data() {
     const uint32_t line_len = generate_value(&line, kv);
 
     if (line_len != 0) {
-      if (kv->pos != -1) {
-        uint32_t end_pos = kv->pos + 1;
-
-        lseek(fd, kv->pos + diff, SEEK_SET);
-        while (read_char(fd) != 0x1E) end_pos += 1;
-
-        const uint32_t line_len_in_file = end_pos - kv->pos;
+      if (kv->pos.start_at != -1) {
+        const uint32_t line_len_in_file = kv->pos.end_at - kv->pos.start_at;
 
         if (line_len_in_file != line_len) {
-          char *buf = malloc(file_size - end_pos);
-          read(fd, buf, file_size - end_pos);
-          lseek(fd, kv->pos + diff, SEEK_SET);
+          const uint64_t n = file_size - kv->pos.end_at;
+          char *buf = malloc(n);
+          read(fd, buf, n);
+          lseek(fd, kv->pos.start_at + diff, SEEK_SET);
           write(fd, line, line_len);
-          write(fd, buf, file_size - end_pos);
+          write(fd, buf, n);
 
           free(buf);
 
           diff += line_len - line_len_in_file;
         } else {
-          lseek(fd, kv->pos + diff, SEEK_SET);
+          lseek(fd, kv->pos.start_at + diff, SEEK_SET);
           write(fd, line, line_len);
         }
       } else {

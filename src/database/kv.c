@@ -6,9 +6,10 @@
 
 #include <unistd.h>
 
-void set_kv(struct KVPair *kv, string_t key, value_t *value, enum TellyTypes type, const off_t pos) {
+void set_kv(struct KVPair *kv, string_t key, value_t *value, enum TellyTypes type, const off_t start_at, const off_t end_at) {
   kv->type = type;
-  kv->pos = pos;
+  kv->pos.start_at = start_at;
+  kv->pos.end_at = end_at;
 
   if (!kv->key) {
     kv->key = malloc(sizeof(string_t));

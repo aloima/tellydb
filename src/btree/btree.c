@@ -40,7 +40,7 @@ void sort_kvs_by_pos(struct KVPair **kvs, const uint32_t size) {
     const uint32_t bound = size - 1 - i;
 
     for (uint32_t j = 0; j < bound; ++j) {
-      if (kvs[j]->pos <= kvs[j + 1]->pos) continue;
+      if (kvs[j]->pos.start_at <= kvs[j + 1]->pos.start_at) continue;
 
       struct KVPair *pair = kvs[j + 1];
       kvs[j + 1] = kvs[j];

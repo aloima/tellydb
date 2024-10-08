@@ -49,6 +49,6 @@ struct KVPair *set_data(struct KVPair *data, string_t key, value_t value, enum T
     data->type = type;
     return data;
   } else {
-    return insert_kv_to_btree(cache, key, &value, type, -1);
+    return insert_kv_to_btree(cache, key, &value, type, -1, -1);
   }
 }
