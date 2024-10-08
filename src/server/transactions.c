@@ -1,5 +1,7 @@
-#include "../../headers/telly.h"
+#include "../../headers/database.h"
+#include "../../headers/commands.h"
 
+#include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -28,12 +30,10 @@ void *transaction_thread() {
     pthread_mutex_lock(&mutex);
     pthread_cond_wait(&cond, &mutex);
 
-    if (transaction_count != 0) {
-      struct Transaction *transaction = transactions[0];
-      execute_command(transaction->client, transaction->command);
-      remove_transaction(transaction);
-      pthread_mutex_unlock(&mutex);
-    }
+    struct Transaction *transaction = transactions[0];
+    execute_command(transaction->client, transaction->command);
+    remove_transaction(transaction);
+    pthread_mutex_unlock(&mutex);
   }
 
   return NULL;
@@ -47,11 +47,10 @@ void deactive_transaction_thread() {
   thread_loop = false;
 
   while (pthread_mutex_trylock(&mutex) != EBUSY) {
-    pthread_cond_signal(&cond);
     pthread_mutex_unlock(&mutex);
+    pthread_cancel(thread);
     pthread_cond_destroy(&cond);
     pthread_mutex_destroy(&mutex);
-    pthread_cancel(thread);
   }
 }
 
@@ -65,6 +64,7 @@ void create_transaction_thread(struct Configuration *config) {
 }
 
 void add_transaction(struct Client *client, respdata_t *data) {
+  pthread_mutex_lock(&mutex);
   transaction_count += 1;
 
   if (transaction_count == 1) {
@@ -78,9 +78,8 @@ void add_transaction(struct Client *client, respdata_t *data) {
   transactions[id]->client = client;
   transactions[id]->command = data;
 
-  pthread_mutex_lock(&mutex);
-  pthread_cond_signal(&cond);
   pthread_mutex_unlock(&mutex);
+  pthread_cond_signal(&cond);
 }
 
 void remove_transaction(struct Transaction *transaction) {

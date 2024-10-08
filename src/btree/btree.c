@@ -1,4 +1,5 @@
-#include "../../headers/telly.h"
+#include "../../headers/database.h"
+#include "../../headers/btree.h"
 
 #include <stdint.h>
 #include <stdlib.h>

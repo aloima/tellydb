@@ -2,7 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../headers/telly.h"
+#include "../headers/telly.h" // IWYU pragma: keep
+#include "../headers/server.h"
+#include "../headers/utils.h"
 
 int main(int argc, char *argv[]) {
   switch (argc) {

@@ -1,6 +1,7 @@
-#include "../../headers/telly.h"
+#include "../../headers/utils.h"
 
 #include <ctype.h>
+#include <stdbool.h>
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>

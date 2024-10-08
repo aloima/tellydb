@@ -1,3 +1,9 @@
+#pragma once
+
+#if defined(__linux__) && !defined(_GNU_SOURCE)
+  #define _GNU_SOURCE
+#endif
+
 #include "config.h"
 #include "resp.h"
 #include "utils.h"
@@ -7,73 +13,69 @@
 #include <unistd.h>
 #include <pthread.h>
 
-#ifndef DATABASE_H
-  #define DATABASE_H
+/* DATABASE */
+struct KVPair {
+  string_t *key;
+  value_t *value;
+  enum TellyTypes type;
+  off_t pos;
+};
 
-  /* DATABASE */
-  struct KVPair {
-    string_t *key;
-    value_t *value;
-    enum TellyTypes type;
-    off_t pos;
-  };
+struct BTree *create_cache();
+struct BTree *get_cache();
+struct KVPair *get_kv_from_cache(const char *key);
+void free_cache();
 
-  struct BTree *create_cache();
-  struct BTree *get_cache();
-  struct KVPair *get_kv_from_cache(const char *key);
-  void free_cache();
+void get_all_keys();
+struct KVPair *get_data(const char *key);
+struct KVPair *set_data(struct KVPair *data, string_t key, value_t value, enum TellyTypes type);
+void save_data();
 
-  void get_all_keys();
-  struct KVPair *get_data(const char *key);
-  struct KVPair *set_data(struct KVPair *data, string_t key, value_t value, enum TellyTypes type);
-  void save_data();
-
-  void set_kv(struct KVPair *kv, string_t key, value_t *value, enum TellyTypes type, const off_t pos);
-  void free_kv(struct KVPair *kv);
-  /* /DATABASE */
+void set_kv(struct KVPair *kv, string_t key, value_t *value, enum TellyTypes type, const off_t pos);
+void free_kv(struct KVPair *kv);
+/* /DATABASE */
 
 
-  /* DATABASE FILE */
-  void open_database_fd(const char *filename);
-  int get_database_fd();
-  void close_database_fd();
-  char read_char(int fd);
-  /* /DATABASE FULE */
+/* DATABASE FILE */
+void open_database_fd(const char *filename);
+int get_database_fd();
+void close_database_fd();
+char read_char(int fd);
+/* /DATABASE FULE */
 
 
-  /* TRANSACTIONS */
-  struct Transaction {
-    struct Client *client;
-    respdata_t *command;
-  };
+/* TRANSACTIONS */
+struct Transaction {
+  struct Client *client;
+  respdata_t *command;
+};
 
-  void create_transaction_thread(struct Configuration *config);
-  void deactive_transaction_thread();
+void create_transaction_thread(struct Configuration *config);
+void deactive_transaction_thread();
 
-  uint32_t get_transaction_count();
-  void add_transaction(struct Client *client, respdata_t *data);
-  void remove_transaction(struct Transaction *transaction);
-  void free_transactions();
-  /* /TRANSACTIONS */
+uint32_t get_transaction_count();
+void add_transaction(struct Client *client, respdata_t *data);
+void remove_transaction(struct Transaction *transaction);
+void free_transactions();
+/* /TRANSACTIONS */
 
-  /* LISTS */
-  struct ListNode {
-    value_t value;
-    enum TellyTypes type;
+/* LISTS */
+struct ListNode {
+  value_t value;
+  enum TellyTypes type;
 
-    struct ListNode *prev;
-    struct ListNode *next;
-  };
+  struct ListNode *prev;
+  struct ListNode *next;
+};
 
-  struct List {
-    uint64_t size;
-    struct ListNode *begin;
-    struct ListNode *end;
-  };
+struct List {
+  uint64_t size;
+  struct ListNode *begin;
+  struct ListNode *end;
+};
 
-  struct List *create_list();
-  struct ListNode *create_listnode(void *value, enum TellyTypes type);
-  void free_listnode(struct ListNode *node);
-  void free_list(struct List *list);
-  /* /LISTS */
-#endif
+struct List *create_list();
+struct ListNode *create_listnode(void *value, enum TellyTypes type);
+void free_listnode(struct ListNode *node);
+void free_list(struct List *list);
+/* /LISTS */

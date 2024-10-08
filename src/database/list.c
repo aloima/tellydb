@@ -1,6 +1,8 @@
-#include "../../headers/telly.h"
+#include "../../headers/database.h"
+#include "../../headers/utils.h"
 
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 
 struct List *create_list() {

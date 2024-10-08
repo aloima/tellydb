@@ -1,4 +1,5 @@
-#include "../../../headers/telly.h"
+#include "../../../headers/database.h"
+#include "../../../headers/commands.h"
 
 #include <stdio.h>
 #include <stddef.h>

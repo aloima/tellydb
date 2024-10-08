@@ -1,4 +1,8 @@
-#include "../../headers/telly.h"
+#include "../../headers/server.h"
+#include "../../headers/database.h"
+#include "../../headers/commands.h"
+#include "../../headers/btree.h"
+#include "../../headers/utils.h"
 
 #include <stdint.h>
 #include <stdbool.h>
