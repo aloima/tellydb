@@ -1,8 +1,8 @@
 #include "../../headers/utils.h"
 #include "../../headers/config.h"
 
-#include <stdint.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 static struct Configuration default_conf = {
@@ -10,6 +10,7 @@ static struct Configuration default_conf = {
   .max_clients = 128,
   .allowed_log_levels = LOG_INFO | LOG_ERR | LOG_WARN,
   .max_log_len = 8192,
+  .max_log_lines = 128,
   .data_file = ".tellydb",
   .log_file = ".tellylog",
   .default_conf = true
@@ -46,15 +47,15 @@ struct Configuration parse_configuration(FILE *file) {
 
       case '=':
         if (streq(buf, "PORT")) {
-          memset(buf, 0, 49);
+          buf[0] = '\0';
           parse_value(file, buf);
           conf.port = atoi(buf);
         } else if (streq(buf, "MAX_CLIENTS")) {
-          memset(buf, 0, 49);
+          buf[0] = '\0';
           parse_value(file, buf);
           conf.max_clients = atoi(buf);
         } else if (streq(buf, "ALLOWED_LOG_LEVELS")) {
-          memset(buf, 0, 49);
+          buf[0] = '\0';
           parse_value(file, buf);
 
           const uint32_t len = strlen(buf);
@@ -75,20 +76,22 @@ struct Configuration parse_configuration(FILE *file) {
             }
           }
         } else if (streq(buf, "MAX_LOG_LEN")) {
-          memset(buf, 0, 49);
+          buf[0] = '\0';
           parse_value(file, buf);
           conf.max_log_len = atoi(buf);
+        } else if (streq(buf, "MAX_LOG_LINES")) {
+          buf[0] = '\0';
+          parse_value(file, buf);
+          conf.max_log_lines = atoi(buf);
         } else if (streq(buf, "DATA_FILE")) {
-          memset(conf.data_file, 0, 49);
           parse_value(file, conf.data_file);
         } else if (streq(buf, "LOG_FILE")) {
-          memset(conf.log_file, 0, 49);
           parse_value(file, conf.log_file);
         } else {
           return conf;
         }
 
-        memset(buf, 0, 49);
+        buf[0] = '\0';
         break;
 
       default:
@@ -135,9 +138,9 @@ uint32_t get_configuration_string(char *buf, struct Configuration conf) {
 
   return sprintf(buf, (
     "# TCP server port\n"
-    "PORT=%d\n\n"
+    "PORT=%hu\n\n"
     "# Specifies max connactable client count, higher values may cause higher resource usage\n"
-    "MAX_CLIENTS=%d\n\n"
+    "MAX_CLIENTS=%hu\n\n"
     "# Allowed log levels:\n"
     "# w = warning\n"
     "# i = information\n"
@@ -145,12 +148,14 @@ uint32_t get_configuration_string(char *buf, struct Configuration conf) {
     "# Order of keys does not matter\n"
     "ALLOWED_LOG_LEVELS=%s\n\n"
     "# Specifies maximum writeable log length to STDOUT\n"
-    "MAX_LOG_LEN=%d\n\n"
+    "MAX_LOG_LEN=%u\n\n"
+    "# Specifies maximum line count of logs will be saved to log file, to make undetermined, change it to -1\n"
+    "MAX_LOG_LINES=%d\n\n"
     "# Specifies database file where data will be saved\n"
     "DATA_FILE=%s\n\n"
     "# Specifies log file where logs will be appended\n"
     "LOG_FILE=%s\n"
-  ), conf.port, conf.max_clients, allowed_log_levels, conf.max_log_len, conf.data_file, conf.log_file);
+  ), conf.port, conf.max_clients, allowed_log_levels, conf.max_log_len, conf.max_log_lines, conf.data_file, conf.log_file);
 }
 
 struct Configuration get_default_configuration() {

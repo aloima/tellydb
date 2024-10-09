@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <time.h>
 
@@ -11,6 +12,7 @@
 
 static struct Configuration *conf;
 static int fd = -1;
+static int32_t log_lines = 0;
 
 static const char month_name[][4] = {
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -29,14 +31,24 @@ void initialize_logs(struct Configuration *config) {
   conf = config;
 
   #if defined(__linux__)
-    fd = open(conf->log_file, O_WRONLY | O_CREAT | O_APPEND | O_DIRECT, S_IRWXU);
+    fd = open(conf->log_file, O_RDWR | O_CREAT | O_DIRECT, S_IRWXU);
   #elif defined(__APPLE__)
-    fd = open(conf->log_file, O_WRONLY | O_CREAT | O_APPEND, S_IRWXU);
+    fd = open(conf->log_file, O_RDWR | O_CREAT, S_IRWXU);
 
     if (fcntl(fd, F_NOCACHE, 1) == -1) {
       write_log(LOG_ERR, "Cannot deactive file caching for database file.");
     }
   #endif
+
+  if (conf->max_log_lines != -1) {
+    char c;
+
+    while (read(fd, &c, 1) != 0) {
+      if (c == '\n') {
+        log_lines += 1;
+      }
+    }
+  }
 }
 
 void write_log(enum LogLevel level, const char *fmt, ...) {
@@ -81,7 +93,41 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
   }
 
   fputs(message, stdout);
-  write(fd, message, message_len);
+
+  if (conf->max_log_lines != -1) {
+    if (log_lines >= conf->max_log_lines) {
+      const off_t size = lseek(fd, 0, SEEK_END);
+
+      lseek(fd, 0, SEEK_SET);
+      char c;
+
+      while (read(fd, &c, 1) != 0) {
+        if (c == '\n') {
+          if (log_lines == conf->max_log_lines) {
+            const off_t at = lseek(fd, 0, SEEK_CUR);
+            const off_t data_len = size - at;
+            char *data = malloc(data_len);
+            read(fd, data, data_len);
+            lseek(fd, 0, SEEK_SET);
+            write(fd, data, data_len);
+
+            write(fd, message, message_len);
+            ftruncate(fd, data_len + message_len);
+            free(data);
+
+            break;
+          } else {
+            log_lines -= 1;
+          }
+        }
+      }
+    } else {
+      write(fd, message, message_len);
+      log_lines += 1;
+    }
+  } else {
+    write(fd, message, message_len);
+  }
 }
 
 void close_logs() {
