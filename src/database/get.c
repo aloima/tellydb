@@ -51,15 +51,16 @@ struct KVPair *get_data(const char *key) {
   struct KVPair *data = find_kv_from_btree(cache, key);
 
   if (data && data->type == TELLY_UNSPECIFIED) {
+    const off_t start_at = data->pos.start_at;
+    const off_t end_at = data->pos.end_at;
+
     data->value = malloc(sizeof(value_t));
-    lseek(fd, data->pos.start_at, SEEK_SET);
+    lseek(fd, start_at, SEEK_SET);
     read(fd, &data->type, 1);
 
     switch (data->type) {
       case TELLY_NULL: {
-        uint8_t c;
         data->value->null = NULL;
-        read(fd, &c, 1);
         break;
       }
 
@@ -75,31 +76,16 @@ struct KVPair *get_data(const char *key) {
       }
 
       case TELLY_STR: {
-        data->value->string.len = 0;
-        data->value->string.value = malloc(33);
-
-        while (
-          read(fd, &data->value->string.value[data->value->string.len], 1) != 0
-          &&
-          data->value->string.value[data->value->string.len] != 0x1E
-        ) {
-          data->value->string.len += 1;
-
-          if (data->value->string.len % 32 == 0) {
-            data->value->string.value = realloc(data->value->string.value, data->value->string.len + 33);
-          }
-        }
-
-        data->value->string.value = realloc(data->value->string.value, data->value->string.len + 1);
+        data->value->string.len = end_at - start_at - 2;
+        data->value->string.value = malloc(data->value->string.len + 1);
+        read(fd, data->value->string.value, data->value->string.len);
         data->value->string.value[data->value->string.len] = '\0';
 
         break;
       }
 
       case TELLY_BOOL: {
-        uint8_t c;
         read(fd, &data->value->boolean, 1);
-        read(fd, &c, 1);
         break;
       }
 
