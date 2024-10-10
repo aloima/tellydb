@@ -74,7 +74,7 @@ void free_kv(struct KVPair *kv) {
       break;
   }
 
-  free(kv->value);
+  if (kv->type != TELLY_UNSPECIFIED) free(kv->value);
   free(kv->key->value);
   free(kv->key);
   free(kv);
