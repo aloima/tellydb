@@ -145,8 +145,3 @@ void save_data() {
   ftruncate(fd, file_size + diff);
   free(kvs);
 }
-
-char read_char(int fd) {
-  char c;
-  return (read(fd, &c, 1) == 0 ? EOF : c);
-}

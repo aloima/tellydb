@@ -40,7 +40,6 @@ void free_kv(struct KVPair *kv);
 void open_database_fd(const char *filename);
 int get_database_fd();
 void close_database_fd();
-char read_char(int fd);
 /* /DATABASE FULE */
 
 

@@ -65,10 +65,13 @@ struct KVPair *get_data(const char *key) {
       }
 
       case TELLY_INT: {
+        const uint32_t size = end_at - start_at - 3;
         uint8_t c;
-        data->value->integer = 0;
+        read(fd, &c, 1);
+        data->value->integer = c;
 
-        while (read(fd, &c, 1) != 0 && c != 0x1E) {
+        for (uint32_t i = 1; i < size; ++i) {
+          read(fd, &c, 1);
           data->value->integer = (data->value->integer << 8) | c;
         }
 
