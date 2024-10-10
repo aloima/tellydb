@@ -76,7 +76,7 @@ static void run(struct Client *client, respdata_t *data) {
     } else if (client) {
       write(client->connfd, "$-1\r\n", 5);
     }
-  } else if (!get) {
+  } else {
     set_data(res, key, value, type);
     if (client) write(client->connfd, "+OK\r\n", 5);
   }

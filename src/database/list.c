@@ -1,7 +1,7 @@
 #include "../../headers/database.h"
 #include "../../headers/utils.h"
 
-#include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -11,14 +11,18 @@ struct List *create_list() {
 
 struct ListNode *create_listnode(void *value, enum TellyTypes type) {
   struct ListNode *node = malloc(sizeof(struct ListNode));
-  node->type = type;
   node->prev = NULL;
   node->next = NULL;
 
-  switch (node->type) {
-    case TELLY_STR:
-      set_string(&node->value.string, value, strlen(value), true);
+  switch (node->type = type) {
+    case TELLY_STR: {
+      const uint32_t len = strlen(value);
+      const uint32_t size = len + 1;
+      node->value.string.len = len;
+      node->value.string.value = malloc(size);
+      memcpy(node->value.string.value, value, size);
       break;
+    }
 
     case TELLY_INT:
       node->value.integer = *((int *) value);

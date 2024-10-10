@@ -1,15 +1,20 @@
 #include "../../headers/hashtable.h"
 #include "../../headers/utils.h"
 
-#include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
 
 void set_fv_value(struct FVPair *fv, void *value) {
   switch (fv->type) {
-    case TELLY_STR:
-      set_string(&fv->value.string, value, strlen(value), true);
+    case TELLY_STR: {
+      const uint32_t len = strlen(value);
+      const uint32_t size = len + 1;
+      fv->value.string.len = len;
+      fv->value.string.value = malloc(size);
+      memcpy(fv->value.string.value, value, size);
       break;
+    }
 
     case TELLY_INT:
       fv->value.integer = *((int *) value);

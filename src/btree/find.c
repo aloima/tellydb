@@ -27,6 +27,6 @@ static struct KVPair *find_kv_from_node(struct BTreeNode *node, const char *key)
 }
 
 struct KVPair *find_kv_from_btree(struct BTree *tree, const char *key) {
-  if (tree->root != NULL) return find_kv_from_node(tree->root, key);
+  if (tree->root) return find_kv_from_node(tree->root, key);
   else return NULL;
 }

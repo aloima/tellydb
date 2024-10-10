@@ -2,7 +2,7 @@
 #include "../../headers/hashtable.h"
 #include "../../headers/btree.h"
 
-#include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 struct KVPair *set_data(struct KVPair *data, string_t key, value_t value, enum TellyTypes type) {
@@ -17,10 +17,20 @@ struct KVPair *set_data(struct KVPair *data, string_t key, value_t value, enum T
       free_list(data->value->list);
     }
 
-    switch (type) {
-      case TELLY_STR:
-        set_string(&data->value->string, value.string.value, value.string.len, data->value->string.value == NULL);
+    switch (data->type = type) {
+      case TELLY_STR: {
+        const uint32_t size = value.string.len + 1;
+        data->value->string.len = value.string.len;
+
+        if (data->value->string.value) {
+          data->value->string.value = realloc(data->value->string.value, size);
+        } else {
+          data->value->string.value = malloc(size);
+        }
+
+        memcpy(data->value->string.value, value.string.value, size);
         break;
+      }
 
       case TELLY_INT:
         data->value->integer = value.integer;
@@ -46,7 +56,6 @@ struct KVPair *set_data(struct KVPair *data, string_t key, value_t value, enum T
         break;
     }
 
-    data->type = type;
     return data;
   } else {
     return insert_kv_to_btree(cache, key, &value, type, -1, -1);

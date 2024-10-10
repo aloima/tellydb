@@ -2,30 +2,34 @@
 #include "../../headers/hashtable.h"
 #include "../../headers/utils.h"
 
+#include <stdint.h>
 #include <stdlib.h>
 
 #include <unistd.h>
 
 void set_kv(struct KVPair *kv, string_t key, value_t *value, enum TellyTypes type, const off_t start_at, const off_t end_at) {
-  kv->type = type;
   kv->pos.start_at = start_at;
   kv->pos.end_at = end_at;
 
-  if (!kv->key) {
-    kv->key = malloc(sizeof(string_t));
-    set_string(kv->key, key.value, key.len, true);
-  } else {
-    set_string(kv->key, key.value, key.len, false);
-  }
+  const uint32_t key_size = key.len + 1;
 
-  if (!kv->value && type != TELLY_UNSPECIFIED) {
+  kv->key = malloc(sizeof(string_t));
+  kv->key->len = key.len;
+  kv->key->value = malloc(key_size);
+  memcpy(kv->key->value, key.value, key_size);
+
+  if (type != TELLY_UNSPECIFIED) {
     kv->value = malloc(sizeof(value_t));
   }
 
-  switch (type) {
-    case TELLY_STR:
-      set_string(&kv->value->string, value->string.value, value->string.len, true);
+  switch (kv->type = type) {
+    case TELLY_STR: {
+      const uint32_t size = value->string.len + 1;
+      kv->value->string.len = value->string.len;
+      kv->value->string.value = malloc(size);
+      memcpy(kv->value->string.value, value->string.value, size);
       break;
+    }
 
     case TELLY_INT:
       kv->value->integer = value->integer;
