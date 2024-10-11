@@ -60,7 +60,11 @@ struct KVPair **get_kvs_from_btree(struct BTree *tree, uint32_t *size) {
 
   struct KVPair **kvs = malloc(tree->size * sizeof(struct KVPair *));
   get_kvs_from_node(kvs, size, tree->root);
-  kvs = realloc(kvs, *size * sizeof(struct KVPair *));
 
-  return kvs;
+  if (*size == 0) {
+    free(kvs);
+    return NULL;
+  } else {
+    return realloc(kvs, *size * sizeof(struct KVPair *));
+  }
 }

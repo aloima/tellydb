@@ -103,11 +103,11 @@ struct Configuration parse_configuration(FILE *file) {
 }
 
 static void get_allowed_log_levels(char *allowed_log_levels, struct Configuration conf) {
-  enum LogLevel log_levels[3] = {LOG_ERR, LOG_INFO, LOG_WARN};
+  const enum LogLevel log_levels[3] = {LOG_ERR, LOG_INFO, LOG_WARN};
   uint32_t len = 0;
 
   for (uint32_t i = 0; i < 3; ++i) {
-    enum LogLevel level = log_levels[i];
+    const enum LogLevel level = log_levels[i];
 
     if (conf.allowed_log_levels & level) {
       switch (level) {

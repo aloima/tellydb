@@ -175,7 +175,7 @@ void save_data() {
   for (uint32_t i = 0; i < size; ++i) {
     struct KVPair *kv = kvs[i];
 
-    char *line = NULL;
+    char *line;
     const uint32_t line_len = generate_value(&line, kv);
 
     if (line_len != 0) {
