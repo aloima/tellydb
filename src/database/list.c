@@ -32,10 +32,6 @@ struct ListNode *create_listnode(void *value, enum TellyTypes type) {
       node->value.boolean = *((bool *) value);
       break;
 
-    case TELLY_NULL:
-      node->value.null = NULL;
-      break;
-
     default:
       break;
   }

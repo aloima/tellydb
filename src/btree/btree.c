@@ -13,21 +13,26 @@ struct BTree *create_btree(const uint32_t max) {
   return tree;
 }
 
-static void get_sorted_kvs_from_node(struct KVPair **kvs, uint32_t *index, struct BTreeNode *node) {
+static void get_kvs_from_node(struct KVPair **kvs, uint32_t *index, struct BTreeNode *node) {
   if (node->leafs) {
     for (uint32_t i = 0; i < node->size; ++i) {
-      get_sorted_kvs_from_node(kvs, index, node->leafs[i]);
-      kvs[*index] = node->data[i];
-      *index += 1;
+      get_kvs_from_node(kvs, index, node->leafs[i]);
+
+      if (node->data[i]->type != TELLY_UNSPECIFIED) {
+        kvs[*index] = node->data[i];
+        *index += 1;
+      }
     }
 
-    get_sorted_kvs_from_node(kvs, index, node->leafs[node->size]);
+    get_kvs_from_node(kvs, index, node->leafs[node->size]);
     return;
   }
 
   for (uint32_t i = 0; i < node->size; ++i) {
-    kvs[*index] = node->data[i];
-    *index += 1;
+    if (node->data[i]->type != TELLY_UNSPECIFIED) {
+      kvs[*index] = node->data[i];
+      *index += 1;
+    }
   }
 }
 
@@ -49,12 +54,14 @@ void sort_kvs_by_pos(struct KVPair **kvs, const uint32_t size) {
   }
 }
 
-struct KVPair **get_sorted_kvs_from_btree(struct BTree *tree) {
+struct KVPair **get_kvs_from_btree(struct BTree *tree, uint32_t *size) {
   if (!tree->root) return NULL;
 
-  struct KVPair **kv = malloc(tree->size * sizeof(struct KVPair *));
-  uint32_t index = 0;
+  struct KVPair **kvs = malloc(tree->size * sizeof(struct KVPair *));
+  *size = 0;
 
-  get_sorted_kvs_from_node(kv, &index, tree->root);
-  return kv;
+  get_kvs_from_node(kvs, size, tree->root);
+  kvs = realloc(kvs, *size * sizeof(struct KVPair *));
+
+  return kvs;
 }

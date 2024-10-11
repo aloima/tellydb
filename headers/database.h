@@ -11,7 +11,7 @@
 
 /* DATABASE */
 struct KVPair {
-  string_t *key;
+  string_t key;
   value_t *value;
   enum TellyTypes type;
 

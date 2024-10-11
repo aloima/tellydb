@@ -17,7 +17,7 @@ void set_fv_of_hashtable(struct HashTable *table, char *name, void *value, enum 
   struct FVPair *fv;
   bool found = false;
 
-  if ((fv = table->pairs[index])) {
+  if ((fv = table->fvs[index])) {
     do {
       if (streq(fv->name.value, name)) {
         found = true;
@@ -57,6 +57,6 @@ void set_fv_of_hashtable(struct HashTable *table, char *name, void *value, enum 
     memcpy(fv->name.value, name, size);
     set_fv_value(fv, value);
 
-    table->pairs[index] = fv;
+    table->fvs[index] = fv;
   }
 }

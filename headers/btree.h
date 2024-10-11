@@ -22,7 +22,7 @@ struct BTree {
 };
 
 struct BTree *create_btree(const uint32_t max);
-struct KVPair **get_sorted_kvs_from_btree(struct BTree *tree);
+struct KVPair **get_kvs_from_btree(struct BTree *tree, uint32_t *size);
 
 void move_kv(struct BTreeNode *node, const uint32_t at, const uint32_t to);
 uint32_t find_index_of_kv(struct BTreeNode *node, const char *key);

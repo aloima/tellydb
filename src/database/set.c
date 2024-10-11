@@ -48,10 +48,6 @@ struct KVPair *set_data(struct KVPair *data, string_t key, value_t value, enum T
         data->value->list = value.list;
         break;
 
-      case TELLY_NULL:
-        data->value->null = NULL;
-        break;
-
       default:
         break;
     }

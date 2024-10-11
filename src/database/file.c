@@ -2,10 +2,10 @@
 #include "../../headers/btree.h"
 
 #include <stdio.h>
-#include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -93,8 +93,8 @@ static uint32_t generate_value(char **line, struct KVPair *kv) {
 void save_data() {
   struct BTree *cache = get_cache();
 
-  struct KVPair **kvs = get_sorted_kvs_from_btree(cache);
-  const uint32_t size = cache->size;
+  uint32_t size;
+  struct KVPair **kvs = get_kvs_from_btree(cache, &size);
   sort_kvs_by_pos(kvs, size);
 
   uint32_t file_size = lseek(fd, 0, SEEK_END);
@@ -113,6 +113,7 @@ void save_data() {
         if (line_len_in_file != line_len) {
           const uint64_t n = file_size - kv->pos.end_at;
           char *buf = malloc(n);
+          lseek(fd, kv->pos.end_at, SEEK_SET);
           read(fd, buf, n);
           lseek(fd, kv->pos.start_at + diff, SEEK_SET);
           write(fd, line, line_len);
@@ -128,11 +129,11 @@ void save_data() {
       } else {
         lseek(fd, 0, SEEK_END);
 
-        const uint32_t buf_len = kv->key->len + line_len + 1;
+        const uint32_t buf_len = kv->key.len + line_len + 1;
         char buf[buf_len + 1];
-        memcpy(buf, kv->key->value, kv->key->len);
-        buf[kv->key->len] = 0x1D;
-        memcpy(buf + kv->key->len + 1, line, line_len);
+        memcpy(buf, kv->key.value, kv->key.len);
+        buf[kv->key.len] = 0x1D;
+        memcpy(buf + kv->key.len + 1, line, line_len);
 
         write(fd, buf, buf_len);
         file_size += buf_len;

@@ -20,7 +20,7 @@ static void run(struct Client *client, respdata_t *data) {
 
           if (pair) {
             const uint32_t size = sizeof(struct KVPair *) + sizeof(struct KVPair) +
-              (pair->key->len + 1) + (pair->type == TELLY_STR ? (pair->value->string.len + 1) : 0);
+              (pair->key.len + 1) + (pair->type == TELLY_STR ? (pair->value->string.len + 1) : 0);
 
             const uint32_t buf_len = 3 + get_digit_count(size);
             char buf[buf_len + 1];

@@ -18,7 +18,7 @@ struct HashTableSize {
 };
 
 struct HashTable {
-  struct FVPair **pairs;
+  struct FVPair **fvs;
   struct HashTableSize size;
   double grow_factor;
 };

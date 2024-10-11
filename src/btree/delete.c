@@ -153,7 +153,7 @@ bool delete_kv_from_btree(struct BTree *tree, const char *key) {
 
   struct KVPair *target = node->data[target_at];
 
-  if (streq(target->key->value, key)) {
+  if (streq(target->key.value, key)) {
     tree->size -= 1;
 
     if (!node->leafs) {

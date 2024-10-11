@@ -17,7 +17,7 @@ static void add_kv_to_node(struct BTree *tree, struct BTreeNode *node, struct KV
     return;
   }
 
-  const uint32_t index = find_index_of_kv(node, kv->key->value);
+  const uint32_t index = find_index_of_kv(node, kv->key.value);
 
   node->size += 1;
   node->data = realloc(node->data, node->size * sizeof(struct KVPair *));

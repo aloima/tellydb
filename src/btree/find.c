@@ -7,7 +7,7 @@ static struct KVPair *find_kv_from_node(struct BTreeNode *node, const char *key)
   if (node->leafs != NULL) {
     for (uint32_t i = 0; i < node->size; ++i) {
       struct KVPair *kv = node->data[i];
-      const char *kv_key = kv->key->value;
+      const char *kv_key = kv->key.value;
       const int search = strcmp(key, kv_key);
 
       if (search == 0) return kv;
@@ -19,7 +19,7 @@ static struct KVPair *find_kv_from_node(struct BTreeNode *node, const char *key)
     for (uint32_t i = 0; i < node->size; ++i) {
       struct KVPair *kv = node->data[i];
 
-      if (streq(kv->key->value, key)) return kv;
+      if (streq(kv->key.value, key)) return kv;
     }
   }
 

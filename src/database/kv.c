@@ -13,14 +13,11 @@ void set_kv(struct KVPair *kv, string_t key, value_t *value, enum TellyTypes typ
 
   const uint32_t key_size = key.len + 1;
 
-  kv->key = malloc(sizeof(string_t));
-  kv->key->len = key.len;
-  kv->key->value = malloc(key_size);
-  memcpy(kv->key->value, key.value, key_size);
+  kv->key.len = key.len;
+  kv->key.value = malloc(key_size);
+  memcpy(kv->key.value, key.value, key_size);
 
-  if (type != TELLY_UNSPECIFIED) {
-    kv->value = malloc(sizeof(value_t));
-  }
+  if (type != TELLY_UNSPECIFIED) kv->value = malloc(sizeof(value_t));
 
   switch (kv->type = type) {
     case TELLY_STR: {
@@ -47,11 +44,7 @@ void set_kv(struct KVPair *kv, string_t key, value_t *value, enum TellyTypes typ
       kv->value->list = value->list;
       break;
 
-    case TELLY_NULL:
-      kv->value->null = NULL;
-      break;
-
-    case TELLY_UNSPECIFIED:
+    default:
       break;
   }
 }
@@ -75,7 +68,6 @@ void free_kv(struct KVPair *kv) {
   }
 
   if (kv->type != TELLY_UNSPECIFIED) free(kv->value);
-  free(kv->key->value);
-  free(kv->key);
+  free(kv->key.value);
   free(kv);
 }

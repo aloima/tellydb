@@ -24,10 +24,6 @@ void set_fv_value(struct FVPair *fv, void *value) {
       fv->value.boolean = *((bool *) value);
       break;
 
-    case TELLY_NULL:
-      fv->value.null = NULL;
-      break;
-
     default:
       break;
   }

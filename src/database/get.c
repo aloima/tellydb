@@ -59,11 +59,6 @@ struct KVPair *get_data(const char *key) {
     read(fd, &data->type, 1);
 
     switch (data->type) {
-      case TELLY_NULL: {
-        data->value->null = NULL;
-        break;
-      }
-
       case TELLY_INT: {
         const uint32_t size = end_at - start_at - 3;
         uint8_t c;
