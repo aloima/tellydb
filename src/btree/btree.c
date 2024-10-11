@@ -55,11 +55,10 @@ void sort_kvs_by_pos(struct KVPair **kvs, const uint32_t size) {
 }
 
 struct KVPair **get_kvs_from_btree(struct BTree *tree, uint32_t *size) {
+  *size = 0;
   if (!tree->root) return NULL;
 
   struct KVPair **kvs = malloc(tree->size * sizeof(struct KVPair *));
-  *size = 0;
-
   get_kvs_from_node(kvs, size, tree->root);
   kvs = realloc(kvs, *size * sizeof(struct KVPair *));
 

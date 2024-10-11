@@ -31,10 +31,10 @@ static void run(struct Client *client, respdata_t *data) {
     } else {
       list->end = list->end->prev;
       list->end->next = NULL;
-    }
 
-    list->size -= 1;
-    free_listnode(node);
+      list->size -= 1;
+      free_listnode(node);
+    }
   } else {
     write(client->connfd, "$-1\r\n", 5);
   }

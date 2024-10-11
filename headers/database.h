@@ -68,7 +68,7 @@ struct ListNode {
 };
 
 struct List {
-  uint64_t size;
+  uint32_t size;
   struct ListNode *begin;
   struct ListNode *end;
 };

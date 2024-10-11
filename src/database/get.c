@@ -17,7 +17,7 @@ void get_all_keys() {
     .len = 0
   };
 
-  while (read(fd, &c, 1) != 0) {
+  while (read(fd, &c, 1)) {
     if (c != 0x1D) {
       key.value[key.len] = c;
       key.len += 1;
@@ -85,6 +85,114 @@ struct KVPair *get_data(const char *key) {
       case TELLY_BOOL: {
         read(fd, &data->value->boolean, 1);
         break;
+      }
+
+      case TELLY_LIST: {
+        char size[4];
+        read(fd, size, 4);
+
+        struct List *list = (data->value->list = create_list());
+        list->size = size[0];
+        list->size = (list->size << 8) | size[1];
+        list->size = (list->size << 8) | size[2];
+        list->size = (list->size << 8) | size[3];
+
+        for (uint32_t i = 0; i < list->size; ++i) {
+          struct ListNode *node;
+          uint8_t type;
+          read(fd, &type, 1);
+
+          uint8_t c;
+
+          switch (type) {
+            case TELLY_NULL:
+              node = create_listnode(NULL, TELLY_NULL);
+              read(fd, &c, 1);
+              break;
+
+            case TELLY_INT: {
+              int res;
+              read(fd, &c, 1);
+              res = c;
+
+              while (read(fd, &c, 1) && c != 0x1F) {
+                res = ((res << 8) | c);
+              }
+
+              node = create_listnode(&res, TELLY_INT);
+              break;
+            }
+
+            case TELLY_STR: {
+              char *value = malloc(33);
+              uint64_t len = 0;
+
+              while (read(fd, &c, 1)) {
+                if (c != 0x1F) {
+                  value[len] = c;
+                  len += 1;
+
+                  if (len % 32 == 0) {
+                    value = realloc(value, len + 33);
+                  }
+                } else break;
+              }
+
+              value[len] = '\0';
+              node = create_listnode(value, TELLY_STR);
+              free(value);
+
+              break;
+            }
+
+            case TELLY_BOOL: {
+              read(fd, &c, 1);
+              node = create_listnode(&c, TELLY_BOOL);
+
+              read(fd, &c, 1);
+              break;
+            }
+
+            #ifdef __clang__
+              #pragma clang diagnostic push
+              #pragma clang diagnostic ignored "-Wsometimes-uninitialized"
+            #endif
+
+            default:
+              break;
+
+            #ifdef __clang__
+              #pragma clang diagnostic pop
+            #endif
+          }
+
+          #ifdef __clang__
+            #pragma clang diagnostic push
+            #pragma clang diagnostic ignored "-Wunknown-warning-option"
+          #endif
+
+          #ifdef __GNUC__
+            #pragma GCC diagnostic push
+            #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+          #endif
+
+          node->prev = list->end;
+          list->end = node;
+
+          if (i == 0) {
+            list->begin = node;
+          } else {
+            node->prev->next = node;
+          }
+
+          #ifdef __GNUC__
+            #pragma GCC diagnostic pop
+          #endif
+
+          #ifdef __clang__
+            #pragma clang diagnostic pop
+          #endif
+        }
       }
 
       default:

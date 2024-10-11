@@ -12,9 +12,9 @@ struct FVPair {
 };
 
 struct HashTableSize {
-  uint64_t allocated; // total allocated size
-  uint64_t filled; // filled allocated block count
-  uint64_t all; // contains next values
+  uint32_t allocated; // total allocated size
+  uint32_t filled; // filled allocated block count
+  uint32_t all; // contains next values
 };
 
 struct HashTable {
