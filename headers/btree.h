@@ -25,8 +25,7 @@ struct BTree *create_btree(const uint32_t max);
 struct KVPair **get_kvs_from_btree(struct BTree *tree, uint32_t *size);
 
 void move_kv(struct BTreeNode *node, const uint32_t at, const uint32_t to);
-uint32_t find_index_of_kv(struct BTreeNode *node, const char *key);
-struct BTreeNode *find_node_of_kv(struct BTreeNode *node, const char *key);
+uint32_t find_node_of_kv(struct BTreeNode **result, struct BTreeNode *search, const char *key);
 
 void sort_kvs_by_pos(struct KVPair **kvs, const uint32_t size);
 

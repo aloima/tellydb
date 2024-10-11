@@ -15,26 +15,28 @@ void move_kv(struct BTreeNode *node, const uint32_t at, const uint32_t to) {
   }
 }
 
-uint32_t find_index_of_kv(struct BTreeNode *node, const char *key) {
-  for (uint32_t i = 0; i < node->size; ++i) {
-    if (strcmp(key, node->data[i]->key.value) <= 0) return i;
-  }
+uint32_t find_node_of_kv(struct BTreeNode **result, struct BTreeNode *search, const char *key) {
+  if (search->leafs) {
+    for (uint32_t i = 0; i < search->size; ++i) {
+      const struct KVPair *kv = search->data[i];
+      const int res = strcmp(key, kv->key.value);
 
-  return node->size;
-}
-
-struct BTreeNode *find_node_of_kv(struct BTreeNode *node, const char *key) {
-  if (node->leafs) {
-    for (uint32_t i = 0; i < node->size; ++i) {
-      struct KVPair *kv = node->data[i];
-
-      if (strcmp(key, kv->key.value) <= 0) {
-        return find_node_of_kv(node->leafs[i], key);
+      if (res < 0) {
+        return find_node_of_kv(result, search->leafs[i], key);
+      } else if (res == 0) {
+        *result = search;
+        return i;
       }
     }
 
-    return find_node_of_kv(node->leafs[node->size], key);
+    return find_node_of_kv(result, search->leafs[search->size], key);
   }
 
-  return node;
+  *result = search;
+
+  for (uint32_t i = 0; i < search->size; ++i) {
+    if (strcmp(key, search->data[i]->key.value) <= 0) return i;
+  }
+
+  return search->size;
 }

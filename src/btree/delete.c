@@ -146,9 +146,9 @@ static void delete_from_leaf(struct BTree *tree, struct BTreeNode *node, struct 
 }
 
 bool delete_kv_from_btree(struct BTree *tree, const char *key) {
-  struct BTreeNode *node = find_node_of_kv(tree->root, key);
+  struct BTreeNode *node;
+  const uint32_t target_at = find_node_of_kv(&node, tree->root, key);
 
-  const uint32_t target_at = find_index_of_kv(node, key);
   if (target_at >= node->size) return false;
 
   struct KVPair *target = node->data[target_at];

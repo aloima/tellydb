@@ -7,7 +7,7 @@
 
 #include <unistd.h>
 
-static void add_kv_to_node(struct BTree *tree, struct BTreeNode *node, struct KVPair *kv) {
+static void add_kv_to_node(struct BTree *tree, struct BTreeNode *node, struct KVPair *kv, const uint32_t kv_at) {
   tree->size += 1;
 
   if (node->size == 0) {
@@ -17,17 +17,15 @@ static void add_kv_to_node(struct BTree *tree, struct BTreeNode *node, struct KV
     return;
   }
 
-  const uint32_t index = find_index_of_kv(node, kv->key.value);
-
   node->size += 1;
   node->data = realloc(node->data, node->size * sizeof(struct KVPair *));
 
-  memcpy(node->data + index + 1, node->data + index, (node->size - index - 1) * sizeof(struct KVPair *));
-  node->data[index] = kv;
+  memcpy(node->data + kv_at + 1, node->data + kv_at, (node->size - kv_at - 1) * sizeof(struct KVPair *));
+  node->data[kv_at] = kv;
 }
 
-static struct KVPair *insert_kv_to_node(struct BTree *tree, struct BTreeNode *node, struct KVPair *kv) {
-  add_kv_to_node(tree, node, kv);
+static struct KVPair *insert_kv_to_node(struct BTree *tree, struct BTreeNode *node, struct KVPair *kv, const uint32_t kv_at) {
+  add_kv_to_node(tree, node, kv, kv_at);
 
   if (node->size == tree->max) {
     uint32_t at = (tree->max - 1) / 2;
@@ -186,15 +184,18 @@ struct KVPair *insert_kv_to_btree(struct BTree *tree, string_t key, value_t *val
 
   if (!tree->root) {
     tree->root = malloc(sizeof(struct BTreeNode));
-    tree->root->size = 0;
     tree->root->leafs = NULL;
     tree->root->top = NULL;
     tree->root->leaf_at = 0;
 
-    add_kv_to_node(tree, tree->root, kv);
+    tree->size = 1;
+    tree->root->size = 1;
+    tree->root->data = malloc(sizeof(struct KVPair *));
+    tree->root->data[0] = kv;
   } else {
-    struct BTreeNode *node = find_node_of_kv(tree->root, key.value);
-    insert_kv_to_node(tree, node, kv);
+    struct BTreeNode *node;
+    const uint32_t kv_at = find_node_of_kv(&node, tree->root, key.value);
+    insert_kv_to_node(tree, node, kv, kv_at);
   }
 
   return kv;
