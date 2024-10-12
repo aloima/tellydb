@@ -1,16 +1,42 @@
 #include "../../headers/hashtable.h"
 #include "../../headers/utils.h"
 
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 
-void set_fv_of_hashtable(struct HashTable *table, char *name, void *value, enum TellyTypes type) {
-  // if (table->size.filled == table->size.allocated) grow_hashtable(table);
+void grow_hashtable(struct HashTable *table) {
+  const uint32_t allocated_size = (table->size.allocated * (1 + table->grow_factor));
+  struct FVPair **fvs = calloc(allocated_size, sizeof(struct FVPair *));
+  table->size.filled = 0;
 
-  const uint64_t index = hash(name) % table->size.allocated;
+  for (uint32_t i = 0; i < table->size.allocated; ++i) {
+    struct FVPair *fv = table->fvs[i];
+
+    while (fv) {
+      struct FVPair *next = fv->next;
+      fv->next = NULL;
+      const uint32_t index = hash(fv->name.value) % allocated_size;
+      struct FVPair **area = &fvs[index];
+
+      if (!*area) table->size.filled += 1;
+      while (*area) area = &(*area)->next;
+
+      *area = fv;
+      fv = next;
+    }
+  }
+
+  free(table->fvs);
+  table->size.allocated = allocated_size;
+  table->fvs = fvs;
+}
+
+void add_fv_to_hashtable(struct HashTable *table, char *name, void *value, enum TellyTypes type) {
+  if (table->size.filled == table->size.allocated) grow_hashtable(table);
+
+  const uint32_t index = hash(name) % table->size.allocated;
   table->size.all += 1;
   table->size.filled += 1;
 

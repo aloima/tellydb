@@ -22,7 +22,7 @@ static void run(struct Client *client, respdata_t *data) {
   if (kv && kv->type == TELLY_HASHTABLE) {
     table = kv->value->hashtable;
   } else {
-    table = create_hashtable(32, 0.6);
+    table = create_hashtable(16, 0.5);
     set_data(kv, key, (value_t) {
       .hashtable = table
     }, TELLY_HASHTABLE);
@@ -38,13 +38,13 @@ static void run(struct Client *client, respdata_t *data) {
 
     if (is_integer(value)) {
       int value_as_int = atoi(value);
-      set_fv_of_hashtable(table, name, &value_as_int, TELLY_INT);
+      add_fv_to_hashtable(table, name, &value_as_int, TELLY_INT);
     } else if (is_true || streq(value, "false")) {
-      set_fv_of_hashtable(table, name, &is_true, TELLY_BOOL);
+      add_fv_to_hashtable(table, name, &is_true, TELLY_BOOL);
     } else if (streq(value, "null")) {
-      set_fv_of_hashtable(table, name, NULL, TELLY_NULL);
+      add_fv_to_hashtable(table, name, NULL, TELLY_NULL);
     } else {
-      set_fv_of_hashtable(table, name, value, TELLY_STR);
+      add_fv_to_hashtable(table, name, value, TELLY_STR);
     }
   }
 

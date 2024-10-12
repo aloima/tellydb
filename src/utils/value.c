@@ -3,7 +3,6 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include <stdbool.h>
 
 void write_value(struct Client *client, value_t value, enum TellyTypes type) {
   switch (type) {
@@ -42,11 +41,11 @@ void write_value(struct Client *client, value_t value, enum TellyTypes type) {
       break;
 
     case TELLY_HASHTABLE:
-      _write(client, "+a hash table\r\n", 15);
+      _write(client, "+hash table\r\n", 13);
       break;
 
     case TELLY_LIST:
-      _write(client, "+a list\r\n", 9);
+      _write(client, "+list\r\n", 9);
       break;
 
     default:

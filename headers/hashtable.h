@@ -24,12 +24,11 @@ struct HashTable {
 };
 
 uint64_t hash(char *key);
-struct HashTable *create_hashtable(uint64_t default_size, double grow_factor);
+struct HashTable *create_hashtable(uint32_t default_size, double grow_factor);
 struct FVPair *get_fv_from_hashtable(struct HashTable *table, char *name);
 void free_hashtable(struct HashTable *table);
 
-void set_fv_value(struct FVPair *pair, void *value);
-void free_fv(struct FVPair *pair);
+void set_fv_value(struct FVPair *fv, void *value);
+void free_fv(struct FVPair *fv);
 
-// void grow_hashtable(struct HashTable *table);
-void set_fv_of_hashtable(struct HashTable *table, char *name, void *value, enum TellyTypes type);
+void add_fv_to_hashtable(struct HashTable *table, char *name, void *value, enum TellyTypes type);
