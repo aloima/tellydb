@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 #include <stdlib.h>
 
 static struct Configuration default_conf = {
@@ -26,7 +27,7 @@ static void pass_line(FILE *file, char c) {
 }
 
 static void parse_value(FILE *file, char *buf) {
-  char c = 1;
+  char c;
 
   while ((c = fgetc(file)) != EOF && c != '\n') {
     strncat(buf, &c, 1);
@@ -96,7 +97,7 @@ struct Configuration parse_configuration(FILE *file) {
           buf[0] = '\0';
           parse_value(file, buf);
 
-          bool enabled = streq(buf, "true");
+          const bool enabled = streq(buf, "true");
 
           if (enabled || streq(buf, "false")) {
             conf.tls = enabled;
@@ -124,33 +125,24 @@ struct Configuration parse_configuration(FILE *file) {
 }
 
 static void get_allowed_log_levels(char *allowed_log_levels, struct Configuration conf) {
-  const enum LogLevel log_levels[3] = {LOG_ERR, LOG_INFO, LOG_WARN};
   uint32_t len = 0;
 
-  for (uint32_t i = 0; i < 3; ++i) {
-    const enum LogLevel level = log_levels[i];
-
-    if (conf.allowed_log_levels & level) {
-      switch (level) {
-        case LOG_ERR:
-          allowed_log_levels[len] = 'e';
-          len += 1;
-          break;
-
-        case LOG_WARN:
-          allowed_log_levels[len] = 'w';
-          len += 1;
-          break;
-
-        case LOG_INFO:
-          allowed_log_levels[len] = 'i';
-          len += 1;
-          break;
-      }
-    }
+  if (conf.allowed_log_levels & LOG_ERR) {
+    allowed_log_levels[len] = 'e';
+    len += 1;
   }
 
-  allowed_log_levels[len] = 0;
+  if (conf.allowed_log_levels & LOG_WARN) {
+    allowed_log_levels[len] = 'w';
+    len += 1;
+  }
+
+  if (conf.allowed_log_levels & LOG_INFO) {
+    allowed_log_levels[len] = 'i';
+    len += 1;
+  }
+
+  allowed_log_levels[len] = '\0';
 }
 
 uint32_t get_configuration_string(char *buf, struct Configuration conf) {
@@ -197,8 +189,8 @@ struct Configuration *get_configuration(const char *filename) {
   if (filename == NULL) {
     FILE *file = fopen(".tellyconf", "r");
 
-    if (file != NULL) {
-      struct Configuration data = parse_configuration(file);
+    if (file) {
+      const struct Configuration data = parse_configuration(file);
       memcpy(conf, &data, sizeof(struct Configuration));
       fclose(file);
     } else {
@@ -209,8 +201,8 @@ struct Configuration *get_configuration(const char *filename) {
   } else {
     FILE *file = fopen(filename, "r");
 
-    if (file != NULL) {
-      struct Configuration data = parse_configuration(file);
+    if (file) {
+      const struct Configuration data = parse_configuration(file);
       memcpy(conf, &data, sizeof(struct Configuration));
       fclose(file);
 

@@ -46,5 +46,3 @@ void close_logs();
 
 bool is_integer(const char *value);
 uint32_t get_digit_count(int32_t number);
-
-void client_error();

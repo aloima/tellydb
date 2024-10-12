@@ -1,139 +1,132 @@
+#include "../../headers/telly.h"
 #include "../../headers/server.h"
 #include "../../headers/utils.h"
 
-#include <openssl/ssl.h>
-
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <ctype.h>
 
+#define DATA_ERR(client) write_log(LOG_ERR, "Received data from Client #%d cannot be validated as a RESP data, so it cannot be created.", (client)->id);
+
 respdata_t *parse_resp_array(struct Client *client, uint8_t type) {
   respdata_t *data = malloc(sizeof(respdata_t));
   data->type = type;
-
-  char *len = malloc(33);
-  uint32_t read_count = 0;
+  data->count = 0;
 
   while (true) {
     char c;
     _read(client, &c, 1);
 
     if (isdigit(c)) {
-      len[read_count] = c;
-      read_count += 1;
+      data->count = (data->count * 10) + (c - 48);
     } else if (c == '\r') {
       _read(client, &c, 1);
 
       if (c == '\n') {
-        len[read_count] = '\0';
-        data->count = atoi(len);
-        free(len);
-
         data->value.array = malloc(data->count * sizeof(respdata_t));
 
         for (uint32_t i = 0; i < data->count; ++i) {
           data->value.array[i] = get_resp_data(client);
         }
 
-        break;
+        return data;
       } else {
-        client_error();
+        DATA_ERR(client);
+        free(data);
+        return NULL;
       }
     } else {
-      client_error();
-    }
-
-    if (read_count % 32 == 0) {
-      len = realloc(len, read_count + 33);
+      DATA_ERR(client);
+      free(data);
+      return NULL;
     }
   }
-
-  return data;
 }
 
 respdata_t *parse_resp_sstring(struct Client *client, uint8_t type) {
   respdata_t *data = malloc(sizeof(respdata_t));
   data->type = type;
-  data->count = 0;
-
-  string_t string = {
+  data->value.string = (string_t) {
     .value = malloc(33),
     .len = 0
   };
 
-  while (true) {
-    string.len += _read(client, string.value + string.len, 1);
+  string_t *string = &data->value.string;
 
-    if (string.len % 32 == 0) {
-      string.value = realloc(string.value, string.len + 33);
+  while (true) {
+    string->len += _read(client, string->value + string->len, 1);
+
+    if (string->len % 32 == 0) {
+      string->value = realloc(string->value, string->len + 33);
     }
 
-    if (string.value[string.len - 1] == '\r') {
+    if (string->value[string->len - 1] == '\r') {
       char c;
       _read(client, &c, 1);
 
       if (c == '\n') {
-        string.value[string.len - 1] = '\0';
-        string.len -= 1;
-        data->value.string = string;
-        break;
+        string->len -= 1;
+        string->value[string->len] = '\0';
+        return data;
       } else {
-        client_error();
+        DATA_ERR(client);
+        free_resp_data(data);
+        return NULL;
       }
+    } else {
+      DATA_ERR(client);
+      free_resp_data(data);
+      return NULL;
     }
   }
-
-  return data;
 }
 
 respdata_t *parse_resp_bstring(struct Client *client, uint8_t type) {
   respdata_t *data = malloc(sizeof(respdata_t));
   data->type = type;
-  data->count = 0;
+  data->value.string.len = 0;
 
-  char *len = malloc(33);
-  uint32_t read_count = 0;
+  string_t *string = &data->value.string;
 
   while (true) {
-    read_count += _read(client, len + read_count, 1);
+    char c;
+    _read(client, &c, 1);
 
-    if (read_count % 32 == 0) {
-      len = realloc(len, read_count + 33);
-    }
-
-    if (len[read_count - 1] == '\r') {
-      char c;
+    if (isdigit(c)) {
+      string->len = (string->len * 10) + (c - 48);
+    } else if (c == '\r') {
       _read(client, &c, 1);
 
       if (c == '\n') {
-        len[read_count - 1] = '\0';
-        uint32_t lend = atoi(len);
-        free(len);
-
-        data->value.string = (string_t) {
-          .value = malloc(lend + 1),
-          .len = lend
-        };
-
-        uint64_t total = lend;
+        string->value = malloc(string->len + 1);
+        uint64_t total = string->len;
 
         while (total != 0) {
-          total -= _read(client, data->value.string.value + lend - total, total);
+          total -= _read(client, string->value + string->len - total, total);
         }
 
-        data->value.string.value[lend] = '\0';
+        string->value[string->len] = '\0';
 
         char buf[2];
         _read(client, buf, 2);
 
         if (buf[0] != '\r' || buf[1] != '\n') {
-          client_error();
+          DATA_ERR(client);
+          free_resp_data(data);
+          return NULL;
         }
 
-        break;
+        return data;
       } else {
-        client_error();
+        DATA_ERR(client);
+        free(data);
+        return NULL;
       }
+    } else {
+      DATA_ERR(client);
+      free(data);
+      return NULL;
     }
   }
 

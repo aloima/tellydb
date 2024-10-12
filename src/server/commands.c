@@ -1,3 +1,4 @@
+#include "../../headers/telly.h"
 #include "../../headers/server.h"
 #include "../../headers/commands.h"
 #include "../../headers/utils.h"
@@ -64,7 +65,7 @@ uint32_t get_command_count() {
 
 void execute_command(struct Client *client, respdata_t *data) {
   if (data->type == RDT_ARRAY) {
-    string_t name = data->value.array[0]->value.string;
+    const string_t name = data->value.array[0]->value.string;
 
     char input[name.len + 1];
     to_uppercase(name.value, input);
@@ -72,7 +73,7 @@ void execute_command(struct Client *client, respdata_t *data) {
     bool executed = false;
 
     for (uint32_t i = 0; i < command_count; ++i) {
-      struct Command command = commands[i];
+      const struct Command command = commands[i];
 
       if (streq(input, command.name)) {
         command.run(client, data);
@@ -89,6 +90,6 @@ void execute_command(struct Client *client, respdata_t *data) {
       write(client->connfd, res, len);
     }
   } else {
-    client_error();
+    write_log(LOG_ERR, "Received data from Client #%d is not RDT_ARRAY, so it is not readable as a command.", client->id);
   }
 }
