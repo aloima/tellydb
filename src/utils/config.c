@@ -13,6 +13,11 @@ static struct Configuration default_conf = {
   .max_log_lines = 128,
   .data_file = ".tellydb",
   .log_file = ".tellylog",
+
+  .tls = false,
+  .cert = {0},
+  .private_key = {0},
+
   .default_conf = true
 };
 
@@ -87,6 +92,22 @@ struct Configuration parse_configuration(FILE *file) {
           parse_value(file, conf.data_file);
         } else if (streq(buf, "LOG_FILE")) {
           parse_value(file, conf.log_file);
+        } else if (streq(buf, "TLS")) {
+          buf[0] = '\0';
+          parse_value(file, buf);
+
+          bool enabled = streq(buf, "true");
+
+          if (enabled || streq(buf, "false")) {
+            conf.tls = enabled;
+          } else {
+            write_log(LOG_ERR, "Cannot parse TLS value of configuration, %s is not a valid value.");
+            return conf;
+          }
+        } else if (streq(buf, "CERT")) {
+          parse_value(file, conf.cert);
+        } else if (streq(buf, "PRIVATE_KEY")) {
+          parse_value(file, conf.private_key);
         } else {
           return conf;
         }
@@ -154,8 +175,16 @@ uint32_t get_configuration_string(char *buf, struct Configuration conf) {
     "# Specifies database file where data will be saved\n"
     "DATA_FILE=%s\n\n"
     "# Specifies log file where logs will be appended\n"
-    "LOG_FILE=%s\n"
-  ), conf.port, conf.max_clients, allowed_log_levels, conf.max_log_len, conf.max_log_lines, conf.data_file, conf.log_file);
+    "LOG_FILE=%s\n\n"
+    "# Enables/disables creating TLS server\n"
+    "# If it is enabled, CERT specifies certificate file path of TLS server and PRIVATE_KEY specifies private key file path of TLS server\n"
+    "# TLS value must be true or false\n"
+    "TLS=%s\n"
+    "CERT=%s\n"
+    "PRIVATE_KEY=%s\n"
+  ), conf.port, conf.max_clients, allowed_log_levels, conf.max_log_len, conf.max_log_lines, conf.data_file, conf.log_file,
+     conf.tls ? "true" : "false", conf.cert, conf.private_key
+  );
 }
 
 struct Configuration get_default_configuration() {

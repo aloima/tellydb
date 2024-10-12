@@ -1,17 +1,17 @@
-#include "../../../headers/database.h"
+#include "../../../headers/telly.h"
+#include "../../../headers/server.h"
 #include "../../../headers/commands.h"
+#include "../../../headers/utils.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <time.h>
 
-#include <unistd.h>
-
 static void run(struct Client *client, respdata_t *data) {
-  if (client != NULL) {
+  if (client) {
     if (data->count != 1) {
-      string_t subcommand_string = data->value.array[1]->value.string;
+      const string_t subcommand_string = data->value.array[1]->value.string;
       char subcommand[subcommand_string.len + 1];
       to_uppercase(subcommand_string.value, subcommand);
 
@@ -20,7 +20,7 @@ static void run(struct Client *client, respdata_t *data) {
         char res[len + 1];
         sprintf(res, ":%d\r\n", client->id);
 
-        write(client->connfd, res, len);
+        _write(client, res, len);
       } else if (streq("INFO", subcommand)) {
         const char *lib_name = client->lib_name ? client->lib_name : "unspecified";
         const char *lib_ver = client->lib_ver ? client->lib_ver : "unspecified";
@@ -40,7 +40,7 @@ static void run(struct Client *client, respdata_t *data) {
         char res[1024];
         sprintf(res, "$%ld\r\n%s\r\n", strlen(buf), buf);
 
-        write(client->connfd, res, strlen(res));
+        _write(client, res, strlen(res));
       } else if (streq("SETINFO", subcommand)) {
         if (data->count == 4) {
           string_t property = data->value.array[2]->value.string;
@@ -54,7 +54,7 @@ static void run(struct Client *client, respdata_t *data) {
             client->lib_name = client->lib_name ? realloc(client->lib_name, value_size) : malloc(value_size);
             memcpy(client->lib_name, value.value, value_size);
 
-            write(client->connfd, "+OK\r\n", 5);
+            _write(client, "+OK\r\n", 5);
           } else if (streq(property_value, "LIB-VERSION")) {
             string_t value = data->value.array[3]->value.string;
             const uint32_t value_size = value.len + 1;
@@ -62,16 +62,16 @@ static void run(struct Client *client, respdata_t *data) {
             client->lib_ver = client->lib_ver ? realloc(client->lib_ver, value_size) : malloc(value_size);
             memcpy(client->lib_ver, value.value, value_size);
 
-            write(client->connfd, "+OK\r\n", 5);
+            _write(client, "+OK\r\n", 5);
           } else {
-            write(client->connfd, "-Unknown property\r\n", 19);
+            _write(client, "-Unknown property\r\n", 19);
           }
         } else {
-          WRONG_ARGUMENT_ERROR(client->connfd, "CLIENT SETINFO", 14);
+          WRONG_ARGUMENT_ERROR(client, "CLIENT SETINFO", 14);
         }
       }
     } else {
-      WRONG_ARGUMENT_ERROR(client->connfd, "CLIENT", 6);
+      WRONG_ARGUMENT_ERROR(client, "CLIENT", 6);
     }
   }
 }

@@ -1,3 +1,4 @@
+#include "../../../headers/server.h"
 #include "../../../headers/database.h"
 #include "../../../headers/commands.h"
 #include "../../../headers/btree.h"
@@ -8,7 +9,7 @@
 
 static void run(struct Client *client, respdata_t *data) {
   if (client && data->count != 2) {
-    WRONG_ARGUMENT_ERROR(client->connfd, "RPOP", 4);
+    WRONG_ARGUMENT_ERROR(client, "RPOP", 4);
     return;
   }
 
@@ -17,14 +18,14 @@ static void run(struct Client *client, respdata_t *data) {
 
   if (kv) {
     if (client && kv->type != TELLY_LIST) {
-      write(client->connfd, "-Value stored at the key is not a list\r\n", 40);
+      _write(client, "-Value stored at the key is not a list\r\n", 40);
       return;
     }
 
     struct List *list = kv->value->list;
     struct ListNode *node = list->end;
 
-    if (client) write_value(client->connfd, list->end->value, list->end->type);
+    if (client) write_value(client, list->end->value, list->end->type);
 
     if (list->size == 1) {
       delete_kv_from_btree(get_cache(), key.value);
@@ -35,8 +36,8 @@ static void run(struct Client *client, respdata_t *data) {
       list->size -= 1;
       free_listnode(node);
     }
-  } else {
-    write(client->connfd, "$-1\r\n", 5);
+  } else if (client) {
+    _write(client, "$-1\r\n", 5);
   }
 }
 

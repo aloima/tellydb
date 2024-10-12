@@ -1,15 +1,15 @@
+#include "../../../headers/server.h"
 #include "../../../headers/database.h"
 #include "../../../headers/commands.h"
 
 #include <stdio.h>
+#include <string.h>
 #include <stdint.h>
-
-#include <unistd.h>
 
 static void run(struct Client *client, respdata_t *data) {
   if (client) {
     if (data->count == 1) {
-      WRONG_ARGUMENT_ERROR(client->connfd, "EXISTS", 6);
+      WRONG_ARGUMENT_ERROR(client, "EXISTS", 6);
       return;
     }
 
@@ -20,7 +20,7 @@ static void run(struct Client *client, respdata_t *data) {
     buf[0] = '\0';
 
     for (uint32_t i = 1; i <= key_count; ++i) {
-      char *key = data->value.array[i]->value.string.value;
+      const char *key = data->value.array[i]->value.string.value;
 
       if (get_data(key)) {
         existed += 1;
@@ -43,7 +43,7 @@ static void run(struct Client *client, respdata_t *data) {
         "%s"
     ), key_count + 2, existed, not_existed, buf);
 
-    write(client->connfd, res, res_len);
+    _write(client, res, res_len);
   }
 }
 

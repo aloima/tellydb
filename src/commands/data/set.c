@@ -1,15 +1,14 @@
+#include "../../../headers/telly.h"
+#include "../../../headers/server.h"
 #include "../../../headers/database.h"
 #include "../../../headers/commands.h"
 
-#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 
-#include <unistd.h>
-
 static void run(struct Client *client, respdata_t *data) {
   if (data->count < 3 && client) {
-    WRONG_ARGUMENT_ERROR(client->connfd, "SET", 3);
+    WRONG_ARGUMENT_ERROR(client, "SET", 3);
     return;
   }
 
@@ -26,14 +25,14 @@ static void run(struct Client *client, respdata_t *data) {
     else if (streq(arg, "NX")) nx = true;
     else if (streq(arg, "XX")) xx = true;
     else if (client) {
-      write(client->connfd, "-Invalid argument(s) for 'SET' command\r\n", 40);
+      _write(client, "-Invalid argument(s) for 'SET' command\r\n", 40);
       return;
     }
   }
 
   if (nx && xx) {
     if (client) {
-      write(client->connfd, "-XX and NX arguments cannot be specified simultaneously for 'SET' command\r\n", 75);
+      _write(client, "-XX and NX arguments cannot be specified simultaneously for 'SET' command\r\n", 75);
     }
 
     return;
@@ -71,14 +70,14 @@ static void run(struct Client *client, respdata_t *data) {
 
   if (get) {
     if (res) {
-      if (client) write_value(client->connfd, *res->value, res->type);
+      if (client) write_value(client, *res->value, res->type);
       set_data(res, key, value, type);
     } else if (client) {
-      write(client->connfd, "$-1\r\n", 5);
+      _write(client, "$-1\r\n", 5);
     }
   } else {
     set_data(res, key, value, type);
-    if (client) write(client->connfd, "+OK\r\n", 5);
+    if (client) _write(client, "+OK\r\n", 5);
   }
 }
 

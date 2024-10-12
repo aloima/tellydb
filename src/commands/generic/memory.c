@@ -1,43 +1,43 @@
+#include "../../../headers/telly.h"
+#include "../../../headers/server.h"
 #include "../../../headers/database.h"
 #include "../../../headers/commands.h"
 
 #include <stdio.h>
 #include <stdint.h>
 
-#include <unistd.h>
-
 static void run(struct Client *client, respdata_t *data) {
   if (client) {
     if (data->count != 1) {
-      string_t subcommand_string = data->value.array[1]->value.string;
+      const string_t subcommand_string = data->value.array[1]->value.string;
       char subcommand[subcommand_string.len + 1];
       to_uppercase(subcommand_string.value, subcommand);
 
       if (streq(subcommand, "USAGE")) {
         if (data->count == 3) {
-          char *key = data->value.array[2]->value.string.value;
-          struct KVPair *pair = get_kv_from_cache(key);
+          const char *key = data->value.array[2]->value.string.value;
+          struct KVPair *kv = get_kv_from_cache(key);
 
-          if (pair) {
+          if (kv) {
             const uint32_t size = sizeof(struct KVPair *) + sizeof(struct KVPair) +
-              (pair->key.len + 1) + (pair->type == TELLY_STR ? (pair->value->string.len + 1) : 0);
+              (kv->key.len + 1) + (kv->type == TELLY_STR ? (kv->value->string.len + 1) : 0);
 
             const uint32_t buf_len = 3 + get_digit_count(size);
             char buf[buf_len + 1];
             sprintf(buf, ":%d\r\n", size);
 
-            write(client->connfd, buf, buf_len);
+            _write(client, buf, buf_len);
           } else {
-            write(client->connfd, "$-1\r\n", 5);
+            _write(client, "$-1\r\n", 5);
           }
         } else {
-          WRONG_ARGUMENT_ERROR(client->connfd, "MEMORY USAGE", 12);
+          WRONG_ARGUMENT_ERROR(client, "MEMORY USAGE", 12);
         }
       } else {
-        WRONG_ARGUMENT_ERROR(client->connfd, "MEMORY", 6);
+        WRONG_ARGUMENT_ERROR(client, "MEMORY", 6);
       }
     } else {
-      WRONG_ARGUMENT_ERROR(client->connfd, "MEMORY", 6);
+      WRONG_ARGUMENT_ERROR(client, "MEMORY", 6);
     }
   }
 }

@@ -1,32 +1,31 @@
-#include "../../../headers/database.h"
+#include "../../../headers/telly.h"
+#include "../../../headers/server.h"
 #include "../../../headers/commands.h"
+#include "../../../headers/utils.h"
 
 #include <stdio.h>
 #include <stdint.h>
-#include <stdlib.h>
-
-#include <unistd.h>
 
 static void run(struct Client *client, respdata_t *data) {
-  if (client != NULL) {
+  if (client) {
     switch (data->count) {
       case 1:
-        write(client->connfd, "+PONG\r\n", 7);
+        _write(client, "+PONG\r\n", 7);
         break;
 
       case 2: {
-        string_t arg = data->value.array[1]->value.string;
+        const string_t arg = data->value.array[1]->value.string;
 
         const uint32_t buf_len = 5 + get_digit_count(arg.len) + arg.len;
         char buf[buf_len + 1];
         sprintf(buf, "$%ld\r\n%s\r\n", arg.len, arg.value);
-        write(client->connfd, buf, buf_len);
+        _write(client, buf, buf_len);
 
         break;
       }
 
       default:
-        WRONG_ARGUMENT_ERROR(client->connfd, "PING", 4);
+        WRONG_ARGUMENT_ERROR(client, "PING", 4);
         break;
     }
   }

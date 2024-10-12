@@ -1,16 +1,16 @@
-#include "../../../headers/database.h"
+#include "../../../headers/server.h"
 #include "../../../headers/commands.h"
+#include "../../../headers/utils.h"
 
 #include <stdio.h>
 #include <stdint.h>
 
 #include <sys/time.h>
-#include <unistd.h>
 
 static void run(struct Client *client, respdata_t *data) {
   if (client) {
     if (data->count != 1) {
-      WRONG_ARGUMENT_ERROR(client->connfd, "TIME", 4);
+      WRONG_ARGUMENT_ERROR(client, "TIME", 4);
       return;
     }
 
@@ -24,7 +24,7 @@ static void run(struct Client *client, respdata_t *data) {
     char buf[buf_len + 1];
     sprintf(buf, "*2\r\n:%ld\r\n:%ld\r\n", timestamp.tv_sec, timestamp.tv_usec);
 
-    write(client->connfd, buf, buf_len);
+    _write(client, buf, buf_len);
   }
 }
 

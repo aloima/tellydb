@@ -1,13 +1,13 @@
-#include "../../headers/resp.h"
+#include "../../headers/server.h"
 #include "../../headers/utils.h"
+
+#include <openssl/ssl.h>
 
 #include <stdint.h>
 #include <stdlib.h>
 #include <ctype.h>
 
-#include <unistd.h>
-
-respdata_t *parse_resp_array(int connfd, uint8_t type) {
+respdata_t *parse_resp_array(struct Client *client, uint8_t type) {
   respdata_t *data = malloc(sizeof(respdata_t));
   data->type = type;
 
@@ -16,13 +16,13 @@ respdata_t *parse_resp_array(int connfd, uint8_t type) {
 
   while (true) {
     char c;
-    read(connfd, &c, 1);
+    _read(client, &c, 1);
 
     if (isdigit(c)) {
       len[read_count] = c;
       read_count += 1;
     } else if (c == '\r') {
-      read(connfd, &c, 1);
+      _read(client, &c, 1);
 
       if (c == '\n') {
         len[read_count] = '\0';
@@ -32,7 +32,7 @@ respdata_t *parse_resp_array(int connfd, uint8_t type) {
         data->value.array = malloc(data->count * sizeof(respdata_t));
 
         for (uint32_t i = 0; i < data->count; ++i) {
-          data->value.array[i] = get_resp_data(connfd);
+          data->value.array[i] = get_resp_data(client);
         }
 
         break;
@@ -51,7 +51,7 @@ respdata_t *parse_resp_array(int connfd, uint8_t type) {
   return data;
 }
 
-respdata_t *parse_resp_sstring(int connfd, uint8_t type) {
+respdata_t *parse_resp_sstring(struct Client *client, uint8_t type) {
   respdata_t *data = malloc(sizeof(respdata_t));
   data->type = type;
   data->count = 0;
@@ -62,7 +62,7 @@ respdata_t *parse_resp_sstring(int connfd, uint8_t type) {
   };
 
   while (true) {
-    string.len += read(connfd, string.value + string.len, 1);
+    string.len += _read(client, string.value + string.len, 1);
 
     if (string.len % 32 == 0) {
       string.value = realloc(string.value, string.len + 33);
@@ -70,7 +70,7 @@ respdata_t *parse_resp_sstring(int connfd, uint8_t type) {
 
     if (string.value[string.len - 1] == '\r') {
       char c;
-      read(connfd, &c, 1);
+      _read(client, &c, 1);
 
       if (c == '\n') {
         string.value[string.len - 1] = '\0';
@@ -86,7 +86,7 @@ respdata_t *parse_resp_sstring(int connfd, uint8_t type) {
   return data;
 }
 
-respdata_t *parse_resp_bstring(int connfd, uint8_t type) {
+respdata_t *parse_resp_bstring(struct Client *client, uint8_t type) {
   respdata_t *data = malloc(sizeof(respdata_t));
   data->type = type;
   data->count = 0;
@@ -95,7 +95,7 @@ respdata_t *parse_resp_bstring(int connfd, uint8_t type) {
   uint32_t read_count = 0;
 
   while (true) {
-    read_count += read(connfd, len + read_count, 1);
+    read_count += _read(client, len + read_count, 1);
 
     if (read_count % 32 == 0) {
       len = realloc(len, read_count + 33);
@@ -103,7 +103,7 @@ respdata_t *parse_resp_bstring(int connfd, uint8_t type) {
 
     if (len[read_count - 1] == '\r') {
       char c;
-      read(connfd, &c, 1);
+      _read(client, &c, 1);
 
       if (c == '\n') {
         len[read_count - 1] = '\0';
@@ -118,13 +118,13 @@ respdata_t *parse_resp_bstring(int connfd, uint8_t type) {
         uint64_t total = lend;
 
         while (total != 0) {
-          total -= read(connfd, data->value.string.value + lend - total, total);
+          total -= _read(client, data->value.string.value + lend - total, total);
         }
 
         data->value.string.value[lend] = '\0';
 
         char buf[2];
-        read(connfd, buf, 2);
+        _read(client, buf, 2);
 
         if (buf[0] != '\r' || buf[1] != '\n') {
           client_error();
@@ -140,11 +140,11 @@ respdata_t *parse_resp_bstring(int connfd, uint8_t type) {
   return data;
 }
 
-respdata_t *get_resp_data(int connfd) {
+respdata_t *get_resp_data(struct Client *client) {
   respdata_t *data;
   uint8_t type;
 
-  if (read(connfd, &type, 1) == 0) {
+  if (_read(client, &type, 1) == 0) {
     data = malloc(sizeof(respdata_t));
     data->type = RDT_CLOSE;
 
@@ -152,19 +152,19 @@ respdata_t *get_resp_data(int connfd) {
   } else {
     switch (type) {
       case RDT_ARRAY:
-        data = parse_resp_array(connfd, type);
+        data = parse_resp_array(client, type);
         return data;
 
       case RDT_SSTRING:
-        data = parse_resp_sstring(connfd, type);
+        data = parse_resp_sstring(client, type);
         return data;
 
       case RDT_BSTRING:
-        data = parse_resp_bstring(connfd, type);
+        data = parse_resp_bstring(client, type);
         return data;
 
       case RDT_ERR:
-        data = parse_resp_sstring(connfd, type);
+        data = parse_resp_sstring(client, type);
         return data;
 
       default:

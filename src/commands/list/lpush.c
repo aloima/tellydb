@@ -1,11 +1,10 @@
+#include "../../../headers/server.h"
 #include "../../../headers/database.h"
 #include "../../../headers/commands.h"
 
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
-
-#include <unistd.h>
 
 static void lpush_to_list(struct List *list, void *value, enum TellyTypes type) {
   struct ListNode *node = create_listnode(value, type);
@@ -22,21 +21,21 @@ static void lpush_to_list(struct List *list, void *value, enum TellyTypes type) 
 
 static void run(struct Client *client, respdata_t *data) {
   if (client && data->count < 3) {
-    WRONG_ARGUMENT_ERROR(client->connfd, "LPUSH", 5);
+    WRONG_ARGUMENT_ERROR(client, "LPUSH", 5);
     return;
   }
 
-  string_t key = data->value.array[1]->value.string;
+  const string_t key = data->value.array[1]->value.string;
   struct KVPair *kv = get_data(key.value);
   struct List *list;
 
   if (kv) {
-    if (client && kv->type != TELLY_LIST) {
-      write(client->connfd, "-Value stored at the key is not a list\r\n", 40);
+    if (kv->type != TELLY_LIST) {
+      if (client) _write(client, "-Value stored at the key is not a list\r\n", 40);
       return;
-    } else {
-      list = kv->value->list;
     }
+
+    list = kv->value->list;
   } else {
     list = create_list();
     set_data(kv, key, (value_t) {
@@ -67,7 +66,7 @@ static void run(struct Client *client, respdata_t *data) {
     char buf[buf_len + 1];
     sprintf(buf, ":%d\r\n", value_count);
 
-    write(client->connfd, buf, buf_len);
+    _write(client, buf, buf_len);
   }
 }
 

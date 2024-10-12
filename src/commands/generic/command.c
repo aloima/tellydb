@@ -1,15 +1,15 @@
-#include "../../../headers/database.h"
+#include "../../../headers/telly.h"
+#include "../../../headers/server.h"
 #include "../../../headers/commands.h"
+#include "../../../headers/utils.h"
 
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 
-#include <unistd.h>
-
 static void run(struct Client *client, respdata_t *data) {
   if (data->count != 1 && client) {
-    string_t input = data->value.array[1]->value.string;
+    const string_t input = data->value.array[1]->value.string;
     char subcommand[input.len + 1];
     to_uppercase(input.value, subcommand);
 
@@ -45,7 +45,7 @@ static void run(struct Client *client, respdata_t *data) {
         strcat(res, buf);
       }
 
-      write(client->connfd, res, res_len);
+      _write(client, res, res_len);
     } else if (streq("LIST", subcommand)) {
       const struct Command *commands = get_commands();
       const uint32_t command_count = get_command_count();
@@ -59,14 +59,14 @@ static void run(struct Client *client, respdata_t *data) {
         strcat(res, buf);
       }
 
-      write(client->connfd, res, res_len);
+      _write(client, res, res_len);
     } else if (streq("COUNT", subcommand)) {
       const uint32_t command_count = get_command_count();
       const uint32_t res_len = 3 + get_digit_count(command_count);
       char res[res_len + 1];
 
       sprintf(res, ":%d\r\n", get_command_count());
-      write(client->connfd, res, res_len);
+      _write(client, res, res_len);
     }
   }
 }

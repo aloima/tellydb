@@ -1,33 +1,32 @@
+#include "../../../headers/server.h"
 #include "../../../headers/database.h"
 #include "../../../headers/commands.h"
 #include "../../../headers/btree.h"
 
 #include <stddef.h>
 
-#include <unistd.h>
-
 static void run(struct Client *client, respdata_t *data) {
   if (client && data->count != 2) {
-    WRONG_ARGUMENT_ERROR(client->connfd, "LPOP", 4);
+    WRONG_ARGUMENT_ERROR(client, "LPOP", 4);
     return;
   }
 
-  string_t key = data->value.array[1]->value.string;
-  struct KVPair *kv = get_data(key.value);
+  const char *key = data->value.array[1]->value.string.value;
+  const struct KVPair *kv = get_data(key);
 
   if (kv) {
     if (client && kv->type != TELLY_LIST) {
-      write(client->connfd, "-Value stored at the key is not a list\r\n", 40);
+      _write(client, "-Value stored at the key is not a list\r\n", 40);
       return;
     }
 
     struct List *list = kv->value->list;
     struct ListNode *node = list->begin;
 
-    if (client) write_value(client->connfd, node->value, node->type);
+    if (client) write_value(client, node->value, node->type);
 
     if (list->size == 1) {
-      delete_kv_from_btree(get_cache(), key.value);
+      delete_kv_from_btree(get_cache(), key);
     } else {
       list->begin = list->begin->next;
       list->begin->prev = NULL;
@@ -35,8 +34,8 @@ static void run(struct Client *client, respdata_t *data) {
       list->size -= 1;
       free_listnode(node);
     }
-  } else {
-    write(client->connfd, "$-1\r\n", 5);
+  } else if (client) {
+    _write(client, "$-1\r\n", 5);
   }
 }
 

@@ -1,25 +1,23 @@
+#include "../../../headers/server.h"
 #include "../../../headers/database.h"
 #include "../../../headers/commands.h"
 
-#include <stdio.h>
 #include <stddef.h>
-
-#include <unistd.h>
 
 static void run(struct Client *client, respdata_t *data) {
   if (client) {
     if (data->count != 2) {
-      WRONG_ARGUMENT_ERROR(client->connfd, "GET", 3);
+      WRONG_ARGUMENT_ERROR(client, "GET", 3);
       return;
     }
 
-    char *key = data->value.array[1]->value.string.value;
-    struct KVPair *result = get_data(key);
+    const char *key = data->value.array[1]->value.string.value;
+    struct KVPair *kv = get_data(key);
 
-    if (result) {
-      write_value(client->connfd, *result->value, result->type);
+    if (kv) {
+      write_value(client, *kv->value, kv->type);
     } else {
-      write(client->connfd, "$-1\r\n", 5);
+      _write(client, "$-1\r\n", 5);
     }
   }
 }

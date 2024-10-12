@@ -11,6 +11,11 @@ struct Configuration {
   int32_t max_log_lines;
   char data_file[49];
   char log_file[49];
+
+  bool tls;
+  char cert[49];
+  char private_key[49];
+
   bool default_conf;
 };
 

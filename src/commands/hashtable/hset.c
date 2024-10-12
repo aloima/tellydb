@@ -1,3 +1,5 @@
+#include "../../../headers/telly.h"
+#include "../../../headers/server.h"
 #include "../../../headers/database.h"
 #include "../../../headers/commands.h"
 #include "../../../headers/hashtable.h"
@@ -7,15 +9,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <unistd.h>
-
 static void run(struct Client *client, respdata_t *data) {
   if (client && (data->count == 2 || data->count % 2 != 0)) {
-    WRONG_ARGUMENT_ERROR(client->connfd, "HSET", 4);
+    WRONG_ARGUMENT_ERROR(client, "HSET", 4);
     return;
   }
 
-  string_t key = data->value.array[1]->value.string;
+  const string_t key = data->value.array[1]->value.string;
   struct KVPair *kv = get_data(key.value);
   struct HashTable *table;
 
@@ -53,7 +53,7 @@ static void run(struct Client *client, respdata_t *data) {
     char buf[buf_len + 1];
     sprintf(buf, ":%ld\r\n", fv_count);
 
-    write(client->connfd, buf, buf_len);
+    _write(client, buf, buf_len);
   }
 }
 

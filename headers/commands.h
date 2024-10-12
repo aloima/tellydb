@@ -1,13 +1,12 @@
 #pragma once
 
-#include "resp.h"
 #include "server.h"
 
 #include <stdint.h>
 
 #include <unistd.h>
 
-#define WRONG_ARGUMENT_ERROR(connfd, name, len) (write((connfd), "-Wrong argument count for '" name "' command\r\n", 38 + (len)))
+#define WRONG_ARGUMENT_ERROR(client, name, len) (_write((client), "-Wrong argument count for '" name "' command\r\n", 38 + (len)))
 
 struct Subcommand {
   char *name;

@@ -54,6 +54,7 @@ struct Client *add_client(const int connfd, const uint32_t max_clients) {
   client->command = NULL;
   client->lib_name = NULL;
   client->lib_ver = NULL;
+  client->ssl = NULL;
 
   return client;
 }
@@ -65,6 +66,7 @@ void remove_client(const int connfd) {
     if (client->connfd == connfd) {
       client_count -= 1;
 
+      if (client->ssl) SSL_free(client->ssl);
       if (client->lib_name) free(client->lib_name);
       if (client->lib_ver) free(client->lib_ver);
       free(client);

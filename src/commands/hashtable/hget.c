@@ -1,32 +1,33 @@
+#include "../../../headers/telly.h"
+#include "../../../headers/server.h"
 #include "../../../headers/database.h"
 #include "../../../headers/commands.h"
 #include "../../../headers/hashtable.h"
 
-#include <stdio.h>
-#include <stdint.h>
-
-#include <unistd.h>
+#include <stddef.h>
 
 static void run(struct Client *client, respdata_t *data) {
-  if (client && data->count != 3) {
-    WRONG_ARGUMENT_ERROR(client->connfd, "HGET", 4);
-    return;
-  }
-
-  string_t key = data->value.array[1]->value.string;
-  struct KVPair *pair = get_data(key.value);
-
-  if (pair && pair->type == TELLY_HASHTABLE) {
-    char *name = data->value.array[2]->value.string.value;
-    struct FVPair *field = get_fv_from_hashtable(pair->value->hashtable, name);
-
-    if (field) {
-      write_value(client->connfd, field->value, field->type);
-    } else {
-      write(client->connfd, "$-1\r\n", 5);
+  if (client) {
+    if (data->count != 3) {
+      WRONG_ARGUMENT_ERROR(client, "HGET", 4);
+      return;
     }
-  } else if (client) {
-    write(client->connfd, "$-1\r\n", 5);
+
+    const string_t key = data->value.array[1]->value.string;
+    const struct KVPair *kv = get_data(key.value);
+
+    if (kv && kv->type == TELLY_HASHTABLE) {
+      char *name = data->value.array[2]->value.string.value;
+      struct FVPair *field = get_fv_from_hashtable(kv->value->hashtable, name);
+
+      if (field) {
+        write_value(client, field->value, field->type);
+      } else {
+        _write(client, "$-1\r\n", 5);
+      }
+    } else {
+      _write(client, "$-1\r\n", 5);
+    }
   }
 }
 

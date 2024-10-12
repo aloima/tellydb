@@ -1,13 +1,15 @@
+#include "../../../headers/server.h"
 #include "../../../headers/database.h"
 #include "../../../headers/commands.h"
 
 #include <stdio.h>
+#include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
 
 #include <unistd.h>
 
-static bool get_section(char *section, struct Configuration *conf, char *name) {
+static bool get_section(char *section, const struct Configuration *conf, const char *name) {
   if (streq(name, "server")) {
     char gcc_version[16];
     sprintf(gcc_version, "%d.%d.%d", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
@@ -19,7 +21,8 @@ static bool get_section(char *section, struct Configuration *conf, char *name) {
       "Git hash: " GIT_HASH "\r\n"
       "Multiplexing API: poll\r\n"
       "GCC version: %s\r\n"
-    ), getpid(), gcc_version);
+      "TLS server: %s\r\n"
+    ), getpid(), gcc_version, conf->tls ? "true" : "false");
   } else if (streq(name, "clients")) {
     sprintf(section, (
       "# Clients\r\n"
@@ -37,7 +40,7 @@ static bool get_section(char *section, struct Configuration *conf, char *name) {
 
 static void run(struct Client *client, respdata_t *data) {
   if (client) {
-    struct Configuration *conf = get_server_configuration();
+    const struct Configuration *conf = get_server_configuration();
     const uint32_t count = data->count - 1;
 
     char buf[8192], section[2048];
@@ -50,7 +53,7 @@ static void run(struct Client *client, respdata_t *data) {
         char *name = data->value.array[i + 1]->value.string.value;
 
         if (!get_section(section, conf, name)) {
-          write(client->connfd, "-Invalid section name\r\n", 23);
+          _write(client, "-Invalid section name\r\n", 23);
           return;
         }
 
@@ -58,23 +61,23 @@ static void run(struct Client *client, respdata_t *data) {
         strcat(buf, "\r\n");
       }
 
-      char *name = data->value.array[count]->value.string.value;
+      const char *name = data->value.array[count]->value.string.value;
 
       if (!get_section(section, conf, name)) {
-        write(client->connfd, "-Invalid section name\r\n", 23);
+        _write(client, "-Invalid section name\r\n", 23);
         return;
       }
 
       strcat(buf, section);
     } else {
-      char names[][32] = {"server", "clients"};
+      const char names[][32] = {"server", "clients"};
       const uint32_t n = 1;
 
       for (uint32_t i = 0; i < n; ++i) {
-        char *name = names[i];
+        const char *name = names[i];
 
         if (!get_section(section, conf, name)) {
-          write(client->connfd, "-Invalid section name\r\n", 23);
+          _write(client, "-Invalid section name\r\n", 23);
           return;
         }
 
@@ -82,10 +85,10 @@ static void run(struct Client *client, respdata_t *data) {
         strcat(buf, "\r\n");
       }
 
-      char *name = names[n];
+      const char *name = names[n];
 
       if (!get_section(section, conf, name)) {
-        write(client->connfd, "-Invalid section name\r\n", 23);
+        _write(client, "-Invalid section name\r\n", 23);
         return;
       }
 
@@ -97,7 +100,7 @@ static void run(struct Client *client, respdata_t *data) {
     char res[res_len + 1];
 
     sprintf(res, "$%d\r\n%s\r\n", buf_len, buf);
-    write(client->connfd, res, res_len);
+    _write(client, res, res_len);
   }
 }
 

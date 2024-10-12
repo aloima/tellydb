@@ -1,46 +1,45 @@
+#include "../../../headers/server.h"
 #include "../../../headers/database.h"
 #include "../../../headers/commands.h"
 
 #include <stdlib.h>
 #include <stdint.h>
 
-#include <unistd.h>
-
 static void run(struct Client *client, respdata_t *data) {
   if (client) {
     if (data->count != 3) {
-      WRONG_ARGUMENT_ERROR(client->connfd, "LINDEX", 4);
+      WRONG_ARGUMENT_ERROR(client, "LINDEX", 4);
       return;
     }
 
-    string_t key = data->value.array[1]->value.string;
-    struct KVPair *pair = get_data(key.value);
+    const char *key = data->value.array[1]->value.string.value;
+    const struct KVPair *kv = get_data(key);
 
-    if (!pair || pair->type != TELLY_LIST) {
-      write(client->connfd, "-Value stored at the key is not a list\r\n", 40);
+    if (!kv || kv->type != TELLY_LIST) {
+      _write(client, "-Value stored at the key is not a list\r\n", 40);
       return;
     }
 
-    char *index_str = data->value.array[2]->value.string.value;
+    const char *index_str = data->value.array[2]->value.string.value;
 
     if (!is_integer(index_str)) {
-      write(client->connfd, "-Second argument must be an integer\r\n", 37);
+      _write(client, "-Second argument must be an integer\r\n", 37);
       return;
     }
 
-    struct List *list = pair->value->list;
+    const struct List *list = kv->value->list;
     struct ListNode *node;
 
     if (index_str[0] != '-') {
-      const uint64_t index = atoi(index_str);
+      const uint32_t index = atoi(index_str);
       node = list->begin;
 
       if ((index + 1) > list->size) {
-        write(client->connfd, "$-1\r\n", 5);
+        _write(client, "$-1\r\n", 5);
         return;
       }
 
-      for (uint64_t i = 0; i < index; ++i) {
+      for (uint32_t i = 0; i < index; ++i) {
         node = node->next;
       }
     } else {
@@ -48,18 +47,18 @@ static void run(struct Client *client, respdata_t *data) {
       node = list->end;
 
       if (index > list->size) {
-        write(client->connfd, "$-1\r\n", 5);
+        _write(client, "$-1\r\n", 5);
         return;
       }
 
-      const uint64_t bound = index - 1;
+      const uint32_t bound = index - 1;
 
-      for (uint64_t i = 0; i < bound; ++i) {
+      for (uint32_t i = 0; i < bound; ++i) {
         node = node->prev;
       }
     }
 
-    write_value(client->connfd, node->value, node->type);
+    write_value(client, node->value, node->type);
   }
 }
 

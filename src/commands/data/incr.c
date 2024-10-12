@@ -1,25 +1,25 @@
+#include "../../../headers/telly.h"
+#include "../../../headers/server.h"
 #include "../../../headers/database.h"
 #include "../../../headers/commands.h"
 
 #include <stdio.h>
 #include <stdint.h>
 
-#include <unistd.h>
-
 static void run(struct Client *client, respdata_t *data) {
   if (data->count != 2 && client) {
-    WRONG_ARGUMENT_ERROR(client->connfd, "INCR", 4);
+    WRONG_ARGUMENT_ERROR(client, "INCR", 4);
     return;
   }
 
-  string_t key = data->value.array[1]->value.string;
+  const string_t key = data->value.array[1]->value.string;
   struct KVPair *result = get_data(key.value);
 
   if (!result) {
     set_data(NULL, key, (value_t) {
       .integer = 0
     }, TELLY_INT);
-    if (client) write(client->connfd, ":0\r\n", 4);
+    if (client) _write(client, ":0\r\n", 4);
   } else if (result->type == TELLY_INT) {
     result->value->integer += 1;
 
@@ -28,10 +28,10 @@ static void run(struct Client *client, respdata_t *data) {
       char buf[buf_len + 1];
 
       sprintf(buf, ":%d\r\n", result->value->integer);
-      write(client->connfd, buf, buf_len);
+      _write(client, buf, buf_len);
     }
   } else if (client) {
-    write(client->connfd, "-Invalid type for 'INCR' command\r\n", 34);
+    _write(client, "-Invalid type for 'INCR' command\r\n", 34);
   }
 }
 

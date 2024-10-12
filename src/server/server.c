@@ -20,6 +20,7 @@
 static uint32_t max_client_id_len;
 
 static int sockfd;
+static SSL_CTX *ctx;
 static struct pollfd *fds;
 static uint32_t nfds;
 static struct Configuration *conf;
@@ -47,6 +48,7 @@ static void terminate_connection(const int connfd) {
   nfds -= 1;
   fds = realloc(fds, nfds * sizeof(struct pollfd));
 
+  if (conf->tls) SSL_shutdown(client->ssl);
   close(connfd);
   remove_client(connfd);
 }
@@ -75,6 +77,7 @@ static void close_server() {
   free_transactions();
   free_commands();
   free_cache();
+  if (conf->tls) SSL_CTX_free(ctx);
   close(sockfd);
   free(fds);
   write_log(LOG_INFO, "Free'd all memory blocks and closed the server.");
@@ -103,6 +106,32 @@ void start_server(struct Configuration *config) {
     ));
   }
 
+  if (conf->tls) {
+    ctx = SSL_CTX_new(TLS_server_method());
+
+    if (!ctx) {
+      write_log(LOG_ERR, "Cannot open SSL context, safely exiting...");
+      free_configuration(conf);
+      return;
+    }
+
+    if (SSL_CTX_use_certificate_file(ctx, conf->cert, SSL_FILETYPE_PEM) <= 0) {
+      write_log(LOG_ERR, "Server certificate file cannot be used.");
+      SSL_CTX_free(ctx);
+      free_configuration(conf);
+      return;
+    }
+
+    if (SSL_CTX_use_PrivateKey_file(ctx, conf->private_key, SSL_FILETYPE_PEM) <= 0 ) {
+      write_log(LOG_ERR, "Server private key cannot be used.");
+      SSL_CTX_free(ctx);
+      free_configuration(conf);
+      return;
+    }
+
+    write_log(LOG_INFO, "Created SSL context.");
+  }
+
   load_commands();
   write_log(LOG_INFO, "Initialized commands.");
 
@@ -118,13 +147,13 @@ void start_server(struct Configuration *config) {
     usleep(15);
     free_commands();
     write_log(LOG_ERR, "Cannot open socket, safely exiting...");
-    free(conf);
+    free_configuration(conf);
     return;
   }
 
   servaddr.sin_family = AF_INET;
-  servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
   servaddr.sin_port = htons(conf->port);
+  servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 
   if ((bind(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr))) != 0) {
     deactive_transaction_thread();
@@ -132,7 +161,7 @@ void start_server(struct Configuration *config) {
     free_commands();
     close(sockfd);
     write_log(LOG_ERR, "Cannot bind socket and address, safely exiting...");
-    free(conf);
+    free_configuration(conf);
     return;
   }
 
@@ -142,7 +171,7 @@ void start_server(struct Configuration *config) {
     free_commands();
     close(sockfd);
     write_log(LOG_ERR, "Cannot set non-blocking socket, safely exiting...");
-    free(conf);
+    free_configuration(conf);
     return;
   }
 
@@ -152,7 +181,7 @@ void start_server(struct Configuration *config) {
     free_commands();
     close(sockfd);
     write_log(LOG_ERR, "Cannot listen socket, safely exiting...");
-    free(conf);
+    free_configuration(conf);
     return;
   }
 
@@ -198,10 +227,24 @@ void start_server(struct Configuration *config) {
             fds[at].events = POLLIN;
             fds[at].revents = 0;
 
+            if (conf->tls) {
+              client->ssl = SSL_new(ctx);
+              SSL_set_fd(client->ssl, client->connfd);
+
+              if (SSL_accept(client->ssl) <= 0) {
+                write_log(LOG_WARN, ("Client #%d cannot be accepted as a SSL client. "
+                  "It may try connecting without client authority file, so it is terminating..."), client->id);
+
+                terminate_connection(client->connfd);
+                continue;
+              }
+            }
+
             write_log(LOG_INFO, "Client #%d is connected.", client->id);
           }
         } else if (fd.revents & POLLIN) {
-          respdata_t *data = get_resp_data(fd.fd);
+          struct Client *client = get_client(fd.fd);
+          respdata_t *data = get_resp_data(client);
 
           if (data->type == RDT_CLOSE) {
             terminate_connection(fd.fd);
