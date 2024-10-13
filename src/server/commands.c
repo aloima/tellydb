@@ -8,19 +8,18 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include <pthread.h>
-#include <unistd.h>
-
 static struct Command *commands = NULL;
-static uint32_t command_count = 22;
+static uint32_t command_count = 23;
 
 void load_commands() {
   struct Command _commands[] = {
-    // Hashtable commands
-    cmd_hget,
-    cmd_hlen,
-    cmd_hset,
-    cmd_htype,
+    // Data commands
+    cmd_decr,
+    cmd_exists,
+    cmd_get,
+    cmd_incr,
+    cmd_set,
+    cmd_type,
 
     // Generic commands
     cmd_client,
@@ -30,21 +29,20 @@ void load_commands() {
     cmd_ping,
     cmd_time,
 
+    // Hashtable commands
+    cmd_hdel,
+    cmd_hget,
+    cmd_hlen,
+    cmd_hset,
+    cmd_htype,
+
     // List commands
     cmd_lindex,
     cmd_llen,
     cmd_lpop,
     cmd_lpush,
     cmd_rpop,
-    cmd_rpush,
-
-    // Uncategorized commands
-    cmd_decr,
-    cmd_exists,
-    cmd_get,
-    cmd_incr,
-    cmd_set,
-    cmd_type
+    cmd_rpush
   };
 
   commands = malloc(sizeof(_commands));
@@ -87,7 +85,7 @@ void execute_command(struct Client *client, respdata_t *data) {
       char res[len + 1];
       sprintf(res, "-unknown command '%s'\r\n", input);
 
-      write(client->connfd, res, len);
+      _write(client, res, len);
     }
   } else {
     write_log(LOG_ERR, "Received data from Client #%d is not RDT_ARRAY, so it is not readable as a command.", client->id);

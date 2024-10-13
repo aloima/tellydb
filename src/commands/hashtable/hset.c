@@ -10,8 +10,8 @@
 #include <stdbool.h>
 
 static void run(struct Client *client, respdata_t *data) {
-  if (client && (data->count == 2 || data->count % 2 != 0)) {
-    WRONG_ARGUMENT_ERROR(client, "HSET", 4);
+  if (data->count == 2 || data->count % 2 != 0) {
+    if (client) WRONG_ARGUMENT_ERROR(client, "HSET", 4);
     return;
   }
 
@@ -22,16 +22,17 @@ static void run(struct Client *client, respdata_t *data) {
   if (kv && kv->type == TELLY_HASHTABLE) {
     table = kv->value->hashtable;
   } else {
-    table = create_hashtable(16, 0.5);
+    table = create_hashtable(16, 0.5, 0.75);
+
     set_data(kv, key, (value_t) {
       .hashtable = table
     }, TELLY_HASHTABLE);
   }
 
-  const uint64_t fv_count = (data->count / 2) - 1;
+  const uint32_t fv_count = (data->count / 2) - 1;
 
   for (uint32_t i = 1; i <= fv_count; ++i) {
-    char *name = data->value.array[i * 2]->value.string.value;
+    const string_t name = data->value.array[i * 2]->value.string;
     char *value = data->value.array[i * 2 + 1]->value.string.value;
 
     bool is_true = streq(value, "true");
@@ -51,7 +52,7 @@ static void run(struct Client *client, respdata_t *data) {
   if (client) {
     const uint32_t buf_len = 3 + get_digit_count(fv_count);
     char buf[buf_len + 1];
-    sprintf(buf, ":%ld\r\n", fv_count);
+    sprintf(buf, ":%d\r\n", fv_count);
 
     _write(client, buf, buf_len);
   }
@@ -61,7 +62,7 @@ struct Command cmd_hset = {
   .name = "HSET",
   .summary = "Sets field(s) of the hash table for the key. If hash table does not exist, creates it.",
   .since = "0.1.3",
-  .complexity = "O(1)",
+  .complexity = "O(N) where N is field name-value pair count",
   .subcommands = NULL,
   .subcommand_count = 0,
   .run = run

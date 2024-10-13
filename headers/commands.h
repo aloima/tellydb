@@ -4,8 +4,6 @@
 
 #include <stdint.h>
 
-#include <unistd.h>
-
 #define WRONG_ARGUMENT_ERROR(client, name, len) (_write((client), "-Wrong argument count for '" name "' command\r\n", 38 + (len)))
 
 struct Subcommand {
@@ -52,6 +50,7 @@ extern struct Command cmd_time;
 /* /GENERIC COMMANDS */
 
 /* HASHTABLE COMMANDS */
+extern struct Command cmd_hdel;
 extern struct Command cmd_hget;
 extern struct Command cmd_hlen;
 extern struct Command cmd_hset;
