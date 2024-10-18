@@ -17,7 +17,7 @@ static void get_kvs_from_node(struct KVPair **kvs, uint32_t *index, struct BTree
     for (uint32_t i = 0; i < node->size; ++i) {
       get_kvs_from_node(kvs, index, node->leafs[i]);
 
-      if (node->data[i]->type != TELLY_UNSPECIFIED) {
+      if (node->data[i]->value) {
         kvs[*index] = node->data[i];
         *index += 1;
       }
@@ -28,7 +28,7 @@ static void get_kvs_from_node(struct KVPair **kvs, uint32_t *index, struct BTree
   }
 
   for (uint32_t i = 0; i < node->size; ++i) {
-    if (node->data[i]->type != TELLY_UNSPECIFIED) {
+    if (node->data[i]->value) {
       kvs[*index] = node->data[i];
       *index += 1;
     }

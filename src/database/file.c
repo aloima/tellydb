@@ -61,21 +61,18 @@ static uint32_t generate_value(char **line, struct KVPair *kv) {
       (*line)[2] = 0x00;
       break;
 
-    case TELLY_INT: {
-      const uint32_t bit_count = log2(kv->value->integer) + 1;
+    case TELLY_NUM: {
+      const uint32_t bit_count = log2(kv->value->number) + 1;
       const uint32_t byte_count = (bit_count / 8) + 1;
 
-      len = byte_count + 2;
+      len = byte_count + 3;
       *line = malloc(len + 1);
 
-      (*line)[0] = TELLY_INT;
-
-      for (uint32_t i = 1; i <= byte_count; ++i) {
-        (*line)[i] = (kv->value->integer >> (8 * (byte_count - i))) & 0xFF;
-      }
-
-      (*line)[1 + byte_count] = 0x1E;
-      (*line)[2 + byte_count] = 0x00;
+      (*line)[0] = TELLY_NUM;
+      (*line)[1] = byte_count;
+      memcpy(*line + 2, &kv->value->number, byte_count);
+      (*line)[2 + byte_count] = 0x1E;
+      (*line)[3 + byte_count] = 0x00;
       break;
     }
 
@@ -107,10 +104,7 @@ static uint32_t generate_value(char **line, struct KVPair *kv) {
       *line = malloc(len + 1);
 
       (*line)[0] = TELLY_LIST;
-      (*line)[1] = (list->size >> 24) & 0xFF;
-      (*line)[2] = (list->size >> 16) & 0xFF;
-      (*line)[3] = (list->size >> 8) & 0xFF;
-      (*line)[4] = list->size & 0xFF;
+      memcpy(*line + 1, &list->size, sizeof(uint32_t));
 
       while (node) {
         switch (node->type) {
@@ -122,19 +116,16 @@ static uint32_t generate_value(char **line, struct KVPair *kv) {
             (*line)[len - 2] = 0x1F;
             break;
 
-          case TELLY_INT: {
-            const uint32_t bit_count = log2(node->value.integer) + 1;
+          case TELLY_NUM: {
+            const uint32_t bit_count = log2(node->value.number) + 1;
             const uint32_t byte_count = (bit_count / 8) + 1;
 
-            len += byte_count + 2;
+            len += byte_count + 3;
             *line = realloc(*line, len + 1);
 
-            (*line)[len - byte_count - 3] = TELLY_INT;
-
-            for (uint32_t i = 1; i <= byte_count; ++i) {
-              (*line)[len - i - 2] = (node->value.integer >> (8 * (byte_count - i))) & 0xFF;
-            }
-
+            (*line)[len - byte_count - 4] = TELLY_NUM;
+            (*line)[len - byte_count - 3] = byte_count;
+            memcpy(*line + len - byte_count - 2, &node->value.number, byte_count);
             (*line)[len - 2] = 0x1F;
             break;
           }
@@ -216,14 +207,14 @@ void save_data(const uint64_t server_age) {
 
     if (line_len != 0) {
       if (kv->pos.start_at != -1) {
-        const uint32_t line_len_in_file = kv->pos.end_at - kv->pos.start_at;
+        const uint32_t line_len_in_file = kv->pos.end_at - (kv->pos.start_at - 1);
 
         if (line_len_in_file != line_len) {
           const uint64_t n = file_size - kv->pos.end_at;
           char *buf = malloc(n);
           lseek(fd, kv->pos.end_at, SEEK_SET);
           read(fd, buf, n);
-          lseek(fd, kv->pos.start_at + diff, SEEK_SET);
+          lseek(fd, kv->pos.start_at + diff - 1, SEEK_SET);
           write(fd, line, line_len);
           write(fd, buf, n);
 
@@ -231,7 +222,7 @@ void save_data(const uint64_t server_age) {
 
           diff += line_len - line_len_in_file;
         } else {
-          lseek(fd, kv->pos.start_at + diff, SEEK_SET);
+          lseek(fd, kv->pos.start_at + diff - 1, SEEK_SET);
           write(fd, line, line_len);
         }
       } else {

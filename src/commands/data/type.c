@@ -20,8 +20,8 @@ static void run(struct Client *client, respdata_t *data) {
           _write(client, "+null\r\n", 7);
           break;
 
-        case TELLY_INT:
-          _write(client, "+integer\r\n", 10);
+        case TELLY_NUM:
+          _write(client, "+number\r\n", 9);
           break;
 
         case TELLY_STR:

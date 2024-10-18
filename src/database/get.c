@@ -30,12 +30,15 @@ void get_all_keys() {
         allocated += 32;
       }
     } else {
+      uint8_t type;
+      read(fd, &type, 1);
+
       const off_t start_at = lseek(fd, 0, SEEK_CUR);
       while (read(fd, &c, 1) == 1 && c != 0x1E);
       const off_t end_at = lseek(fd, 0, SEEK_CUR);
 
       key.value[key.len] = '\0';
-      insert_kv_to_btree(cache, key, NULL, TELLY_UNSPECIFIED, start_at, end_at);
+      insert_kv_to_btree(cache, key, NULL, type, start_at, end_at);
       key.len = 0;
     }
   }
@@ -49,31 +52,30 @@ struct KVPair *get_data(const char *key) {
 
   struct KVPair *data = find_kv_from_btree(cache, key);
 
-  if (data && data->type == TELLY_UNSPECIFIED) {
+  if (data && !data->value) {
     const off_t start_at = data->pos.start_at;
     const off_t end_at = data->pos.end_at;
 
     data->value = malloc(sizeof(value_t));
     lseek(fd, start_at, SEEK_SET);
-    read(fd, &data->type, 1);
 
     switch (data->type) {
-      case TELLY_INT: {
-        const uint32_t size = end_at - start_at - 3;
-        uint8_t c;
-        read(fd, &c, 1);
-        data->value->integer = c;
+      case TELLY_NULL:
+        data->value->null = NULL;
+        break;
 
-        for (uint32_t i = 1; i < size; ++i) {
-          read(fd, &c, 1);
-          data->value->integer = (data->value->integer << 8) | c;
-        }
+      case TELLY_NUM: {
+        uint8_t count;
+        read(fd, &count, 1);
+
+        data->value->number = 0; // to initialize all bytes of long number
+        read(fd, &data->value->number, count);
 
         break;
       }
 
       case TELLY_STR: {
-        data->value->string.len = end_at - start_at - 2;
+        data->value->string.len = end_at - start_at - 1;
         data->value->string.value = malloc(data->value->string.len + 1);
         read(fd, data->value->string.value, data->value->string.len);
         data->value->string.value[data->value->string.len] = '\0';
@@ -87,14 +89,8 @@ struct KVPair *get_data(const char *key) {
       }
 
       case TELLY_LIST: {
-        char size[4];
-        read(fd, size, 4);
-
         struct List *list = (data->value->list = create_list());
-        list->size = size[0];
-        list->size = (list->size << 8) | size[1];
-        list->size = (list->size << 8) | size[2];
-        list->size = (list->size << 8) | size[3];
+        read(fd, &list->size, sizeof(uint32_t));
 
         for (uint32_t i = 0; i < list->size; ++i) {
           struct ListNode *node;
@@ -106,19 +102,19 @@ struct KVPair *get_data(const char *key) {
           switch (type) {
             case TELLY_NULL:
               node = create_listnode(NULL, TELLY_NULL);
-              read(fd, &c, 1);
+              lseek(fd, 1, SEEK_CUR);
               break;
 
-            case TELLY_INT: {
-              int res;
-              read(fd, &c, 1);
-              res = c;
+            case TELLY_NUM: {
+              long number = 0; // to initialize all bytes of long number
 
-              while (read(fd, &c, 1) && c != 0x1F) {
-                res = ((res << 8) | c);
-              }
+              uint8_t count;
+              read(fd, &count, 1);
 
-              node = create_listnode(&res, TELLY_INT);
+              read(fd, &number, count);
+              lseek(fd, 1, SEEK_CUR); // passing 0x1F
+
+              node = create_listnode(&number, TELLY_NUM);
               break;
             }
 
@@ -144,13 +140,11 @@ struct KVPair *get_data(const char *key) {
               break;
             }
 
-            case TELLY_BOOL: {
+            case TELLY_BOOL:
               read(fd, &c, 1);
               node = create_listnode(&c, TELLY_BOOL);
-
-              read(fd, &c, 1);
+              lseek(fd, 1, SEEK_CUR);
               break;
-            }
 
             #ifdef __clang__
               #pragma clang diagnostic push

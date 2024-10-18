@@ -180,6 +180,7 @@ static struct KVPair *insert_kv_to_node(struct BTree *tree, struct BTreeNode *no
 
 struct KVPair *insert_kv_to_btree(struct BTree *tree, string_t key, value_t *value, const enum TellyTypes type, const off_t start_at, const off_t end_at) {
   struct KVPair *kv = malloc(sizeof(struct KVPair));
+  kv->value = NULL;
   set_kv(kv, key, value, type, start_at, end_at);
 
   if (!tree->root) {

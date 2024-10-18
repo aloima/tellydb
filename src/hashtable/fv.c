@@ -16,8 +16,8 @@ void set_fv_value(struct FVPair *fv, void *value) {
       break;
     }
 
-    case TELLY_INT:
-      fv->value.integer = *((int *) value);
+    case TELLY_NUM:
+      fv->value.number = *((long *) value);
       break;
 
     case TELLY_BOOL:

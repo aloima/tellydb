@@ -13,39 +13,46 @@ void set_kv(struct KVPair *kv, string_t key, value_t *value, enum TellyTypes typ
 
   const uint32_t key_size = key.len + 1;
 
+  kv->type = type;
   kv->key.len = key.len;
   kv->key.value = malloc(key_size);
   memcpy(kv->key.value, key.value, key_size);
 
-  if (type != TELLY_UNSPECIFIED) kv->value = malloc(sizeof(value_t));
+  if (value) {
+    if (!kv->value) kv->value = malloc(sizeof(value_t));
 
-  switch (kv->type = type) {
-    case TELLY_STR: {
-      const uint32_t size = value->string.len + 1;
-      kv->value->string.len = value->string.len;
-      kv->value->string.value = malloc(size);
-      memcpy(kv->value->string.value, value->string.value, size);
-      break;
+    switch (type) {
+      case TELLY_NULL:
+        kv->value->null = NULL;
+        break;
+
+      case TELLY_NUM:
+        kv->value->number = value->number;
+        break;
+
+      case TELLY_STR: {
+        const uint32_t size = value->string.len + 1;
+        kv->value->string.len = value->string.len;
+        kv->value->string.value = malloc(size);
+        memcpy(kv->value->string.value, value->string.value, size);
+        break;
+      }
+
+      case TELLY_BOOL:
+        kv->value->boolean = value->boolean;
+        break;
+
+      case TELLY_HASHTABLE:
+        kv->value->hashtable = value->hashtable;
+        break;
+
+      case TELLY_LIST:
+        kv->value->list = value->list;
+        break;
+
+      default:
+        break;
     }
-
-    case TELLY_INT:
-      kv->value->integer = value->integer;
-      break;
-
-    case TELLY_BOOL:
-      kv->value->boolean = value->boolean;
-      break;
-
-    case TELLY_HASHTABLE:
-      kv->value->hashtable = value->hashtable;
-      break;
-
-    case TELLY_LIST:
-      kv->value->list = value->list;
-      break;
-
-    default:
-      break;
   }
 }
 
@@ -67,7 +74,7 @@ void free_kv(struct KVPair *kv) {
       break;
   }
 
-  if (kv->type != TELLY_UNSPECIFIED) free(kv->value);
+  if (kv->value) free(kv->value);
   free(kv->key.value);
   free(kv);
 }

@@ -17,17 +17,17 @@ static void run(struct Client *client, respdata_t *data) {
 
   if (!result) {
     set_data(NULL, key, (value_t) {
-      .integer = 0
-    }, TELLY_INT);
+      .number = 0
+    }, TELLY_NUM);
     if (client) _write(client, ":0\r\n", 4);
-  } else if (result->type == TELLY_INT) {
-    result->value->integer -= 1;
+  } else if (result->type == TELLY_NUM) {
+    result->value->number -= 1;
 
     if (client) {
-      const uint32_t buf_len = get_digit_count(result->value->integer) + 3;
+      const uint32_t buf_len = get_digit_count(result->value->number) + 3;
       char buf[buf_len + 1];
 
-      sprintf(buf, ":%d\r\n", result->value->integer);
+      sprintf(buf, ":%ld\r\n", result->value->number);
       _write(client, buf, buf_len);
     }
   } else if (client) {

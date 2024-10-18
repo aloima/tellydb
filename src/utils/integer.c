@@ -21,7 +21,7 @@ bool is_integer(const char *value) {
   return (_value != value) && (*_value == 0x00);
 }
 
-uint32_t get_digit_count(int32_t number) {
+uint32_t get_digit_count(int64_t number) {
   if (number == 0) {
     return 1;
   } else if (number < 0) {

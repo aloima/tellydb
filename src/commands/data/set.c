@@ -56,8 +56,8 @@ static void run(struct Client *client, respdata_t *data) {
   bool is_true = streq(value_in, "true");
 
   if (is_integer(value_in)) {
-    type = TELLY_INT;
-    value.integer = atoi(value_in);
+    type = TELLY_NUM;
+    value.number = atol(value_in);
   } else if (is_true || streq(value_in, "false")) {
     type = TELLY_BOOL;
     value.boolean = is_true;

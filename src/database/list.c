@@ -24,8 +24,8 @@ struct ListNode *create_listnode(void *value, enum TellyTypes type) {
       break;
     }
 
-    case TELLY_INT:
-      node->value.integer = *((int *) value);
+    case TELLY_NUM:
+      node->value.number = *((long *) value);
       break;
 
     case TELLY_BOOL:

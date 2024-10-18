@@ -38,8 +38,8 @@ static void run(struct Client *client, respdata_t *data) {
     bool is_true = streq(value, "true");
 
     if (is_integer(value)) {
-      int value_as_int = atoi(value);
-      add_fv_to_hashtable(table, name, &value_as_int, TELLY_INT);
+      long value_as_long = atol(value);
+      add_fv_to_hashtable(table, name, &value_as_long, TELLY_NUM);
     } else if (is_true || streq(value, "false")) {
       add_fv_to_hashtable(table, name, &is_true, TELLY_BOOL);
     } else if (streq(value, "null")) {

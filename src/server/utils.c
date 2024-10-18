@@ -27,12 +27,12 @@ void write_value(struct Client *client, value_t value, enum TellyTypes type) {
       _write(client, "+null\r\n", 7);
       break;
 
-    case TELLY_INT: {
-      const uint32_t digit_count = get_digit_count(value.integer);
+    case TELLY_NUM: {
+      const uint32_t digit_count = get_digit_count(value.number);
       const uint32_t buf_len = digit_count + 3;
 
       char buf[buf_len + 1];
-      sprintf(buf, ":%d\r\n", value.integer);
+      sprintf(buf, ":%ld\r\n", value.number);
 
       _write(client, buf, buf_len);
       break;

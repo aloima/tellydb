@@ -16,9 +16,8 @@ typedef struct String {
 } string_t;
 
 enum TellyTypes {
-  TELLY_UNSPECIFIED = 0,
   TELLY_NULL,
-  TELLY_INT,
+  TELLY_NUM,
   TELLY_STR,
   TELLY_BOOL,
   TELLY_HASHTABLE,
@@ -27,7 +26,7 @@ enum TellyTypes {
 
 typedef union {
   string_t string;
-  int integer;
+  long number;
   bool boolean;
   void *null;
   struct HashTable *hashtable;
@@ -45,4 +44,4 @@ void write_log(enum LogLevel level, const char *fmt, ...);
 void close_logs();
 
 bool is_integer(const char *value);
-uint32_t get_digit_count(int32_t number);
+uint32_t get_digit_count(int64_t number);

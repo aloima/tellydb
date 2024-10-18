@@ -51,8 +51,8 @@ static void run(struct Client *client, respdata_t *data) {
     bool is_true = streq(value, "true");
 
     if (is_integer(value)) {
-      int value_as_int = atoi(value);
-      rpush_to_list(list, &value_as_int, TELLY_INT);
+      long value_as_long = atol(value);
+      rpush_to_list(list, &value_as_long, TELLY_NUM);
     } else if (is_true || streq(value, "false")) {
       rpush_to_list(list, &is_true, TELLY_BOOL);
     } else if (streq(value, "null")) {

@@ -10,18 +10,20 @@ A data line is as follows:
 * `data key + 0x1D + data type + data value + 0x1E`
 
 Data value scheme is defined as:
-* The data type cannot be `TELLY_UNSPECIFIED (0x0)`, because this data type is for key-value pairs whose value has not yet been got.
-* If data type is `TELLY_NULL (0x1)`, data value will be nothing and the line will consist of `data key + 0x1D + TELLY_NULL + 0x1E`.
-* If data type is `TELLY_INT (0x2)`, data value will be represented as binary. For example, data value is `0x01 + 0x00` or `0x0100` to get 256.
-* If data type is `TELLY_STR (0x3)`, data value will be a string.
-* If data type is `TELLY_BOOL (0x4)`, data value will be `0x00` or `0x01`.
+> [!NOTE]
+> All content of data value that stores a number (list size, byte count, number etc.) is [little-endian](https://en.wikipedia.org/wiki/Endianness).
 
-* If data type is `TELLY_LIST (0x6)`, data value will be `list size (n) + list element 1 + list element 2 ... list element n + 0x1E`.
+* For `TELLY_NULL (0x00)` type, data value is nothing and the line consists of `data key + 0x1D + TELLY_NULL`.
+* For `TELLY_NUM (0x01)` type, data value is `byte count (1 byte) + number`. For example, data value is `0x02 + (0x00 + 0x01)` or `0x02001` to get 256.
+* For `TELLY_STR (0x02)` type, data value is a string.
+* For `TELLY_BOOL (0x03)` type, data value is `0x00` or `0x01`.
+
+* For `TELLY_LIST (0x05)`, data value is `list size (n) + list element 1 + list element 2 ... list element n`.
 
 > [!NOTE]
-> The list size is a 4-byte value. For example, `32` is represented as `0x00 0xx0 0x00 0x20`.
+> The list size is a 4-byte value. For example, `32` is represented as `0x20 0xx0 0x00 0x00`.
 > A list element is as `element type + element value + 0x1F` and element values ​​are subject to the same rules as data values.
-> Additionally, type of a list element should be `TELLY_NULL`, `TELLY_INT`, `TELLY_STR` or `TELLY_BOOL`.
+> Additionally, type of a list element should be `TELLY_NULL`, `TELLY_NUM`, `TELLY_STR` or `TELLY_BOOL`.
 
 ## Configuration file | `.tellyconf`
 It consists of lines that are comments and values. A comment line is as follows:

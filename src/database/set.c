@@ -33,8 +33,8 @@ struct KVPair *set_data(struct KVPair *data, string_t key, value_t value, enum T
         break;
       }
 
-      case TELLY_INT:
-        data->value->integer = value.integer;
+      case TELLY_NUM:
+        data->value->number = value.number;
         break;
 
       case TELLY_BOOL:
