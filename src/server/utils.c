@@ -62,7 +62,7 @@ void write_value(struct Client *client, value_t value, enum TellyTypes type) {
       break;
 
     case TELLY_LIST:
-      _write(client, "+list\r\n", 9);
+      _write(client, "+list\r\n", 7);
       break;
 
     default:
