@@ -7,8 +7,8 @@
 #include <stdlib.h>
 
 static void run(struct Client *client, respdata_t *data) {
-  if (data->count < 3 && client) {
-    WRONG_ARGUMENT_ERROR(client, "SET", 3);
+  if (data->count < 3) {
+    if (client) WRONG_ARGUMENT_ERROR(client, "SET", 3);
     return;
   }
 
@@ -24,21 +24,18 @@ static void run(struct Client *client, respdata_t *data) {
     if (streq(arg, "GET")) get = true;
     else if (streq(arg, "NX")) nx = true;
     else if (streq(arg, "XX")) xx = true;
-    else if (client) {
-      _write(client, "-Invalid argument(s) for 'SET' command\r\n", 40);
+    else {
+      if (client) _write(client, "-Invalid argument(s) for 'SET' command\r\n", 40);
       return;
     }
   }
 
   if (nx && xx) {
-    if (client) {
-      _write(client, "-XX and NX arguments cannot be specified simultaneously for 'SET' command\r\n", 75);
-    }
-
+    if (client) _write(client, "-XX and NX arguments cannot be specified simultaneously for 'SET' command\r\n", 75);
     return;
   }
 
-  string_t key = data->value.array[1]->value.string;
+  const string_t key = data->value.array[1]->value.string;
   value_t value;
   enum TellyTypes type;
   struct KVPair *res = get_data(key.value);

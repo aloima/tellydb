@@ -3,12 +3,11 @@
 #include "../../headers/btree.h"
 #include "../../headers/utils.h"
 
+#include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
 
-struct KVPair *set_data(struct KVPair *data, string_t key, value_t value, enum TellyTypes type) {
-  struct BTree *cache = get_cache();
-
+struct KVPair *set_data(struct KVPair *data, const string_t key, value_t value, const enum TellyTypes type) {
   if (data) {
     if (data->type == TELLY_STR && type != TELLY_STR) {
       free(data->value->string.value);
@@ -55,6 +54,7 @@ struct KVPair *set_data(struct KVPair *data, string_t key, value_t value, enum T
 
     return data;
   } else {
+    struct BTree *cache = get_cache();
     return insert_kv_to_btree(cache, key, &value, type, -1, -1);
   }
 }

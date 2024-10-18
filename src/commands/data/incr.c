@@ -7,8 +7,8 @@
 #include <stdint.h>
 
 static void run(struct Client *client, respdata_t *data) {
-  if (data->count != 2 && client) {
-    WRONG_ARGUMENT_ERROR(client, "INCR", 4);
+  if (data->count != 2) {
+    if (client) WRONG_ARGUMENT_ERROR(client, "INCR", 4);
     return;
   }
 
@@ -19,6 +19,7 @@ static void run(struct Client *client, respdata_t *data) {
     set_data(NULL, key, (value_t) {
       .number = 0
     }, TELLY_NUM);
+
     if (client) _write(client, ":0\r\n", 4);
   } else if (result->type == TELLY_NUM) {
     result->value->number += 1;

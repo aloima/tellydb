@@ -7,7 +7,7 @@
 
 #include <unistd.h>
 
-void set_kv(struct KVPair *kv, string_t key, value_t *value, enum TellyTypes type, const off_t start_at, const off_t end_at) {
+void set_kv(struct KVPair *kv, const string_t key, value_t *value, const enum TellyTypes type, const off_t start_at, const off_t end_at) {
   kv->pos.start_at = start_at;
   kv->pos.end_at = end_at;
 

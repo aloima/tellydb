@@ -26,16 +26,36 @@ void get_all_keys() {
       key.len += 1;
 
       if (allocated == key.len) {
-        key.value = realloc(key.value, allocated + 33);
         allocated += 32;
+        key.value = realloc(key.value, allocated + 33);
       }
     } else {
       uint8_t type;
       read(fd, &type, 1);
 
       const off_t start_at = lseek(fd, 0, SEEK_CUR);
-      while (read(fd, &c, 1) == 1 && c != 0x1E);
-      const off_t end_at = lseek(fd, 0, SEEK_CUR);
+      off_t end_at;
+
+      switch (type) {
+        case TELLY_NULL:
+          end_at = lseek(fd, 1, SEEK_CUR);
+          break;
+
+        case TELLY_NUM: {
+          uint8_t count;
+          read(fd, &count, 1);
+          end_at = lseek(fd, count + 1, SEEK_CUR);
+          break;
+        }
+
+        case TELLY_BOOL:
+          end_at = lseek(fd, 2, SEEK_CUR);
+          break;
+
+        default:
+          while (read(fd, &c, 1) == 1 && c != 0x1E);
+          end_at = lseek(fd, 0, SEEK_CUR);
+      }
 
       key.value[key.len] = '\0';
       insert_kv_to_btree(cache, key, NULL, type, start_at, end_at);
@@ -47,12 +67,11 @@ void get_all_keys() {
 }
 
 struct KVPair *get_data(const char *key) {
-  const int fd = get_database_fd();
-  struct BTree *cache = get_cache();
-
-  struct KVPair *data = find_kv_from_btree(cache, key);
+  struct KVPair *data = find_kv_from_btree(get_cache(), key);
 
   if (data && !data->value) {
+    const int fd = get_database_fd();
+
     const off_t start_at = data->pos.start_at;
     const off_t end_at = data->pos.end_at;
 
