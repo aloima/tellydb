@@ -41,6 +41,7 @@ extern struct Command cmd_type;
 /* /DATA COMMANDS */
 
 /* GENERIC COMMANDS */
+extern struct Command cmd_age;
 extern struct Command cmd_client;
 extern struct Command cmd_command;
 extern struct Command cmd_info;

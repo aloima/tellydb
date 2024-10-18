@@ -18,6 +18,7 @@ struct Client {
   char *lib_ver;
 };
 
+void get_server_time(time_t *server_start_at, uint64_t *server_age);
 void start_server(struct Configuration *config);
 struct Configuration *get_server_configuration();
 

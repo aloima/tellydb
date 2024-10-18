@@ -5,6 +5,7 @@
 #include "utils.h"
 
 #include <stdint.h>
+#include <stdbool.h>
 
 /* DATABASE */
 struct KVPair {
@@ -26,7 +27,7 @@ void free_cache();
 void get_all_keys();
 struct KVPair *get_data(const char *key);
 struct KVPair *set_data(struct KVPair *data, string_t key, value_t value, enum TellyTypes type);
-void save_data();
+void save_data(const uint64_t server_age);
 
 void set_kv(struct KVPair *kv, string_t key, value_t *value, enum TellyTypes type, const off_t start_at, const off_t end_at);
 void free_kv(struct KVPair *kv);
@@ -34,7 +35,7 @@ void free_kv(struct KVPair *kv);
 
 
 /* DATABASE FILE */
-void open_database_fd(const char *filename);
+bool open_database_fd(const char *filename, uint64_t *server_age);
 int get_database_fd();
 void close_database_fd();
 /* /DATABASE FULE */

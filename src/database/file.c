@@ -13,7 +13,7 @@
 
 static int fd = -1;
 
-void open_database_fd(const char *filename) {
+bool open_database_fd(const char *filename, uint64_t *server_age) {
   #if defined(__linux__)
     fd = open(filename, O_RDWR | O_CREAT | O_DIRECT, S_IRWXU);
   #elif defined(__APPLE__)
@@ -21,8 +21,23 @@ void open_database_fd(const char *filename) {
 
     if (fcntl(fd, F_NOCACHE, 1) == -1) {
       write_log(LOG_ERR, "Cannot deactive file caching for database file.");
+      return false;
     }
   #endif
+
+  if (fd == -1) {
+    write_log(LOG_ERR, "Database file cannot be opened and created.");
+    return false;
+  }
+
+  if (lseek(fd, 0, SEEK_END) != 0) {
+    lseek(fd, 2, SEEK_SET);
+    read(fd, server_age, sizeof(long));
+  } else {
+    *server_age = 0;
+  }
+
+  return true;
 }
 
 int get_database_fd() {
@@ -163,7 +178,7 @@ static uint32_t generate_value(char **line, struct KVPair *kv) {
   return len;
 }
 
-void save_data() {
+void save_data(const uint64_t server_age) {
   struct BTree *cache = get_cache();
 
   uint32_t size;
@@ -172,6 +187,26 @@ void save_data() {
 
   uint32_t file_size = lseek(fd, 0, SEEK_END);
   int32_t diff = 0;
+
+  if (file_size != 0) {
+    uint8_t constants[2];
+    lseek(fd, 0, SEEK_SET);
+
+    if (read(fd, constants, 2) != 2 || constants[0] != 0x18 || constants[1] != 0x10 || file_size < 10) {
+      write_log(LOG_ERR, "Cannot save data, invalid file headers");
+      free(kvs);
+      return;
+    }
+
+    write(fd, &server_age, sizeof(uint64_t));
+  } else {
+    uint8_t constants[2] = {0x18, 0x10};
+
+    lseek(fd, 0, SEEK_SET);
+    write(fd, constants, 2);
+    write(fd, &server_age, sizeof(uint64_t));
+    file_size += 10;
+  }
 
   for (uint32_t i = 0; i < size; ++i) {
     struct KVPair *kv = kvs[i];

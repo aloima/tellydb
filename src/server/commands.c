@@ -8,7 +8,7 @@
 #include <stdbool.h>
 
 static struct Command *commands = NULL;
-static uint32_t command_count = 23;
+static uint32_t command_count = 24;
 
 void load_commands() {
   struct Command _commands[] = {
@@ -21,6 +21,7 @@ void load_commands() {
     cmd_type,
 
     // Generic commands
+    cmd_age,
     cmd_client,
     cmd_command,
     cmd_info,

@@ -24,9 +24,16 @@ static SSL_CTX *ctx;
 static struct pollfd *fds;
 static uint32_t nfds;
 static struct Configuration *conf;
+static time_t start_at;
+static uint64_t age;
 
 struct Configuration *get_server_configuration() {
   return conf;
+}
+
+void get_server_time(time_t *server_start_at, uint64_t *server_age) {
+  *server_start_at = start_at;
+  *server_age = age;
 }
 
 static int setnonblocking(int sockfd) {
@@ -66,7 +73,7 @@ static void close_server() {
   }
 
   clock_t start = clock();
-  save_data();
+  save_data(age + difftime(time(NULL), start_at));
   close_database_fd();
   write_log(LOG_INFO, "Saved data and closed database file in %.2f seconds.", ((float) clock() - start) / CLOCKS_PER_SEC);
 
@@ -186,8 +193,20 @@ void start_server(struct Configuration *config) {
   }
 
   struct BTree *cache = create_cache();
-  open_database_fd(conf->data_file);
+
+  if (!open_database_fd(conf->data_file, &age)) {
+    deactive_transaction_thread();
+    usleep(15);
+    free_commands();
+    free_cache();
+    close(sockfd);
+    write_log(LOG_WARN, "Safely exiting...");
+    free_configuration(conf);
+    return;
+  }
+
   write_log(LOG_INFO, "Created cache and opened database file.");
+  write_log(LOG_INFO, "tellydb server age: %ld", age);
 
   get_all_keys();
   write_log(LOG_INFO, "Read database file to create keyspace. Loaded key count: %d", cache->size);
@@ -198,6 +217,7 @@ void start_server(struct Configuration *config) {
   fds[0].events = POLLIN;
   fds[0].revents = 0;
 
+  start_at = time(NULL);
   write_log(LOG_INFO, "Server is listening on %d port for accepting connections...", conf->port);
 
   max_client_id_len = get_digit_count(conf->max_clients);
