@@ -5,30 +5,16 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include <unistd.h>
-
-static void add_kv_to_node(struct BTree *tree, struct BTreeNode *node, struct KVPair *kv, const uint32_t kv_at) {
+static struct KVPair *insert_kv_to_node(struct BTree *tree, struct BTreeNode *node, struct KVPair *kv, const uint32_t kv_at) {
   tree->size += 1;
-
-  if (node->size == 0) {
-    node->size = 1;
-    node->data = malloc(sizeof(struct KVPair *));
-    node->data[0] = kv;
-    return;
-  }
-
   node->size += 1;
   node->data = realloc(node->data, node->size * sizeof(struct KVPair *));
 
   memcpy(node->data + kv_at + 1, node->data + kv_at, (node->size - kv_at - 1) * sizeof(struct KVPair *));
   node->data[kv_at] = kv;
-}
-
-static struct KVPair *insert_kv_to_node(struct BTree *tree, struct BTreeNode *node, struct KVPair *kv, const uint32_t kv_at) {
-  add_kv_to_node(tree, node, kv, kv_at);
 
   if (node->size == tree->max) {
-    uint32_t at = (tree->max - 1) / 2;
+    const uint32_t at = (tree->max - 1) / 2;
 
     if (node->top) {
       do {
