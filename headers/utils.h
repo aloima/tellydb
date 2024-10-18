@@ -1,17 +1,19 @@
 #pragma once
 
-#include "telly.h"
-#include "server.h"
 #include "config.h"
 
 #include <string.h> // IWYU pragma: keep
-#include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
 
 #define streq(s1, s2) (strcmp((s1), (s2)) == 0)
 
 void to_uppercase(char *in, char *out);
+
+typedef struct String {
+  char *value;
+  size_t len;
+} string_t;
 
 enum TellyTypes {
   TELLY_UNSPECIFIED = 0,
@@ -31,8 +33,6 @@ typedef union {
   struct HashTable *hashtable;
   struct List *list;
 } value_t;
-
-void write_value(struct Client *client, value_t value, enum TellyTypes type);
 
 enum LogLevel {
   LOG_INFO = 0b001,

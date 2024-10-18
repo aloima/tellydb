@@ -1,7 +1,7 @@
 #pragma once
 
-#include "telly.h"
 #include "config.h"
+#include "utils.h"
 
 #include <openssl/ssl.h>
 
@@ -32,6 +32,7 @@ void remove_client(const int connfd);
 
 ssize_t _read(struct Client *client, void *buf, const size_t nbytes);
 ssize_t _write(struct Client *client, void *buf, const size_t nbytes);
+void write_value(struct Client *client, value_t value, enum TellyTypes type);
 
 /* RESP */
 #define RDT_SSTRING '+'

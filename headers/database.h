@@ -6,9 +6,6 @@
 
 #include <stdint.h>
 
-#include <unistd.h>
-#include <pthread.h>
-
 /* DATABASE */
 struct KVPair {
   string_t key;

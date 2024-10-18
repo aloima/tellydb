@@ -1,11 +1,10 @@
 #include "../../../headers/server.h"
 #include "../../../headers/database.h"
 #include "../../../headers/commands.h"
+#include "../../../headers/utils.h"
 
 #include <stdio.h>
 #include <stdint.h>
-
-#include <unistd.h>
 
 static void run(struct Client *client, respdata_t *data) {
   if (client) {

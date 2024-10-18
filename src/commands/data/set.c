@@ -1,7 +1,7 @@
-#include "../../../headers/telly.h"
 #include "../../../headers/server.h"
 #include "../../../headers/database.h"
 #include "../../../headers/commands.h"
+#include "../../../headers/utils.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -44,12 +44,12 @@ static void run(struct Client *client, respdata_t *data) {
   struct KVPair *res = get_data(key.value);
 
   if (nx && res) {
-    if (client) write(client->connfd, "$-1\r\n", 5);
+    if (client) _write(client, "$-1\r\n", 5);
     return;
   }
 
   if (xx && !res) {
-    if (client) write(client->connfd, "$-1\r\n", 5);
+    if (client) _write(client, "$-1\r\n", 5);
     return;
   }
 

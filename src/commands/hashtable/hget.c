@@ -1,8 +1,8 @@
-#include "../../../headers/telly.h"
 #include "../../../headers/server.h"
 #include "../../../headers/database.h"
 #include "../../../headers/commands.h"
 #include "../../../headers/hashtable.h"
+#include "../../../headers/utils.h"
 
 #include <stddef.h>
 

@@ -12,7 +12,7 @@ static void run(struct Client *client, respdata_t *data) {
     }
 
     const char *key = data->value.array[1]->value.string.value;
-    struct KVPair *kv = get_data(key);
+    const struct KVPair *kv = get_data(key);
 
     if (kv) {
       write_value(client, *kv->value, kv->type);

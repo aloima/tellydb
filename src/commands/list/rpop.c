@@ -2,10 +2,9 @@
 #include "../../../headers/database.h"
 #include "../../../headers/commands.h"
 #include "../../../headers/btree.h"
+#include "../../../headers/utils.h"
 
 #include <stddef.h>
-
-#include <unistd.h>
 
 static void run(struct Client *client, respdata_t *data) {
   if (client && data->count != 2) {

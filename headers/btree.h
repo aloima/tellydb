@@ -4,8 +4,6 @@
 
 #include <stdint.h>
 
-#include <unistd.h>
-
 struct BTreeNode {
   struct KVPair **data;
   uint32_t size;

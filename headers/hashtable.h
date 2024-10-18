@@ -1,6 +1,5 @@
 #pragma once
 
-#include "telly.h"
 #include "utils.h"
 
 #include <stdint.h>

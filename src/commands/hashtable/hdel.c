@@ -1,13 +1,11 @@
-#include "../../../headers/telly.h"
 #include "../../../headers/server.h"
 #include "../../../headers/database.h"
 #include "../../../headers/commands.h"
 #include "../../../headers/hashtable.h"
+#include "../../../headers/utils.h"
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <stdint.h>
-#include <stdbool.h>
 
 static void run(struct Client *client, respdata_t *data) {
   if (data->count < 3) {
@@ -22,12 +20,12 @@ static void run(struct Client *client, respdata_t *data) {
   if (kv) {
     if (kv->type == TELLY_HASHTABLE) {
       table = kv->value->hashtable;
-    } else if (client) {
-      _write(client, "-Invalid type for 'HDEL' command\r\n", 34);
+    } else {
+      if (client) _write(client, "-Invalid type for 'HDEL' command\r\n", 34);
       return;
     }
-  } else if (client) {
-    _write(client, ":0\r\n", 4);
+  } else {
+    if (client) _write(client, ":0\r\n", 4);
     return;
   }
 
