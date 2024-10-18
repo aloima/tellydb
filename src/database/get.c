@@ -18,13 +18,16 @@ void get_all_keys() {
     .len = 0
   };
 
+  uint32_t allocated = 32;
+
   while (read(fd, &c, 1)) {
     if (c != 0x1D) {
       key.value[key.len] = c;
       key.len += 1;
 
-      if (key.len % 32 == 0) {
-        key.value = realloc(key.value, key.len + 33);
+      if (allocated == key.len) {
+        key.value = realloc(key.value, allocated + 33);
+        allocated += 32;
       }
     } else {
       const off_t start_at = lseek(fd, 0, SEEK_CUR);
@@ -33,12 +36,7 @@ void get_all_keys() {
 
       key.value[key.len] = '\0';
       insert_kv_to_btree(cache, key, NULL, TELLY_UNSPECIFIED, start_at, end_at);
-      free(key.value);
-
-      key = (string_t) {
-        .value = malloc(33),
-        .len = 0
-      };
+      key.len = 0;
     }
   }
 
