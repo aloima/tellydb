@@ -23,7 +23,7 @@ respdata_t *parse_resp_array(struct Client *client, uint8_t type) {
       _read(client, &c, 1);
 
       if (c == '\n') {
-        data->value.array = malloc(data->count * sizeof(respdata_t));
+        data->value.array = malloc(data->count * sizeof(respdata_t *));
 
         for (uint32_t i = 0; i < data->count; ++i) {
           data->value.array[i] = get_resp_data(client);
@@ -133,31 +133,26 @@ respdata_t *parse_resp_bstring(struct Client *client, uint8_t type) {
 }
 
 respdata_t *get_resp_data(struct Client *client) {
-  respdata_t *data;
   uint8_t type;
 
   if (_read(client, &type, 1) == 0) {
-    data = malloc(sizeof(respdata_t));
+    respdata_t *data = malloc(sizeof(respdata_t));
     data->type = RDT_CLOSE;
 
     return data;
   } else {
     switch (type) {
       case RDT_ARRAY:
-        data = parse_resp_array(client, type);
-        return data;
+        return parse_resp_array(client, type);
 
       case RDT_SSTRING:
-        data = parse_resp_sstring(client, type);
-        return data;
+        return parse_resp_sstring(client, type);
 
       case RDT_BSTRING:
-        data = parse_resp_bstring(client, type);
-        return data;
+        return parse_resp_bstring(client, type);
 
       case RDT_ERR:
-        data = parse_resp_sstring(client, type);
-        return data;
+        return parse_resp_sstring(client, type);
 
       default:
         return NULL;

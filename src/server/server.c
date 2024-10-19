@@ -42,7 +42,7 @@ static int setnonblocking(int sockfd) {
 }
 
 static void terminate_connection(const int connfd) {
-  struct Client *client = get_client(connfd);
+  const struct Client *client = get_client(connfd);
   write_log(LOG_INFO, "Client #%d is disconnected.", client->id);
 
   for (uint32_t i = 1; i < nfds; ++i) {
@@ -206,7 +206,7 @@ void start_server(struct Configuration *config) {
   }
 
   write_log(LOG_INFO, "Created cache and opened database file.");
-  write_log(LOG_INFO, "tellydb server age: %ld", age);
+  write_log(LOG_INFO, "tellydb server age: %ld seconds", age);
 
   get_all_keys();
   write_log(LOG_INFO, "Read database file to create keyspace. Loaded key count: %d", cache->size);
@@ -223,11 +223,11 @@ void start_server(struct Configuration *config) {
   max_client_id_len = get_digit_count(conf->max_clients);
 
   while (true) {
-    int ret = poll(fds, nfds, -1);
+    const int ret = poll(fds, nfds, -1);
 
     if (ret != -1) {
       for (uint32_t i = 0; i < nfds; ++i) {
-        struct pollfd fd = fds[i];
+        const struct pollfd fd = fds[i];
 
         if (fd.fd == sockfd && fd.revents & POLLIN) {
           if (conf->max_clients == get_client_count()) {
