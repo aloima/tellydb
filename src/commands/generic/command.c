@@ -60,12 +60,9 @@ static void run(struct Client *client, respdata_t *data) {
 
       _write(client, res, res_len);
     } else if (streq("COUNT", subcommand)) {
-      const uint32_t command_count = get_command_count();
-      const uint32_t res_len = 3 + get_digit_count(command_count);
-      char res[res_len + 1];
-
-      sprintf(res, ":%d\r\n", get_command_count());
-      _write(client, res, res_len);
+      char buf[14];
+      const size_t nbytes = sprintf(buf, ":%d\r\n", get_command_count());
+      _write(client, buf, nbytes);
     }
   }
 }

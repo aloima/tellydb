@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stddef.h>
 #include <stdbool.h>
 
 struct Configuration {
@@ -21,5 +22,5 @@ struct Configuration {
 
 struct Configuration *get_configuration(const char *filename);
 struct Configuration get_default_configuration();
-uint32_t get_configuration_string(char *buf, struct Configuration conf);
+size_t get_configuration_string(char *buf, struct Configuration conf);
 void free_configuration(struct Configuration *conf);

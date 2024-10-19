@@ -1,6 +1,9 @@
 #include "../../headers/server.h"
 #include "../../headers/utils.h"
 
+#include <stdio.h>
+#include <stdint.h>
+
 #include <openssl/ssl.h>
 
 #include <unistd.h>
@@ -28,23 +31,16 @@ void write_value(struct Client *client, value_t value, enum TellyTypes type) {
       break;
 
     case TELLY_NUM: {
-      const uint32_t digit_count = get_digit_count(value.number);
-      const uint32_t buf_len = digit_count + 3;
-
-      char buf[buf_len + 1];
-      sprintf(buf, ":%ld\r\n", value.number);
-
-      _write(client, buf, buf_len);
+      char buf[24];
+      const size_t nbytes = sprintf(buf, ":%ld\r\n", value.number);
+      _write(client, buf, nbytes);
       break;
     }
 
     case TELLY_STR: {
-      const uint32_t buf_len = get_digit_count(value.string.len) + value.string.len + 5;
-
-      char buf[buf_len + 1];
-      sprintf(buf, "$%ld\r\n%s\r\n", value.string.len, value.string.value);
-
-      _write(client, buf, buf_len);
+      char buf[26 + value.string.len];
+      const size_t nbytes = sprintf(buf, "$%ld\r\n%s\r\n", value.string.len, value.string.value);
+      _write(client, buf, nbytes);
       break;
     }
 

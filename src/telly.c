@@ -1,9 +1,10 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-
 #include "../headers/server.h"
 #include "../headers/utils.h"
+
+#include <stdio.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 int main(int argc, char *argv[]) {
   switch (argc) {
@@ -46,8 +47,8 @@ int main(int argc, char *argv[]) {
         struct Configuration conf = get_default_configuration();
         char buf[1024];
 
-        const uint32_t len = get_configuration_string(buf, conf);
-        fwrite(buf, sizeof(char), len, file);
+        const size_t n = get_configuration_string(buf, conf);
+        fwrite(buf, sizeof(char), n, file);
         fclose(file);
 
         return EXIT_SUCCESS;

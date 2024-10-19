@@ -5,6 +5,7 @@
 #include "../../../headers/utils.h"
 
 #include <stdio.h>
+#include <stddef.h>
 #include <stdint.h>
 
 static void run(struct Client *client, respdata_t *data) {
@@ -19,20 +20,17 @@ static void run(struct Client *client, respdata_t *data) {
 
     if (kv) {
       if (kv->type == TELLY_HASHTABLE) {
-        struct HashTable *table = kv->value->hashtable;
+        const struct HashTable *table = kv->value->hashtable;
 
-        const uint32_t buf_len = 59 + get_digit_count(table->size.allocated) +
-          get_digit_count(table->size.filled) + get_digit_count(table->size.all);
-
-        char buf[buf_len + 1];
-        sprintf(buf, (
+        char buf[90];
+        const size_t nbytes = sprintf(buf, (
           "*3\r\n"
             "+Allocated: %d\r\n"
             "+Filled: %d\r\n"
             "+All (includes next count): %d\r\n"
         ), table->size.allocated, table->size.filled, table->size.all);
 
-        _write(client, buf, buf_len);
+        _write(client, buf, nbytes);
       } else {
         _write(client, "-Invalid type for 'HLEN' command\r\n", 34);
       }

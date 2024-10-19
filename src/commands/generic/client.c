@@ -3,6 +3,7 @@
 #include "../../../headers/utils.h"
 
 #include <stdio.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <time.h>
@@ -15,17 +16,15 @@ static void run(struct Client *client, respdata_t *data) {
       to_uppercase(subcommand_string.value, subcommand);
 
       if (streq("ID", subcommand)) {
-        const uint32_t len = 3 + get_digit_count(client->id);
-        char res[len + 1];
-        sprintf(res, ":%d\r\n", client->id);
-
-        _write(client, res, len);
+        char buf[14];
+        const size_t nbytes = sprintf(buf, ":%d\r\n", client->id);
+        _write(client, buf, nbytes);
       } else if (streq("INFO", subcommand)) {
         const char *lib_name = client->lib_name ? client->lib_name : "unspecified";
         const char *lib_ver = client->lib_ver ? client->lib_ver : "unspecified";
 
         char buf[512];
-        sprintf(buf, (
+        const size_t buf_len = sprintf(buf, (
           "ID: %d\r\n"
           "Socket file descriptor: %d\r\n"
           "Connected at: %.24s\r\n"
@@ -37,9 +36,8 @@ static void run(struct Client *client, respdata_t *data) {
         client->command->name, lib_name, lib_ver);
 
         char res[1024];
-        sprintf(res, "$%ld\r\n%s\r\n", strlen(buf), buf);
-
-        _write(client, res, strlen(res));
+        const size_t nbytes = sprintf(res, "$%ld\r\n%s\r\n", buf_len, buf);
+        _write(client, res, nbytes);
       } else if (streq("SETINFO", subcommand)) {
         if (data->count == 4) {
           string_t property = data->value.array[2]->value.string;

@@ -5,6 +5,7 @@
 #include "../../../headers/utils.h"
 
 #include <stdio.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -50,9 +51,8 @@ static void run(struct Client *client, respdata_t *data) {
   }
 
   if (client) {
-    const uint32_t buf_len = 3 + get_digit_count(fv_count);
-    char buf[buf_len + 1];
-    sprintf(buf, ":%d\r\n", fv_count);
+    char buf[14];
+    const size_t buf_len = sprintf(buf, ":%d\r\n", fv_count);
 
     _write(client, buf, buf_len);
   }

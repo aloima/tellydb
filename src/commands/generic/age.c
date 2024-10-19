@@ -2,6 +2,7 @@
 #include "../../../headers/commands.h"
 
 #include <stdio.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <time.h>
 
@@ -13,10 +14,9 @@ static void run(struct Client *client, respdata_t *data) {
       get_server_time(&start_at, &age);
       age += difftime(time(NULL), start_at);
 
-      char buf[12];
-      const uint8_t len = sprintf(buf, ":%ld\r\n", age);
-
-      _write(client, buf, len);
+      char buf[24];
+      const size_t nbytes = sprintf(buf, ":%ld\r\n", age);
+      _write(client, buf, nbytes);
     } else {
       WRONG_ARGUMENT_ERROR(client, "AGE", 3);
     }

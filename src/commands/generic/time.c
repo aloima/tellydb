@@ -1,8 +1,8 @@
 #include "../../../headers/server.h"
 #include "../../../headers/commands.h"
-#include "../../../headers/utils.h"
 
 #include <stdio.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include <sys/time.h>
@@ -17,14 +17,9 @@ static void run(struct Client *client, respdata_t *data) {
     struct timeval timestamp;
     gettimeofday(&timestamp, NULL);
 
-    const uint32_t sec_len = get_digit_count(timestamp.tv_sec);
-    const uint32_t usec_len = get_digit_count(timestamp.tv_usec);
-
-    const uint32_t buf_len = 10 + sec_len + usec_len;
-    char buf[buf_len + 1];
-    sprintf(buf, "*2\r\n:%ld\r\n:%ld\r\n", timestamp.tv_sec, timestamp.tv_usec);
-
-    _write(client, buf, buf_len);
+    char buf[51];
+    const size_t nbytes = sprintf(buf, "*2\r\n:%ld\r\n:%ld\r\n", timestamp.tv_sec, timestamp.tv_usec);
+    _write(client, buf, nbytes);
   }
 }
 

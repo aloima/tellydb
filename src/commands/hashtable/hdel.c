@@ -5,6 +5,7 @@
 #include "../../../headers/utils.h"
 
 #include <stdio.h>
+#include <stddef.h>
 #include <stdint.h>
 
 static void run(struct Client *client, respdata_t *data) {
@@ -29,20 +30,20 @@ static void run(struct Client *client, respdata_t *data) {
     return;
   }
 
-  uint32_t deleted = 0;
-
-  for (uint32_t i = 1; i < data->count; ++i) {
-    const string_t name = data->value.array[i]->value.string;
-
-    if (del_fv_to_hashtable(table, name)) deleted += 1;
-  }
-
   if (client) {
-    const uint32_t buf_len = 3 + get_digit_count(deleted);
-    char buf[buf_len + 1];
-    sprintf(buf, ":%d\r\n", deleted);
+    const uint32_t old_size = table->size.all;
 
-    _write(client, buf, buf_len);
+    for (uint32_t i = 2; i < data->count; ++i) {
+      del_fv_to_hashtable(table, data->value.array[i]->value.string);
+    }
+
+    char buf[14];
+    const size_t nbytes = sprintf(buf, ":%d\r\n", old_size - table->size.all);
+    _write(client, buf, nbytes);
+  } else {
+    for (uint32_t i = 2; i < data->count; ++i) {
+      del_fv_to_hashtable(table, data->value.array[i]->value.string);
+    }
   }
 }
 

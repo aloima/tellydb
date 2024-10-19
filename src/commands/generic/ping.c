@@ -3,6 +3,7 @@
 #include "../../../headers/utils.h"
 
 #include <stdio.h>
+#include <stddef.h>
 #include <stdint.h>
 
 static void run(struct Client *client, respdata_t *data) {
@@ -15,10 +16,9 @@ static void run(struct Client *client, respdata_t *data) {
       case 2: {
         const string_t arg = data->value.array[1]->value.string;
 
-        const uint32_t buf_len = 5 + get_digit_count(arg.len) + arg.len;
-        char buf[buf_len + 1];
-        sprintf(buf, "$%ld\r\n%s\r\n", arg.len, arg.value);
-        _write(client, buf, buf_len);
+        char buf[26 + arg.len];
+        const size_t nbytes = sprintf(buf, "$%ld\r\n%s\r\n", arg.len, arg.value);
+        _write(client, buf, nbytes);
 
         break;
       }

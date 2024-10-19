@@ -81,9 +81,8 @@ void execute_command(struct Client *client, respdata_t *data) {
     }
 
     if (!executed && client != NULL) {
-      const uint32_t len = 21 + data->value.array[0]->value.string.len;
-      char res[len + 1];
-      sprintf(res, "-unknown command '%s'\r\n", input);
+      char res[42];
+      const size_t len = sprintf(res, "-unknown command '%s'\r\n", input);
 
       _write(client, res, len);
     }

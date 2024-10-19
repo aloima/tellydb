@@ -4,6 +4,7 @@
 #include "../../../headers/utils.h"
 
 #include <stdio.h>
+#include <stddef.h>
 #include <stdint.h>
 
 static void run(struct Client *client, respdata_t *data) {
@@ -24,12 +25,9 @@ static void run(struct Client *client, respdata_t *data) {
       return;
     }
 
-    const uint32_t size = kv->value->list->size;
-    const uint32_t buf_len = 3 + get_digit_count(kv->value->list->size);
-    char buf[buf_len + 1];
-    sprintf(buf, ":%d\r\n", size);
-
-    _write(client, buf, buf_len);
+    char buf[14];
+    const size_t nbytes = sprintf(buf, ":%d\r\n", kv->value->list->size);
+    _write(client, buf, nbytes);
   }
 }
 

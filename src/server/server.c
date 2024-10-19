@@ -65,7 +65,7 @@ static void close_server() {
   const uint32_t client_count = get_client_count();
 
   for (uint32_t i = 0; i < client_count; ++i) {
-    struct Client *client = clients[0];
+    const struct Client *client = clients[0];
     write_log(LOG_INFO, "Client #%d is terminated.", client->id);
 
     close(client->connfd);

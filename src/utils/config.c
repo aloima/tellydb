@@ -145,7 +145,7 @@ static void get_allowed_log_levels(char *allowed_log_levels, struct Configuratio
   allowed_log_levels[len] = '\0';
 }
 
-uint32_t get_configuration_string(char *buf, struct Configuration conf) {
+size_t get_configuration_string(char *buf, struct Configuration conf) {
   char allowed_log_levels[4];
   get_allowed_log_levels(allowed_log_levels, conf);
 

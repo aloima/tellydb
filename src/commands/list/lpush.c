@@ -4,6 +4,7 @@
 #include "../../../headers/utils.h"
 
 #include <stdio.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -21,8 +22,8 @@ static void lpush_to_list(struct List *list, void *value, enum TellyTypes type) 
 }
 
 static void run(struct Client *client, respdata_t *data) {
-  if (client && data->count < 3) {
-    WRONG_ARGUMENT_ERROR(client, "LPUSH", 5);
+  if (data->count < 3) {
+    if (client) WRONG_ARGUMENT_ERROR(client, "LPUSH", 5);
     return;
   }
 
@@ -63,11 +64,9 @@ static void run(struct Client *client, respdata_t *data) {
   }
 
   if (client) {
-    const uint32_t buf_len = get_digit_count(value_count) + 3;
-    char buf[buf_len + 1];
-    sprintf(buf, ":%d\r\n", value_count);
-
-    _write(client, buf, buf_len);
+    char buf[14];
+    const size_t nbytes = sprintf(buf, ":%d\r\n", value_count);
+    _write(client, buf, nbytes);
   }
 }
 

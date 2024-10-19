@@ -4,6 +4,7 @@
 #include "../../../headers/utils.h"
 
 #include <stdio.h>
+#include <stddef.h>
 #include <stdint.h>
 
 static void run(struct Client *client, respdata_t *data) {
@@ -25,11 +26,9 @@ static void run(struct Client *client, respdata_t *data) {
     result->value->number -= 1;
 
     if (client) {
-      const uint32_t buf_len = get_digit_count(result->value->number) + 3;
-      char buf[buf_len + 1];
-
-      sprintf(buf, ":%ld\r\n", result->value->number);
-      _write(client, buf, buf_len);
+      char buf[24];
+      const size_t nbytes = sprintf(buf, ":%ld\r\n", result->value->number);
+      _write(client, buf, nbytes);
     }
   } else if (client) {
     _write(client, "-Invalid type for 'DECR' command\r\n", 34);

@@ -4,6 +4,7 @@
 #include "../../../headers/utils.h"
 
 #include <stdio.h>
+#include <stddef.h>
 #include <string.h>
 #include <stdint.h>
 
@@ -32,19 +33,15 @@ static void run(struct Client *client, respdata_t *data) {
       }
     }
 
-    const uint32_t arr_count = key_count + 2;
-    const uint32_t res_len = 55 + strlen(buf) +
-      get_digit_count(arr_count) + get_digit_count(existed) + get_digit_count(not_existed);
-
-    char res[res_len + 1];
-    sprintf(res, (
+    char res[85 + (existed * 9) + (not_existed * 12)];
+    const size_t nbytes = sprintf(res, (
       "*%d\r\n"
         "+existed key count is %d\r\n"
         "+not existed key count is %d\r\n"
         "%s"
     ), key_count + 2, existed, not_existed, buf);
 
-    _write(client, res, res_len);
+    _write(client, res, nbytes);
   }
 }
 

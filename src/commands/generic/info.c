@@ -95,12 +95,11 @@ static void run(struct Client *client, respdata_t *data) {
       strcat(buf, section);
     }
 
-    const uint32_t buf_len = strlen(buf);
-    const uint32_t res_len = buf_len + 5 + get_digit_count(buf_len);
-    char res[res_len + 1];
+    const uint16_t buf_len = strlen(buf);
+    char res[buf_len + 11];
 
-    sprintf(res, "$%d\r\n%s\r\n", buf_len, buf);
-    _write(client, res, res_len);
+    const size_t nbytes = sprintf(res, "$%hu\r\n%s\r\n", buf_len, buf);
+    _write(client, res, nbytes);
   }
 }
 
