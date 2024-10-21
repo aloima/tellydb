@@ -4,18 +4,24 @@
 
 #include <stdint.h>
 
+struct BTreeIntegers {
+  uint8_t order;
+  uint8_t leaf_min;
+  uint8_t internal_min;
+};
+
 struct BTreeNode {
   struct KVPair **data;
   uint32_t size;
 
   struct BTreeNode **leafs;
-  struct BTreeNode *top;
-  uint32_t leaf_at;
+  struct BTreeNode *parent;
+  uint32_t at;
 };
 
 struct BTree {
   struct BTreeNode *root;
-  uint32_t max;
+  struct BTreeIntegers integers;
   uint32_t size;
 };
 

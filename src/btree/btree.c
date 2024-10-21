@@ -2,12 +2,18 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <math.h>
 
-struct BTree *create_btree(const uint32_t max) {
+struct BTree *create_btree(const uint32_t order) {
+  const uint32_t k = (order - 1);
   struct BTree *tree = malloc(sizeof(struct BTree));
   tree->size = 0;
-  tree->max = max;
   tree->root = NULL;
+  tree->integers = (struct BTreeIntegers) {
+    .order = order,
+    .leaf_min = ceil((float) k / 2),
+    .internal_min = k / 2
+  };
 
   return tree;
 }
@@ -38,9 +44,9 @@ static void get_kvs_from_node(struct KVPair **kvs, uint32_t *index, struct BTree
 void sort_kvs_by_pos(struct KVPair **kvs, const uint32_t size) {
   if (size <= 1) return;
 
-  const uint32_t bound_top = size - 1;
+  const uint32_t bound_parent = size - 1;
 
-  for (uint32_t i = 0; i < bound_top; ++i) {
+  for (uint32_t i = 0; i < bound_parent; ++i) {
     const uint32_t bound = size - 1 - i;
 
     for (uint32_t j = 0; j < bound; ++j) {
