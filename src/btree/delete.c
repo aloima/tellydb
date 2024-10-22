@@ -12,24 +12,24 @@ static void rebalance_from_node_leaf(struct BTree *tree, struct BTreeNode *node,
   const uint32_t left_at = node->at - 1;
   const uint32_t leaf_min = tree->integers.leaf_min;
 
-  if (node->at != parent->size && parent->leafs[right_at]->size > leaf_min) { // right sibling exists and has more than minimum elements
-    struct BTreeNode *right = parent->leafs[right_at];
+  if (node->at != parent->size && parent->children[right_at]->size > leaf_min) { // right sibling exists and has more than minimum elements
+    struct BTreeNode *right = parent->children[right_at];
     memcpy(node->data + 1, node->data, target_at * sizeof(struct KVPair *));
     node->data[0] = parent->data[left_at];
     parent->data[left_at] = right->data[right->size - 1];
     right->size -= 1;
     memcpy(right->data, right->data + 1, right->size * sizeof(struct KVPair *));
     right->data = realloc(right->data, right->size * sizeof(struct KVPair *));
-  } else if (node->at != 0 && parent->leafs[left_at]->size != leaf_min) { // left sibling exists and has more than minimum elements
-    struct BTreeNode *left = parent->leafs[left_at];
+  } else if (node->at != 0 && parent->children[left_at]->size != leaf_min) { // left sibling exists and has more than minimum elements
+    struct BTreeNode *left = parent->children[left_at];
     memcpy(node->data + 1, node->data, target_at * sizeof(struct KVPair *));
     node->data[0] = parent->data[left_at];
     parent->data[left_at] = left->data[left->size - 1];
     left->size -= 1;
     left->data = realloc(left->data, left->size * sizeof(struct KVPair *));
-  } else if (node->at != 0 && node->at != parent->size && parent->leafs[left_at]->size == leaf_min && parent->leafs[right_at]->size == leaf_min) {
+  } else if (node->at != 0 && node->at != parent->size && parent->children[left_at]->size == leaf_min && parent->children[right_at]->size == leaf_min) {
     // left and right siblings exist and have minimum elements
-    struct BTreeNode *left = parent->leafs[left_at];
+    struct BTreeNode *left = parent->children[left_at];
 
     node->size -= 1;
     memcpy(node->data + target_at, node->data + target_at + 1, (node->size - target_at) * sizeof(struct KVPair *));
@@ -39,12 +39,12 @@ static void rebalance_from_node_leaf(struct BTree *tree, struct BTreeNode *node,
     left->data[tree->integers.leaf_min] = parent->data[left_at];
     memcpy(left->data + leaf_min + 1, node->data, node->size * sizeof(struct KVPair *));
 
-    memcpy(parent->leafs + node->at, parent->leafs + right_at, (parent->size - node->at) * sizeof(struct BTreeNode *));
+    memcpy(parent->children + node->at, parent->children + right_at, (parent->size - node->at) * sizeof(struct BTreeNode *));
     memcpy(parent->data + left_at, parent->data + node->at, (parent->size - node->at) * sizeof(struct KVPair *));
-    parent->leafs = realloc(parent->leafs, parent->size * sizeof(struct BTreeNode *));
+    parent->children = realloc(parent->children, parent->size * sizeof(struct BTreeNode *));
 
     for (uint32_t i = node->at; i < parent->size; ++i) {
-      parent->leafs[i]->at -= 1;
+      parent->children[i]->at -= 1;
     }
 
     parent->size -= 1;
@@ -53,7 +53,7 @@ static void rebalance_from_node_leaf(struct BTree *tree, struct BTreeNode *node,
     free(node->data);
     free(node);
   } else if (node->at == 0) { // there is no left sibling and right sibling has minimum elements
-    struct BTreeNode *right = parent->leafs[1];
+    struct BTreeNode *right = parent->children[1];
 
     memcpy(node->data + target_at, node->data + target_at + 1, (node->size - target_at - 1) * sizeof(struct KVPair *));
     node->size += leaf_min;
@@ -66,17 +66,17 @@ static void rebalance_from_node_leaf(struct BTree *tree, struct BTreeNode *node,
       tree->root = node;
 
       free(parent->data);
-      free(parent->leafs);
+      free(parent->children);
       free(parent);
     } else {
       const uint32_t leaf_count = parent->size;
       parent->size -= 1;
 
-      memcpy(parent->leafs + 1, parent->leafs + 2, parent->size * sizeof(struct BTreeNode *));
-      parent->leafs = realloc(parent->leafs, leaf_count * sizeof(struct BTreeNode *));
+      memcpy(parent->children + 1, parent->children + 2, parent->size * sizeof(struct BTreeNode *));
+      parent->children = realloc(parent->children, leaf_count * sizeof(struct BTreeNode *));
 
       for (uint32_t i = 1; i < leaf_count; ++i) {
-        parent->leafs[i]->at -= 1;
+        parent->children[i]->at -= 1;
       }
 
       memcpy(parent->data, parent->data + 1, parent->size * sizeof(struct KVPair *));
@@ -86,7 +86,7 @@ static void rebalance_from_node_leaf(struct BTree *tree, struct BTreeNode *node,
     free(right->data);
     free(right);
   } else if (node->at == parent->size) { // there is no right sibling and left sibling has minimum elements
-    struct BTreeNode *left = parent->leafs[left_at];
+    struct BTreeNode *left = parent->children[left_at];
 
     memcpy(node->data + 1, node->data, target_at * sizeof(struct KVPair *));
     node->data[0] = parent->data[left_at];
@@ -101,10 +101,10 @@ static void rebalance_from_node_leaf(struct BTree *tree, struct BTreeNode *node,
       tree->root = left;
 
       free(parent->data);
-      free(parent->leafs);
+      free(parent->children);
       free(parent);
     } else {
-      parent->leafs = realloc(parent->leafs, parent->size * sizeof(struct BTreeNode *));
+      parent->children = realloc(parent->children, parent->size * sizeof(struct BTreeNode *));
       parent->size -= 1;
       parent->data = realloc(parent->data, parent->size * sizeof(struct KVPair *));
     }
@@ -161,7 +161,7 @@ bool delete_kv_from_btree(struct BTree *tree, const char *key) {
   if (streq(target->key.value, key)) {
     tree->size -= 1;
 
-    if (!node->leafs) {
+    if (!node->children) {
       if (node->parent) {
         delete_from_leaf(tree, node, target, target_at);
       } else {

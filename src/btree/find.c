@@ -4,16 +4,16 @@
 #include <string.h>
 
 static struct KVPair *find_kv_from_node(struct BTreeNode *node, const char *key) {
-  if (node->leafs) {
+  if (node->children) {
     for (uint32_t i = 0; i < node->size; ++i) {
       struct KVPair *kv = node->data[i];
       const int search = strcmp(key, kv->key.value);
 
-      if (search < 0) return find_kv_from_node(node->leafs[i], key);
+      if (search < 0) return find_kv_from_node(node->children[i], key);
       else if (search == 0) return kv;
     }
 
-    return find_kv_from_node(node->leafs[node->size], key);
+    return find_kv_from_node(node->children[node->size], key);
   } else {
     for (uint32_t i = 0; i < node->size; ++i) {
       struct KVPair *kv = node->data[i];

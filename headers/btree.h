@@ -14,7 +14,7 @@ struct BTreeNode {
   struct KVPair **data;
   uint32_t size;
 
-  struct BTreeNode **leafs;
+  struct BTreeNode **children;
   struct BTreeNode *parent;
   uint32_t at;
 };

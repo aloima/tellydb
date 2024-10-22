@@ -19,9 +19,9 @@ struct BTree *create_btree(const uint32_t order) {
 }
 
 static void get_kvs_from_node(struct KVPair **kvs, uint32_t *index, struct BTreeNode *node) {
-  if (node->leafs) {
+  if (node->children) {
     for (uint32_t i = 0; i < node->size; ++i) {
-      get_kvs_from_node(kvs, index, node->leafs[i]);
+      get_kvs_from_node(kvs, index, node->children[i]);
 
       if (node->data[i]->value) {
         kvs[*index] = node->data[i];
@@ -29,7 +29,7 @@ static void get_kvs_from_node(struct KVPair **kvs, uint32_t *index, struct BTree
       }
     }
 
-    get_kvs_from_node(kvs, index, node->leafs[node->size]);
+    get_kvs_from_node(kvs, index, node->children[node->size]);
     return;
   }
 
