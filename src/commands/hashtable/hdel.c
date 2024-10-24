@@ -20,7 +20,7 @@ static void run(struct Client *client, respdata_t *data) {
 
   if (kv) {
     if (kv->type == TELLY_HASHTABLE) {
-      table = kv->value->hashtable;
+      table = kv->value;
     } else {
       if (client) _write(client, "-Invalid type for 'HDEL' command\r\n", 34);
       return;

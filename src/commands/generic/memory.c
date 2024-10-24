@@ -19,8 +19,8 @@ static void run(struct Client *client, respdata_t *data) {
           struct KVPair *kv = get_kv_from_cache(key);
 
           if (kv) {
-            const uint32_t size = sizeof(struct KVPair *) + sizeof(struct KVPair) +
-              (kv->key.len + 1) + (kv->type == TELLY_STR ? (kv->value->string.len + 1) : 0);
+            const uint32_t size = 5;/*sizeof(struct KVPair *) + sizeof(struct KVPair) +
+              (kv->key.len + 1) + (kv->type == TELLY_STR ? (kv->value->string.len + 1) : 0);*/
 
             const uint32_t buf_len = 3 + get_digit_count(size);
             char buf[buf_len + 1];

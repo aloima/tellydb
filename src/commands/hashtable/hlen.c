@@ -20,7 +20,7 @@ static void run(struct Client *client, respdata_t *data) {
 
     if (kv) {
       if (kv->type == TELLY_HASHTABLE) {
-        const struct HashTable *table = kv->value->hashtable;
+        const struct HashTable *table = kv->value;
 
         char buf[90];
         const size_t nbytes = sprintf(buf, (

@@ -6,7 +6,7 @@
 
 struct FVPair {
   string_t name;
-  value_t value;
+  void *value;
   enum TellyTypes type;
   struct FVPair *next;
   uint64_t hash;
@@ -31,7 +31,6 @@ void resize_hashtable(struct HashTable *table, const uint32_t size);
 struct FVPair *get_fv_from_hashtable(struct HashTable *table, char *name);
 void free_hashtable(struct HashTable *table);
 
-void set_fv_value(struct FVPair *fv, void *value);
 void free_fv(struct FVPair *fv);
 
 void add_fv_to_hashtable(struct HashTable *table, const string_t name, void *value, const enum TellyTypes type);

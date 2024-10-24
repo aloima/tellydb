@@ -36,7 +36,7 @@ static void run(struct Client *client, respdata_t *data) {
   }
 
   const string_t key = data->value.array[1]->value.string;
-  value_t value;
+  void *value;
   enum TellyTypes type;
   struct KVPair *res = get_data(key.value);
 
@@ -53,21 +53,31 @@ static void run(struct Client *client, respdata_t *data) {
   bool is_true = streq(value_in, "true");
 
   if (is_integer(value_in)) {
+    const long _value = atol(value_in);
     type = TELLY_NUM;
-    value.number = atol(value_in);
+    value = malloc(sizeof(long));
+    memcpy(value, &_value, sizeof(long));
   } else if (is_true || streq(value_in, "false")) {
     type = TELLY_BOOL;
-    value.boolean = is_true;
+    value = malloc(sizeof(bool));
+    memset(value, is_true, sizeof(bool));
   } else if (streq(value_in, "null")) {
     type = TELLY_NULL;
+    value = NULL;
   } else {
+    const string_t _value = data->value.array[2]->value.string;
     type = TELLY_STR;
-    value.string = data->value.array[2]->value.string;
+
+    string_t *string = (value = malloc(sizeof(string_t)));
+    const uint32_t size = _value.len + 1;
+    string->len = _value.len;
+    string->value = malloc(size);
+    memcpy(string->value, _value.value, size);
   }
 
   if (get) {
     if (res) {
-      if (client) write_value(client, *res->value, res->type);
+      if (client) write_value(client, value, type);
       set_data(res, key, value, type);
     } else if (client) {
       _write(client, "$-1\r\n", 5);

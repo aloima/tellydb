@@ -24,7 +24,7 @@ ssize_t _write(struct Client *client, void *buf, const size_t nbytes) {
   }
 }
 
-void write_value(struct Client *client, value_t value, enum TellyTypes type) {
+void write_value(struct Client *client, void *value, enum TellyTypes type) {
   switch (type) {
     case TELLY_NULL:
       _write(client, "+null\r\n", 7);
@@ -32,20 +32,21 @@ void write_value(struct Client *client, value_t value, enum TellyTypes type) {
 
     case TELLY_NUM: {
       char buf[24];
-      const size_t nbytes = sprintf(buf, ":%ld\r\n", value.number);
+      const size_t nbytes = sprintf(buf, ":%ld\r\n", *((long *) value));
       _write(client, buf, nbytes);
       break;
     }
 
     case TELLY_STR: {
-      char buf[26 + value.string.len];
-      const size_t nbytes = sprintf(buf, "$%ld\r\n%s\r\n", value.string.len, value.string.value);
+      const string_t *string = value;
+      char buf[26 + string->len];
+      const size_t nbytes = sprintf(buf, "$%ld\r\n%s\r\n", string->len, string->value);
       _write(client, buf, nbytes);
       break;
     }
 
     case TELLY_BOOL:
-      if (value.boolean) {
+      if (*((bool *) value)) {
         _write(client, "+true\r\n", 7);
       } else {
         _write(client, "+false\r\n", 8);

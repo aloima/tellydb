@@ -17,17 +17,17 @@ static void run(struct Client *client, respdata_t *data) {
   struct KVPair *result = get_data(key.value);
 
   if (!result) {
-    set_data(NULL, key, (value_t) {
-      .number = 0
-    }, TELLY_NUM);
+    long *number = calloc(1, sizeof(long));
+    set_data(NULL, key, number, TELLY_NUM);
 
     if (client) _write(client, ":0\r\n", 4);
   } else if (result->type == TELLY_NUM) {
-    result->value->number -= 1;
+    long *number = result->value;
+    *number -= 1;
 
     if (client) {
       char buf[24];
-      const size_t nbytes = sprintf(buf, ":%ld\r\n", result->value->number);
+      const size_t nbytes = sprintf(buf, ":%ld\r\n", *number);
       _write(client, buf, nbytes);
     }
   } else if (client) {

@@ -21,7 +21,7 @@ static void run(struct Client *client, respdata_t *data) {
       return;
     }
 
-    struct List *list = kv->value->list;
+    struct List *list = kv->value;
     struct ListNode *node = list->begin;
 
     if (client) write_value(client, node->value, node->type);

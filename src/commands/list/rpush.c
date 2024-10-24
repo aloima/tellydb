@@ -37,12 +37,10 @@ static void run(struct Client *client, respdata_t *data) {
       return;
     }
 
-    list = kv->value->list;
+    list = kv->value;
   } else {
     list = create_list();
-    set_data(kv, key, (value_t) {
-      .list = list
-    }, TELLY_LIST);
+    set_data(kv, key, list, TELLY_LIST);
   }
 
   const uint32_t value_count = data->count - 2;

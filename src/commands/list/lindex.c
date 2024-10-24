@@ -28,7 +28,7 @@ static void run(struct Client *client, respdata_t *data) {
       return;
     }
 
-    const struct List *list = kv->value->list;
+    const struct List *list = kv->value;
     struct ListNode *node;
 
     if (index_str[0] != '-') {

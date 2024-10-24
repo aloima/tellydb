@@ -37,28 +37,39 @@ static void run(struct Client *client, respdata_t *data) {
       return;
     }
 
-    list = kv->value->list;
+    list = kv->value;
   } else {
     list = create_list();
-    set_data(kv, key, (value_t) {
-      .list = list
-    }, TELLY_LIST);
+    set_data(kv, key, list, TELLY_LIST);
   }
 
   const uint32_t value_count = data->count - 2;
 
   for (uint32_t i = 0; i < value_count; ++i) {
-    char *value = data->value.array[2 + i]->value.string.value;
-    bool is_true = streq(value, "true");
+    string_t input = data->value.array[2 + i]->value.string;
+    char *input_value = input.value;
+    bool is_true = streq(input_value, "true");
 
-    if (is_integer(value)) {
-      long value_as_long = atol(value);
-      lpush_to_list(list, &value_as_long, TELLY_NUM);
-    } else if (is_true || streq(value, "false")) {
-      lpush_to_list(list, &is_true, TELLY_BOOL);
-    } else if (streq(value, "null")) {
+    if (is_integer(input_value)) {
+      const long number = atol(input_value);
+      long *value = malloc(sizeof(long));
+      memcpy(value, &number, sizeof(long));
+
+      lpush_to_list(list, value, TELLY_NUM);
+    } else if (is_true || streq(input_value, "false")) {
+      bool *value = malloc(sizeof(bool));
+      memset(value, is_true, sizeof(bool));
+
+      lpush_to_list(list, value, TELLY_BOOL);
+    } else if (streq(input_value, "null")) {
       lpush_to_list(list, NULL, TELLY_NULL);
     } else {
+      string_t *value = malloc(sizeof(string_t));
+      const uint32_t size = input.len + 1;
+      value->len = input.len;
+      value->value = malloc(size);
+      memcpy(value->value, input_value, size);
+
       lpush_to_list(list, value, TELLY_STR);
     }
   }

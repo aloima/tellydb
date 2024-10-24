@@ -21,31 +21,41 @@ static void run(struct Client *client, respdata_t *data) {
   struct HashTable *table;
 
   if (kv && kv->type == TELLY_HASHTABLE) {
-    table = kv->value->hashtable;
+    table = kv->value;
   } else {
     table = create_hashtable(16, 0.5, 0.75);
-
-    set_data(kv, key, (value_t) {
-      .hashtable = table
-    }, TELLY_HASHTABLE);
+    set_data(kv, key, table, TELLY_HASHTABLE);
   }
 
   const uint32_t fv_count = (data->count / 2) - 1;
 
   for (uint32_t i = 1; i <= fv_count; ++i) {
     const string_t name = data->value.array[i * 2]->value.string;
-    char *value = data->value.array[i * 2 + 1]->value.string.value;
+    const string_t input = data->value.array[i * 2 + 1]->value.string;
+    char *input_value = input.value;
 
-    bool is_true = streq(value, "true");
+    bool is_true = streq(input_value, "true");
 
-    if (is_integer(value)) {
-      long value_as_long = atol(value);
-      add_fv_to_hashtable(table, name, &value_as_long, TELLY_NUM);
-    } else if (is_true || streq(value, "false")) {
-      add_fv_to_hashtable(table, name, &is_true, TELLY_BOOL);
-    } else if (streq(value, "null")) {
+    if (is_integer(input_value)) {
+      const long number = atol(input.value);
+      long *value = malloc(sizeof(long));
+      memcpy(value, &number, sizeof(long));
+
+      add_fv_to_hashtable(table, name, value, TELLY_NUM);
+    } else if (is_true || streq(input_value, "false")) {
+      bool *value = malloc(sizeof(bool));
+      memset(value, is_true, sizeof(bool));
+
+      add_fv_to_hashtable(table, name, value, TELLY_BOOL);
+    } else if (streq(input_value, "null")) {
       add_fv_to_hashtable(table, name, NULL, TELLY_NULL);
     } else {
+      string_t *value = malloc(sizeof(string_t));
+      const uint32_t size = input.len + 1;
+      value->len = input.len;
+      value->value = malloc(size);
+      memcpy(value->value, input_value, size);
+
       add_fv_to_hashtable(table, name, value, TELLY_STR);
     }
   }

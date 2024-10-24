@@ -13,34 +13,19 @@ struct ListNode *create_listnode(void *value, enum TellyTypes type) {
   struct ListNode *node = malloc(sizeof(struct ListNode));
   node->prev = NULL;
   node->next = NULL;
-
-  switch (node->type = type) {
-    case TELLY_STR: {
-      const uint32_t len = strlen(value);
-      const uint32_t size = len + 1;
-      node->value.string.len = len;
-      node->value.string.value = malloc(size);
-      memcpy(node->value.string.value, value, size);
-      break;
-    }
-
-    case TELLY_NUM:
-      node->value.number = *((long *) value);
-      break;
-
-    case TELLY_BOOL:
-      node->value.boolean = *((bool *) value);
-      break;
-
-    default:
-      break;
-  }
+  node->type = type;
+  node->value = value;
 
   return node;
 }
 
 void free_listnode(struct ListNode *node) {
-  if (node->type == TELLY_STR) free(node->value.string.value);
+  if (node->type == TELLY_STR) {
+    string_t *string = node->value;
+    free(string->value);
+  }
+
+  if (node->type != TELLY_NULL) free(node->value);
   free(node);
 }
 

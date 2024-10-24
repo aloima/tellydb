@@ -26,7 +26,7 @@ static void run(struct Client *client, respdata_t *data) {
     }
 
     char buf[14];
-    const size_t nbytes = sprintf(buf, ":%d\r\n", kv->value->list->size);
+    const size_t nbytes = sprintf(buf, ":%d\r\n", ((struct List *) kv->value)->size);
     _write(client, buf, nbytes);
   }
 }

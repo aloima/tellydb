@@ -36,9 +36,15 @@ void add_fv_to_hashtable(struct HashTable *table, const string_t name, void *val
 
   if (fv) {
     if (found) {
-      if (fv->type == TELLY_STR && type != TELLY_STR) free(fv->value.string.value);
+      if (fv->type == TELLY_STR) {
+        string_t *string = fv->value;
+        free(string->value);
+      }
+
+      if (fv->type != TELLY_NULL) free(fv->value);
+
       fv->type = type;
-      set_fv_value(fv, value);
+      fv->value = value;
     } else {
       fv->next = malloc(sizeof(struct FVPair));
       fv = fv->next;
@@ -49,6 +55,7 @@ void add_fv_to_hashtable(struct HashTable *table, const string_t name, void *val
   }
 
   fv->type = type;
+  fv->value = value;
   fv->hash = hashed;
   fv->next = NULL;
 
@@ -56,8 +63,6 @@ void add_fv_to_hashtable(struct HashTable *table, const string_t name, void *val
   fv->name.len = name.len;
   fv->name.value = malloc(size);
   memcpy(fv->name.value, name.value, size);
-
-  set_fv_value(fv, value);
 }
 
 bool del_fv_to_hashtable(struct HashTable *table, const string_t name) {

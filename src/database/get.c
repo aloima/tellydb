@@ -2,6 +2,7 @@
 #include "../../headers/btree.h"
 #include "../../headers/utils.h"
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -66,8 +67,9 @@ void get_all_keys() {
   free(key.value);
 }
 
+// Allocate edilmemiş
 struct KVPair *get_data(const char *key) {
-  struct KVPair *data = find_kv_from_btree(get_cache(), key);
+  struct KVPair *data = get_kv_from_cache(key);
 
   if (data && !data->value) {
     const int fd = get_database_fd();
@@ -75,40 +77,37 @@ struct KVPair *get_data(const char *key) {
     const off_t start_at = data->pos.start_at;
     const off_t end_at = data->pos.end_at;
 
-    data->value = malloc(sizeof(value_t));
     lseek(fd, start_at, SEEK_SET);
 
     switch (data->type) {
-      case TELLY_NULL:
-        data->value->null = NULL;
-        break;
-
       case TELLY_NUM: {
         uint8_t count;
         read(fd, &count, 1);
 
-        data->value->number = 0; // to initialize all bytes of long number
-        read(fd, &data->value->number, count);
+        data->value = malloc(sizeof(long));
+        memset(data->value, 0, sizeof(long)); // to initialize all bytes of long number
+        read(fd, data->value, count);
 
         break;
       }
 
       case TELLY_STR: {
-        data->value->string.len = end_at - start_at - 1;
-        data->value->string.value = malloc(data->value->string.len + 1);
-        read(fd, data->value->string.value, data->value->string.len);
-        data->value->string.value[data->value->string.len] = '\0';
+        string_t *string = (data->value = malloc(sizeof(string_t)));
+        string->len = end_at - start_at - 1;
+        string->value = malloc(string->len + 1);
+        read(fd, string->value, string->len);
+        string->value[string->len] = '\0';
 
         break;
       }
 
-      case TELLY_BOOL: {
-        read(fd, &data->value->boolean, 1);
+      case TELLY_BOOL:
+        data->value = malloc(sizeof(bool));
+        read(fd, data->value, 1);
         break;
-      }
 
       case TELLY_LIST: {
-        struct List *list = (data->value->list = create_list());
+        struct List *list = (data->value = create_list());
         read(fd, &list->size, sizeof(uint32_t));
 
         for (uint32_t i = 0; i < list->size; ++i) {
@@ -125,45 +124,49 @@ struct KVPair *get_data(const char *key) {
               break;
 
             case TELLY_NUM: {
-              long number = 0; // to initialize all bytes of long number
+              long *number = malloc(sizeof(long));
+              memset(number, 0, sizeof(long)); // to initialize all bytes of long number
 
               uint8_t count;
               read(fd, &count, 1);
 
-              read(fd, &number, count);
+              read(fd, number, count);
               lseek(fd, 1, SEEK_CUR); // passing 0x1F
 
-              node = create_listnode(&number, TELLY_NUM);
+              node = create_listnode(number, TELLY_NUM);
               break;
             }
 
             case TELLY_STR: {
-              char *value = malloc(33);
-              uint64_t len = 0;
+              string_t *value = (value = malloc(sizeof(string_t)));
+              value->value = malloc(33);
+              value->len = 0;
 
               while (read(fd, &c, 1)) {
                 if (c != 0x1F) {
-                  value[len] = c;
-                  len += 1;
+                  value->value[value->len] = c;
+                  value->len += 1;
 
-                  if (len % 32 == 0) {
-                    value = realloc(value, len + 33);
+                  if (value->len % 32 == 0) {
+                    value = realloc(value, value->len + 33);
                   }
                 } else break;
               }
 
-              value[len] = '\0';
+              value->value[value->len] = '\0';
               node = create_listnode(value, TELLY_STR);
-              free(value);
 
               break;
             }
 
-            case TELLY_BOOL:
-              read(fd, &c, 1);
-              node = create_listnode(&c, TELLY_BOOL);
+            case TELLY_BOOL: {
+              bool *value = malloc(sizeof(bool));
+              read(fd, value, 1);
+
+              node = create_listnode(value, TELLY_BOOL);
               lseek(fd, 1, SEEK_CUR);
               break;
+            }
 
             #ifdef __clang__
               #pragma clang diagnostic push
