@@ -17,7 +17,7 @@ static void run(struct Client *client, respdata_t *data) {
         const string_t arg = data->value.array[1]->value.string;
 
         char buf[26 + arg.len];
-        const size_t nbytes = sprintf(buf, "$%ld\r\n%s\r\n", arg.len, arg.value);
+        const size_t nbytes = sprintf(buf, "$%d\r\n%s\r\n", arg.len, arg.value);
         _write(client, buf, nbytes);
 
         break;

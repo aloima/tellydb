@@ -12,7 +12,7 @@ void to_uppercase(char *in, char *out);
 
 typedef struct String {
   char *value;
-  size_t len;
+  uint32_t len;
 } string_t;
 
 enum TellyTypes {

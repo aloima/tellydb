@@ -69,10 +69,9 @@ static void run(struct Client *client, respdata_t *data) {
     type = TELLY_STR;
 
     string_t *string = (value = malloc(sizeof(string_t)));
-    const uint32_t size = _value.len + 1;
     string->len = _value.len;
-    string->value = malloc(size);
-    memcpy(string->value, _value.value, size);
+    string->value = malloc(string->len);
+    memcpy(string->value, _value.value, string->len);
   }
 
   if (get) {

@@ -53,12 +53,11 @@ static uint32_t generate_value(char **line, struct KVPair *kv) {
 
   switch (kv->type) {
     case TELLY_NULL:
-      len = 2;
+      len = 1;
       *line = malloc(len + 1);
 
       (*line)[0] = TELLY_NULL;
-      (*line)[1] = 0x1E;
-      (*line)[2] = 0x00;
+      (*line)[1] = 0x00;
       break;
 
     case TELLY_NUM: {
@@ -66,44 +65,50 @@ static uint32_t generate_value(char **line, struct KVPair *kv) {
       const uint32_t bit_count = log2(*number) + 1;
       const uint32_t byte_count = (bit_count / 8) + 1;
 
-      len = byte_count + 3;
+      len = byte_count + 2;
       *line = malloc(len + 1);
 
       (*line)[0] = TELLY_NUM;
       (*line)[1] = byte_count;
       memcpy(*line + 2, number, byte_count);
-      (*line)[2 + byte_count] = 0x1E;
-      (*line)[3 + byte_count] = 0x00;
+      (*line)[2 + byte_count] = 0x00;
       break;
     }
 
     case TELLY_STR: {
       const string_t *string = kv->value;
-      len = string->len + 2;
+
+      const uint8_t bit_count = log2(string->len) + 1;
+      const uint8_t byte_count = ceil((float) (bit_count - 6) / 8);
+      const uint8_t first = (byte_count << 6) | (string->len & 0b111111);
+      const uint32_t length_in_bytes = string->len >> 6;
+
+      len = string->len + byte_count + 2;
       *line = malloc(len + 1);
 
       (*line)[0] = TELLY_STR;
-      memcpy(*line + 1, string->value, string->len);
-      (*line)[1 + string->len] = 0x1E;
-      (*line)[2 + string->len] = 0x00;
+      (*line)[1] = first;
+      memcpy(*line + 2, &length_in_bytes, byte_count);
+
+      memcpy(*line + byte_count + 2, string->value, string->len);
+      (*line)[2 + byte_count + string->len] = 0x00;
       break;
     }
 
     case TELLY_BOOL:
-      len = 3;
+      len = 2;
       *line = malloc(len + 1);
 
       (*line)[0] = TELLY_BOOL;
       (*line)[1] = *((bool *) kv->value);
-      (*line)[2] = 0x1E;
-      (*line)[3] = 0x00;
+      (*line)[2] = 0x00;
       break;
 
     case TELLY_LIST: {
       struct List *list = kv->value;
       struct ListNode *node = list->begin;
 
-      len = 6;
+      len = 5;
       *line = malloc(len + 1);
 
       (*line)[0] = TELLY_LIST;
@@ -112,11 +117,10 @@ static uint32_t generate_value(char **line, struct KVPair *kv) {
       while (node) {
         switch (node->type) {
           case TELLY_NULL:
-            len += 2;
+            len += 1;
             *line = realloc(*line, len + 1);
 
-            (*line)[len - 3] = TELLY_NULL;
-            (*line)[len - 2] = 0x1F;
+            (*line)[len - 1] = TELLY_NULL;
             break;
 
           case TELLY_NUM: {
@@ -124,34 +128,39 @@ static uint32_t generate_value(char **line, struct KVPair *kv) {
             const uint32_t bit_count = log2(*number) + 1;
             const uint32_t byte_count = (bit_count / 8) + 1;
 
-            len += byte_count + 3;
+            len += byte_count + 2;
             *line = realloc(*line, len + 1);
 
-            (*line)[len - byte_count - 4] = TELLY_NUM;
-            (*line)[len - byte_count - 3] = byte_count;
-            memcpy(*line + len - byte_count - 2, number, byte_count);
-            (*line)[len - 2] = 0x1F;
+            (*line)[len - byte_count - 2] = TELLY_NUM;
+            (*line)[len - byte_count - 1] = byte_count;
+            memcpy(*line + len - byte_count, number, byte_count);
             break;
           }
 
           case TELLY_STR: {
             string_t *string = node->value;
-            len += string->len + 2;
+
+            const uint8_t bit_count = log2(string->len) + 1;
+            const uint8_t byte_count = ceil((float) (bit_count - 6) / 8);
+            const uint8_t first = (byte_count << 6) | (string->len & 0b111111);
+            const uint32_t length_in_bytes = string->len >> 6;
+
+            len += string->len + byte_count + 2;
             *line = realloc(*line, len + 1);
 
-            (*line)[len - string->len - 3] = TELLY_STR;
-            memcpy(*line + len - string->len - 2, string->value, string->len);
-            (*line)[len - 2] = 0x1F;
+            (*line)[len - string->len - byte_count - 2] = TELLY_STR;
+            (*line)[len - string->len - byte_count - 1] = first;
+            memcpy(*line + len - string->len - byte_count, &length_in_bytes, byte_count);
+            memcpy(*line + len - string->len, string->value, string->len);
             break;
           }
 
           case TELLY_BOOL:
-            len += 3;
+            len += 2;
             *line = realloc(*line, len + 1);
 
-            (*line)[len - 4] = TELLY_BOOL;
-            (*line)[len - 3] = *((bool *) node->value);
-            (*line)[len - 2] = 0x1F;
+            (*line)[len - 2] = TELLY_BOOL;
+            (*line)[len - 1] = *((bool *) node->value);
             break;
 
           default:
@@ -161,7 +170,6 @@ static uint32_t generate_value(char **line, struct KVPair *kv) {
         node = node->next;
       }
 
-      (*line)[len - 1] = 0x1E;
       (*line)[len] = 0x00;
       break;
     }
@@ -232,11 +240,21 @@ void save_data(const uint64_t server_age) {
       } else {
         lseek(fd, 0, SEEK_END);
 
-        const uint32_t buf_len = kv->key.len + line_len + 1;
-        char buf[buf_len + 1];
-        memcpy(buf, kv->key.value, kv->key.len);
-        buf[kv->key.len] = 0x1D;
-        memcpy(buf + kv->key.len + 1, line, line_len);
+        const string_t key = kv->key;
+
+        const uint8_t bit_count = log2(key.len) + 1;
+        const uint8_t byte_count = ceil((float) (bit_count - 6) / 8);
+        const uint8_t first = (byte_count << 6) | (key.len & 0b111111);
+        const uint32_t length_in_bytes = key.len >> 6;
+
+        const uint32_t length_specifier_length = byte_count + 1;
+        const uint32_t buf_len = key.len + length_specifier_length + line_len;
+        char buf[buf_len];
+
+        buf[0] = first;
+        memcpy(buf + 1, &length_in_bytes, byte_count);
+        memcpy(buf + length_specifier_length, key.value, key.len);
+        memcpy(buf + length_specifier_length + key.len, line, line_len);
 
         write(fd, buf, buf_len);
         file_size += buf_len;

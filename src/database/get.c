@@ -2,8 +2,8 @@
 #include "../../headers/btree.h"
 #include "../../headers/utils.h"
 
-#include <stdbool.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -11,63 +11,129 @@
 
 void get_all_keys() {
   const int fd = get_database_fd();
-  char c;
-
   struct BTree *cache = get_cache();
-  string_t key = {
-    .value = malloc(33),
-    .len = 0
-  };
 
-  uint32_t allocated = 32;
+  uint8_t first;
+  lseek(fd, 10, SEEK_SET);
 
-  while (read(fd, &c, 1)) {
-    if (c != 0x1D) {
-      key.value[key.len] = c;
-      key.len += 1;
+  while (read(fd, &first, 1)) {
+    string_t key;
+    uint8_t type;
+    off_t start_at, end_at;
 
-      if (allocated == key.len) {
-        allocated += 32;
-        key.value = realloc(key.value, allocated + 33);
-      }
-    } else {
-      uint8_t type;
+    // Key reading
+    {
+      const uint8_t byte_count = first >> 6;
+      key.len = 0;
+      read(fd, &key.len, byte_count);
+
+      key.len = (key.len << 6) | (first & 0b111111);
+      key.value = malloc(key.len + 1),
+
+      read(fd, key.value, key.len);
+      key.value[key.len] = '\0';
+    }
+
+    // Value reading
+    {
       read(fd, &type, 1);
-
-      const off_t start_at = lseek(fd, 0, SEEK_CUR);
-      off_t end_at;
 
       switch (type) {
         case TELLY_NULL:
-          end_at = lseek(fd, 1, SEEK_CUR);
+          start_at = lseek(fd, 0, SEEK_CUR);
+          end_at = start_at;
           break;
 
         case TELLY_NUM: {
           uint8_t count;
           read(fd, &count, 1);
-          end_at = lseek(fd, count + 1, SEEK_CUR);
+          end_at = lseek(fd, count, SEEK_CUR);
+          start_at = end_at - count;
           break;
         }
 
         case TELLY_BOOL:
-          end_at = lseek(fd, 2, SEEK_CUR);
+          end_at = lseek(fd, 1, SEEK_CUR);
+          start_at = end_at - 1;
           break;
 
-        default:
-          while (read(fd, &c, 1) == 1 && c != 0x1E);
+        case TELLY_STR: {
+          uint8_t first;
+          read(fd, &first, 1);
+
+          const uint8_t byte_count = first >> 6;
+          uint32_t length = 0;
+          read(fd, &length, byte_count);
+          length = (length << 6) | (first & 0b111111);
+
+          end_at = lseek(fd, length, SEEK_CUR);
+          start_at = end_at - length - byte_count - 1;
+          break;
+        }
+
+        case TELLY_LIST: {
+          uint32_t size = 0;
+          off_t length = 4;
+
+          read(fd, &size, sizeof(uint32_t));
+
+          while (size--) {
+            uint8_t node_type;
+            read(fd, &node_type, 1);
+
+            switch (node_type) {
+              case TELLY_NULL:
+                length += 1;
+                break;
+
+              case TELLY_NUM: {
+                uint8_t count;
+                read(fd, &count, 1);
+                lseek(fd, count, SEEK_CUR);
+                length += 2 + count;
+                break;
+              }
+
+              case TELLY_BOOL:
+                lseek(fd, 1, SEEK_CUR);
+                length += 2;
+                break;
+
+              case TELLY_STR: {
+                uint32_t string_length = 0;
+
+                uint8_t first;
+                read(fd, &first, 1);
+
+                const uint8_t byte_count = first >> 6;
+                lseek(fd, byte_count, SEEK_CUR);
+
+                read(fd, &string_length, byte_count);
+                string_length = (string_length << 6) | (first & 0b111111);
+
+                lseek(fd, string_length, SEEK_CUR);
+                length += 2 + byte_count + string_length;
+                break;
+              }
+            }
+          }
+
           end_at = lseek(fd, 0, SEEK_CUR);
+          start_at = end_at - length;
+          break;
+        }
+
+        default:
+          start_at = 0;
+          end_at = 0;
       }
-
-      key.value[key.len] = '\0';
-      insert_kv_to_btree(cache, key, NULL, type, start_at, end_at);
-      key.len = 0;
     }
-  }
 
-  free(key.value);
+    insert_kv_to_btree(cache, key, NULL, type, start_at, end_at);
+    free(key.value);
+  }
 }
 
-// Allocate edilmemiş
 struct KVPair *get_data(const char *key) {
   struct KVPair *data = get_kv_from_cache(key);
 
@@ -81,9 +147,7 @@ struct KVPair *get_data(const char *key) {
 
     switch (data->type) {
       case TELLY_NUM: {
-        uint8_t count;
-        read(fd, &count, 1);
-
+        const uint8_t count = end_at - start_at;
         data->value = malloc(sizeof(long));
         memset(data->value, 0, sizeof(long)); // to initialize all bytes of long number
         read(fd, data->value, count);
@@ -93,10 +157,16 @@ struct KVPair *get_data(const char *key) {
 
       case TELLY_STR: {
         string_t *string = (data->value = malloc(sizeof(string_t)));
-        string->len = end_at - start_at - 1;
-        string->value = malloc(string->len + 1);
+
+        uint8_t first;
+        read(fd, &first, 1);
+
+        const uint8_t byte_count = first >> 6;
+        lseek(fd, byte_count, SEEK_CUR);
+
+        string->len = data->pos.end_at - data->pos.start_at - byte_count - 1;
+        string->value = malloc(string->len);
         read(fd, string->value, string->len);
-        string->value[string->len] = '\0';
 
         break;
       }
@@ -115,47 +185,40 @@ struct KVPair *get_data(const char *key) {
           uint8_t type;
           read(fd, &type, 1);
 
-          uint8_t c;
-
           switch (type) {
             case TELLY_NULL:
               node = create_listnode(NULL, TELLY_NULL);
-              lseek(fd, 1, SEEK_CUR);
               break;
 
             case TELLY_NUM: {
               long *number = malloc(sizeof(long));
-              memset(number, 0, sizeof(long)); // to initialize all bytes of long number
+              memset(number, 0, sizeof(long));
 
               uint8_t count;
               read(fd, &count, 1);
-
               read(fd, number, count);
-              lseek(fd, 1, SEEK_CUR); // passing 0x1F
 
               node = create_listnode(number, TELLY_NUM);
               break;
             }
 
             case TELLY_STR: {
-              string_t *value = (value = malloc(sizeof(string_t)));
-              value->value = malloc(33);
-              value->len = 0;
+              string_t *string = malloc(sizeof(string_t));
 
-              while (read(fd, &c, 1)) {
-                if (c != 0x1F) {
-                  value->value[value->len] = c;
-                  value->len += 1;
+              uint8_t first;
+              read(fd, &first, 1);
 
-                  if (value->len % 32 == 0) {
-                    value = realloc(value, value->len + 33);
-                  }
-                } else break;
-              }
+              const uint8_t byte_count = first >> 6;
+              lseek(fd, byte_count, SEEK_CUR);
 
-              value->value[value->len] = '\0';
-              node = create_listnode(value, TELLY_STR);
+              string->len = 0;
+              read(fd, &string->len, byte_count);
+              string->len = (string->len << 6) | (first & 0b111111);
 
+              string->value = malloc(string->len);
+              read(fd, string->value, string->len);
+
+              node = create_listnode(string, TELLY_STR);
               break;
             }
 
@@ -164,7 +227,6 @@ struct KVPair *get_data(const char *key) {
               read(fd, value, 1);
 
               node = create_listnode(value, TELLY_BOOL);
-              lseek(fd, 1, SEEK_CUR);
               break;
             }
 

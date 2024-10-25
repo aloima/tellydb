@@ -70,9 +70,9 @@ static void run(struct Client *client, respdata_t *data) {
 
 struct Command cmd_hset = {
   .name = "HSET",
-  .summary = "Sets field(s) of the hash table for the key. If hash table does not exist, creates it.",
+  .summary = "Sets field(s) of the hash table stored the key. If hash table does not exist, creates it.",
   .since = "0.1.3",
-  .complexity = "O(N) where N is field name-value pair count",
+  .complexity = "O(N) where N is written field name-value pair count",
   .subcommands = NULL,
   .subcommand_count = 0,
   .run = run

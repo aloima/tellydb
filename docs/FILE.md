@@ -7,22 +7,35 @@ It consists of file headers and data lines. File headers have 10 bytes size and 
 * `0x1810 + server age (8 byte)`
 
 A data line is as follows:
-* `data key + 0x1D + data type + data value + 0x1E`
+* `string length specifier (4 byte) + data key + data type + data value`
+* Data key is a string.
+
+> [!NOTE]
+> A string length is maximum `2^30-1` or `1 GB - 1 byte` and represented by 30 bit (6 bit + 3 byte).
+> A string length specifier is minimum 1 byte, maximum 4 byte. First two bits of first byte represents additional byte count.
+> For example, construction of string length using `0b(10|100010) 0x07 0x09` data is as follows:
+
+> A: 0b(10|100010)
+> B: 0x07 = 0b00000111
+> C: 0x09 = 0b00001001
+
+> Value of two bits before `|` is `0b10` or `2`. This shows that existence of additional two bytes (B and C).
+> The six bits after `|` and additional bytes represents string length as reversed.
+> `C + B + (Bits after | in A)` or `0b00001001_00000111_100010` is `147938`.
 
 Data value scheme is defined as:
 > [!NOTE]
 > All content of data value that stores a number (list size, byte count, number etc.) is [little-endian](https://en.wikipedia.org/wiki/Endianness).
 
 * For `TELLY_NULL (0x00)` type, data value is nothing and the line consists of `data key + 0x1D + TELLY_NULL`.
-* For `TELLY_NUM (0x01)` type, data value is `byte count (1 byte) + number`. For example, data value is `0x02 + (0x00 + 0x01)` or `0x02001` to get 256.
-* For `TELLY_STR (0x02)` type, data value is a string.
+* For `TELLY_NUM (0x01)` type, data value is `byte count (1 byte) + number`. For example, data value is `0x02 + (0x00 + 0x01)` or `0x020001` to get 256.
+* For `TELLY_STR (0x02)` type, data value is `string length specifier (4 byte) + string data`.
 * For `TELLY_BOOL (0x03)` type, data value is `0x00` or `0x01`.
-
-* For `TELLY_LIST (0x05)`, data value is `list size (n) + list element 1 + list element 2 ... list element n`.
+* For `TELLY_LIST (0x05)` type, data value is `list size (n) + list element 1 + list element 2 ... list element n`.
 
 > [!NOTE]
-> The list size is a 4-byte value. For example, `32` is represented as `0x20 0xx0 0x00 0x00`.
-> A list element is as `element type + element value + 0x1F` and element values ​​are subject to the same rules as data values.
+> The list size is a 4-byte value. For example, `32` is represented as `0x20 0x00 0x00 0x00`.
+> A list element is `element type + element value` and element values ​​are data values, so their rules are same as data value rules.
 > Additionally, type of a list element should be `TELLY_NULL`, `TELLY_NUM`, `TELLY_STR` or `TELLY_BOOL`.
 
 ## Configuration file | `.tellyconf`

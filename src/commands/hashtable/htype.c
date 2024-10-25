@@ -49,7 +49,7 @@ static void run(struct Client *client, respdata_t *data) {
 
 struct Command cmd_htype = {
   .name = "HTYPE",
-  .summary = "Returns type of field from hash table of key.",
+  .summary = "Returns type of field from hash table stored at key.",
   .since = "0.1.3",
   .complexity = "O(1)",
   .subcommands = NULL,

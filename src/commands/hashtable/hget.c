@@ -33,7 +33,7 @@ static void run(struct Client *client, respdata_t *data) {
 
 struct Command cmd_hget = {
   .name = "HGET",
-  .summary = "Gets a field from the hash table for the key.",
+  .summary = "Gets a field from the hash table stored at the key.",
   .since = "0.1.3",
   .complexity = "O(1)",
   .subcommands = NULL,

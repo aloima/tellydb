@@ -39,8 +39,9 @@ void write_value(struct Client *client, void *value, enum TellyTypes type) {
 
     case TELLY_STR: {
       const string_t *string = value;
+
       char buf[26 + string->len];
-      const size_t nbytes = sprintf(buf, "$%ld\r\n%s\r\n", string->len, string->value);
+      const size_t nbytes = sprintf(buf, "$%d\r\n%.*s\r\n", string->len, string->len, string->value);
       _write(client, buf, nbytes);
       break;
     }
