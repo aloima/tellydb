@@ -6,6 +6,10 @@ tellydb contains a process and a thread:
 * Thread manages sent commands by clients and executes them.
 * Process accepts clients, receives data sent by client, interprets received data as commands and manages the server.
 
+tellydb handles received data as follows:
+* Data will be saved to cache
+* When closing the server, data will be taken from cache and written to database file
+
 ## Limits
 * BTree implementation of tellydb allows size of up to `uint32`. It means that a BTree can store up to `2^32-1` or `4,294,967,295` key-value pairs.
 * The max size of a list is `uint64`. It means that a list can store up to `2^32-1` or `4,294,967,295` list nodes.

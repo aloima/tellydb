@@ -2,7 +2,7 @@
 A key-value database project for educational purposes.
 
 ## Features
-+ Follows [RESP2](https://redis.io/docs/latest/develop/reference/protocol-spec/) specification from redis, so all redis clients is compatible
++ Follows [RESP2](https://redis.io/docs/latest/develop/reference/protocol-spec/) specification from redis, so all redis clients are compatible
 + Includes B-Tree for caching
 + Fully configurable via [.tellyconf](./docs/FILE.md)
 + Includes command queue system
@@ -10,12 +10,16 @@ A key-value database project for educational purposes.
 + Provides atomicity when saving to the database file and thread handling
 
 > Look at [docs/SPECS.md](./docs/SPECS.md) for more technical information
-
-## Usage
-Start the server, install a client that you can connect to redis/tellydb server like redis-cli. Start to use!
+> Look at [docs/FILE.md](./docs/FILE.md) for information about provided files by tellydb
 
 ## Quick Start
-Compile using `make`, start the server, install a client that allows to connect tellydb server, connect and use the commands.
+* Install a client that allows to connect tellydb or redis server
+* Compile using `make`
+* Look at default configuration file using `telly default-config`
+* If you want to change configuration values, create a configuration file using `telly create-config`
+* Start the server using `telly`
+* Start using some commands
+
 To list the commands, look at [src/commands](./src/commands/), to get information about cli commands, use `telly help`.
 
 ## License
