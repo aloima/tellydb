@@ -16,18 +16,18 @@ static void run(struct Client *client, respdata_t *data) {
     const string_t key = data->value.array[1]->value.string;
     const struct KVPair *kv = get_data(key.value);
 
-    if (kv && kv->type == TELLY_HASHTABLE) {
-      char *name = data->value.array[2]->value.string.value;
-      struct FVPair *field = get_fv_from_hashtable(kv->value, name);
+    if (kv) {
+      if (kv->type == TELLY_HASHTABLE) {
+        char *name = data->value.array[2]->value.string.value;
+        const struct FVPair *field = get_fv_from_hashtable(kv->value, name);
 
-      if (field) {
-        write_value(client, field->value, field->type);
+        if (field) {
+          write_value(client, field->value, field->type);
+        } else WRITE_NULL_REPLY(client);
       } else {
-        _write(client, "$-1\r\n", 5);
+        _write(client, "-Invalid type for 'HGET' command\r\n", 34);
       }
-    } else {
-      _write(client, "$-1\r\n", 5);
-    }
+    } else WRITE_NULL_REPLY(client);
   }
 }
 

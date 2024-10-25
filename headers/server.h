@@ -8,6 +8,22 @@
 #include <stdint.h>
 #include <time.h>
 
+#define WRITE_NULL_REPLY(client) \
+  switch ((client)->protover) {\
+    case RESP2:\
+      _write((client), "$-1\r\n", 5);\
+      break;\
+\
+    case RESP3:\
+      _write((client), "_\r\n", 3);\
+      break;\
+  }
+
+enum ProtocolVersion {
+  RESP2 = 2,
+  RESP3 = 3
+};
+
 struct Client {
   SSL *ssl;
   int connfd;
@@ -16,6 +32,8 @@ struct Client {
   struct Command *command;
   char *lib_name;
   char *lib_ver;
+
+  enum ProtocolVersion protover;
 };
 
 void get_server_time(time_t *server_start_at, uint64_t *server_age);

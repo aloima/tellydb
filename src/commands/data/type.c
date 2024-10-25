@@ -43,9 +43,7 @@ static void run(struct Client *client, respdata_t *data) {
         default:
           break;
       }
-    } else {
-      _write(client, "$-1\r\n", 5);
-    }
+    } else WRITE_NULL_REPLY(client);
   }
 }
 

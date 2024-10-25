@@ -27,9 +27,7 @@ static void run(struct Client *client, respdata_t *data) {
             sprintf(buf, ":%d\r\n", size);
 
             _write(client, buf, buf_len);
-          } else {
-            _write(client, "$-1\r\n", 5);
-          }
+          } else WRITE_NULL_REPLY(client);
         } else {
           WRONG_ARGUMENT_ERROR(client, "MEMORY USAGE", 12);
         }

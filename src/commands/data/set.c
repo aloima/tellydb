@@ -41,12 +41,12 @@ static void run(struct Client *client, respdata_t *data) {
   struct KVPair *res = get_data(key.value);
 
   if (nx && res) {
-    if (client) _write(client, "$-1\r\n", 5);
+    if (client) WRITE_NULL_REPLY(client);
     return;
   }
 
   if (xx && !res) {
-    if (client) _write(client, "$-1\r\n", 5);
+    if (client) WRITE_NULL_REPLY(client);
     return;
   }
 
@@ -78,9 +78,7 @@ static void run(struct Client *client, respdata_t *data) {
     if (res) {
       if (client) write_value(client, value, type);
       set_data(res, key, value, type);
-    } else if (client) {
-      _write(client, "$-1\r\n", 5);
-    }
+    } else if (client) WRITE_NULL_REPLY(client);
   } else {
     set_data(res, key, value, type);
     if (client) _write(client, "+OK\r\n", 5);

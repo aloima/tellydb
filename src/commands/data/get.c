@@ -16,9 +16,7 @@ static void run(struct Client *client, respdata_t *data) {
 
     if (kv) {
       write_value(client, kv->value, kv->type);
-    } else {
-      _write(client, "$-1\r\n", 5);
-    }
+    } else WRITE_NULL_REPLY(client);
   }
 }
 

@@ -34,9 +34,7 @@ static void run(struct Client *client, respdata_t *data) {
       } else {
         _write(client, "-Invalid type for 'HLEN' command\r\n", 34);
       }
-    } else {
-      _write(client, "$-1\r\n", 5);
-    }
+    } else WRITE_NULL_REPLY(client);
   }
 }
 

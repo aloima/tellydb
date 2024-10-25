@@ -53,6 +53,7 @@ struct Client *add_client(const int connfd) {
   client->lib_name = NULL;
   client->lib_ver = NULL;
   client->ssl = NULL;
+  client->protover = RESP2;
 
   return client;
 }

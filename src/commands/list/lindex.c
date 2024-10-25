@@ -36,7 +36,7 @@ static void run(struct Client *client, respdata_t *data) {
       node = list->begin;
 
       if ((index + 1) > list->size) {
-        _write(client, "$-1\r\n", 5);
+        WRITE_NULL_REPLY(client);
         return;
       }
 
@@ -48,7 +48,7 @@ static void run(struct Client *client, respdata_t *data) {
       node = list->end;
 
       if (index > list->size) {
-        _write(client, "$-1\r\n", 5);
+        WRITE_NULL_REPLY(client);
         return;
       }
 

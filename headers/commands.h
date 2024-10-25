@@ -44,6 +44,7 @@ extern struct Command cmd_type;
 extern struct Command cmd_age;
 extern struct Command cmd_client;
 extern struct Command cmd_command;
+extern struct Command cmd_hello;
 extern struct Command cmd_info;
 extern struct Command cmd_memory;
 extern struct Command cmd_ping;

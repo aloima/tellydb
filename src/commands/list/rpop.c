@@ -35,9 +35,7 @@ static void run(struct Client *client, respdata_t *data) {
       list->size -= 1;
       free_listnode(node);
     }
-  } else if (client) {
-    _write(client, "$-1\r\n", 5);
-  }
+  } else if (client) WRITE_NULL_REPLY(client);
 }
 
 struct Command cmd_rpop = {
