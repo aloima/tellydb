@@ -17,8 +17,6 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
-static uint32_t max_client_id_len;
-
 static int sockfd;
 static SSL_CTX *ctx;
 static struct pollfd *fds;
@@ -220,8 +218,6 @@ void start_server(struct Configuration *config) {
   start_at = time(NULL);
   write_log(LOG_INFO, "Server is listening on %d port for accepting connections...", conf->port);
 
-  max_client_id_len = get_digit_count(conf->max_clients);
-
   while (true) {
     const int ret = poll(fds, nfds, -1);
 
@@ -231,13 +227,15 @@ void start_server(struct Configuration *config) {
 
         if (fd.fd == sockfd && fd.revents & POLLIN) {
           if (conf->max_clients == get_client_count()) {
-            write_log(LOG_WARN, "A connection request is rejected, because connected client count to the server is maximum.");
+            write_log(LOG_WARN, "A connection request is rejected, because connected client count of the server is maximum.");
+          } else if (UINT32_MAX == get_last_connection_client_id()) {
+            write_log(LOG_WARN, "A connection request is rejected, because client that has highest ID number is maximum, so cannot be increased it.");
           } else {
             struct sockaddr_in addr;
             socklen_t addr_len = sizeof(addr);
 
             const int connfd = accept(sockfd, (struct sockaddr *) &addr, &addr_len);
-            struct Client *client = add_client(connfd, conf->max_clients);
+            struct Client *client = add_client(connfd);
 
             nfds += 1;
             fds = realloc(fds, nfds * sizeof(struct pollfd));

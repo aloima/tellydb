@@ -28,7 +28,7 @@ struct Client *get_client(const int input);
 uint32_t get_last_connection_client_id();
 uint32_t get_client_count();
 
-struct Client *add_client(const int connfd, const uint32_t max_clients);
+struct Client *add_client(const int connfd);
 void remove_client(const int connfd);
 
 ssize_t _read(struct Client *client, void *buf, const size_t nbytes);

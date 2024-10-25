@@ -33,9 +33,7 @@ uint32_t get_last_connection_client_id() {
   return last_connection_client_id;
 }
 
-struct Client *add_client(const int connfd, const uint32_t max_clients) {
-  if (max_clients == client_count) return NULL;
-
+struct Client *add_client(const int connfd) {
   client_count += 1;
   last_connection_client_id += 1;
 
