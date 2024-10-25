@@ -32,10 +32,12 @@ void free_commands();
 
 
 /* DATA COMMANDS */
+extern struct Command cmd_dbsize;
 extern struct Command cmd_decr;
 extern struct Command cmd_get;
 extern struct Command cmd_exists;
 extern struct Command cmd_incr;
+extern struct Command cmd_save;
 extern struct Command cmd_set;
 extern struct Command cmd_type;
 /* /DATA COMMANDS */
@@ -46,6 +48,7 @@ extern struct Command cmd_client;
 extern struct Command cmd_command;
 extern struct Command cmd_hello;
 extern struct Command cmd_info;
+extern struct Command cmd_lastsave;
 extern struct Command cmd_memory;
 extern struct Command cmd_ping;
 extern struct Command cmd_time;

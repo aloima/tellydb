@@ -22,6 +22,17 @@ static void run(struct Client *client, respdata_t *data) {
       } else if (streq("INFO", subcommand)) {
         const char *lib_name = client->lib_name ? client->lib_name : "unspecified";
         const char *lib_ver = client->lib_ver ? client->lib_ver : "unspecified";
+        char *protocol = "unspecified";
+
+        switch (client->protover) {
+          case RESP2:
+            protocol = "RESP2";
+            break;
+
+          case RESP3:
+            protocol = "RESP3";
+            break;
+        }
 
         char buf[512];
         const size_t buf_len = sprintf(buf, (
@@ -31,9 +42,8 @@ static void run(struct Client *client, respdata_t *data) {
           "Last used command: %s\r\n"
           "Library name: %s\r\n"
           "Library version: %s\r\n"
-        ),
-        client->id, client->connfd, ctime(&client->connected_at),
-        client->command->name, lib_name, lib_ver);
+          "Protocol: %s\r\n"
+        ), client->id, client->connfd, ctime(&client->connected_at), client->command->name, lib_name, lib_ver, protocol);
 
         char res[1024];
         const size_t nbytes = sprintf(res, "$%ld\r\n%s\r\n", buf_len, buf);

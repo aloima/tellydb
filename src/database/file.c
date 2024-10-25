@@ -238,7 +238,7 @@ void save_data(const uint64_t server_age) {
           write(fd, line, line_len);
         }
       } else {
-        lseek(fd, 0, SEEK_END);
+        kv->pos.start_at = lseek(fd, 0, SEEK_END);
 
         const string_t key = kv->key;
 
@@ -247,14 +247,19 @@ void save_data(const uint64_t server_age) {
         const uint8_t first = (byte_count << 6) | (key.len & 0b111111);
         const uint32_t length_in_bytes = key.len >> 6;
 
-        const uint32_t length_specifier_length = byte_count + 1;
-        const uint32_t buf_len = key.len + length_specifier_length + line_len;
+        const uint32_t length_specifier_len = byte_count + 1;
+        const uint32_t key_part_len = key.len + length_specifier_len;
+
+        kv->pos.end_at = kv->pos.start_at + key_part_len + line_len;
+        kv->pos.start_at += key_part_len + 1;
+
+        const uint32_t buf_len = key_part_len + line_len;
         char buf[buf_len];
 
         buf[0] = first;
         memcpy(buf + 1, &length_in_bytes, byte_count);
-        memcpy(buf + length_specifier_length, key.value, key.len);
-        memcpy(buf + length_specifier_length + key.len, line, line_len);
+        memcpy(buf + length_specifier_len, key.value, key.len);
+        memcpy(buf + length_specifier_len + key.len, line, line_len);
 
         write(fd, buf, buf_len);
         file_size += buf_len;
