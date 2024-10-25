@@ -48,9 +48,11 @@ void write_value(struct Client *client, void *value, enum TellyTypes type) {
 
     case TELLY_BOOL:
       if (*((bool *) value)) {
-        _write(client, "+true\r\n", 7);
+        if(client->protover == RESP3) _write(client, "#t\r\n", 4);
+        else _write(client, "+true\r\n", 7);
       } else {
-        _write(client, "+false\r\n", 8);
+        if(client->protover == RESP3) _write(client, "#f\r\n", 4);
+        else _write(client, "+false\r\n", 8);
       }
 
       break;
