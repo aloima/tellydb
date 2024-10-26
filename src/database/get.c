@@ -100,13 +100,11 @@ void get_all_keys() {
                 break;
 
               case TELLY_STR: {
-                uint32_t string_length = 0;
-
                 uint8_t first;
                 read(fd, &first, 1);
 
                 const uint8_t byte_count = first >> 6;
-                lseek(fd, byte_count, SEEK_CUR);
+                uint32_t string_length = 0;
 
                 read(fd, &string_length, byte_count);
                 string_length = (string_length << 6) | (first & 0b111111);
@@ -181,7 +179,7 @@ struct KVPair *get_data(const char *key) {
         read(fd, &list->size, sizeof(uint32_t));
 
         for (uint32_t i = 0; i < list->size; ++i) {
-          struct ListNode *node;
+          struct ListNode *node = NULL;
           uint8_t type;
           read(fd, &type, 1);
 
@@ -209,9 +207,8 @@ struct KVPair *get_data(const char *key) {
               read(fd, &first, 1);
 
               const uint8_t byte_count = first >> 6;
-              lseek(fd, byte_count, SEEK_CUR);
-
               string->len = 0;
+
               read(fd, &string->len, byte_count);
               string->len = (string->len << 6) | (first & 0b111111);
 
@@ -230,45 +227,20 @@ struct KVPair *get_data(const char *key) {
               break;
             }
 
-            #ifdef __clang__
-              #pragma clang diagnostic push
-              #pragma clang diagnostic ignored "-Wsometimes-uninitialized"
-            #endif
-
             default:
               break;
-
-            #ifdef __clang__
-              #pragma clang diagnostic pop
-            #endif
           }
 
-          #ifdef __clang__
-            #pragma clang diagnostic push
-            #pragma clang diagnostic ignored "-Wunknown-warning-option"
-          #endif
+          if (node) {
+            node->prev = list->end;
+            list->end = node;
 
-          #ifdef __GNUC__
-            #pragma GCC diagnostic push
-            #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-          #endif
-
-          node->prev = list->end;
-          list->end = node;
-
-          if (i == 0) {
-            list->begin = node;
-          } else {
-            node->prev->next = node;
+            if (i == 0) {
+              list->begin = node;
+            } else {
+              node->prev->next = node;
+            }
           }
-
-          #ifdef __GNUC__
-            #pragma GCC diagnostic pop
-          #endif
-
-          #ifdef __clang__
-            #pragma clang diagnostic pop
-          #endif
         }
       }
 
