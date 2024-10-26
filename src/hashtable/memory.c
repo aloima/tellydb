@@ -10,8 +10,6 @@ void add_fv_to_hashtable(struct HashTable *table, const string_t name, void *val
   const uint64_t hashed = hash(name.value);
   uint32_t index = hashed % table->size.allocated;
 
-  table->size.all += 1;
-
   struct FVPair *fv;
   bool found = false;
 
@@ -46,23 +44,37 @@ void add_fv_to_hashtable(struct HashTable *table, const string_t name, void *val
       fv->type = type;
       fv->value = value;
     } else {
+      table->size.all += 1;
+
       fv->next = malloc(sizeof(struct FVPair));
       fv = fv->next;
+
+      fv->type = type;
+      fv->value = value;
+      fv->hash = hashed;
+      fv->next = NULL;
+
+      const uint32_t size = name.len + 1;
+      fv->name.len = name.len;
+      fv->name.value = malloc(size);
+      memcpy(fv->name.value, name.value, size);
     }
   } else {
+    table->size.all += 1;
+
     fv = malloc(sizeof(struct FVPair));
+    fv->type = type;
+    fv->value = value;
+    fv->hash = hashed;
+    fv->next = NULL;
+
+    const uint32_t size = name.len + 1;
+    fv->name.len = name.len;
+    fv->name.value = malloc(size);
+    memcpy(fv->name.value, name.value, size);
+
     table->fvs[index] = fv;
   }
-
-  fv->type = type;
-  fv->value = value;
-  fv->hash = hashed;
-  fv->next = NULL;
-
-  const uint32_t size = name.len + 1;
-  fv->name.len = name.len;
-  fv->name.value = malloc(size);
-  memcpy(fv->name.value, name.value, size);
 }
 
 bool del_fv_to_hashtable(struct HashTable *table, const string_t name) {
@@ -78,7 +90,7 @@ bool del_fv_to_hashtable(struct HashTable *table, const string_t name) {
         // b is element will be deleted
         if (prev) { // a b a or a a b
           prev->next = fv->next;
-        } else if (!fv->next) { // b or ~~a a b~~
+        } else if (!fv->next) { // b
           table->size.filled -= 1;
           table->fvs[index] = NULL;
 
