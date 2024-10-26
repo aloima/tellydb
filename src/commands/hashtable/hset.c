@@ -23,7 +23,7 @@ static void run(struct Client *client, respdata_t *data) {
   if (kv && kv->type == TELLY_HASHTABLE) {
     table = kv->value;
   } else {
-    table = create_hashtable(16, 0.5, 0.75);
+    table = create_hashtable(16);
     set_data(kv, key, table, TELLY_HASHTABLE);
   }
 
@@ -51,10 +51,9 @@ static void run(struct Client *client, respdata_t *data) {
       add_fv_to_hashtable(table, name, NULL, TELLY_NULL);
     } else {
       string_t *value = malloc(sizeof(string_t));
-      const uint32_t size = input.len + 1;
       value->len = input.len;
-      value->value = malloc(size);
-      memcpy(value->value, input_value, size);
+      value->value = malloc(value->len);
+      memcpy(value->value, input_value, value->len);
 
       add_fv_to_hashtable(table, name, value, TELLY_STR);
     }

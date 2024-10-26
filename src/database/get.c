@@ -1,5 +1,6 @@
 #include "../../headers/database.h"
 #include "../../headers/btree.h"
+#include "../../headers/hashtable.h"
 #include "../../headers/utils.h"
 
 #include <stdio.h>
@@ -68,6 +69,75 @@ void get_all_keys() {
 
           end_at = lseek(fd, length, SEEK_CUR);
           start_at = end_at - length - byte_count - 1;
+          break;
+        }
+
+        case TELLY_HASHTABLE: {
+          uint32_t size = 0;
+          off_t length = 5;
+
+          read(fd, &size, sizeof(uint32_t));
+
+          while (true) {
+            uint8_t node_type;
+            read(fd, &node_type, 1);
+
+            if (node_type == 0x17) {
+              end_at = lseek(fd, 0, SEEK_CUR);
+              start_at = end_at - length;
+              break;
+            } else {
+              {
+                uint8_t first;
+                read(fd, &first, 1);
+
+                const uint8_t byte_count = first >> 6;
+                uint32_t key_length = 0;
+
+                read(fd, &key_length, byte_count);
+                key_length = (key_length << 6) | (first & 0b111111);
+
+                lseek(fd, key_length, SEEK_CUR);
+                length += 2 + byte_count + key_length;
+              }
+
+              switch (node_type) {
+                case TELLY_NULL:
+                  break;
+
+                case TELLY_NUM: {
+                  uint8_t count;
+                  read(fd, &count, 1);
+                  lseek(fd, count, SEEK_CUR);
+                  length += 1 + count;
+                  break;
+                }
+
+                case TELLY_BOOL:
+                  lseek(fd, 1, SEEK_CUR);
+                  length += 1;
+                  break;
+
+                case TELLY_STR: {
+                  uint32_t string_length = 0;
+
+                  uint8_t first;
+                  read(fd, &first, 1);
+
+                  const uint8_t byte_count = first >> 6;
+                  lseek(fd, byte_count, SEEK_CUR);
+
+                  read(fd, &string_length, byte_count);
+                  string_length = (string_length << 6) | (first & 0b111111);
+
+                  lseek(fd, string_length, SEEK_CUR);
+                  length += 1 + byte_count + string_length;
+                  break;
+                }
+              }
+            }
+          }
+
           break;
         }
 
@@ -174,6 +244,84 @@ struct KVPair *get_data(const char *key) {
         read(fd, data->value, 1);
         break;
 
+      case TELLY_HASHTABLE: {
+        uint32_t size;
+        read(fd, &size, sizeof(uint32_t));
+
+        struct HashTable *table = (data->value = create_hashtable(size));
+        string_t name = {
+          .value = malloc(1)
+        };
+
+        while (true) {
+          uint8_t type;
+          read(fd, &type, 1);
+          if (type == 0x17) break;
+
+          {
+            uint8_t first;
+            read(fd, &first, 1);
+
+            const uint8_t byte_count = first >> 6;
+            name.len = 0;
+            read(fd, &name.len, byte_count);
+            name.len = (name.len << 6) | (first & 0b111111);
+
+            name.value = realloc(name.value, name.len + 1);
+            read(fd, name.value, name.len);
+            name.value[name.len] = '\0';
+          }
+
+          switch (type) {
+            case TELLY_NULL:
+              add_fv_to_hashtable(table, name, NULL, TELLY_NULL);
+              break;
+
+            case TELLY_NUM: {
+              long *number = malloc(sizeof(long));
+              memset(number, 0, sizeof(long));
+
+              uint8_t count;
+              read(fd, &count, 1);
+              read(fd, number, count);
+
+              add_fv_to_hashtable(table, name, number, TELLY_NUM);
+              break;
+            }
+
+            case TELLY_STR: {
+              string_t *string = malloc(sizeof(string_t));
+
+              uint8_t first;
+              read(fd, &first, 1);
+
+              const uint8_t byte_count = first >> 6;
+              string->len = 0;
+
+              read(fd, &string->len, byte_count);
+              string->len = (string->len << 6) | (first & 0b111111);
+
+              string->value = malloc(string->len);
+              read(fd, string->value, string->len);
+
+              add_fv_to_hashtable(table, name, string, TELLY_STR);
+              break;
+            }
+
+            case TELLY_BOOL: {
+              bool *value = malloc(sizeof(bool));
+              read(fd, value, 1);
+
+              add_fv_to_hashtable(table, name, value, TELLY_NUM);
+              break;
+            }
+          }
+        }
+
+        free(name.value);
+        break;
+      }
+
       case TELLY_LIST: {
         struct List *list = (data->value = create_list());
         read(fd, &list->size, sizeof(uint32_t));
@@ -226,9 +374,6 @@ struct KVPair *get_data(const char *key) {
               node = create_listnode(value, TELLY_BOOL);
               break;
             }
-
-            default:
-              break;
           }
 
           if (node) {

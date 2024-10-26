@@ -12,14 +12,12 @@ uint64_t hash(char *key) {
   return hash;
 }
 
-struct HashTable *create_hashtable(const uint32_t default_size, const double grow_factor, const double shrink_factor) {
+struct HashTable *create_hashtable(const uint32_t default_size) {
   struct HashTable *table = malloc(sizeof(struct HashTable));
   table->fvs = calloc(default_size, sizeof(struct FVPair *));
   table->size.allocated = default_size;
   table->size.all = 0;
   table->size.filled = 0;
-  table->grow_factor = grow_factor;
-  table->shrink_factor = shrink_factor;
 
   return table;
 }

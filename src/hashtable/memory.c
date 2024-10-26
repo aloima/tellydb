@@ -26,7 +26,7 @@ void add_fv_to_hashtable(struct HashTable *table, const string_t name, void *val
   }
 
   if (table->size.allocated == table->size.filled) {
-    resize_hashtable(table, (table->size.allocated * (1 + table->grow_factor)));
+    resize_hashtable(table, (table->size.allocated * HASHTABLE_GROW_FACTOR));
     index = hashed % table->size.allocated;
 
     if (!table->fvs[index]) table->size.filled += 1;
@@ -94,7 +94,7 @@ bool del_fv_to_hashtable(struct HashTable *table, const string_t name) {
           table->size.filled -= 1;
           table->fvs[index] = NULL;
 
-          const uint32_t size = (table->size.allocated * table->shrink_factor);
+          const uint32_t size = (table->size.allocated * HASHTABLE_SHRINK_FACTOR);
 
           if (size == table->size.filled) {
             resize_hashtable(table, size);

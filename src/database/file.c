@@ -1,5 +1,6 @@
 #include "../../headers/database.h"
 #include "../../headers/btree.h"
+#include "../../headers/hashtable.h"
 #include "../../headers/utils.h"
 
 #include <stdio.h>
@@ -48,16 +49,15 @@ void close_database_fd() {
   close(fd);
 }
 
-static uint32_t generate_value(char **line, struct KVPair *kv) {
-  uint32_t len;
+static off_t generate_value(char **line, struct KVPair *kv) {
+  off_t len;
 
   switch (kv->type) {
     case TELLY_NULL:
       len = 1;
-      *line = malloc(len + 1);
+      *line = malloc(len);
 
       (*line)[0] = TELLY_NULL;
-      (*line)[1] = 0x00;
       break;
 
     case TELLY_NUM: {
@@ -66,12 +66,11 @@ static uint32_t generate_value(char **line, struct KVPair *kv) {
       const uint32_t byte_count = (bit_count / 8) + 1;
 
       len = byte_count + 2;
-      *line = malloc(len + 1);
+      *line = malloc(len);
 
       (*line)[0] = TELLY_NUM;
       (*line)[1] = byte_count;
       memcpy(*line + 2, number, byte_count);
-      (*line)[2 + byte_count] = 0x00;
       break;
     }
 
@@ -84,32 +83,132 @@ static uint32_t generate_value(char **line, struct KVPair *kv) {
       const uint32_t length_in_bytes = string->len >> 6;
 
       len = string->len + byte_count + 2;
-      *line = malloc(len + 1);
+      *line = malloc(len);
 
       (*line)[0] = TELLY_STR;
       (*line)[1] = first;
       memcpy(*line + 2, &length_in_bytes, byte_count);
 
       memcpy(*line + byte_count + 2, string->value, string->len);
-      (*line)[2 + byte_count + string->len] = 0x00;
       break;
     }
 
     case TELLY_BOOL:
       len = 2;
-      *line = malloc(len + 1);
+      *line = malloc(len);
 
       (*line)[0] = TELLY_BOOL;
       (*line)[1] = *((bool *) kv->value);
-      (*line)[2] = 0x00;
       break;
+
+    case TELLY_HASHTABLE: {
+      struct HashTable *table = kv->value;
+
+      len = 5;
+      *line = malloc(len);
+
+      (*line)[0] = TELLY_HASHTABLE;
+      memcpy(*line + 1, &table->size.allocated, sizeof(uint32_t));
+
+      off_t at = len;
+
+      for (uint32_t i = 0; i < table->size.allocated; ++i) {
+        struct FVPair *fv = table->fvs[i];
+
+        while (fv) {
+          const string_t name = fv->name;
+          const uint8_t n_bit_count = log2(name.len) + 1;
+          const uint8_t n_byte_count = ceil((float) (n_bit_count - 6) / 8);
+          const uint8_t n_first = (n_byte_count << 6) | (name.len & 0b111111);
+          const uint32_t n_length_in_bytes = name.len >> 6;
+
+          switch (fv->type) {
+            case TELLY_NULL:
+              len += 2 + n_byte_count + name.len;
+              *line = realloc(*line, len);
+
+              (*line)[at] = TELLY_NULL;
+              (*line)[at += 1] = n_first;
+              memcpy(*line + (at += 1), &n_length_in_bytes, n_byte_count);
+              memcpy(*line + (at += n_byte_count), name.value, name.len);
+              at += name.len;
+              break;
+
+            case TELLY_NUM: {
+              const long *number = fv->value;
+              const uint32_t bit_count = log2(*number) + 1;
+              const uint32_t byte_count = (bit_count / 8) + 1;
+
+              len += 3 + n_byte_count + name.len + byte_count;
+              *line = realloc(*line, len);
+
+              (*line)[at] = TELLY_NUM;
+              (*line)[at += 1] = n_first;
+              memcpy(*line + (at += 1), &n_length_in_bytes, n_byte_count);
+              memcpy(*line + (at += n_byte_count), name.value, name.len);
+
+              (*line)[at += name.len] = byte_count;
+              memcpy(*line + (at += 1), number, byte_count);
+              at += byte_count;
+              break;
+            }
+
+            case TELLY_STR: {
+              string_t *string = fv->value;
+
+              const uint8_t bit_count = log2(string->len) + 1;
+              const uint8_t byte_count = ceil((float) (bit_count - 6) / 8);
+              const uint8_t first = (byte_count << 6) | (string->len & 0b111111);
+              const uint32_t length_in_bytes = string->len >> 6;
+
+              len += 3 + n_byte_count + name.len + byte_count + string->len;
+              *line = realloc(*line, len);
+
+              (*line)[at] = TELLY_STR;
+              (*line)[at += 1] = n_first;
+              memcpy(*line + (at += 1), &n_length_in_bytes, n_byte_count);
+              memcpy(*line + (at += n_byte_count), name.value, name.len);
+
+              (*line)[at += name.len] = first;
+              memcpy(*line + (at += 1), &length_in_bytes, byte_count);
+              memcpy(*line + (at += byte_count), string->value, string->len);
+              at += string->len;
+              break;
+            }
+
+            case TELLY_BOOL:
+              len += 3 + n_byte_count + name.len;
+              *line = realloc(*line, len);
+
+              (*line)[at] = TELLY_BOOL;
+              (*line)[at += 1] = n_first;
+              memcpy(*line + (at += 1), &n_length_in_bytes, n_byte_count);
+              memcpy(*line + (at += n_byte_count), name.value, name.len);
+
+              (*line)[at += name.len] = *((bool *) fv->value);
+              at += 1;
+              break;
+
+            default:
+              break;
+          }
+
+          fv = fv->next;
+        }
+      }
+
+      len += 1;
+      *line = realloc(*line, len);
+      (*line)[at] = 0x17;
+      break;
+    }
 
     case TELLY_LIST: {
       struct List *list = kv->value;
       struct ListNode *node = list->begin;
 
       len = 5;
-      *line = malloc(len + 1);
+      *line = malloc(len);
 
       (*line)[0] = TELLY_LIST;
       memcpy(*line + 1, &list->size, sizeof(uint32_t));
@@ -170,7 +269,6 @@ static uint32_t generate_value(char **line, struct KVPair *kv) {
         node = node->next;
       }
 
-      (*line)[len] = 0x00;
       break;
     }
 
@@ -215,11 +313,11 @@ void save_data(const uint64_t server_age) {
     struct KVPair *kv = kvs[i];
 
     char *line;
-    const uint32_t line_len = generate_value(&line, kv);
+    const off_t line_len = generate_value(&line, kv);
 
     if (line_len != 0) {
       if (kv->pos.start_at != -1) {
-        const uint32_t line_len_in_file = kv->pos.end_at - (kv->pos.start_at - 1);
+        const off_t line_len_in_file = kv->pos.end_at - (kv->pos.start_at - 1);
 
         if (line_len_in_file != line_len) {
           const uint64_t n = file_size - kv->pos.end_at;

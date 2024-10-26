@@ -6,7 +6,6 @@
 
 #include <stdio.h>
 #include <stddef.h>
-#include <stdint.h>
 
 static void run(struct Client *client, respdata_t *data) {
   if (client) {

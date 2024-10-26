@@ -4,6 +4,9 @@
 
 #include <stdint.h>
 
+#define HASHTABLE_GROW_FACTOR 1.5
+#define HASHTABLE_SHRINK_FACTOR 0.75
+
 struct FVPair {
   string_t name;
   void *value;
@@ -21,12 +24,10 @@ struct HashTableSize {
 struct HashTable {
   struct FVPair **fvs;
   struct HashTableSize size;
-  double grow_factor;
-  double shrink_factor;
 };
 
 uint64_t hash(char *key);
-struct HashTable *create_hashtable(uint32_t default_size, const double grow_factor, const double shrink_factor);
+struct HashTable *create_hashtable(uint32_t default_size);
 void resize_hashtable(struct HashTable *table, const uint32_t size);
 struct FVPair *get_fv_from_hashtable(struct HashTable *table, char *name);
 void free_hashtable(struct HashTable *table);

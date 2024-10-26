@@ -31,9 +31,19 @@ Data value scheme is defined as:
 * For `TELLY_NUM (0x01)` type, data value is `byte count (1 byte) + number`. For example, data value is `0x02 + (0x00 + 0x01)` or `0x020001` to get 256.
 * For `TELLY_STR (0x02)` type, data value is `string length specifier (4 byte) + string data`.
 * For `TELLY_BOOL (0x03)` type, data value is `0x00` or `0x01`.
+
+* For `TELLY_HASHTABLE (0x04)` type, data value is `hash table allocated size (n) + hash table element 1 + hash table element 2 ... hash table element n + 0x17`.
+
+> [!IMPORTANT]
+> The hash table **allocated** size is a 4-byte value. For example, `32` is represented as `0x20 0x00 0x00 0x00`.
+> A hash table element is `element type + string length specifier + element key + element value`.
+> Element values ​​are data values, so their rules are same as data value rules.
+> Additionally, type of a hash table element should be `TELLY_NULL`, `TELLY_NUM`, `TELLY_STR` or `TELLY_BOOL`.
+
+
 * For `TELLY_LIST (0x05)` type, data value is `list size (n) + list element 1 + list element 2 ... list element n`.
 
-> [!NOTE]
+> [!IMPORTANT]
 > The list size is a 4-byte value. For example, `32` is represented as `0x20 0x00 0x00 0x00`.
 > A list element is `element type + element value` and element values ​​are data values, so their rules are same as data value rules.
 > Additionally, type of a list element should be `TELLY_NULL`, `TELLY_NUM`, `TELLY_STR` or `TELLY_BOOL`.
