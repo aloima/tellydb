@@ -233,6 +233,7 @@ void save_data(const uint64_t server_age) {
           free(buf);
 
           diff += line_len - line_len_in_file;
+          kv->pos.end_at += diff;
         } else {
           lseek(fd, kv->pos.start_at + diff - 1, SEEK_SET);
           write(fd, line, line_len);
