@@ -152,7 +152,7 @@ size_t get_configuration_string(char *buf, struct Configuration conf) {
   return sprintf(buf, (
     "# TCP server port\n"
     "PORT=%hu\n\n"
-    "# Specifies max connactable client count, higher values may cause higher resource usage\n"
+    "# Specifies max connectable client count, higher values may cause higher resource usage\n"
     "MAX_CLIENTS=%hu\n\n"
     "# Allowed log levels:\n"
     "# w = warning\n"
