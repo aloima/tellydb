@@ -6,19 +6,18 @@
 
 #include <stddef.h>
 
-static void run(struct Client *client, respdata_t *data) {
+static void run(struct Client *client, commanddata_t *command) {
   if (client) {
-    if (data->count != 3) {
+    if (command->arg_count != 2) {
       WRONG_ARGUMENT_ERROR(client, "HTYPE", 5);
       return;
     }
 
-    const char *key = data->value.array[1]->value.string.value;
-    char *name = data->value.array[2]->value.string.value;
-
+    const char *key = command->args[0].value;
     const struct KVPair *kv = get_data(key);
 
     if (kv && kv->type == TELLY_HASHTABLE) {
+      char *name = command->args[1].value;
       struct FVPair *fv = get_fv_from_hashtable(kv->value, name);
 
       switch (fv->type) {

@@ -1,18 +1,16 @@
 #include "../../../headers/server.h"
 #include "../../../headers/commands.h"
+#include "../../../headers/utils.h"
+#include "../../../headers/config.h"
 
 #include <stdio.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include <sys/stat.h>
 
-static void run(struct Client *client, respdata_t *data) {
+static void run(struct Client *client, __attribute__((unused)) commanddata_t *command) {
   if (client) {
-    if (data->count != 1) {
-      WRONG_ARGUMENT_ERROR(client, "LASTSAVE", 8);
-      return;
-    }
-
     const struct Configuration *conf = get_server_configuration();
     struct stat res;
     

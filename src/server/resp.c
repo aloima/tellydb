@@ -6,185 +6,139 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#define DATA_ERR(client) write_log(LOG_ERR, "Received data from Client #%d cannot be validated as a RESP data, so it cannot be created.", (client)->id);
+#define DATA_ERR(client) write_log(LOG_ERR, "Received data from Client #%d cannot be validated as a RESP data, so it cannot be created as a command.", (client)->id);
 
-respdata_t *parse_resp_array(struct Client *client, uint8_t type) {
-  respdata_t *data = malloc(sizeof(respdata_t));
-  data->type = type;
-  data->count = 0;
-
-  while (true) {
-    char c;
-    _read(client, &c, 1);
-
-    if (isdigit(c)) {
-      data->count = (data->count * 10) + (c - 48);
-    } else if (c == '\r') {
-      _read(client, &c, 1);
-
-      if (c == '\n') {
-        data->value.array = malloc(data->count * sizeof(respdata_t *));
-
-        for (uint32_t i = 0; i < data->count; ++i) {
-          data->value.array[i] = get_resp_data(client);
-        }
-
-        return data;
-      } else {
-        DATA_ERR(client);
-        free(data);
-        return NULL;
-      }
-    } else {
-      DATA_ERR(client);
-      free(data);
-      return NULL;
-    }
-  }
-}
-
-respdata_t *parse_resp_sstring(struct Client *client, uint8_t type) {
-  respdata_t *data = malloc(sizeof(respdata_t));
-  data->type = type;
-  data->value.string = (string_t) {
-    .value = malloc(33),
-    .len = 0
+static string_t parse_resp_bstring(struct Client *client) {
+  string_t data = {
+    .len = 0,
+    .value = NULL
   };
 
-  string_t *string = &data->value.string;
+  char c;
+  _read(client, &c, 1);
 
-  while (true) {
-    string->len += _read(client, string->value + string->len, 1);
-
-    if (string->len % 32 == 0) {
-      string->value = realloc(string->value, string->len + 33);
-    }
-
-    if (string->value[string->len - 1] == '\r') {
-      char c;
+  if (c == RDT_BSTRING) {
+    while (true) {
       _read(client, &c, 1);
 
-      if (c == '\n') {
-        string->len -= 1;
-        string->value[string->len] = '\0';
-        return data;
-      } else {
-        DATA_ERR(client);
-        free_resp_data(data);
-        return NULL;
-      }
-    } else {
-      DATA_ERR(client);
-      free_resp_data(data);
-      return NULL;
-    }
-  }
-}
+      if (isdigit(c)) {
+        data.len = (data.len * 10) + (c - 48);
+      } else if (c == '\r') {
+        _read(client, &c, 1);
 
-respdata_t *parse_resp_bstring(struct Client *client, uint8_t type) {
-  respdata_t *data = malloc(sizeof(respdata_t));
-  data->type = type;
-  data->value.string.len = 0;
+        if (c == '\n') {
+          data.value = malloc(data.len + 1);
+          uint64_t total = data.len;
 
-  string_t *string = &data->value.string;
+          while (total != 0) {
+            total -= _read(client, data.value + data.len - total, total);
+          }
 
-  while (true) {
-    char c;
-    _read(client, &c, 1);
+          data.value[data.len] = '\0';
 
-    if (isdigit(c)) {
-      string->len = (string->len * 10) + (c - 48);
-    } else if (c == '\r') {
-      _read(client, &c, 1);
+          char buf[2];
+          _read(client, buf, 2);
 
-      if (c == '\n') {
-        string->value = malloc(string->len + 1);
-        uint64_t total = string->len;
+          if (buf[0] != '\r' || buf[1] != '\n') {
+            DATA_ERR(client);
+            free(data.value);
+            return (string_t) {0};
+          }
 
-        while (total != 0) {
-          total -= _read(client, string->value + string->len - total, total);
-        }
-
-        string->value[string->len] = '\0';
-
-        char buf[2];
-        _read(client, buf, 2);
-
-        if (buf[0] != '\r' || buf[1] != '\n') {
+          return data;
+        } else {
           DATA_ERR(client);
-          free_resp_data(data);
-          return NULL;
+          return (string_t) {0};
         }
-
-        return data;
       } else {
         DATA_ERR(client);
-        free(data);
-        return NULL;
+        return (string_t) {0};
       }
-    } else {
-      DATA_ERR(client);
-      free(data);
-      return NULL;
     }
+  } else {
+    DATA_ERR(client);
+    return (string_t) {0};
   }
 
   return data;
 }
 
-respdata_t *get_resp_data(struct Client *client) {
-  uint8_t type;
+static commanddata_t *parse_resp_command(struct Client *client) {
+  commanddata_t *command = malloc(sizeof(commanddata_t));
+  command->arg_count = 0;
+  command->args = NULL;
 
-  if (_read(client, &type, 1) == 0) {
-    respdata_t *data = malloc(sizeof(respdata_t));
-    data->type = RDT_CLOSE;
+  while (true) {
+    char c;
+    _read(client, &c, 1);
 
-    return data;
-  } else {
-    switch (type) {
-      case RDT_ARRAY:
-        return parse_resp_array(client, type);
+    if (isdigit(c)) {
+      command->arg_count = (command->arg_count * 10) + (c - 48);
+    } else if (c == '\r') {
+      _read(client, &c, 1);
 
-      case RDT_SSTRING:
-        return parse_resp_sstring(client, type);
+      if (c == '\n') {
+        if (command->arg_count == 0) {
+          _write(client, "Received data from Client #%d is empty RESP data, so it cannot be created as a command.", client->id);
+          free(command);
+          return NULL;
+        } else {
+          command->arg_count -= 1;
+          command->name = parse_resp_bstring(client);
 
-      case RDT_BSTRING:
-        return parse_resp_bstring(client, type);
+          if (command->arg_count != 0) {
+            command->args = malloc(command->arg_count * sizeof(string_t));
+            command->args[0] = parse_resp_bstring(client);
 
-      case RDT_ERR:
-        return parse_resp_sstring(client, type);
+            for (uint32_t i = 1; i < command->arg_count; ++i) {
+              command->args[i] = parse_resp_bstring(client);
+            }
+          }
 
-      default:
+          return command;
+        }
+      } else {
+        DATA_ERR(client);
+        free(command);
         return NULL;
+      }
+    } else {
+      DATA_ERR(client);
+      free(command);
+      return NULL;
     }
   }
 }
 
-void free_resp_data(respdata_t *data) {
-  switch (data->type) {
-    case RDT_ARRAY:
-      for (uint32_t i = 0; i < data->count; ++i) {
-        free_resp_data(data->value.array[i]);
-      }
+commanddata_t *get_command_data(struct Client *client) {
+  uint8_t type;
 
-      free(data->value.array);
-      break;
+  if (_read(client, &type, 1) == 0) {
+    commanddata_t *command = malloc(sizeof(commanddata_t));
+    command->close = true;
 
-    case RDT_BSTRING:
-      free(data->value.string.value);
-      break;
+    return command;
+  } else if (type == RDT_ARRAY) {
+    commanddata_t *command = parse_resp_command(client);
+    command->close = false;
 
-    case RDT_SSTRING:
-      free(data->value.string.value);
-      break;
-
-    case RDT_ERR:
-      free(data->value.string.value);
-      break;
-
-    default:
-      break;
+    return command;
   }
 
-  free(data);
+  return NULL;
+}
+
+void free_command_data(commanddata_t *command) {
+  if (command->arg_count != 0) {
+    free(command->args[0].value);
+
+    for (uint32_t i = 1; i < command->arg_count; ++i) {
+      free(command->args[i].value);
+    }
+
+    free(command->args);
+  }
+
+  free(command->name.value);
+  free(command);
 }

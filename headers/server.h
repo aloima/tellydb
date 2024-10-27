@@ -61,20 +61,13 @@ void write_value(struct Client *client, void *value, enum TellyTypes type);
 #define RDT_ERR '-'
 #define RDT_CLOSE 0
 
-typedef struct RESPData {
-  uint8_t type;
+typedef struct CommandData {
+  bool close;
+  string_t name;
+  string_t *args;
+  uint32_t arg_count;
+} commanddata_t;
 
-  union {
-    string_t string;
-    bool boolean;
-    int32_t integer;
-    double doubl;
-    struct RESPData **array;
-  } value;
-
-  uint32_t count;
-} respdata_t;
-
-respdata_t *get_resp_data(struct Client *client);
-void free_resp_data(respdata_t *data);
+commanddata_t *get_command_data(struct Client *client);
+void free_command_data(commanddata_t *data);
 /* /RESP */

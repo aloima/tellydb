@@ -38,19 +38,18 @@ static bool get_section(char *section, const struct Configuration *conf, const c
   return true;
 }
 
-static void run(struct Client *client, respdata_t *data) {
+static void run(struct Client *client, commanddata_t *command) {
   if (client) {
     const struct Configuration *conf = get_server_configuration();
-    const uint32_t count = data->count - 1;
 
     char buf[8192], section[2048];
     buf[0] = '\0';
 
-    if (count != 0) {
-      const uint32_t n = count - 1;
+    if (command->arg_count != 0) {
+      const uint32_t n = command->arg_count - 1;
 
       for (uint32_t i = 0; i < n; ++i) {
-        char *name = data->value.array[i + 1]->value.string.value;
+        char *name = command->args[i].value;
 
         if (!get_section(section, conf, name)) {
           _write(client, "-Invalid section name\r\n", 23);
@@ -61,7 +60,7 @@ static void run(struct Client *client, respdata_t *data) {
         strcat(buf, "\r\n");
       }
 
-      const char *name = data->value.array[count]->value.string.value;
+      const char *name = command->args[n].value;
 
       if (!get_section(section, conf, name)) {
         _write(client, "-Invalid section name\r\n", 23);

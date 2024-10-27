@@ -6,14 +6,14 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-static void run(struct Client *client, respdata_t *data) {
+static void run(struct Client *client, commanddata_t *command) {
   if (client) {
-    if (data->count != 3) {
+    if (command->arg_count != 2) {
       WRONG_ARGUMENT_ERROR(client, "LINDEX", 4);
       return;
     }
 
-    const char *key = data->value.array[1]->value.string.value;
+    const char *key = command->args[0].value;
     const struct KVPair *kv = get_data(key);
 
     if (!kv || kv->type != TELLY_LIST) {
@@ -21,7 +21,7 @@ static void run(struct Client *client, respdata_t *data) {
       return;
     }
 
-    const char *index_str = data->value.array[2]->value.string.value;
+    const char *index_str = command->args[1].value;
 
     if (!is_integer(index_str)) {
       _write(client, "-Second argument must be an integer\r\n", 37);

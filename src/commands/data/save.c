@@ -5,12 +5,7 @@
 #include <stdint.h>
 #include <time.h>
 
-static void run(struct Client *client, respdata_t *data) {
-  if (data->count != 1) {
-    if (client) WRONG_ARGUMENT_ERROR(client, "SAVE", 4);
-    return;
-  }
-
+static void run(struct Client *client, __attribute__((unused)) commanddata_t *command) {
   uint64_t age;
   time_t start_at;
   get_server_time(&start_at, &age);

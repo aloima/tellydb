@@ -262,20 +262,18 @@ void start_server(struct Configuration *config) {
           }
         } else if (fd.revents & POLLIN) {
           struct Client *client = get_client(fd.fd);
-          respdata_t *data = get_resp_data(client);
+          commanddata_t *command = get_command_data(client);
 
-          if (data->type == RDT_CLOSE) {
+          if (command->close) {
             terminate_connection(fd.fd);
-            free_resp_data(data);
+            free(command);
           } else {
             struct Client *client = get_client(fd.fd);
             struct Command *commands = get_commands();
             const uint32_t command_count = get_command_count();
 
-            string_t name = data->value.array[0]->value.string;
-
-            char used[name.len + 1];
-            to_uppercase(name.value, used);
+            char used[command->name.len + 1];
+            to_uppercase(command->name.value, used);
 
             for (uint32_t i = 0; i < command_count; ++i) {
               if (streq(commands[i].name, used)) {
@@ -284,7 +282,7 @@ void start_server(struct Configuration *config) {
               }
             }
 
-            add_transaction(client, data);
+            add_transaction(client, command);
           }
         } else if (fd.revents & (POLLERR | POLLNVAL | POLLHUP)) {
           terminate_connection(fd.fd);

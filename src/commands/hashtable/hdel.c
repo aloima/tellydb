@@ -8,13 +8,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
-static void run(struct Client *client, respdata_t *data) {
-  if (data->count < 3) {
+static void run(struct Client *client, commanddata_t *command) {
+  if (command->arg_count < 2) {
     if (client) WRONG_ARGUMENT_ERROR(client, "HDEL", 4);
     return;
   }
 
-  const string_t key = data->value.array[1]->value.string;
+  const string_t key = command->args[0];
   struct KVPair *kv = get_data(key.value);
   struct HashTable *table;
 
@@ -33,16 +33,16 @@ static void run(struct Client *client, respdata_t *data) {
   if (client) {
     const uint32_t old_size = table->size.all;
 
-    for (uint32_t i = 2; i < data->count; ++i) {
-      del_fv_to_hashtable(table, data->value.array[i]->value.string);
+    for (uint32_t i = 1; i < command->arg_count; ++i) {
+      del_fv_to_hashtable(table, command->args[i]);
     }
 
     char buf[14];
     const size_t nbytes = sprintf(buf, ":%d\r\n", old_size - table->size.all);
     _write(client, buf, nbytes);
   } else {
-    for (uint32_t i = 2; i < data->count; ++i) {
-      del_fv_to_hashtable(table, data->value.array[i]->value.string);
+    for (uint32_t i = 1; i < command->arg_count; ++i) {
+      del_fv_to_hashtable(table, command->args[i]);
     }
   }
 }

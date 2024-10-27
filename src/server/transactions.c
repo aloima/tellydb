@@ -62,7 +62,7 @@ void create_transaction_thread(struct Configuration *config) {
   pthread_detach(thread);
 }
 
-void add_transaction(struct Client *client, respdata_t *data) {
+void add_transaction(struct Client *client, commanddata_t *command) {
   pthread_mutex_lock(&mutex);
   transaction_count += 1;
 
@@ -75,7 +75,7 @@ void add_transaction(struct Client *client, respdata_t *data) {
   const uint32_t id = transaction_count - 1;
   transactions[id] = malloc(sizeof(struct Transaction));
   transactions[id]->client = client;
-  transactions[id]->command = data;
+  transactions[id]->command = command;
 
   pthread_mutex_unlock(&mutex);
   pthread_cond_signal(&cond);
@@ -84,7 +84,7 @@ void add_transaction(struct Client *client, respdata_t *data) {
 void remove_transaction(struct Transaction *transaction) {
   const uint64_t id = transaction - transactions[0];
 
-  free_resp_data(transaction->command);
+  free_command_data(transaction->command);
   free(transaction);
 
   transaction_count -= 1;
@@ -102,13 +102,13 @@ void free_transactions() {
     for (uint32_t i = 1; i < transaction_count; ++i) {
       struct Transaction *transaction = transactions[i];
 
-      free_resp_data(transaction->command);
+      free_command_data(transaction->command);
       free(transaction);
     }
 
     struct Transaction *transaction = transactions[0];
 
-    free_resp_data(transaction->command);
+    free_command_data(transaction->command);
     free(transaction);
 
     free(transactions);

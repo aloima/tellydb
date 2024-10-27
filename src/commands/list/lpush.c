@@ -21,13 +21,13 @@ static void lpush_to_list(struct List *list, void *value, enum TellyTypes type) 
   }
 }
 
-static void run(struct Client *client, respdata_t *data) {
-  if (data->count < 3) {
+static void run(struct Client *client, commanddata_t *command) {
+  if (command->arg_count < 2) {
     if (client) WRONG_ARGUMENT_ERROR(client, "LPUSH", 5);
     return;
   }
 
-  const string_t key = data->value.array[1]->value.string;
+  const string_t key = command->args[0];
   struct KVPair *kv = get_data(key.value);
   struct List *list;
 
@@ -43,10 +43,8 @@ static void run(struct Client *client, respdata_t *data) {
     set_data(kv, key, list, TELLY_LIST);
   }
 
-  const uint32_t value_count = data->count - 2;
-
-  for (uint32_t i = 0; i < value_count; ++i) {
-    string_t input = data->value.array[2 + i]->value.string;
+  for (uint32_t i = 1; i < command->arg_count; ++i) {
+    string_t input = command->args[i];
     char *input_value = input.value;
     bool is_true = streq(input_value, "true");
 
@@ -76,7 +74,7 @@ static void run(struct Client *client, respdata_t *data) {
 
   if (client) {
     char buf[14];
-    const size_t nbytes = sprintf(buf, ":%d\r\n", value_count);
+    const size_t nbytes = sprintf(buf, ":%d\r\n", command->arg_count - 1);
     _write(client, buf, nbytes);
   }
 }

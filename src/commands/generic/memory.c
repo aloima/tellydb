@@ -6,16 +6,16 @@
 #include <stdio.h>
 #include <stdint.h>
 
-static void run(struct Client *client, respdata_t *data) {
+static void run(struct Client *client, commanddata_t *command) {
   if (client) {
-    if (data->count != 1) {
-      const string_t subcommand_string = data->value.array[1]->value.string;
+    if (command->arg_count != 0) {
+      const string_t subcommand_string = command->args[0];
       char subcommand[subcommand_string.len + 1];
       to_uppercase(subcommand_string.value, subcommand);
 
       if (streq(subcommand, "USAGE")) {
-        if (data->count == 3) {
-          const char *key = data->value.array[2]->value.string.value;
+        if (command->arg_count == 2) {
+          const char *key = command->args[1].value;
           struct KVPair *kv = get_kv_from_cache(key);
 
           if (kv) {

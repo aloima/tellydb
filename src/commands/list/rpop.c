@@ -6,14 +6,14 @@
 
 #include <stddef.h>
 
-static void run(struct Client *client, respdata_t *data) {
-  if (client && data->count != 2) {
-    WRONG_ARGUMENT_ERROR(client, "RPOP", 4);
+static void run(struct Client *client, commanddata_t *command) {
+  if (command->arg_count != 1) {
+    if (client) WRONG_ARGUMENT_ERROR(client, "RPOP", 4);
     return;
   }
 
-  const string_t key = data->value.array[1]->value.string;
-  struct KVPair *kv = get_data(key.value);
+  const char *key = command->args[0].value;
+  struct KVPair *kv = get_data(key);
 
   if (kv) {
     if (client && kv->type != TELLY_LIST) {
@@ -27,7 +27,7 @@ static void run(struct Client *client, respdata_t *data) {
     if (client) write_value(client, list->end->value, list->end->type);
 
     if (list->size == 1) {
-      delete_kv_from_btree(get_cache(), key.value);
+      delete_kv_from_btree(get_cache(), key);
     } else {
       list->end = list->end->prev;
       list->end->next = NULL;

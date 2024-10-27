@@ -6,14 +6,10 @@
 #include <stdint.h>
 
 #include <sys/time.h>
+#include <bits/types/struct_timeval.h>
 
-static void run(struct Client *client, respdata_t *data) {
+static void run(struct Client *client, __attribute__((unused)) commanddata_t *command) {
   if (client) {
-    if (data->count != 1) {
-      WRONG_ARGUMENT_ERROR(client, "TIME", 4);
-      return;
-    }
-
     struct timeval timestamp;
     gettimeofday(&timestamp, NULL);
 

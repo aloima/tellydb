@@ -18,12 +18,12 @@ struct Command {
   char *summary;
   char *since;
   char *complexity;
-  void (*run)(struct Client *client, respdata_t *data);
+  void (*run)(struct Client *client, commanddata_t *command);
   struct Subcommand *subcommands;
   uint32_t subcommand_count;
 };
 
-void execute_command(struct Client *client, respdata_t *data);
+void execute_command(struct Client *client, commanddata_t *command);
 
 void load_commands();
 struct Command *get_commands();

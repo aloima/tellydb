@@ -65,32 +65,26 @@ uint32_t get_command_count() {
   return command_count;
 }
 
-void execute_command(struct Client *client, respdata_t *data) {
-  if (data->type == RDT_ARRAY) {
-    const string_t name = data->value.array[0]->value.string;
+void execute_command(struct Client *client, commanddata_t *data) {
+  char input[data->name.len + 1];
+  to_uppercase(data->name.value, input);
 
-    char input[name.len + 1];
-    to_uppercase(name.value, input);
+  bool executed = false;
 
-    bool executed = false;
+  for (uint32_t i = 0; i < command_count; ++i) {
+    const struct Command command = commands[i];
 
-    for (uint32_t i = 0; i < command_count; ++i) {
-      const struct Command command = commands[i];
-
-      if (streq(input, command.name)) {
-        command.run(client, data);
-        executed = true;
-        break;
-      }
+    if (streq(input, command.name)) {
+      command.run(client, data);
+      executed = true;
+      break;
     }
+  }
 
-    if (!executed && client != NULL) {
-      char res[42];
-      const size_t len = sprintf(res, "-unknown command '%s'\r\n", input);
+  if (!executed && client != NULL) {
+    char res[42];
+    const size_t len = sprintf(res, "-Unknown command '%s'\r\n", input);
 
-      _write(client, res, len);
-    }
-  } else {
-    write_log(LOG_ERR, "Received data from Client #%d is not RDT_ARRAY, so it is not readable as a command.", client->id);
+    _write(client, res, len);
   }
 }

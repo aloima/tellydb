@@ -6,13 +6,13 @@
 
 #include <stddef.h>
 
-static void run(struct Client *client, respdata_t *data) {
-  if (client && data->count != 2) {
-    WRONG_ARGUMENT_ERROR(client, "LPOP", 4);
+static void run(struct Client *client, commanddata_t *command) {
+  if (command->arg_count != 1) {
+    if (client) WRONG_ARGUMENT_ERROR(client, "LPOP", 4);
     return;
   }
 
-  const char *key = data->value.array[1]->value.string.value;
+  const char *key = command->args[0].value;
   const struct KVPair *kv = get_data(key);
 
   if (kv) {

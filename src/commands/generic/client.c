@@ -8,10 +8,10 @@
 #include <stdint.h>
 #include <time.h>
 
-static void run(struct Client *client, respdata_t *data) {
+static void run(struct Client *client, commanddata_t *command) {
   if (client) {
-    if (data->count != 1) {
-      const string_t subcommand_string = data->value.array[1]->value.string;
+    if (command->arg_count != 0) {
+      const string_t subcommand_string = command->args[0];
       char subcommand[subcommand_string.len + 1];
       to_uppercase(subcommand_string.value, subcommand);
 
@@ -49,13 +49,13 @@ static void run(struct Client *client, respdata_t *data) {
         const size_t nbytes = sprintf(res, "$%ld\r\n%s\r\n", buf_len, buf);
         _write(client, res, nbytes);
       } else if (streq("SETINFO", subcommand)) {
-        if (data->count == 4) {
-          string_t property = data->value.array[2]->value.string;
+        if (command->arg_count == 3) {
+          string_t property = command->args[1];
           char property_value[property.len + 1];
           to_uppercase(property.value, property_value);
 
           if (streq(property_value, "LIB-NAME")) {
-            string_t value = data->value.array[3]->value.string;
+            string_t value = command->args[2];
             const uint32_t value_size = value.len + 1;
 
             client->lib_name = client->lib_name ? realloc(client->lib_name, value_size) : malloc(value_size);
@@ -63,7 +63,7 @@ static void run(struct Client *client, respdata_t *data) {
 
             _write(client, "+OK\r\n", 5);
           } else if (streq(property_value, "LIB-VERSION")) {
-            string_t value = data->value.array[3]->value.string;
+            string_t value = command->args[2];
             const uint32_t value_size = value.len + 1;
 
             client->lib_ver = client->lib_ver ? realloc(client->lib_ver, value_size) : malloc(value_size);

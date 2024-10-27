@@ -7,13 +7,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
-static void run(struct Client *client, respdata_t *data) {
-  if (data->count != 2) {
+static void run(struct Client *client, commanddata_t *command) {
+  if (command->arg_count != 1) {
     if (client) WRONG_ARGUMENT_ERROR(client, "INCR", 4);
     return;
   }
 
-  const string_t key = data->value.array[1]->value.string;
+  const string_t key = command->args[0];
   struct KVPair *result = get_data(key.value);
 
   if (!result) {

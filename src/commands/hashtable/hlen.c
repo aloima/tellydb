@@ -7,15 +7,14 @@
 #include <stdio.h>
 #include <stddef.h>
 
-static void run(struct Client *client, respdata_t *data) {
+static void run(struct Client *client, commanddata_t *command) {
   if (client) {
-    if (data->count != 2) {
+    if (command->arg_count != 1) {
       WRONG_ARGUMENT_ERROR(client, "HLEN", 4);
       return;
     }
 
-    const char *key = data->value.array[1]->value.string.value;
-    const struct KVPair *kv = get_data(key);
+    const struct KVPair *kv = get_data(command->args[0].value);
 
     if (kv) {
       if (kv->type == TELLY_HASHTABLE) {

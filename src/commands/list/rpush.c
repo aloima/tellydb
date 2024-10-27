@@ -21,13 +21,13 @@ static void rpush_to_list(struct List *list, void *value, enum TellyTypes type) 
   }
 }
 
-static void run(struct Client *client, respdata_t *data) {
-  if (data->count < 3) {
+static void run(struct Client *client, commanddata_t *command) {
+  if (command->arg_count < 2) {
     if (client) WRONG_ARGUMENT_ERROR(client, "RPUSH", 5);
     return;
   }
 
-  const string_t key = data->value.array[1]->value.string;
+  const string_t key = command->args[0];
   struct KVPair *kv = get_data(key.value);
   struct List *list;
 
@@ -43,27 +43,38 @@ static void run(struct Client *client, respdata_t *data) {
     set_data(kv, key, list, TELLY_LIST);
   }
 
-  const uint32_t value_count = data->count - 2;
+  for (uint32_t i = 1; i < command->arg_count; ++i) {
+    string_t input = command->args[i];
+    char *input_value = input.value;
+    bool is_true = streq(input_value, "true");
 
-  for (uint32_t i = 0; i < value_count; ++i) {
-    char *value = data->value.array[2 + i]->value.string.value;
-    bool is_true = streq(value, "true");
+    if (is_integer(input_value)) {
+      const long number = atol(input_value);
+      long *value = malloc(sizeof(long));
+      memcpy(value, &number, sizeof(long));
 
-    if (is_integer(value)) {
-      long value_as_long = atol(value);
-      rpush_to_list(list, &value_as_long, TELLY_NUM);
-    } else if (is_true || streq(value, "false")) {
-      rpush_to_list(list, &is_true, TELLY_BOOL);
-    } else if (streq(value, "null")) {
+      rpush_to_list(list, value, TELLY_NUM);
+    } else if (is_true || streq(input_value, "false")) {
+      bool *value = malloc(sizeof(bool));
+      memset(value, is_true, sizeof(bool));
+
+      rpush_to_list(list, value, TELLY_BOOL);
+    } else if (streq(input_value, "null")) {
       rpush_to_list(list, NULL, TELLY_NULL);
     } else {
+      string_t *value = malloc(sizeof(string_t));
+      const uint32_t size = input.len + 1;
+      value->len = input.len;
+      value->value = malloc(size);
+      memcpy(value->value, input_value, size);
+
       rpush_to_list(list, value, TELLY_STR);
     }
   }
 
   if (client) {
     char buf[14];
-    const size_t nbytes = sprintf(buf, ":%d\r\n", value_count);
+    const size_t nbytes = sprintf(buf, ":%d\r\n", command->arg_count - 1);
     _write(client, buf, nbytes);
   }
 }

@@ -1,28 +1,26 @@
 #include "../../../headers/server.h"
 #include "../../../headers/database.h"
 #include "../../../headers/commands.h"
-#include "../../../headers/utils.h"
 
 #include <stdio.h>
 #include <stddef.h>
 #include <string.h>
 #include <stdint.h>
 
-static void run(struct Client *client, respdata_t *data) {
+static void run(struct Client *client, commanddata_t *command) {
   if (client) {
-    if (data->count == 1) {
+    if (command->arg_count == 0) {
       WRONG_ARGUMENT_ERROR(client, "EXISTS", 6);
       return;
     }
 
-    const uint32_t key_count = data->count - 1;
     uint32_t existed = 0, not_existed = 0;
 
     char buf[8192];
     buf[0] = '\0';
 
-    for (uint32_t i = 1; i <= key_count; ++i) {
-      const char *key = data->value.array[i]->value.string.value;
+    for (uint32_t i = 0; i < command->arg_count; ++i) {
+      const char *key = command->args[i].value;
 
       if (get_data(key)) {
         existed += 1;
@@ -39,7 +37,7 @@ static void run(struct Client *client, respdata_t *data) {
         "+existed key count is %d\r\n"
         "+not existed key count is %d\r\n"
         "%s"
-    ), key_count + 2, existed, not_existed, buf);
+    ), command->arg_count + 2, existed, not_existed, buf);
 
     _write(client, res, nbytes);
   }

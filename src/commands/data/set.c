@@ -6,18 +6,18 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-static void run(struct Client *client, respdata_t *data) {
-  if (data->count < 3) {
+static void run(struct Client *client, commanddata_t *command) {
+  if (command->arg_count < 2) {
     if (client) WRONG_ARGUMENT_ERROR(client, "SET", 3);
     return;
   }
 
-  char *value_in = data->value.array[2]->value.string.value;
+  char *value_in = command->args[1].value;
   bool get = false;
   bool nx = false, xx = false;
 
-  for (uint32_t i = 3; i < data->count; ++i) {
-    string_t input = data->value.array[i]->value.string;
+  for (uint32_t i = 2; i < command->arg_count; ++i) {
+    string_t input = command->args[i];
     char arg[input.len + 1];
     to_uppercase(input.value, arg);
 
@@ -35,7 +35,7 @@ static void run(struct Client *client, respdata_t *data) {
     return;
   }
 
-  const string_t key = data->value.array[1]->value.string;
+  const string_t key = command->args[0];
   void *value;
   enum TellyTypes type;
   struct KVPair *res = get_data(key.value);
@@ -65,7 +65,7 @@ static void run(struct Client *client, respdata_t *data) {
     type = TELLY_NULL;
     value = NULL;
   } else {
-    const string_t _value = data->value.array[2]->value.string;
+    const string_t _value = command->args[1];
     type = TELLY_STR;
 
     string_t *string = (value = malloc(sizeof(string_t)));

@@ -10,13 +10,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-static void run(struct Client *client, respdata_t *data) {
-  if (data->count == 2 || data->count % 2 != 0) {
+static void run(struct Client *client, commanddata_t *command) {
+  if (command->arg_count == 1 || (command->arg_count - 1) % 2 != 0) {
     if (client) WRONG_ARGUMENT_ERROR(client, "HSET", 4);
     return;
   }
 
-  const string_t key = data->value.array[1]->value.string;
+  const string_t key = command->args[0];
   struct KVPair *kv = get_data(key.value);
   struct HashTable *table;
 
@@ -27,11 +27,11 @@ static void run(struct Client *client, respdata_t *data) {
     set_data(kv, key, table, TELLY_HASHTABLE);
   }
 
-  const uint32_t fv_count = (data->count / 2) - 1;
+  const uint32_t fv_count = (command->arg_count - 1) / 2;
 
   for (uint32_t i = 1; i <= fv_count; ++i) {
-    const string_t name = data->value.array[i * 2]->value.string;
-    const string_t input = data->value.array[i * 2 + 1]->value.string;
+    const string_t name = command->args[(i * 2) - 1];
+    const string_t input = command->args[i * 2];
     char *input_value = input.value;
 
     bool is_true = streq(input_value, "true");

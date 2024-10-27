@@ -44,14 +44,14 @@ void close_database_fd();
 /* TRANSACTIONS */
 struct Transaction {
   struct Client *client;
-  respdata_t *command;
+  commanddata_t *command;
 };
 
 void create_transaction_thread(struct Configuration *config);
 void deactive_transaction_thread();
 
 uint32_t get_transaction_count();
-void add_transaction(struct Client *client, respdata_t *data);
+void add_transaction(struct Client *client, commanddata_t *command);
 void remove_transaction(struct Transaction *transaction);
 void free_transactions();
 /* /TRANSACTIONS */

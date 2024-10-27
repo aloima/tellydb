@@ -6,15 +6,15 @@
 #include <stddef.h>
 #include <stdint.h>
 
-static void run(struct Client *client, respdata_t *data) {
+static void run(struct Client *client, commanddata_t *command) {
   if (client) {
-    switch (data->count) {
-      case 1:
+    switch (command->arg_count) {
+      case 0:
         _write(client, "+PONG\r\n", 7);
         break;
 
-      case 2: {
-        const string_t arg = data->value.array[1]->value.string;
+      case 1: {
+        const string_t arg = command->args[0];
 
         char buf[26 + arg.len];
         const size_t nbytes = sprintf(buf, "$%d\r\n%s\r\n", arg.len, arg.value);

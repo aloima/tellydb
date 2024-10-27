@@ -6,19 +6,18 @@
 
 #include <stddef.h>
 
-static void run(struct Client *client, respdata_t *data) {
+static void run(struct Client *client, commanddata_t *command) {
   if (client) {
-    if (data->count != 3) {
+    if (command->arg_count != 2) {
       WRONG_ARGUMENT_ERROR(client, "HGET", 4);
       return;
     }
 
-    const string_t key = data->value.array[1]->value.string;
-    const struct KVPair *kv = get_data(key.value);
+    const struct KVPair *kv = get_data(command->args[0].value);
 
     if (kv) {
       if (kv->type == TELLY_HASHTABLE) {
-        char *name = data->value.array[2]->value.string.value;
+        char *name = command->args[1].value;
         const struct FVPair *field = get_fv_from_hashtable(kv->value, name);
 
         if (field) {

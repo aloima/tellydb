@@ -1,20 +1,23 @@
 #include "../../../headers/server.h"
 #include "../../../headers/commands.h"
+#include "../../../headers/utils.h"
 
 #include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <time.h>
 
-static void run(struct Client *client, respdata_t *data) {
+static void run(struct Client *client, commanddata_t *command) {
   if (client) {
-    if (data->count > 7 || data->count == 6) {
+    const uint32_t arg_count = command->arg_count;
+
+    // arg_count != 0 && arg_count != 1 && arg_count != 3 && arg_count != 4 && arg_count != 6
+    if (arg_count > 6 || arg_count == 2 || arg_count == 5) {
       WRONG_ARGUMENT_ERROR(client, "HELLO", 5);
       return;
     }
 
-    if (data->count > 1) {
-      char *protover = data->value.array[1]->value.string.value;
+    if (command->arg_count > 0) {
+      char *protover = command->args[0].value;
 
       if (streq(protover, "2")) client->protover = RESP2;
       else if (streq(protover, "3")) client->protover = RESP3;

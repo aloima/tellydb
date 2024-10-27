@@ -24,15 +24,6 @@ enum TellyTypes {
   TELLY_LIST
 };
 
-typedef union {
-  string_t string;
-  long number;
-  bool boolean;
-  void *null;
-  struct HashTable *hashtable;
-  struct List *list;
-} value_t;
-
 enum LogLevel {
   LOG_INFO = 0b001,
   LOG_WARN = 0b010,
