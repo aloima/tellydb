@@ -16,9 +16,9 @@ static int fd = -1;
 
 bool open_database_fd(const char *filename, uint64_t *server_age) {
   #if defined(__linux__)
-    fd = open(filename, O_RDWR | O_CREAT | O_DIRECT, S_IRWXU);
+    fd = open(filename, (O_RDWR | O_CREAT | O_DIRECT), (S_IRUSR | S_IWUSR));
   #elif defined(__APPLE__)
-    fd = open(filename, O_RDWR | O_CREAT, S_IRWXU);
+    fd = open(filename, (O_RDWR | O_CREAT), (S_IRUSR | S_IWUSR));
 
     if (fcntl(fd, F_NOCACHE, 1) == -1) {
       write_log(LOG_ERR, "Cannot deactive file caching for database file.");
