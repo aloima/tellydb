@@ -1,10 +1,59 @@
 #include "../../../headers/server.h"
 #include "../../../headers/database.h"
 #include "../../../headers/commands.h"
+#include "../../../headers/hashtable.h"
 #include "../../../headers/utils.h"
 
 #include <stdio.h>
+#include <stddef.h>
 #include <stdint.h>
+
+static uint32_t get_value_size(void *value, const enum TellyTypes type) {
+  switch (type) {
+    case TELLY_NULL:
+      return 0;
+
+    case TELLY_NUM:
+      return sizeof(long);
+
+    case TELLY_STR:
+      return sizeof(string_t) + ((((string_t *) value)->len) * sizeof(char));
+
+    case TELLY_BOOL:
+      return sizeof(bool);
+
+    case TELLY_HASHTABLE: {
+      struct HashTable *table = value;
+      uint32_t size = sizeof(struct HashTable);
+
+      for (uint32_t i = 0; i < table->size.allocated; ++i) {
+        struct FVPair *fv = table->fvs[i];
+
+        while (fv) {
+          size += sizeof(struct FVPair *) + sizeof(struct FVPair) + ((fv->name.len + 1) * sizeof(char)) + get_value_size(fv->value, fv->type);
+          fv = fv->next;
+        }
+      }
+
+      return size;
+    }
+
+    case TELLY_LIST: {
+      struct List *list = value;
+      uint32_t size = sizeof(struct List);
+      struct ListNode *node = list->begin;
+
+      while (node) {
+        size += get_value_size(node->value, node->type);
+        node = node->next;
+      }
+
+      return size;
+    }
+  }
+
+  return 0;
+}
 
 static void run(struct Client *client, commanddata_t *command) {
   if (client) {
@@ -19,14 +68,12 @@ static void run(struct Client *client, commanddata_t *command) {
           struct KVPair *kv = get_kv_from_cache(key);
 
           if (kv) {
-            const uint32_t size = 5;/*sizeof(struct KVPair *) + sizeof(struct KVPair) +
-              (kv->key.len + 1) + (kv->type == TELLY_STR ? (kv->value->string.len + 1) : 0);*/
+            const uint32_t size = sizeof(struct KVPair *) + sizeof(struct KVPair) +
+              ((kv->key.len + 1) * sizeof(char)) + get_value_size(kv->value, kv->type);
 
-            const uint32_t buf_len = 3 + get_digit_count(size);
-            char buf[buf_len + 1];
-            sprintf(buf, ":%d\r\n", size);
-
-            _write(client, buf, buf_len);
+            char buf[14];
+            const size_t nbytes = sprintf(buf, ":%d\r\n", size);
+            _write(client, buf, nbytes);
           } else WRITE_NULL_REPLY(client);
         } else {
           WRONG_ARGUMENT_ERROR(client, "MEMORY USAGE", 12);
