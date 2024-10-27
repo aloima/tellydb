@@ -9,8 +9,9 @@ A key-value database project for educational purposes.
 + Supports integer, string, null, boolean, list and hash table types
 + Provides atomicity when saving to the database file and thread handling
 
-> Look at [docs/SPECS.md](./docs/SPECS.md) for more technical information
-> Look at [docs/FILE.md](./docs/FILE.md) for information about provided files by tellydb
+> Look at:
+> [docs/SPECS.md](./docs/SPECS.md) for more technical information,  
+> [docs/FILE.md](./docs/FILE.md) for information about provided files by tellydb
 
 ## Quick Start
 * Install a client that allows to connect tellydb or redis server
@@ -20,7 +21,8 @@ A key-value database project for educational purposes.
 * Start the server using `telly`
 * Start using some commands
 
-To list the commands, look at [src/commands](./src/commands/), to get information about cli commands, use `telly help`.
+To list the commands, look at [src/commands](./src/commands/).  
+To get information about cli commands, use `telly help`.
 
 ## License
 Licensed under [BSD-3 Clause Clear License](./LICENSE).
