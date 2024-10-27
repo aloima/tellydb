@@ -2,7 +2,7 @@
 A key-value database project for educational purposes.
 
 ## Features
-+ Follows [RESP2](https://redis.io/docs/latest/develop/reference/protocol-spec/) specification from redis, so all redis clients are compatible
++ Follows [RESP2/RESP3](https://redis.io/docs/latest/develop/reference/protocol-spec/) specification from redis, so all redis clients are compatible
 + Includes B-Tree for caching
 + Fully configurable via [.tellyconf](./docs/FILE.md)
 + Includes command queue system
