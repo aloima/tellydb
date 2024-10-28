@@ -38,7 +38,7 @@ void free_kv(struct KVPair *kv);
 bool open_database_fd(const char *filename, uint64_t *server_age);
 int get_database_fd();
 void close_database_fd();
-/* /DATABASE FULE */
+/* /DATABASE FILE */
 
 
 /* TRANSACTIONS */

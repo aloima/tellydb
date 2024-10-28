@@ -29,23 +29,15 @@ static void number_pad(char *res, const uint32_t value) {
 
 void initialize_logs(struct Configuration *config) {
   conf = config;
-
-  #if defined(__linux__)
-    fd = open(conf->log_file, (O_RDWR | O_CREAT | O_DIRECT), (S_IRUSR | S_IWUSR));
-  #elif defined(__APPLE__)
-    fd = open(conf->log_file, (O_RDWR | O_CREAT), (S_IRUSR | S_IWUSR));
-
-    if (fcntl(fd, F_NOCACHE, 1) == -1) {
-      write_log(LOG_ERR, "Cannot deactive file caching for database file.");
-    }
-  #endif
+  fd = open(conf->log_file, (O_RDWR | O_CREAT), (S_IRUSR | S_IWUSR));
 
   if (conf->max_log_lines != -1) {
-    char c;
+    char buffer[4096];
+    uint32_t count;
 
-    while (read(fd, &c, 1) != 0) {
-      if (c == '\n') {
-        log_lines += 1;
+    while ((count = read(fd, buffer, 4096)) != 0) {
+      for (uint32_t i = 0; i < count; ++i) {
+        if (buffer[i] == '\n') log_lines += 1;
       }
     }
   }
