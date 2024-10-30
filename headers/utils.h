@@ -36,3 +36,5 @@ void close_logs();
 
 bool is_integer(const char *value);
 uint32_t get_digit_count(int64_t number);
+
+uint64_t hash(char *key);

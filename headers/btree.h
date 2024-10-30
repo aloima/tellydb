@@ -10,8 +10,13 @@ struct BTreeIntegers {
   uint8_t internal_min;
 };
 
+struct BTreeValue {
+  uint64_t index;
+  void *data;
+};
+
 struct BTreeNode {
-  struct KVPair **data;
+  struct BTreeValue **data;
   uint32_t size;
 
   struct BTreeNode **children;
@@ -26,16 +31,13 @@ struct BTree {
 };
 
 struct BTree *create_btree(const uint32_t max);
-struct KVPair **get_kvs_from_btree(struct BTree *tree, uint32_t *size);
+struct BTreeValue **get_values_from_btree(struct BTree *tree, uint32_t *size);
 
 void move_kv(struct BTreeNode *node, const uint32_t at, const uint32_t to);
-uint32_t find_node_of_kv(struct BTreeNode **result, struct BTreeNode *search, const char *key);
+uint32_t find_node_of_index(struct BTreeNode **result, struct BTreeNode *search, const uint64_t index);
 
-void sort_kvs_by_pos(struct KVPair **kvs, const uint32_t size);
+struct BTreeValue *insert_value_to_btree(struct BTree *tree, const uint64_t index, void *data);
+struct BTreeValue *find_value_from_btree(struct BTree *tree, const uint64_t index);
+void *delete_value_from_btree(struct BTree *tree, const uint64_t index);
 
-struct KVPair *insert_kv_to_btree(struct BTree *tree, string_t key, void *value, enum TellyTypes type, const off_t start_at, const off_t end_at);
-struct KVPair *find_kv_from_btree(struct BTree *tree, const char *key);
-bool delete_kv_from_btree(struct BTree *tree, const char *key);
-
-void free_btree(struct BTree *tree);
-
+void free_btree(struct BTree *tree, void (*free_value)(void *value));

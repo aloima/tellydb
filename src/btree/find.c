@@ -1,30 +1,28 @@
 #include "../../headers/btree.h"
-#include "../../headers/utils.h"
 
+#include <stdint.h>
 #include <string.h>
 
-static struct KVPair *find_kv_from_node(struct BTreeNode *node, const char *key) {
+static struct BTreeValue *find_value_from_node(struct BTreeNode *node, const uint64_t index) {
   if (node->children) {
     for (uint32_t i = 0; i < node->size; ++i) {
-      struct KVPair *kv = node->data[i];
-      const int search = strcmp(key, kv->key.value);
-
-      if (search < 0) return find_kv_from_node(node->children[i], key);
-      else if (search == 0) return kv;
+      struct BTreeValue *value = node->data[i];
+      if (value->index < index) return find_value_from_node(node->children[i], index);
+      else if (value->index == index) return value;
     }
 
-    return find_kv_from_node(node->children[node->size], key);
+    return find_value_from_node(node->children[node->size], index);
   } else {
     for (uint32_t i = 0; i < node->size; ++i) {
-      struct KVPair *kv = node->data[i];
-      if (streq(kv->key.value, key)) return kv;
+      struct BTreeValue *value = node->data[i];
+      if (value->index == index) return value;
     }
   }
 
   return NULL;
 }
 
-struct KVPair *find_kv_from_btree(struct BTree *tree, const char *key) {
-  if (tree->root) return find_kv_from_node(tree->root, key);
+struct BTreeValue *find_value_from_btree(struct BTree *tree, const uint64_t index) {
+  if (tree->root) return find_value_from_node(tree->root, index);
   else return NULL;
 }

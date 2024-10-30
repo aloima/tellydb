@@ -4,14 +4,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-uint64_t hash(char *key) {
-  uint64_t hash = 5381;
-  char c;
-
-  while ((c = *key++)) hash = ((hash << 5) + hash) + c;
-  return hash;
-}
-
 struct HashTable *create_hashtable(const uint32_t default_size) {
   struct HashTable *table = malloc(sizeof(struct HashTable));
   table->fvs = calloc(default_size, sizeof(struct FVPair *));

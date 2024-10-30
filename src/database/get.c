@@ -197,7 +197,10 @@ void get_all_keys() {
       }
     }
 
-    insert_kv_to_btree(cache, key, NULL, type, start_at, end_at);
+    struct KVPair *kv = malloc(sizeof(struct KVPair));
+    set_kv(kv, key, NULL, type, start_at, end_at);
+
+    insert_value_to_btree(cache, hash(key.value), kv);
     free(key.value);
   }
 }

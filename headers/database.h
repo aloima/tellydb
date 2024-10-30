@@ -1,5 +1,6 @@
 #pragma once
 
+#include "btree.h"
 #include "config.h"
 #include "server.h"
 #include "utils.h"
@@ -22,6 +23,8 @@ struct KVPair {
 struct BTree *create_cache();
 struct BTree *get_cache();
 struct KVPair *get_kv_from_cache(const char *key);
+struct BTreeValue **get_sorted_kvs_by_pos_as_values(uint32_t *size);
+bool delete_kv_from_cache(const char *key);
 void free_cache();
 
 void get_all_keys();

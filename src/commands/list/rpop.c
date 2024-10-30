@@ -1,7 +1,6 @@
 #include "../../../headers/server.h"
 #include "../../../headers/database.h"
 #include "../../../headers/commands.h"
-#include "../../../headers/btree.h"
 #include "../../../headers/utils.h"
 
 #include <stddef.h>
@@ -27,7 +26,7 @@ static void run(struct Client *client, commanddata_t *command) {
     if (client) write_value(client, list->end->value, list->end->type);
 
     if (list->size == 1) {
-      delete_kv_from_btree(get_cache(), key);
+      delete_kv_from_cache(key);
     } else {
       list->end = list->end->prev;
       list->end->next = NULL;
