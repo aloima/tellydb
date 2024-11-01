@@ -18,7 +18,7 @@ bool open_database_fd(const char *filename, uint64_t *server_age) {
   fd = open(filename, (O_RDWR | O_CREAT), (S_IRUSR | S_IWUSR));
 
   if (fd == -1) {
-    write_log(LOG_ERR, "Database file cannot be opened and created.");
+    write_log(LOG_ERR, "Database file cannot be opened or created.");
     return false;
   }
 
@@ -289,12 +289,12 @@ void save_data(const uint64_t server_age) {
 
     write(fd, &server_age, sizeof(uint64_t));
   } else {
-    uint8_t constants[2] = {0x18, 0x10};
+    uint8_t data[10] = {0x18, 0x10};
+    memcpy(data + 2, &server_age, 8);
 
     lseek(fd, 0, SEEK_SET);
-    write(fd, constants, 2);
-    write(fd, &server_age, sizeof(uint64_t));
-    file_size += 10;
+    write(fd, data, 2);
+    file_size = 10;
   }
 
   for (uint32_t i = 0; i < size; ++i) {
@@ -308,15 +308,14 @@ void save_data(const uint64_t server_age) {
         const off_t line_len_in_file = kv->pos.end_at - (kv->pos.start_at - 1);
 
         if (line_len_in_file != line_len) {
-          const uint64_t n = file_size - kv->pos.end_at;
-          char *buf = malloc(n);
-          lseek(fd, kv->pos.end_at, SEEK_SET);
-          read(fd, buf, n);
-          lseek(fd, kv->pos.start_at + diff - 1, SEEK_SET);
-          write(fd, line, line_len);
-          write(fd, buf, n);
+          const off_t buf_len = file_size - kv->pos.end_at;
+          const off_t total_len = line_len + buf_len;
+          line = realloc(line, total_len);
 
-          free(buf);
+          lseek(fd, kv->pos.end_at, SEEK_SET);
+          read(fd, line + line_len, buf_len);
+          lseek(fd, kv->pos.start_at + diff - 1, SEEK_SET);
+          write(fd, line, total_len);
 
           diff += line_len - line_len_in_file;
           kv->pos.end_at += diff;
