@@ -18,25 +18,26 @@ struct BTree *create_btree(const uint32_t order) {
   return tree;
 }
 
-static void get_values_from_node(struct BTreeValue **values, uint32_t *index, struct BTreeNode *node) {
+static void get_values_from_node(struct BTreeValue **values, uint32_t *size, struct BTreeNode *node) {
   if (node->children) {
     for (uint32_t i = 0; i < node->size; ++i) {
-      get_values_from_node(values, index, node->children[i]);
+      get_values_from_node(values, size, node->children[i]);
 
       if (node->data[i]->data) {
-        values[*index] = node->data[i];
-        *index += 1;
+        values[*size] = node->data[i];
+        *size += 1;
       }
     }
 
-    get_values_from_node(values, index, node->children[node->size]);
-    return;
-  }
+    get_values_from_node(values, size, node->children[node->size]);
+  } else {
+    for (uint32_t i = 0; i < node->size; ++i) {
+      struct BTreeValue *value = node->data[i];
 
-  for (uint32_t i = 0; i < node->size; ++i) {
-    if (node->data[i]->data) {
-      values[*index] = node->data[i];
-      *index += 1;
+      if (((struct KVPair *) value->data)->value) {
+        values[*size] = value;
+        *size += 1;
+      }
     }
   }
 }
