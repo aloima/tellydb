@@ -189,7 +189,7 @@ struct BTreeValue *insert_value_to_btree(struct BTree *tree, uint64_t index, voi
       struct BTreeNode *node;
       const uint32_t value_at = find_node_of_index(&node, tree->root, index);
 
-      if (node->data[value_at]->index == index) {
+      if (value_at < node->size && node->data[value_at]->index == index) {
         index += 1;
         continue;
       } else {
