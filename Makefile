@@ -5,7 +5,8 @@ CFLAGS := -O3 -Wall -Wextra \
 -DGIT_HASH=\"$(shell git rev-parse HEAD)\" -DVERSION=\"$(shell git describe --abbrev=0 --tags)\"
 
 compile:
-	$(CC) $(CFLAGS) ./src/*.c ./src/**/*.c ./src/**/**/*.c -o ./telly $(LIBRARIES)
+	@$(CC) $(CFLAGS) ./src/*.c ./src/**/*.c ./src/**/**/*.c -o ./telly $(LIBRARIES)
+	@echo Compiled.
 
 clean:
 	rm -f ./telly

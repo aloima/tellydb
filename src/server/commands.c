@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
 static struct Command *commands = NULL;
 static uint32_t command_count = 28;
@@ -69,22 +68,19 @@ void execute_command(struct Client *client, commanddata_t *data) {
   char input[data->name.len + 1];
   to_uppercase(data->name.value, input);
 
-  bool executed = false;
-
   for (uint32_t i = 0; i < command_count; ++i) {
     const struct Command command = commands[i];
 
     if (streq(input, command.name)) {
       command.run(client, data);
-      executed = true;
-      break;
+      return;
     }
   }
 
-  if (!executed && client != NULL) {
-    char res[42];
-    const size_t len = sprintf(res, "-Unknown command '%s'\r\n", input);
+  if (client) {
+    char buf[42];
+    const size_t nbytes = sprintf(buf, "-Unknown command '%s'\r\n", input);
 
-    _write(client, res, len);
+    _write(client, buf, nbytes);
   }
 }
