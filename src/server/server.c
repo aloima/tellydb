@@ -70,8 +70,9 @@ static void close_server() {
     remove_client(client->connfd);
   }
 
+  const uint64_t server_age = age + difftime(time(NULL), start_at);
   clock_t start = clock();
-  save_data(age + difftime(time(NULL), start_at));
+  save_data(server_age);
   close_database_fd();
   write_log(LOG_INFO, "Saved data and closed database file in %.2f seconds.", ((float) clock() - start) / CLOCKS_PER_SEC);
 

@@ -31,6 +31,7 @@ void get_all_keys();
 struct KVPair *get_data(const char *key);
 struct KVPair *set_data(struct KVPair *data, const string_t key, void *value, const enum TellyTypes type);
 void save_data(const uint64_t server_age);
+bool bg_save(uint64_t server_age);
 
 void set_kv(struct KVPair *kv, const string_t key, void *value, const enum TellyTypes type, const off_t start_at, const off_t end_at);
 void free_kv(struct KVPair *kv);

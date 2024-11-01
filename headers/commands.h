@@ -32,6 +32,7 @@ void free_commands();
 
 
 /* DATA COMMANDS */
+extern struct Command cmd_bgsave;
 extern struct Command cmd_dbsize;
 extern struct Command cmd_decr;
 extern struct Command cmd_get;

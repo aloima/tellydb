@@ -11,8 +11,10 @@
 
 #include <fcntl.h>
 #include <unistd.h>
+#include <pthread.h>
 
 static int fd = -1;
+static bool saving = false;
 
 bool open_database_fd(const char *filename, uint64_t *server_age) {
   fd = open(filename, (O_RDWR | O_CREAT), (S_IRUSR | S_IWUSR));
@@ -37,6 +39,7 @@ int get_database_fd() {
 }
 
 void close_database_fd() {
+  while (saving) usleep(100);
   close(fd);
 }
 
@@ -271,6 +274,9 @@ static off_t generate_value(char **line, struct KVPair *kv) {
 }
 
 void save_data(const uint64_t server_age) {
+  if (saving) return;
+  saving = true;
+
   uint32_t size;
   struct BTreeValue **values = get_sorted_kvs_by_pos_as_values(&size);
 
@@ -293,7 +299,7 @@ void save_data(const uint64_t server_age) {
     memcpy(data + 2, &server_age, 8);
 
     lseek(fd, 0, SEEK_SET);
-    write(fd, data, 2);
+    write(fd, data, 10);
     file_size = 10;
   }
 
@@ -357,4 +363,23 @@ void save_data(const uint64_t server_age) {
 
   ftruncate(fd, file_size + diff);
   free(values);
+
+  saving = false;
+}
+
+void *save_thread(void *arg) {
+  const uint64_t *server_age = arg;
+  save_data(*server_age);
+
+  pthread_exit(NULL);
+}
+
+bool bg_save(uint64_t server_age) {
+  if (saving) return false;
+
+  pthread_t thread;
+  pthread_create(&thread, NULL, save_thread, &server_age);
+  pthread_detach(thread);
+
+  return true;
 }
