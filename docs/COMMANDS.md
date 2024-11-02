@@ -374,6 +374,22 @@ HSET user_profile name "Alice" age 30
 ## Key-Value Commands
 
 ### DECR
+**Syntax**: `APPEND key value`  
+**Description**: Appends string to string value. If key is not exist, creates a new one.  
+**Since**: `0.1.7`  
+**Time complexity**: `O(1)`  
+**Returns**: String length after appending  
+**Behavior**:
+* Throws an error if the key is holding a value that is not string.
+
+**Example**:
+```shell
+APPEND user_name " Black"
+```
+
+---
+
+### DECR
 **Syntax**: `DECR key`  
 **Description**: Decrements value.  
 **Since**: `0.1.0`  

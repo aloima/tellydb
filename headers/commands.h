@@ -57,6 +57,7 @@ extern struct Command cmd_htype;
 /* /HASHTABLE COMMANDS */
 
 /* KV COMMANDS */
+extern struct Command cmd_append;
 extern struct Command cmd_decr;
 extern struct Command cmd_get;
 extern struct Command cmd_exists;
