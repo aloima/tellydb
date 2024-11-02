@@ -106,7 +106,7 @@ static struct Subcommand subcommands[] = {
 
 struct Command cmd_client = {
   .name = "CLIENT",
-  .summary = "Gives information about client(s).",
+  .summary = "Main command of client(s).",
   .since = "0.1.0",
   .complexity = "O(1)",
   .subcommands = subcommands,

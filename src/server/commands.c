@@ -7,13 +7,14 @@
 #include <stdlib.h>
 
 static struct Command *commands = NULL;
-static uint32_t command_count = 29;
+static uint32_t command_count = 28;
 
 void load_commands() {
   struct Command _commands[] = {
     // Data commands
     cmd_bgsave,
     cmd_dbsize,
+    cmd_lastsave,
     cmd_save,
 
     // Generic commands
@@ -22,8 +23,6 @@ void load_commands() {
     cmd_command,
     cmd_hello,
     cmd_info,
-    cmd_lastsave,
-    cmd_memory,
     cmd_ping,
     cmd_time,
 

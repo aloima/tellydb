@@ -34,6 +34,7 @@ void free_commands();
 /* DATABASE COMMANDS */
 extern struct Command cmd_bgsave;
 extern struct Command cmd_dbsize;
+extern struct Command cmd_lastsave;
 extern struct Command cmd_save;
 /* /DATABASE COMMANDS */
 
@@ -43,8 +44,6 @@ extern struct Command cmd_client;
 extern struct Command cmd_command;
 extern struct Command cmd_hello;
 extern struct Command cmd_info;
-extern struct Command cmd_lastsave;
-extern struct Command cmd_memory;
 extern struct Command cmd_ping;
 extern struct Command cmd_time;
 /* /GENERIC COMMANDS */

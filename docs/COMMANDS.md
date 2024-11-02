@@ -5,9 +5,10 @@ This document provides a detailed description of all the available commands. Eac
 
 ## Table of Contents
 1. [Database Commands](#database-commands)
-2. [Key-Value Commands](#key-value-commands)
-3. [List Commands](#list-commands)
-4. [Hash Commands](#hash-commands)
+2. [Generic Commands](#generic-commands)
+3. [Hashtable Commands](#hashtable-commands)
+4. [Key-Value Commands](#key-value-commands)
+5. [List Commands](#list-commands)
 
 ---
 
@@ -35,6 +36,15 @@ This document provides a detailed description of all the available commands. Eac
 
 ---
 
+### LASTSAVE
+**Syntax**: `LASTSAVE`  
+**Description**: Returns last save time of database as UNIX time.  
+**Since**: `0.1.6`  
+**Time complexity**: `O(1)`  
+**Returns**: Integer  
+
+---
+
 ### SAVE
 **Syntax**: `SAVE`  
 **Description**: Saves all data to database file.  
@@ -46,109 +56,148 @@ This document provides a detailed description of all the available commands. Eac
 
 ---
 
-## Key-Value Commands
+## Generic Commands
 
-### DECR
-**Syntax**: `DECR key`  
-**Description**: Decrements value.  
-**Since**: `0.1.0`  
+### AGE
+**Syntax**: `AGE`  
+**Description**: Sends the server age as seconds.  
+**Since**: `0.1.6`  
 **Time complexity**: `O(1)`  
-**Returns**: New integer value stored at the key  
-**Behavior**:
-* If key is not holding a value, value will be set to `0` and will not be decremented.
-* Throws an error if the key is holding a value that is not integer.
-
-**Example**:
-```shell
-DECR user_age
-```
+**Returns**: Integer
 
 ---
 
-### EXISTS
-**Syntax**: `EXISTS key [key ...]`  
-**Description**: Checks if specified keys exist or not.  
-**Since**: `0.1.4`  
-**Time complexity**: `O(N) where N is key count`  
-**Returns**: Array has 2+N elements where N is key count
-* First element is existed key count
-* Second element is not existed key count
-* Other elements represents keys are existed or not key by key. Ordered like usage in the command.
+### CLIENT
+**Syntax**: `CLIENT ID|INFO|SETINFO`  
+**Description**: Main command of client(s).  
+**Since**: `0.1.0`  
+**Time complexity**: `O(1)`  
 
-**Example**:
-```shell
-EXISTS user_name session_token
-```
+**Subcommands**:
+
+#### ID
+**Syntax**: `CLIENT ID`  
+**Description**: Returns ID number of client.  
+**Since**: `0.1.0`  
+**Time complexity**: `O(1)`  
+**Returns**: Integer
 
 ---
 
-### GET
-**Syntax**: `GET key`  
-**Description**: Gets value.  
+#### INFO
+**Syntax**: `CLIENT INFO`  
+**Description**: Returns information about the client.  
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
-**Returns**: A value or null reply if key is not exist  
-**Behavior**:
-* If the value is hash table or list, writes only "hash table" or "list", not be written list and hash table values.
-
-**Example**:
-```shell
-GET user_name
-```
+**Returns**: String
 
 ---
 
-### INCR
-**Syntax**: `INCR key`  
-**Description**: Increments value.  
-**Since**: `0.1.0`  
+#### SETINFO
+**Syntax**: `CLIENT SETINFO property value`  
+**Description**: Returns information about the client.  
+**Since**: `0.1.2`  
 **Time complexity**: `O(1)`  
-**Returns**: New integer value stored at the key  
+**Returns**: `OK`  
 **Behavior**:
-* If key is not holding a value, value will be set to `0` and will not be incremented.
-* Throws an error if the key is holding a value that is not integer.
-
-**Example**:
-```shell
-INCR user_age
-```
+* If uppercased form of property is not `LIB-NAME` or `LIB-VERSION`, throws an error.
 
 ---
-
-### SET
-**Syntax**: `SET key value [NX|XX] [GET]`  
-**Description**: Sets value.  
-**Since**: `0.1.0`  
-**Time complexity**: `O(1)`  
-**Returns**: `OK` or a value
-**Behavior**:
-* If the key is exist, new value will be overwritten.
-
-**Arguments**:
-- **NX**: Only set if the key does not already exist.
-- **XX**: Only set if the key exists.
-- **GET**: Returns the old value if it existed.
 
 **Examples**:
 ```shell
-SET user_name "Alice"
-SET user_age 25 NX
-SET session_token "abc123" XX GET
+CLIENT ID
+CLIENT INFO
+CLIENT SETINFO LIB-NAME a_library_name
 ```
 
 ---
 
-### TYPE
-**Syntax**: `TYPE key`  
-**Description**: Returns type of the value.  
+### COMMAND
+**Syntax**: `COMMAND LIST|COUNT|DOCS`  
+**Description**: Gives information about the commands in the server.  
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
-**Returns**: A value type
 
-**Example**:
+**Subcommands**:
+
+#### LIST
+**Syntax**: `COMMAND LIST`  
+**Description**: Returns name list of all commands.  
+**Since**: `0.1.0`  
+**Time complexity**: `O(N) where N is count of all commands`  
+**Returns**: Array includes string
+
+---
+
+#### COUNT
+**Syntax**: `COMMAND COUNT`  
+**Description**: Returns count of all commands in the server.  
+**Since**: `0.1.0`  
+**Time complexity**: `O(1)`  
+**Returns**: Integer
+
+---
+
+#### DOCS
+**Syntax**: `COMMAND DOCS`  
+**Description**: Returns documentation about multiple commands.  
+**Since**: `0.1.0`  
+**Time complexity**: `O(N) where N is count of commands to look up`  
+**Returns**: Array including each command's information as array  
+
+---
+
+**Examples**:
 ```shell
-TYPE user_name
+COMMAND LIST
+COMMAND COUNT
+COMMAND DOCS
 ```
+
+---
+
+### HELLO
+**Syntax**: `HELLO [protover]`  
+**Description**: Handshakes with the tellydb server.  
+**Since**: `0.1.6`  
+**Time complexity**: `O(1)`  
+**Returns**: Basic information about the server as array for RESP2, map for RESP3  
+**Behavior**:
+* protover must be 2 or 3, otherwise throws an error.
+* Sets protocol using by client as protover. If it is not specified, it will not be changed.
+* Default protocol version of clients is 2/RESP2.
+
+---
+
+### INFO
+**Syntax**: `INFO [section [section ...]]`  
+**Description**: Displays server information.  
+**Since**: `0.1.6`  
+**Time complexity**: `O(1)`  
+**Returns**: Information about the server and connection as string  
+**Behavior**:
++ Allowed section names are `server` and `clients`, if it is not specified, includes all of them in return value.
+
+---
+
+### PING
+**Syntax**: `PING [value]`  
+**Description**: Pings the server and returns a simple/bulk string.  
+**Since**: `0.1.2`  
+**Time complexity**: `O(1)`  
+**Returns**: `PONG` or value
+
+---
+
+### TIME
+**Syntax**: `TIME`
+**Description**: Returns the current server time as two elements in a array, a Unix timestamp and microseconds already elapsed in the current second.  
+**Since**: `0.1.2`  
+**Time complexity**: `O(1)`  
+**Returns**: Array includes time information  
+**Behavior**:
+* Calls gettimeofday() method
 
 ---
 
@@ -161,7 +210,7 @@ TYPE user_name
 **Time complexity**: `O(N) where N is absolute index number`  
 **Returns**: A value or null reply if the index is not exist
 **Behavior**:
-- Index starts from 0; -1 represents the last element.
+* Index starts from 0; -1 represents the last element.
 
 **Example**:
 ```shell
@@ -258,7 +307,7 @@ RPUSH tasks "Write report" "Send email"
 
 ---
 
-## Hash Commands
+## Hashtable Commands
 
 ### HDEL
 **Syntax**: `HDEL key field [field ...]`  
@@ -344,4 +393,110 @@ HSET user_profile name "Alice" age 30
 **Example**:
 ```shell
 HSET user_profile name "Alice" age 30
+```
+
+---
+
+## Key-Value Commands
+
+### DECR
+**Syntax**: `DECR key`  
+**Description**: Decrements value.  
+**Since**: `0.1.0`  
+**Time complexity**: `O(1)`  
+**Returns**: New integer value stored at the key  
+**Behavior**:
+* If key is not holding a value, value will be set to `0` and will not be decremented.
+* Throws an error if the key is holding a value that is not integer.
+
+**Example**:
+```shell
+DECR user_age
+```
+
+---
+
+### EXISTS
+**Syntax**: `EXISTS key [key ...]`  
+**Description**: Checks if specified keys exist or not.  
+**Since**: `0.1.4`  
+**Time complexity**: `O(N) where N is key count`  
+**Returns**: Array has 2+N elements where N is key count
+* First element is existed key count
+* Second element is not existed key count
+* Other elements represents keys are existed or not key by key. Ordered like usage in the command.
+
+**Example**:
+```shell
+EXISTS user_name session_token
+```
+
+---
+
+### GET
+**Syntax**: `GET key`  
+**Description**: Gets value.  
+**Since**: `0.1.0`  
+**Time complexity**: `O(1)`  
+**Returns**: A value or null reply if key is not exist  
+**Behavior**:
+* If the value is hash table or list, writes only "hash table" or "list", not be written list and hash table values.
+
+**Example**:
+```shell
+GET user_name
+```
+
+---
+
+### INCR
+**Syntax**: `INCR key`  
+**Description**: Increments value.  
+**Since**: `0.1.0`  
+**Time complexity**: `O(1)`  
+**Returns**: New integer value stored at the key  
+**Behavior**:
+* If key is not holding a value, value will be set to `0` and will not be incremented.
+* Throws an error if the key is holding a value that is not integer.
+
+**Example**:
+```shell
+INCR user_age
+```
+
+---
+
+### SET
+**Syntax**: `SET key value [NX|XX] [GET]`  
+**Description**: Sets value.  
+**Since**: `0.1.0`  
+**Time complexity**: `O(1)`  
+**Returns**: `OK` or a value  
+**Behavior**:
+* If the key is exist, new value will be overwritten.
+
+**Arguments**:
+- **NX**: Only set if the key does not already exist.
+- **XX**: Only set if the key exists.
+- **GET**: Returns the old value if it existed.
+
+**Examples**:
+```shell
+SET user_name "Alice"
+SET user_age 25 NX
+SET session_token "abc123" XX GET
+```
+
+---
+
+### TYPE
+**Syntax**: `TYPE key`  
+**Description**: Returns type of the value.  
+**Since**: `0.1.0`  
+**Time complexity**: `O(1)`  
+**Returns**: A value type
+
+**Example**:
+```shell
+TYPE user_name
 ```
