@@ -33,7 +33,7 @@ static void run(struct Client *client, commanddata_t *command) {
 
 struct Command cmd_llen = {
   .name = "LLEN",
-  .summary = "Returns length of the list stored at the key.",
+  .summary = "Returns length of the list.",
   .since = "0.1.3",
   .complexity = "O(1)",
   .subcommands = NULL,

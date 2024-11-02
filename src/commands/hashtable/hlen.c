@@ -38,7 +38,7 @@ static void run(struct Client *client, commanddata_t *command) {
 
 struct Command cmd_hlen = {
   .name = "HLEN",
-  .summary = "Returns field count information of the hash table stored at the key.",
+  .summary = "Returns field count information of the hash table.",
   .since = "0.1.3",
   .complexity = "O(1)",
   .subcommands = NULL,

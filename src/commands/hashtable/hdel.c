@@ -49,7 +49,7 @@ static void run(struct Client *client, commanddata_t *command) {
 
 struct Command cmd_hdel = {
   .name = "HDEL",
-  .summary = "Deletes field(s) of the hash table for the key. If hash table does not exist, creates it.",
+  .summary = "Deletes field(s) of the hash table.",
   .since = "0.1.5",
   .complexity = "O(N) where N is written field name count",
   .subcommands = NULL,

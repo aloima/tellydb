@@ -22,7 +22,7 @@ static void run(struct Client *client, commanddata_t *command) {
 
 struct Command cmd_get = {
   .name = "GET",
-  .summary = "Gets value from specified key.",
+  .summary = "Gets value.",
   .since = "0.1.0",
   .complexity = "O(1)",
   .subcommands = NULL,

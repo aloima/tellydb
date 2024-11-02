@@ -26,6 +26,7 @@ static void run(struct Client *client, commanddata_t *command) {
     if (client) write_value(client, list->end->value, list->end->type);
 
     if (list->size == 1) {
+      // TODO: complete deletion of the list
       delete_kv_from_cache(key);
     } else {
       list->end = list->end->prev;
@@ -39,7 +40,7 @@ static void run(struct Client *client, commanddata_t *command) {
 
 struct Command cmd_rpop = {
   .name = "RPOP",
-  .summary = "Removes and returns last element(s) of the list stored at the key.",
+  .summary = "Removes and returns last element of the list.",
   .since = "0.1.3",
   .complexity = "O(1)",
   .subcommands = NULL,

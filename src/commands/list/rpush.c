@@ -81,7 +81,7 @@ static void run(struct Client *client, commanddata_t *command) {
 
 struct Command cmd_rpush = {
   .name = "RPUSH",
-  .summary = "Pushes element(s) to ending of the list and returns pushed element count.",
+  .summary = "Pushes element(s) to ending of the list.",
   .since = "0.1.3",
   .complexity = "O(N) where N is written element count",
   .subcommands = NULL,

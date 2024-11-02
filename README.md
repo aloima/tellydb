@@ -5,9 +5,10 @@ A key-value database project for educational purposes.
 + Follows [RESP2/RESP3](https://redis.io/docs/latest/develop/reference/protocol-spec/) specification from redis, so all redis clients are compatible
 + Includes B-Tree for caching
 + Fully configurable via [.tellyconf](./docs/FILE.md)
-+ Includes command queue system
++ Includes command queue system using a thread
 + Supports integer, string, null, boolean, list and hash table types
-+ Provides atomicity when saving to the database file and thread handling
++ Provides atomicity when saving to the database file
++ Provides saving to the database file using a background thread
 
 > Look at:
 > [docs/SPECS.md](./docs/SPECS.md) for more technical information,  
@@ -21,7 +22,7 @@ A key-value database project for educational purposes.
 * Start the server using `telly`
 * Start using some commands
 
-To list the commands, look at [src/commands](./src/commands/).  
+To list the commands, look at [docs/COMMANDS.md](./docs/COMMANDS.md).  
 To get information about cli commands, use `telly help`.
 
 ## License

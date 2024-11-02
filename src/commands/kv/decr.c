@@ -37,7 +37,7 @@ static void run(struct Client *client, commanddata_t *command) {
 
 struct Command cmd_decr = {
   .name = "DECR",
-  .summary = "Decrements value from specified key.",
+  .summary = "Decrements value.",
   .since = "0.1.0",
   .complexity = "O(1)",
   .subcommands = NULL,

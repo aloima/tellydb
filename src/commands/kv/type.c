@@ -49,7 +49,7 @@ static void run(struct Client *client, commanddata_t *command) {
 
 struct Command cmd_type = {
   .name = "TYPE",
-  .summary = "Returns type of value of key.",
+  .summary = "Returns type of the value.",
   .since = "0.1.0",
   .complexity = "O(1)",
   .subcommands = NULL,

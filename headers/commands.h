@@ -31,17 +31,11 @@ uint32_t get_command_count();
 void free_commands();
 
 
-/* DATA COMMANDS */
+/* DATABASE COMMANDS */
 extern struct Command cmd_bgsave;
 extern struct Command cmd_dbsize;
-extern struct Command cmd_decr;
-extern struct Command cmd_get;
-extern struct Command cmd_exists;
-extern struct Command cmd_incr;
 extern struct Command cmd_save;
-extern struct Command cmd_set;
-extern struct Command cmd_type;
-/* /DATA COMMANDS */
+/* /DATABASE COMMANDS */
 
 /* GENERIC COMMANDS */
 extern struct Command cmd_age;
@@ -62,6 +56,15 @@ extern struct Command cmd_hlen;
 extern struct Command cmd_hset;
 extern struct Command cmd_htype;
 /* /HASHTABLE COMMANDS */
+
+/* KV COMMANDS */
+extern struct Command cmd_decr;
+extern struct Command cmd_get;
+extern struct Command cmd_exists;
+extern struct Command cmd_incr;
+extern struct Command cmd_set;
+extern struct Command cmd_type;
+/* /KV COMMANDS */
 
 /* LIST COMMANDS */
 extern struct Command cmd_lindex;

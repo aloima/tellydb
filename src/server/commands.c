@@ -14,13 +14,7 @@ void load_commands() {
     // Data commands
     cmd_bgsave,
     cmd_dbsize,
-    cmd_decr,
-    cmd_exists,
-    cmd_get,
-    cmd_incr,
     cmd_save,
-    cmd_set,
-    cmd_type,
 
     // Generic commands
     cmd_age,
@@ -39,6 +33,14 @@ void load_commands() {
     cmd_hlen,
     cmd_hset,
     cmd_htype,
+
+    // KV commands
+    cmd_decr,
+    cmd_exists,
+    cmd_get,
+    cmd_incr,
+    cmd_set,
+    cmd_type,
 
     // List commands
     cmd_lindex,

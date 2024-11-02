@@ -32,7 +32,7 @@ static void run(struct Client *client, commanddata_t *command) {
 
 struct Command cmd_hget = {
   .name = "HGET",
-  .summary = "Gets a field from the hash table stored at the key.",
+  .summary = "Gets a field from the hash table.",
   .since = "0.1.3",
   .complexity = "O(1)",
   .subcommands = NULL,

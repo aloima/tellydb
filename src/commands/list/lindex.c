@@ -65,7 +65,7 @@ static void run(struct Client *client, commanddata_t *command) {
 
 struct Command cmd_lindex = {
   .name = "LINDEX",
-  .summary = "Returns element at the index in the list stored at the key.",
+  .summary = "Returns element at the index in the list.",
   .since = "0.1.4",
   .complexity = "O(N) where N is index number",
   .subcommands = NULL,

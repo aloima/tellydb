@@ -37,7 +37,7 @@ static void run(struct Client *client, commanddata_t *command) {
 
 struct Command cmd_incr = {
   .name = "INCR",
-  .summary = "Increments value from specified key.",
+  .summary = "Increments value.",
   .since = "0.1.0",
   .complexity = "O(1)",
   .subcommands = NULL,

@@ -77,8 +77,9 @@ static void run(struct Client *client, commanddata_t *command) {
   if (get) {
     if (res) {
       if (client) write_value(client, value, type);
-      set_data(res, key, value, type);
     } else if (client) WRITE_NULL_REPLY(client);
+
+    set_data(res, key, value, type);
   } else {
     set_data(res, key, value, type);
     if (client) _write(client, "+OK\r\n", 5);
@@ -87,7 +88,7 @@ static void run(struct Client *client, commanddata_t *command) {
 
 struct Command cmd_set = {
   .name = "SET",
-  .summary = "Sets value to specified key. If the key already has a value, it is overwritten.",
+  .summary = "Sets value.",
   .since = "0.1.0",
   .complexity = "O(1)",
   .subcommands = NULL,
