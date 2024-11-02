@@ -62,10 +62,10 @@ void write_value(struct Client *client, void *value, enum TellyTypes type);
 #define RDT_CLOSE 0
 
 typedef struct CommandData {
-  bool close;
   string_t name;
   string_t *args;
   uint32_t arg_count;
+  bool close;
 } commanddata_t;
 
 commanddata_t *get_command_data(struct Client *client);

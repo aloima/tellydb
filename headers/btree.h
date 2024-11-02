@@ -17,11 +17,11 @@ struct BTreeValue {
 
 struct BTreeNode {
   struct BTreeValue **data;
-  uint32_t size;
-
   struct BTreeNode **children;
   struct BTreeNode *parent;
+
   uint32_t at;
+  uint32_t size;
 };
 
 struct BTree {

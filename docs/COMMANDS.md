@@ -1,5 +1,5 @@
 # Commands
-This document provides a detailed description of all the available commands in TellyDB, an in-memory key-value database. Each command's syntax, arguments, and examples are included for clarity.
+This document provides a detailed description of all the available commands. Each command's syntax, arguments, and examples are included for clarity.
 
 ---
 
@@ -22,7 +22,7 @@ This document provides a detailed description of all the available commands in T
 **Behavior**:
 * Creates a thread to save all data to the database.
 * The created thread will be closed after saving.
-* If a saving process from [BGSAVE](#bgsave) or [SAVE](#save) is active, gives an error.
+* If a saving process from [BGSAVE](#bgsave) or [SAVE](#save) is active, throws an error.
 
 ---
 
@@ -31,7 +31,7 @@ This document provides a detailed description of all the available commands in T
 **Description**: Returns key count in the database.  
 **Since**: `0.1.6`  
 **Time complexity**: `O(1)`  
-**Returns**: An integer
+**Returns**: Integer
 
 ---
 
@@ -53,10 +53,10 @@ This document provides a detailed description of all the available commands in T
 **Description**: Decrements value.  
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
-**Returns**: An integer, new value stored at the key  
+**Returns**: New integer value stored at the key  
 **Behavior**:
-* If key is not holding a value, value will be set to 0 and command stops.
-* Gives an error if the key is holding a value that is not an integer.
+* If key is not holding a value, value will be set to `0` and will not be decremented.
+* Throws an error if the key is holding a value that is not integer.
 
 **Example**:
 ```shell
@@ -70,7 +70,7 @@ DECR user_age
 **Description**: Checks if specified keys exist or not.  
 **Since**: `0.1.4`  
 **Time complexity**: `O(N) where N is key count`  
-**Returns**: An array has 2+N elements where N is key count
+**Returns**: Array has 2+N elements where N is key count
 * First element is existed key count
 * Second element is not existed key count
 * Other elements represents keys are existed or not key by key. Ordered like usage in the command.
@@ -87,7 +87,7 @@ EXISTS user_name session_token
 **Description**: Gets value.  
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
-**Returns**: A value or null reply if key is not exist
+**Returns**: A value or null reply if key is not exist  
 **Behavior**:
 * If the value is hash table or list, writes only "hash table" or "list", not be written list and hash table values.
 
@@ -103,10 +103,10 @@ GET user_name
 **Description**: Increments value.  
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
-**Returns**: An integer, new value stored at the key  
+**Returns**: New integer value stored at the key  
 **Behavior**:
-* If key is not holding a value, value will be set to 0 and command stops.
-* Gives an error if the key is holding a value that is not an integer.
+* If key is not holding a value, value will be set to `0` and will not be incremented.
+* Throws an error if the key is holding a value that is not integer.
 
 **Example**:
 ```shell
@@ -176,9 +176,9 @@ LINDEX tasks -3
 **Description**: Returns length of the list.  
 **Since**: `0.1.3`  
 **Time complexity**: `O(1)`  
-**Returns**: An integer  
+**Returns**: Integer  
 **Behavior**:
-* If the key is holding a value that is not a list, gives an error.
+* If the key is holding a value that is not a list, throws an error.
 * If the key is not holding a value, returns zero.
 
 **Example**:
@@ -195,7 +195,7 @@ LLEN tasks
 **Time complexity**: `O(1)`  
 **Returns**: A value or null reply  
 **Behavior**:
-* If the key is holding a value that is not a list, gives an error.
+* If the key is holding a value that is not a list, throws an error.
 * If the key is not holding a value, returns null reply.
 * If the list has only one element, the list will be deleted from the database.
 
@@ -213,7 +213,7 @@ LPOP tasks
 **Time complexity**: `O(N) where N is written element count`  
 **Returns**: Pushed element count  
 **Behavior**:
-* If the key is holding a value that is not a list, gives an error.
+* If the key is holding a value that is not a list, throws an error.
 * If the key is not holding a value, creates a list for the key and pushes element(s).
 
 **Example**:
@@ -230,7 +230,7 @@ LPUSH tasks "Write report" "Send email"
 **Time complexity**: `O(1)`  
 **Returns**: A value or null reply  
 **Behavior**:
-* If the key is holding a value that is not a list, gives an error.
+* If the key is holding a value that is not a list, throws an error.
 * If the key is not holding a value, returns null reply.
 * If the list has only one element, the list will be deleted from the database.
 
@@ -248,7 +248,7 @@ RPOP tasks
 **Time complexity**: `O(N) where N is written element count`  
 **Returns**: Pushed element count  
 **Behavior**:
-* If the key is holding a value that is not a list, gives an error.
+* If the key is holding a value that is not a list, throws an error.
 * If the key is not holding a value, creates a list for the key and pushes element(s).
 
 **Example**:
@@ -267,7 +267,7 @@ RPUSH tasks "Write report" "Send email"
 **Time complexity**: `O(N) where N is written field name count`  
 **Returns**: Deleted field count  
 **Behavior**:
-* If the key is holding a value that is not a hash table, gives an error.
+* If the key is holding a value that is not a hash table, throws an error.
 * If the key is not holding a value, returns `0`.
 
 **Example**:
@@ -284,7 +284,7 @@ HDEL user_profile age
 **Time complexity**: `O(1)`  
 **Returns**: A value or null reply  
 **Behavior**:
-* If the key is holding a value that is not a hash table, gives an error.
+* If the key is holding a value that is not a hash table, throws an error.
 * If the key is not holding a value, returns null reply.
 
 **Example**:
@@ -304,7 +304,7 @@ HGET user_profile age
 * Second element is filled field count using allocated field areas except fields from field->count.
 * Third element is all filled field count included fields from field->next.
 **Behavior**:
-* If the key is holding a value that is not a hash table, gives an error.
+* If the key is holding a value that is not a hash table, throws an error.
 * If the key is not holding a value, returns null reply.
 
 **Example**:
@@ -321,7 +321,7 @@ HLEN user_profile
 **Time complexity**: `O(N) where N is written field name-value pair count`  
 **Returns**: Field count that is set  
 **Behavior**:
-* If the key is holding a value that is not a hash table, gives an error.
+* If the key is holding a value that is not a hash table, throws an error.
 * If the key is not holding a value, creates a hash table and sets field(s).
 
 **Example**:
@@ -338,7 +338,7 @@ HSET user_profile name "Alice" age 30
 **Time complexity**: `O(N) where N is written field name-value pair count`  
 **Returns**: A value type or null reply  
 **Behavior**:
-* If the key is holding a value that is not a hash table, gives an error.
+* If the key is holding a value that is not a hash table, throws an error.
 * If the key is not holding a value, returns null reply
 
 **Example**:
