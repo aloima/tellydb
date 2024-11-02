@@ -82,16 +82,12 @@ This document provides a detailed description of all the available commands. Eac
 **Time complexity**: `O(1)`  
 **Returns**: Integer
 
----
-
 #### INFO
 **Syntax**: `CLIENT INFO`  
 **Description**: Returns information about the client.  
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
 **Returns**: String
-
----
 
 #### SETINFO
 **Syntax**: `CLIENT SETINFO property value`  
@@ -101,15 +97,6 @@ This document provides a detailed description of all the available commands. Eac
 **Returns**: `OK`  
 **Behavior**:
 * If uppercased form of property is not `LIB-NAME` or `LIB-VERSION`, throws an error.
-
----
-
-**Examples**:
-```shell
-CLIENT ID
-CLIENT INFO
-CLIENT SETINFO LIB-NAME a_library_name
-```
 
 ---
 
@@ -128,8 +115,6 @@ CLIENT SETINFO LIB-NAME a_library_name
 **Time complexity**: `O(N) where N is count of all commands`  
 **Returns**: Array includes string
 
----
-
 #### COUNT
 **Syntax**: `COMMAND COUNT`  
 **Description**: Returns count of all commands in the server.  
@@ -137,23 +122,12 @@ CLIENT SETINFO LIB-NAME a_library_name
 **Time complexity**: `O(1)`  
 **Returns**: Integer
 
----
-
 #### DOCS
 **Syntax**: `COMMAND DOCS`  
 **Description**: Returns documentation about multiple commands.  
 **Since**: `0.1.0`  
 **Time complexity**: `O(N) where N is count of commands to look up`  
 **Returns**: Array including each command's information as array  
-
----
-
-**Examples**:
-```shell
-COMMAND LIST
-COMMAND COUNT
-COMMAND DOCS
-```
 
 ---
 

@@ -3,8 +3,14 @@
 #include "../../../headers/utils.h"
 
 #include <stdio.h>
+#include <string.h>
 #include <stddef.h>
 #include <stdint.h>
+
+struct Value {
+  uint32_t length;
+  char *data;
+};
 
 static void run(struct Client *client, commanddata_t *command) {
   if (client) {
@@ -40,13 +46,16 @@ static void run(struct Client *client, commanddata_t *command) {
       case RESP3:
         protocol = "RESP3";
         break;
+
+      default:
+        protocol = "";
     }
 
-    char *values[4][2] = {
-      {"server", "telly"},
-      {"version", VERSION},
-      {"protocol", protocol},
-      {"client id", client_id}
+    struct Value values[4][2] = {
+      {{6, "server"}, {5, "telly"}},
+      {{7, "version"}, {strlen(VERSION), VERSION}},
+      {{8, "protocol"}, {strlen(protocol), protocol}},
+      {{9, "client id"}, {strlen(client_id), client_id}}
     };
 
     switch (client->protover) {
@@ -56,7 +65,7 @@ static void run(struct Client *client, commanddata_t *command) {
 
         for (uint32_t i = 0; i < 4; ++i) {
           char element[128];
-          sprintf(element, "+%s\r\n+%s\r\n", values[i][0], values[i][1]);
+          sprintf(element, "$%d\r\n%s\r\n$%d\r\n%s\r\n", values[i][0].length, values[i][0].data, values[i][1].length, values[i][1].data);
           strcat(buf, element);
         }
 
@@ -70,7 +79,7 @@ static void run(struct Client *client, commanddata_t *command) {
 
         for (uint32_t i = 0; i < 4; ++i) {
           char element[128];
-          sprintf(element, "+%s\r\n+%s\r\n", values[i][0], values[i][1]);
+          sprintf(element, "$%d\r\n%s\r\n$%d\r\n%s\r\n", values[i][0].length, values[i][0].data, values[i][1].length, values[i][1].data);
           strcat(buf, element);
         }
 

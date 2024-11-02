@@ -10,9 +10,10 @@ A key-value database project for educational purposes.
 + Provides atomicity when saving to the database file
 + Provides saving to the database file using a background thread
 
-> Look at:
+> Look at:  
 > [docs/SPECS.md](./docs/SPECS.md) for more technical information,  
 > [docs/FILE.md](./docs/FILE.md) for information about provided files by tellydb
+> [docs/COMMANDS.md](./docs/COMMANDS.md) for information about commands
 
 ## Quick Start
 * Install a client that allows to connect tellydb or redis server
@@ -22,7 +23,6 @@ A key-value database project for educational purposes.
 * Start the server using `telly`
 * Start using some commands
 
-To list the commands, look at [docs/COMMANDS.md](./docs/COMMANDS.md).  
 To get information about cli commands, use `telly help`.
 
 ## License

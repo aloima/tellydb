@@ -17,31 +17,71 @@ static void run(struct Client *client, commanddata_t *command) {
       const uint32_t command_count = get_command_count();
 
       char res[16384];
-      uint32_t res_len = sprintf(res, "*%d\r\n", command_count * 2);
+      uint32_t res_len;
 
-      for (uint32_t i = 0; i < command_count; ++i) {
-        struct Command command = commands[i];
+      switch (client->protover) {
+        case RESP2:
+          res_len = sprintf(res, "*%d\r\n", command_count * 2);
 
-        char buf[4096];
-        res_len += sprintf(buf, (
-          "$%ld\r\n%s\r\n"
-          "*6\r\n"
-            "$7\r\nsummary\r\n"
-            "$%ld\r\n%s\r\n"
+          for (uint32_t i = 0; i < command_count; ++i) {
+            struct Command command = commands[i];
 
-            "$5\r\nsince\r\n"
-            "$%ld\r\n%s\r\n"
+            char buf[4096];
+            res_len += sprintf(buf, (
+              "$%ld\r\n%s\r\n"
+              "*6\r\n"
+                "$7\r\nsummary\r\n"
+                "$%ld\r\n%s\r\n"
 
-            "$10\r\ncomplexity\r\n"
-            "$%ld\r\n%s\r\n"
-        ),
-          strlen(command.name), command.name,
-          strlen(command.summary), command.summary,
-          strlen(command.since), command.since,
-          strlen(command.complexity), command.complexity
-        );
+                "$5\r\nsince\r\n"
+                "$%ld\r\n%s\r\n"
 
-        strcat(res, buf);
+                "$10\r\ncomplexity\r\n"
+                "$%ld\r\n%s\r\n"
+            ),
+              strlen(command.name), command.name,
+              strlen(command.summary), command.summary,
+              strlen(command.since), command.since,
+              strlen(command.complexity), command.complexity
+            );
+
+            strcat(res, buf);
+          }
+
+          break;
+
+        case RESP3:
+          res_len = sprintf(res, "%%%d\r\n", command_count);
+
+          for (uint32_t i = 0; i < command_count; ++i) {
+            struct Command command = commands[i];
+
+            char buf[4096];
+            res_len += sprintf(buf, (
+              "$%ld\r\n%s\r\n"
+              "%%3\r\n"
+                "$7\r\nsummary\r\n"
+                "$%ld\r\n%s\r\n"
+
+                "$5\r\nsince\r\n"
+                "$%ld\r\n%s\r\n"
+
+                "$10\r\ncomplexity\r\n"
+                "$%ld\r\n%s\r\n"
+            ),
+              strlen(command.name), command.name,
+              strlen(command.summary), command.summary,
+              strlen(command.since), command.since,
+              strlen(command.complexity), command.complexity
+            );
+
+            strcat(res, buf);
+          }
+
+          break;
+
+        default:
+          res_len = 0;
       }
 
       _write(client, res, res_len);
