@@ -9,6 +9,29 @@ struct Client **clients;
 uint32_t client_count = 0;
 uint32_t last_connection_client_id = 0;
 
+struct Password *default_password, *empty_password, *full_password;
+
+void create_constant_passwords() {
+  default_password = malloc(sizeof(struct Password));
+  default_password->permissions = (P_READ | P_WRITE | P_CLIENT | P_CONFIG | P_AUTH | P_SERVER);
+
+  empty_password = malloc(sizeof(struct Password));
+  empty_password->permissions = 0;
+
+  full_password = malloc(sizeof(struct Password));
+  full_password->permissions = (P_READ | P_WRITE | P_CLIENT | P_CONFIG | P_AUTH | P_SERVER);
+}
+
+void free_constant_passwords() {
+  free(default_password);
+  free(empty_password);
+  free(full_password);
+}
+
+struct Password *get_full_password() {
+  return full_password;
+}
+
 struct Client **get_clients() {
   return clients;
 }
@@ -54,6 +77,12 @@ struct Client *add_client(const int connfd) {
   client->lib_ver = NULL;
   client->ssl = NULL;
   client->protover = RESP2;
+
+  if (get_password_count() == 0) {
+    client->password = default_password;
+  } else {
+    client->password = empty_password;
+  }
 
   return client;
 }

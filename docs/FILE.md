@@ -3,15 +3,15 @@ This file is a small documentation for files that provided by tellydb. Specified
 They can be changed from configuration file. Configuration file is changeable via command argument.
 
 ## Database file | `.tellydb`
-It consists of file headers and data lines. File headers have 10 bytes size and is as follows:
+It consists of file headers, authorization part and data lines.
+* `file headers + authorization part + data lines`
+
+File headers have 10 bytes size and is as follows:
 * `0x1810 + server age (8 byte)`
 
-A data line is as follows:
-* `string length specifier (4 byte) + data key + data type + data value`
-* Data key is a string.
-
-> [!NOTE]
-> A string length is maximum `2^30-1` or `1 GB - 1 byte` and represented by 30 bit (6 bit + 3 byte).  
+### String length specifier
+In this file, a structure named string length specifier for strings is defined as follows:
+> A string length is maximum `2^30-1` and represented by 30 bit (6 bit + 3 byte).  
 > A string length specifier is minimum 1 byte, maximum 4 byte. First two bits of first byte represents additional byte count.  
 > For example, construction of string length using `0b(10|100010) 0x07 0x09` data is as follows:
 >  
@@ -22,6 +22,20 @@ A data line is as follows:
 > Value of two bits before `|` is `0b10` or `2`. This shows that existence of additional two bytes (B and C).  
 > The six bits after `|` and additional bytes represents string length as reversed.  
 > `C + B + (Bits after | in A)` or `0b00001001_00000111_100010` is `147938`.
+
+### Authorization part
+Authorization part consists of passwords and their permissions and as follows:
+* `password count byte count (1 byte, n) + password count (n byte) + passwords`
+
+A password is as follows:
+* `string length specifier (4 byte) + password + password permissions (1 byte)`
+
+For permissions, look at [AUTH.md](./AUTH.md).
+
+### Data lines
+A data line is as follows:
+* `string length specifier (4 byte) + data key + data type + data value`
+* Data key is a string.
 
 Data value scheme is defined as:
 > [!NOTE]

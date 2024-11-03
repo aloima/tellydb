@@ -12,7 +12,7 @@ struct Value {
   char *data;
 };
 
-static void run(struct Client *client, commanddata_t *command) {
+static void run(struct Client *client, commanddata_t *command, __attribute__((unused)) struct Password *password) {
   if (client) {
     const uint32_t arg_count = command->arg_count;
 

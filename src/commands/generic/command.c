@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <string.h>
 
-static void run(struct Client *client, commanddata_t *command) {
+static void run(struct Client *client, commanddata_t *command, __attribute__((unused)) struct Password *password) {
   if (command->arg_count != 0 && client) {
     const string_t input = command->args[0];
     char subcommand[input.len + 1];

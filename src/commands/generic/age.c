@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <time.h>
 
-static void run(struct Client *client, __attribute__((unused)) commanddata_t *command) {
+static void run(struct Client *client, __attribute__((unused)) commanddata_t *command, __attribute__((unused)) struct Password *password) {
   if (client) {
     uint64_t age;
     time_t start_at;

@@ -6,27 +6,31 @@
 
 #include <stddef.h>
 
-static void run(struct Client *client, commanddata_t *command) {
+static void run(struct Client *client, commanddata_t *command, struct Password *password) {
   if (client) {
     if (command->arg_count != 2) {
       WRONG_ARGUMENT_ERROR(client, "HGET", 4);
       return;
     }
 
-    const struct KVPair *kv = get_data(command->args[0].value);
+    if (password->permissions & P_READ) {
+      const struct KVPair *kv = get_data(command->args[0].value);
 
-    if (kv) {
-      if (kv->type == TELLY_HASHTABLE) {
-        char *name = command->args[1].value;
-        const struct FVPair *field = get_fv_from_hashtable(kv->value, name);
+      if (kv) {
+        if (kv->type == TELLY_HASHTABLE) {
+          char *name = command->args[1].value;
+          const struct FVPair *field = get_fv_from_hashtable(kv->value, name);
 
-        if (field) {
-          write_value(client, field->value, field->type);
-        } else WRITE_NULL_REPLY(client);
-      } else {
-        _write(client, "-Invalid type for 'HGET' command\r\n", 34);
-      }
-    } else WRITE_NULL_REPLY(client);
+          if (field) {
+            write_value(client, field->value, field->type);
+          } else WRITE_NULL_REPLY(client);
+        } else {
+          _write(client, "-Invalid type for 'HGET' command\r\n", 34);
+        }
+      } else WRITE_NULL_REPLY(client);
+    } else {
+      _write(client, "-Not allowed to use this command, need P_READ\r\n", 47);
+    }
   }
 }
 

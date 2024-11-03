@@ -1,5 +1,6 @@
 #include "../../headers/server.h"
 #include "../../headers/commands.h"
+#include "../../headers/database.h"
 #include "../../headers/utils.h"
 
 #include <stdio.h>
@@ -7,7 +8,7 @@
 #include <stdlib.h>
 
 static struct Command *commands = NULL;
-static uint32_t command_count = 29;
+static uint32_t command_count = 30;
 
 void load_commands() {
   struct Command _commands[] = {
@@ -19,6 +20,7 @@ void load_commands() {
 
     // Generic commands
     cmd_age,
+    cmd_auth,
     cmd_client,
     cmd_command,
     cmd_hello,
@@ -67,7 +69,9 @@ uint32_t get_command_count() {
   return command_count;
 }
 
-void execute_command(struct Client *client, commanddata_t *data) {
+void execute_command(struct Transaction *transaction) {
+  commanddata_t *data = transaction->command;
+
   char input[data->name.len + 1];
   to_uppercase(data->name.value, input);
 
@@ -75,15 +79,15 @@ void execute_command(struct Client *client, commanddata_t *data) {
     const struct Command command = commands[i];
 
     if (streq(input, command.name)) {
-      command.run(client, data);
+      command.run(transaction->client, transaction->command, transaction->password);
       return;
     }
   }
 
-  if (client) {
+  if (transaction->client) {
     char buf[42];
     const size_t nbytes = sprintf(buf, "-Unknown command '%s'\r\n", input);
 
-    _write(client, buf, nbytes);
+    _write(transaction->client, buf, nbytes);
   }
 }

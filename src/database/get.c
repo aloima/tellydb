@@ -10,12 +10,12 @@
 
 #include <unistd.h>
 
-void get_all_keys() {
+void get_all_keys(const off_t from) {
   const int fd = get_database_fd();
   struct BTree *cache = get_cache();
 
   uint8_t first;
-  lseek(fd, 10, SEEK_SET);
+  lseek(fd, from, SEEK_SET);
 
   while (read(fd, &first, 1)) {
     string_t key;

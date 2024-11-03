@@ -8,6 +8,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include <sys/types.h>
+
 /* DATABASE */
 struct KVPair {
   string_t key;
@@ -27,7 +29,7 @@ struct BTreeValue **get_sorted_kvs_by_pos_as_values(uint32_t *size);
 bool delete_kv_from_cache(const char *key);
 void free_cache();
 
-void get_all_keys();
+void get_all_keys(off_t from);
 struct KVPair *get_data(const char *key);
 struct KVPair *set_data(struct KVPair *data, const string_t key, void *value, const enum TellyTypes type);
 void save_data(const uint64_t server_age);
@@ -49,6 +51,7 @@ void close_database_fd();
 struct Transaction {
   struct Client *client;
   commanddata_t *command;
+  struct Password *password;
 };
 
 void create_transaction_thread(struct Configuration *config);

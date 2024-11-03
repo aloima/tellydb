@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <time.h>
 
-static void run(struct Client *client, commanddata_t *command) {
+static void run(struct Client *client, commanddata_t *command, __attribute__((unused)) struct Password *password) {
   if (client) {
     if (command->arg_count != 0) {
       const string_t subcommand_string = command->args[0];

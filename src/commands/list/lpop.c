@@ -5,37 +5,41 @@
 
 #include <stddef.h>
 
-static void run(struct Client *client, commanddata_t *command) {
+static void run(struct Client *client, commanddata_t *command, struct Password *password) {
   if (command->arg_count != 1) {
     if (client) WRONG_ARGUMENT_ERROR(client, "LPOP", 4);
     return;
   }
 
-  const char *key = command->args[0].value;
-  const struct KVPair *kv = get_data(key);
+  if(password->permissions & (P_READ | P_WRITE)) {
+    const char *key = command->args[0].value;
+    const struct KVPair *kv = get_data(key);
 
-  if (kv) {
-    if (client && kv->type != TELLY_LIST) {
-      _write(client, "-Value stored at the key is not a list\r\n", 40);
-      return;
-    }
+    if (kv) {
+      if (kv->type != TELLY_LIST) {
+        if (client) _write(client, "-Value stored at the key is not a list\r\n", 40);
+        return;
+      }
 
-    struct List *list = kv->value;
-    struct ListNode *node = list->begin;
+      struct List *list = kv->value;
+      struct ListNode *node = list->begin;
 
-    if (client) write_value(client, node->value, node->type);
+      if (client) write_value(client, node->value, node->type);
 
-    if (list->size == 1) {
-      // TODO: complete deletion of the list
-      delete_kv_from_cache(key);
-    } else {
-      list->begin = list->begin->next;
-      list->begin->prev = NULL;
+      if (list->size == 1) {
+        // TODO: complete deletion of the list
+        delete_kv_from_cache(key);
+      } else {
+        list->begin = list->begin->next;
+        list->begin->prev = NULL;
 
-      list->size -= 1;
-      free_listnode(node);
-    }
-  } else if (client) WRITE_NULL_REPLY(client);
+        list->size -= 1;
+        free_listnode(node);
+      }
+    } else if (client) WRITE_NULL_REPLY(client);
+  } else if (client) {
+    _write(client, "-Not allowed to use this command, need P_READ and P_WRITE\r\n", 59);
+  }
 }
 
 struct Command cmd_lpop = {

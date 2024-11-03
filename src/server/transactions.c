@@ -30,7 +30,7 @@ void *transaction_thread() {
     pthread_cond_wait(&cond, &mutex);
 
     struct Transaction *transaction = transactions[0];
-    execute_command(transaction->client, transaction->command);
+    execute_command(transaction);
     remove_transaction(transaction);
     pthread_mutex_unlock(&mutex);
   }
@@ -76,6 +76,7 @@ void add_transaction(struct Client *client, commanddata_t *command) {
   transactions[id] = malloc(sizeof(struct Transaction));
   transactions[id]->client = client;
   transactions[id]->command = command;
+  transactions[id]->password = client->password;
 
   pthread_mutex_unlock(&mutex);
   pthread_cond_signal(&cond);

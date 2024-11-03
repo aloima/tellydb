@@ -1,6 +1,7 @@
 #pragma once
 
 #include "server.h"
+#include "database.h"
 
 #include <stdint.h>
 
@@ -18,12 +19,12 @@ struct Command {
   char *summary;
   char *since;
   char *complexity;
-  void (*run)(struct Client *client, commanddata_t *command);
+  void (*run)(struct Client *client, commanddata_t *command, struct Password *password);
   struct Subcommand *subcommands;
   uint32_t subcommand_count;
 };
 
-void execute_command(struct Client *client, commanddata_t *command);
+void execute_command(struct Transaction *transaction);
 
 void load_commands();
 struct Command *get_commands();
@@ -40,6 +41,7 @@ extern struct Command cmd_save;
 
 /* GENERIC COMMANDS */
 extern struct Command cmd_age;
+extern struct Command cmd_auth;
 extern struct Command cmd_client;
 extern struct Command cmd_command;
 extern struct Command cmd_hello;

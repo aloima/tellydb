@@ -19,6 +19,7 @@ This document provides a detailed description of all the available commands. Eac
 **Description**: Saves all data to database file in background using a thread.  
 **Since**: `0.1.6`  
 **Time complexity**: `O(N) where N is cached key-value pairs`  
+**Permissions**: `P_SERVER`  
 **Returns**: `OK`  
 **Behavior**:
 * Creates a thread to save all data to the database.
@@ -32,6 +33,7 @@ This document provides a detailed description of all the available commands. Eac
 **Description**: Returns key count in the database.  
 **Since**: `0.1.6`  
 **Time complexity**: `O(1)`  
+**Permissions**: `P_READ`  
 **Returns**: Integer
 
 ---
@@ -41,6 +43,7 @@ This document provides a detailed description of all the available commands. Eac
 **Description**: Returns last save time of database as UNIX time.  
 **Since**: `0.1.6`  
 **Time complexity**: `O(1)`  
+**Permissions**: `P_SERVER`  
 **Returns**: Integer  
 
 ---
@@ -50,6 +53,7 @@ This document provides a detailed description of all the available commands. Eac
 **Description**: Saves all data to database file.  
 **Since**: `0.1.6`  
 **Time complexity**: `O(N) where N is cached key-value pairs`  
+**Permissions**: `P_SERVER`  
 **Returns**: `OK`  
 **Behavior**:
 * Waits until saving all data to database file, so **it blocks all client commands.**
@@ -63,7 +67,20 @@ This document provides a detailed description of all the available commands. Eac
 **Description**: Sends the server age as seconds.  
 **Since**: `0.1.6`  
 **Time complexity**: `O(1)`  
+**Permissions**: None  
 **Returns**: Integer
+
+---
+
+### AUTH
+**Syntax**: `AUTH password ["ok"]`  
+**Description**: Sends the server age as seconds.  
+**Since**: `0.1.7`  
+**Time complexity**: `O(1)`  
+**Permissions**: None  
+**Returns**: `OK`  
+**Behaviour**:
+* If the client is already using a password, it throws an error without `ok` argument.
 
 ---
 
@@ -72,6 +89,7 @@ This document provides a detailed description of all the available commands. Eac
 **Description**: Main command of client(s).  
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
+**Permissions**: None  
 
 **Subcommands**:
 
@@ -80,6 +98,7 @@ This document provides a detailed description of all the available commands. Eac
 **Description**: Returns ID number of client.  
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
+**Permissions**: None  
 **Returns**: Integer
 
 #### INFO
@@ -87,6 +106,7 @@ This document provides a detailed description of all the available commands. Eac
 **Description**: Returns information about the client.  
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
+**Permissions**: None  
 **Returns**: String
 
 #### SETINFO
@@ -94,6 +114,7 @@ This document provides a detailed description of all the available commands. Eac
 **Description**: Returns information about the client.  
 **Since**: `0.1.2`  
 **Time complexity**: `O(1)`  
+**Permissions**: None  
 **Returns**: `OK`  
 **Behavior**:
 * If uppercased form of property is not `LIB-NAME` or `LIB-VERSION`, throws an error.
@@ -105,6 +126,7 @@ This document provides a detailed description of all the available commands. Eac
 **Description**: Gives information about the commands in the server.  
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
+**Permissions**: None  
 
 **Subcommands**:
 
@@ -113,6 +135,7 @@ This document provides a detailed description of all the available commands. Eac
 **Description**: Returns name list of all commands.  
 **Since**: `0.1.0`  
 **Time complexity**: `O(N) where N is count of all commands`  
+**Permissions**: None  
 **Returns**: Array includes string
 
 #### COUNT
@@ -120,6 +143,7 @@ This document provides a detailed description of all the available commands. Eac
 **Description**: Returns count of all commands in the server.  
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
+**Permissions**: None  
 **Returns**: Integer
 
 #### DOCS
@@ -127,6 +151,7 @@ This document provides a detailed description of all the available commands. Eac
 **Description**: Returns documentation about multiple commands.  
 **Since**: `0.1.0`  
 **Time complexity**: `O(N) where N is count of commands to look up`  
+**Permissions**: None  
 **Returns**: Array including each command's information as array  
 
 ---
@@ -136,6 +161,7 @@ This document provides a detailed description of all the available commands. Eac
 **Description**: Handshakes with the tellydb server.  
 **Since**: `0.1.6`  
 **Time complexity**: `O(1)`  
+**Permissions**: None  
 **Returns**: Basic information about the server as array for RESP2, map for RESP3  
 **Behavior**:
 * protover must be 2 or 3, otherwise throws an error.
@@ -149,6 +175,7 @@ This document provides a detailed description of all the available commands. Eac
 **Description**: Displays server information.  
 **Since**: `0.1.6`  
 **Time complexity**: `O(1)`  
+**Permissions**: None  
 **Returns**: Information about the server and connection as string  
 **Behavior**:
 + Allowed section names are `server` and `clients`, if it is not specified, includes all of them in return value.
@@ -160,16 +187,18 @@ This document provides a detailed description of all the available commands. Eac
 **Description**: Pings the server and returns a simple/bulk string.  
 **Since**: `0.1.2`  
 **Time complexity**: `O(1)`  
+**Permissions**: None  
 **Returns**: `PONG` or value
 
 ---
 
 ### TIME
 **Syntax**: `TIME`
-**Description**: Returns the current server time as two elements in a array, a Unix timestamp and microseconds already elapsed in the current second.  
+**Description**: Returns the current server time.  
 **Since**: `0.1.2`  
 **Time complexity**: `O(1)`  
-**Returns**: Array includes time information  
+**Permissions**: None  
+**Returns**: Array includes an Unix timestamp and microseconds already elapsed in the current second  
 **Behavior**:
 * Calls gettimeofday() method
 
@@ -182,7 +211,8 @@ This document provides a detailed description of all the available commands. Eac
 **Description**: Returns element at the index in the list.  
 **Since**: `0.1.4`  
 **Time complexity**: `O(N) where N is absolute index number`  
-**Returns**: A value or null reply if the index is not exist
+**Permissions**: `P_READ`  
+**Returns**: A value or null reply if the index is not exist  
 **Behavior**:
 * Index starts from 0; -1 represents the last element.
 
@@ -199,6 +229,7 @@ LINDEX tasks -3
 **Description**: Returns length of the list.  
 **Since**: `0.1.3`  
 **Time complexity**: `O(1)`  
+**Permissions**: `P_READ`  
 **Returns**: Integer  
 **Behavior**:
 * If the key is holding a value that is not a list, throws an error.
@@ -216,6 +247,7 @@ LLEN tasks
 **Description**: Removes and returns first element of the list.  
 **Since**: `0.1.3`  
 **Time complexity**: `O(1)`  
+**Permissions**: `P_READ` and `P_WRITE`  
 **Returns**: A value or null reply  
 **Behavior**:
 * If the key is holding a value that is not a list, throws an error.
@@ -234,6 +266,7 @@ LPOP tasks
 **Description**: Pushes element(s) to beginning of the list.  
 **Since**: `0.1.3`  
 **Time complexity**: `O(N) where N is written element count`  
+**Permissions**: `P_WRITE`  
 **Returns**: Pushed element count  
 **Behavior**:
 * If the key is holding a value that is not a list, throws an error.
@@ -251,6 +284,7 @@ LPUSH tasks "Write report" "Send email"
 **Description**: Removes and returns last element(s) of the list.  
 **Since**: `0.1.3`  
 **Time complexity**: `O(1)`  
+**Permissions**: `P_READ` and `P_WRITE`  
 **Returns**: A value or null reply  
 **Behavior**:
 * If the key is holding a value that is not a list, throws an error.
@@ -269,6 +303,7 @@ RPOP tasks
 **Description**: Pushes element(s) to ending of the list.  
 **Since**: `0.1.3`  
 **Time complexity**: `O(N) where N is written element count`  
+**Permissions**: `P_WRITE`  
 **Returns**: Pushed element count  
 **Behavior**:
 * If the key is holding a value that is not a list, throws an error.
@@ -288,6 +323,7 @@ RPUSH tasks "Write report" "Send email"
 **Description**: Deletes field(s) of the hash table.  
 **Since**: `0.1.5`  
 **Time complexity**: `O(N) where N is written field name count`  
+**Permissions**: (`P_READ` if need to be sent response) and `P_WRITE`  
 **Returns**: Deleted field count  
 **Behavior**:
 * If the key is holding a value that is not a hash table, throws an error.
@@ -305,6 +341,7 @@ HDEL user_profile age
 **Description**: Gets a field from the hash table.  
 **Since**: `0.1.3`  
 **Time complexity**: `O(1)`  
+**Permissions**: `P_READ`  
 **Returns**: A value or null reply  
 **Behavior**:
 * If the key is holding a value that is not a hash table, throws an error.
@@ -322,6 +359,7 @@ HGET user_profile age
 **Description**: Returns field count information of the hash table.  
 **Since**: `0.1.3`  
 **Time complexity**: `O(1)`  
+**Permissions**: `P_READ`    
 **Returns**: An array or null reply  
 * First element is allocated field area count except fields from field->next.
 * Second element is filled field count using allocated field areas except fields from field->count.
@@ -342,6 +380,7 @@ HLEN user_profile
 **Description**: Sets field(s) of the hash table.  
 **Since**: `0.1.3`  
 **Time complexity**: `O(N) where N is written field name-value pair count`  
+**Permissions**: `P_WRITE`  
 **Returns**: Field count that is set  
 **Behavior**:
 * If the key is holding a value that is not a hash table, throws an error.
@@ -359,6 +398,7 @@ HSET user_profile name "Alice" age 30
 **Description**: Returns type of the field from hash table.  
 **Since**: `0.1.3`  
 **Time complexity**: `O(N) where N is written field name-value pair count`  
+**Permissions**: `P_READ`  
 **Returns**: A value type or null reply  
 **Behavior**:
 * If the key is holding a value that is not a hash table, throws an error.
@@ -373,11 +413,12 @@ HSET user_profile name "Alice" age 30
 
 ## Key-Value Commands
 
-### DECR
+### APPEND
 **Syntax**: `APPEND key value`  
 **Description**: Appends string to string value. If key is not exist, creates a new one.  
 **Since**: `0.1.7`  
 **Time complexity**: `O(1)`  
+**Permissions**: `P_READ` and `P_WRITE`  
 **Returns**: String length after appending  
 **Behavior**:
 * Throws an error if the key is holding a value that is not string.
@@ -394,6 +435,7 @@ APPEND user_name " Black"
 **Description**: Decrements value.  
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
+**Permissions**: `P_READ` and `P_WRITE`  
 **Returns**: New integer value stored at the key  
 **Behavior**:
 * If key is not holding a value, value will be set to `0` and will not be decremented.
@@ -411,6 +453,7 @@ DECR user_age
 **Description**: Checks if specified keys exist or not.  
 **Since**: `0.1.4`  
 **Time complexity**: `O(N) where N is key count`  
+**Permissions**: None  
 **Returns**: Array has 2+N elements where N is key count
 * First element is existed key count
 * Second element is not existed key count
@@ -428,6 +471,7 @@ EXISTS user_name session_token
 **Description**: Gets value.  
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
+**Permissions**: `P_READ`  
 **Returns**: A value or null reply if key is not exist  
 **Behavior**:
 * If the value is hash table or list, writes only "hash table" or "list", not be written list and hash table values.
@@ -444,6 +488,7 @@ GET user_name
 **Description**: Increments value.  
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
+**Permissions**: `P_READ` and `P_WRITE`  
 **Returns**: New integer value stored at the key  
 **Behavior**:
 * If key is not holding a value, value will be set to `0` and will not be incremented.
@@ -461,6 +506,7 @@ INCR user_age
 **Description**: Sets value.  
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
+**Permissions**: (`P_READ` if used `GET` argument) and `P_WRITE`  
 **Returns**: `OK` or a value  
 **Behavior**:
 * If the key is exist, new value will be overwritten.
@@ -484,6 +530,7 @@ SET session_token "abc123" XX GET
 **Description**: Returns type of the value.  
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
+**Permissions**: None  
 **Returns**: A value type
 
 **Example**:

@@ -6,7 +6,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-static void run(struct Client *client, commanddata_t *command) {
+static void run(struct Client *client, commanddata_t *command, __attribute__((unused)) struct Password *password) {
   if (client) {
     switch (command->arg_count) {
       case 0:

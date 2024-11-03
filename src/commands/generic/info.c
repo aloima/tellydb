@@ -38,7 +38,7 @@ static bool get_section(char *section, const struct Configuration *conf, const c
   return true;
 }
 
-static void run(struct Client *client, commanddata_t *command) {
+static void run(struct Client *client, commanddata_t *command, __attribute__((unused)) struct Password *password) {
   if (client) {
     const struct Configuration *conf = get_server_configuration();
 

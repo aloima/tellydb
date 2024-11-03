@@ -6,14 +6,18 @@
 #include <stdio.h>
 #include <stdint.h>
 
-static void run(struct Client *client, __attribute__((unused)) commanddata_t *command) {
+static void run(struct Client *client, __attribute__((unused)) commanddata_t *command, struct Password *password) {
   if (client) {
-    struct BTree *cache = get_cache();
+    if (password->permissions & P_READ) {
+      struct BTree *cache = get_cache();
 
-    char buf[14];
-    const size_t nbytes = sprintf(buf, ":%d\r\n", cache->size);
+      char buf[14];
+      const size_t nbytes = sprintf(buf, ":%d\r\n", cache->size);
 
-    _write(client, buf, nbytes);
+      _write(client, buf, nbytes);
+    } else {
+      _write(client, "-Not allowed to use this command, need P_READ\r\n", 47);
+    }
   }
 }
 

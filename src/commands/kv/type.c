@@ -4,7 +4,7 @@
 
 #include <stddef.h>
 
-static void run(struct Client *client, commanddata_t *command) {
+static void run(struct Client *client, commanddata_t *command, __attribute__((unused)) struct Password *password) {
   if (client) {
     if (command->arg_count != 1) {
       WRONG_ARGUMENT_ERROR(client, "TYPE", 4);

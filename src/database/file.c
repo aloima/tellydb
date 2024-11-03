@@ -10,6 +10,7 @@
 #include <math.h>
 
 #include <fcntl.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <pthread.h>
 
@@ -273,6 +274,41 @@ static off_t generate_value(char **line, struct KVPair *kv) {
   return len;
 }
 
+static off_t generate_authorization_part(char **part) {
+  struct Password **passwords = get_passwords();
+  const uint32_t password_count = get_password_count();
+  const uint8_t password_count_byte_count = (password_count != 0) ? (log2(password_count) + 1) : 0;
+  off_t part_length = 1 + password_count_byte_count;
+  *part = malloc(part_length);
+
+  (*part)[0] = password_count_byte_count;
+  memcpy(*part + 1, &password_count, password_count_byte_count);
+
+  char *buf = malloc(1);
+
+  for (uint32_t i = 0; i < password_count; ++i) {
+    struct Password *password = passwords[i];
+    string_t data = password->data;
+
+    const uint8_t bit_count = log2(data.len) + 1;
+    const uint8_t byte_count = ceil((float) (bit_count - 6) / 8);
+    const uint8_t first = (byte_count << 6) | (data.len & 0b111111);
+    const uint32_t length_in_bytes = data.len >> 6;
+
+    const uint32_t buf_len = 1 + byte_count + data.len;
+    buf = realloc(buf, buf_len);
+    buf[0] = first;
+    memcpy(buf, &length_in_bytes, byte_count);
+    memcpy(buf, data.value, data.len);
+
+    write(fd, buf, buf_len);
+    part_length += buf_len;
+  }
+
+  free(buf);
+  return part_length;
+}
+
 void save_data(const uint64_t server_age) {
   if (saving) return;
   saving = true;
@@ -284,23 +320,57 @@ void save_data(const uint64_t server_age) {
   int32_t diff = 0;
 
   if (file_size != 0) {
-    uint8_t constants[2];
-    lseek(fd, 0, SEEK_SET);
+    // File headers
+    {
+      uint8_t constants[2];
+      lseek(fd, 0, SEEK_SET);
 
-    if (read(fd, constants, 2) != 2 || constants[0] != 0x18 || constants[1] != 0x10 || file_size < 10) {
-      write_log(LOG_ERR, "Cannot save data, invalid file headers");
-      free(values);
-      return;
+      if (read(fd, constants, 2) != 2 || constants[0] != 0x18 || constants[1] != 0x10 || file_size < 11) {
+        write_log(LOG_ERR, "Cannot save data, invalid file headers");
+        free(values);
+        return;
+      }
+
+      write(fd, &server_age, sizeof(uint64_t));
     }
 
-    write(fd, &server_age, sizeof(uint64_t));
-  } else {
-    uint8_t data[10] = {0x18, 0x10};
-    memcpy(data + 2, &server_age, 8);
+    // Authorization part
+    {
+      char *part;
+      const off_t length = generate_authorization_part(&part);
+      const off_t end_at = get_authorization_end_at();
 
-    lseek(fd, 0, SEEK_SET);
-    write(fd, data, 10);
-    file_size = 10;
+      char *buf = malloc(file_size - end_at);
+      lseek(fd, end_at, SEEK_SET);
+      read(fd, buf, file_size - end_at);
+
+      lseek(fd, 10, SEEK_SET);
+      write(fd, part, length);
+      write(fd, buf, file_size - end_at);
+
+      file_size += length - (end_at - 10);
+      free(part);
+      free(buf);
+    }
+  } else {
+    // File headers
+    {
+      uint8_t data[10] = {0x18, 0x10};
+      memcpy(data + 2, &server_age, 8);
+
+      lseek(fd, 0, SEEK_SET);
+      write(fd, data, 10);
+    }
+
+    // Authorization part
+    {
+      char *part;
+      const off_t length = generate_authorization_part(&part);
+
+      write(fd, part, length);
+      file_size += 10 + length;
+      free(part);
+    }
   }
 
   for (uint32_t i = 0; i < size; ++i) {
