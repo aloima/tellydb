@@ -61,7 +61,7 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
             client->lib_name = client->lib_name ? realloc(client->lib_name, value_size) : malloc(value_size);
             memcpy(client->lib_name, value.value, value_size);
 
-            _write(client, "+OK\r\n", 5);
+            WRITE_OK(client);
           } else if (streq(property_value, "LIB-VERSION")) {
             string_t value = command->args[2];
             const uint32_t value_size = value.len + 1;
@@ -69,7 +69,7 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
             client->lib_ver = client->lib_ver ? realloc(client->lib_ver, value_size) : malloc(value_size);
             memcpy(client->lib_ver, value.value, value_size);
 
-            _write(client, "+OK\r\n", 5);
+            WRITE_OK(client);
           } else {
             _write(client, "-Unknown property\r\n", 19);
           }

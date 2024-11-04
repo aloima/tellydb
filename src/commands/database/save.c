@@ -13,7 +13,7 @@ static void run(struct Client *client, __attribute__((unused)) commanddata_t *co
     server_age += difftime(time(NULL), start_at);
 
     save_data(server_age);
-    if (client) _write(client, "+OK\r\n", 5);
+    if (client) WRITE_OK(client);
   } else if (client) {
     _write(client, "-Not allowed to use this command, need P_SERVER\r\n", 49);
   }

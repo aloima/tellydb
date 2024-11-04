@@ -19,6 +19,8 @@
       break;\
   }
 
+#define WRITE_OK(client) _write((client), "+OK\r\n", 5)
+
 
 /* CLIENT */
 enum ProtocolVersion {
@@ -74,7 +76,7 @@ uint32_t get_password_count();
 off_t get_authorization_from_file(const int fd);
 void free_passwords();
 
-void add_password(struct Client *client, const string_t data, const uint32_t permissions);
+void add_password(struct Client *client, const string_t data, const uint8_t permissions);
 bool remove_password(struct Client *executor, const char *value);
 int32_t where_password(const char *value);
 bool edit_password(const char *value, const uint32_t permissions);

@@ -36,7 +36,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
       struct Password **passwords = get_passwords();
       client->password = passwords[at];
 
-      _write(client, "+OK\r\n", 5);
+      WRITE_OK(client);
     }
   }
 }

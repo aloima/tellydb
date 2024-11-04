@@ -87,7 +87,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
       }
     } else {
       set_data(res, key, value, type);
-      if (client) _write(client, "+OK\r\n", 5);
+      if (client) WRITE_OK(client);
     }
   } else {
     _write(client, "-Not allowed to use this command, need P_WRITE\r\n", 48);

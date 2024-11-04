@@ -72,7 +72,7 @@ bool edit_password(const char *value, const uint32_t permissions) {
   return false;
 }
 
-void add_password(struct Client *client, const string_t data, const uint32_t permissions) {
+void add_password(struct Client *client, const string_t data, const uint8_t permissions) {
   struct Password *password = malloc(sizeof(struct Password));
   password_count += 1;
 
