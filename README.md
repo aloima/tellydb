@@ -9,10 +9,11 @@ A key-value database project for educational purposes.
 + Supports integer, string, null, boolean, list and hash table types
 + Provides atomicity when saving to the database file
 + Provides saving to the database file using a background thread
++ Provides authorization system with permissions
 
 > Look at:  
 > [docs/SPECS.md](./docs/SPECS.md) for more technical information,  
-> [docs/FILE.md](./docs/FILE.md) for information about provided files by tellydb  
+> [docs/FILE.md](./docs/FILE.md) for information about provided files by tellydb,  
 > [docs/COMMANDS.md](./docs/COMMANDS.md) for information about commands
 
 ## Quick Start
