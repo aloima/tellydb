@@ -84,12 +84,12 @@ void add_password(struct Client *client, const string_t data, const uint8_t perm
     client->password = get_full_password(); // Give full permissions to client which added first password
   } else {
     passwords = realloc(passwords, password_count * sizeof(struct Password));
-    password->permissions = permissions;
     passwords[password_count - 1] = password;
   }
 
+  password->permissions = permissions;
   password->data.len = data.len;
-  password->data.value = malloc(data.len);
+  password->data.value = malloc(data.len + 1);
   memcpy(password->data.value, data.value, data.len + 1);
 }
 
@@ -108,19 +108,20 @@ void free_passwords() {
 
 bool remove_password(struct Client *executor, const char *value) {
   if (password_count == 1) {
-    executor->password = get_full_password();
-    password_count = 0;
+    if (where_password(value) == 0) {
+      executor->password = get_full_password();
+      password_count = 0;
 
-    free_password(passwords[0]);
-    free(passwords);
+      free_password(passwords[0]);
+      free(passwords);
 
-    return true;
+      return true;
+    } else return false;
   } else {
     const int32_t at = where_password(value);
 
-    if (at == -1) {
-      return false;
-    } else {
+    if (at == -1) return false;
+    else {
       struct Client **clients = get_clients();
       const uint32_t client_count = get_client_count();
 

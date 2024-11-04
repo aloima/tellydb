@@ -295,13 +295,15 @@ static off_t generate_authorization_part(char **part) {
     const uint8_t first = (byte_count << 6) | (data.len & 0b111111);
     const uint32_t length_in_bytes = data.len >> 6;
 
-    const uint32_t buf_len = 1 + byte_count + data.len;
+    const uint32_t buf_len = 2 + byte_count + data.len;
     buf = realloc(buf, buf_len);
     buf[0] = first;
-    memcpy(buf, &length_in_bytes, byte_count);
-    memcpy(buf, data.value, data.len);
+    memcpy(buf + 1, &length_in_bytes, byte_count);
+    memcpy(buf + 1 + byte_count, data.value, data.len);
+    buf[1 + byte_count + data.len] = password->permissions;
 
-    write(fd, buf, buf_len);
+    *part = realloc(*part, part_length + buf_len);
+    memcpy(*part + part_length, buf, buf_len);
     part_length += buf_len;
   }
 
@@ -338,17 +340,18 @@ void save_data(const uint64_t server_age) {
     {
       char *part;
       const off_t length = generate_authorization_part(&part);
-      const off_t end_at = get_authorization_end_at();
+      off_t *end_at = get_authorization_end_at();
 
-      char *buf = malloc(file_size - end_at);
-      lseek(fd, end_at, SEEK_SET);
-      read(fd, buf, file_size - end_at);
+      char *buf = malloc(file_size - *end_at);
+      lseek(fd, *end_at, SEEK_SET);
+      read(fd, buf, file_size - *end_at);
 
       lseek(fd, 10, SEEK_SET);
       write(fd, part, length);
-      write(fd, buf, file_size - end_at);
+      write(fd, buf, file_size - *end_at);
 
-      file_size += length - (end_at - 10);
+      file_size += length - (*end_at - 10);
+      *end_at += (length + 10) - *end_at;
       free(part);
       free(buf);
     }
@@ -366,9 +369,10 @@ void save_data(const uint64_t server_age) {
     {
       char *part;
       const off_t length = generate_authorization_part(&part);
+      off_t *end_at = get_authorization_end_at();
 
       write(fd, part, length);
-      file_size += 10 + length;
+      *end_at = (file_size = 10 + length);
       free(part);
     }
   }

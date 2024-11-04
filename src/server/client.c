@@ -28,6 +28,10 @@ void free_constant_passwords() {
   free(full_password);
 }
 
+struct Password *get_empty_password() {
+  return empty_password;
+}
+
 struct Password *get_full_password() {
   return full_password;
 }

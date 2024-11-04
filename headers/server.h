@@ -70,6 +70,7 @@ struct Password {
 void create_constant_passwords();
 void free_constant_passwords();
 struct Password *get_full_password();
+struct Password *get_empty_password();
 
 struct Password **get_passwords();
 uint32_t get_password_count();
@@ -84,7 +85,7 @@ bool edit_password(const char *value, const uint32_t permissions);
 
 
 /* SERVER */
-off_t get_authorization_end_at();
+off_t *get_authorization_end_at();
 void get_server_time(time_t *server_start_at, uint64_t *server_age);
 void start_server(struct Configuration *config);
 struct Configuration *get_server_configuration();

@@ -192,6 +192,55 @@ This document provides a detailed description of all the available commands. Eac
 
 ---
 
+### PWD
+**Syntax**: `PWD ADD|REMOVE|GENERATE`  
+**Description**: Allows to manage passwords.  
+**Since**: `0.1.7`  
+**Time complexity**: `O(1)`  
+**Permissions**: `P_AUTH`  
+
+**Subcommands**:
+
+#### ADD
+**Syntax**: `PWD ADD password permissions`  
+**Description**: Adds a password.  
+**Since**: `0.1.7`  
+**Time complexity**: `O(N) where N is permissions length`  
+**Permissions**: None  
+**Returns**: `OK`  
+**Behavior**:
+* If current using password by client do not have a permissions in `permissions`, throws an error.
+* If there is an invalid permission in `permissions`, throws an error.
+* If `password` is already exist, throws an error.
+
+**Arguments**:
+- **password**: Password value
+- **permissions**: For permissions, look at [AUTH.md](./AUTH.md). Each character represents a permissions:
+  + `r` => `P_READ`
+  + `w` => `P_WRITE`
+  + `c` => `P_CLIENT`
+  + `o` => `P_CONFIG`
+  + `a` => `P_AUTH`
+  + `s` => `P_SERVER`
+
+#### REMOVE
+**Syntax**: `PWD REMOVE password`  
+**Description**: Removes a password.  
+**Since**: `0.1.7`  
+**Time complexity**: `O(1)`  
+**Permissions**: None  
+**Returns**: `OK`
+
+#### GENERATE
+**Syntax**: `PWD GENERATE`  
+**Description**: Generates a password value.  
+**Since**: `0.1.7`  
+**Time complexity**: `O(1)`  
+**Permissions**: None  
+**Returns**: `OK`  
+
+---
+
 ### TIME
 **Syntax**: `TIME`
 **Description**: Returns the current server time.  
@@ -200,7 +249,7 @@ This document provides a detailed description of all the available commands. Eac
 **Permissions**: None  
 **Returns**: Array includes an Unix timestamp and microseconds already elapsed in the current second  
 **Behavior**:
-* Calls gettimeofday() method
+* Calls gettimeofday() method.
 
 ---
 

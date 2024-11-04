@@ -8,7 +8,7 @@
 #include <stdlib.h>
 
 static struct Command *commands = NULL;
-static uint32_t command_count = 30;
+static uint32_t command_count = 31;
 
 void load_commands() {
   struct Command _commands[] = {
@@ -26,6 +26,7 @@ void load_commands() {
     cmd_hello,
     cmd_info,
     cmd_ping,
+    cmd_pwd,
     cmd_time,
 
     // Hashtable commands

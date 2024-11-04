@@ -19,7 +19,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
     if (at == -1) {
       _write(client, "-This password does not exist\r\n", 31);
     } else {
-      if (password) {
+      if (password && password != get_empty_password()) {
         if (command->arg_count != 2) {
           _write(client, "+A password already in use for your client. If you sure to change, use command with ok argument\r\n", 97);
           return;

@@ -47,6 +47,7 @@ extern struct Command cmd_command;
 extern struct Command cmd_hello;
 extern struct Command cmd_info;
 extern struct Command cmd_ping;
+extern struct Command cmd_pwd;
 extern struct Command cmd_time;
 /* /GENERIC COMMANDS */
 

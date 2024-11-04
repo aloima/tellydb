@@ -30,8 +30,8 @@ struct Configuration *get_server_configuration() {
   return conf;
 }
 
-off_t get_authorization_end_at() {
-  return authorization_end_at;
+off_t *get_authorization_end_at() {
+  return &authorization_end_at;
 }
 
 void get_server_time(time_t *server_start_at, uint64_t *server_age) {
