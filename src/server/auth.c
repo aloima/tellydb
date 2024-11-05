@@ -16,6 +16,29 @@ uint32_t get_password_count() {
   return password_count;
 }
 
+static void get_password_from_file(const int fd, const uint32_t i) {
+  struct Password *password = (passwords[i] = malloc(sizeof(struct Password)));
+  string_t *data = &password->data;
+
+  // String length specifier
+  {
+    uint8_t first;
+    read(fd, &first, 1);
+
+    const uint8_t byte_count = first >> 6;
+    data->len = 0;
+    read(fd, &data->len, byte_count);
+
+    data->len = (data->len << 6) | (first & 0b111111);
+    data->value = malloc(data->len + 1);
+  }
+
+  read(fd, data->value, data->len);
+  data->value[data->len] = '\0';
+
+  read(fd, &password->permissions, 1);
+}
+
 off_t get_authorization_from_file(const int fd) {
   lseek(fd, 10, SEEK_SET);
 
@@ -23,29 +46,13 @@ off_t get_authorization_from_file(const int fd) {
   read(fd, &password_count_byte_count, 1);
   read(fd, &password_count, password_count_byte_count);
 
-  passwords = malloc(password_count * sizeof(struct Password *));
+  if (password_count != 0) {
+    passwords = malloc(password_count * sizeof(struct Password *));
+    get_password_from_file(fd, 0);
 
-  for (uint32_t i = 0; i < password_count; ++i) {
-    struct Password *password = (passwords[i] = malloc(sizeof(struct Password)));
-    string_t *data = &password->data;
-
-    // String length specifier
-    {
-      uint8_t first;
-      read(fd, &first, 1);
-
-      const uint8_t byte_count = first >> 6;
-      data->len = 0;
-      read(fd, &data->len, byte_count);
-
-      data->len = (data->len << 6) | (first & 0b111111);
-      data->value = malloc(data->len + 1);
+    for (uint32_t i = 1; i < password_count; ++i) {
+      get_password_from_file(fd, i);
     }
-
-    read(fd, data->value, data->len);
-    data->value[data->len] = '\0';
-
-    read(fd, &password->permissions, 1);
   }
 
   return lseek(fd, 0, SEEK_CUR);
@@ -57,6 +64,15 @@ int32_t where_password(const char *value) {
   }
 
   return -1;
+}
+
+struct Password *get_password(const char *value) {
+  for (uint32_t i = 0; i < password_count; ++i) {
+    struct Password *password = passwords[i];
+    if (streq(value, password->data.value)) return password;
+  }
+
+  return NULL;
 }
 
 bool edit_password(const char *value, const uint32_t permissions) {
@@ -99,11 +115,15 @@ void free_password(struct Password *password) {
 }
 
 void free_passwords() {
-  for (uint32_t i = 0; i < password_count; ++i) {
-    free_password(passwords[i]);
-  }
+  if (password_count != 0) {
+    free_password(passwords[0]);
 
-  free(passwords);
+    for (uint32_t i = 1; i < password_count; ++i) {
+      free_password(passwords[i]);
+    }
+
+    free(passwords);
+  }
 }
 
 bool remove_password(struct Client *executor, const char *value) {

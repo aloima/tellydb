@@ -11,10 +11,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: make
+    - name: Build
       run: make
 
     - name: On release
-      uses: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
       with:
         files: telly

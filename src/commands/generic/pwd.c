@@ -18,6 +18,51 @@ static void generate_random(char *dest, size_t length) {
   *dest = '\0';
 }
 
+static uint8_t read_permissions_value(struct Client *client, char *permissions_value) {
+  uint8_t permissions = 0;
+  char c;
+
+  while ((c = *permissions_value) != '\0') {
+    switch (c) {
+      case 'r':
+        permissions |= P_READ;
+        break;
+
+      case 'w':
+        permissions |= P_WRITE;
+        break;
+
+      case 'c':
+        permissions |= P_CLIENT;
+        break;
+
+      case 'o':
+        permissions |= P_CONFIG;
+        break;
+
+      case 'a':
+        permissions |= P_AUTH;
+        break;
+
+      case 's':
+        permissions |= P_SERVER;
+        break;
+
+      default: {
+        char buf[27];
+        sprintf(buf, "-Invalid permission: '%c'\r\n", c);
+
+        _write(client, buf, 26);
+        return 0;
+      }
+    }
+
+    permissions_value += 1;
+  }
+
+  return permissions;
+}
+
 static void run(struct Client *client, commanddata_t *command, struct Password *password) {
   if (command->arg_count == 0) {
     WRONG_ARGUMENT_ERROR(client, "AUTH", 4);
@@ -37,48 +82,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
 
       const string_t data = command->args[1];
       char *permissions_value = command->args[2].value;
-      uint8_t permissions = 0;
-
-      char c;
-
-      while ((c = *permissions_value) != '\0') {
-        switch (c) {
-          case 'r':
-            permissions |= P_READ;
-            break;
-
-          case 'w':
-            permissions |= P_WRITE;
-            break;
-
-          case 'c':
-            permissions |= P_CLIENT;
-            break;
-
-          case 'o':
-            permissions |= P_CONFIG;
-            break;
-
-          case 'a':
-            permissions |= P_AUTH;
-            break;
-
-          case 's':
-            permissions |= P_SERVER;
-            break;
-
-          default: {
-            char buf[27];
-            sprintf(buf, "-Invalid permission: '%c'\r\n", c);
-
-            _write(client, buf, 26);
-            return;
-          }
-        }
-
-        permissions_value += 1;
-      }
-
+      const uint8_t permissions = read_permissions_value(client, permissions_value);
       const uint8_t not_has = ~password->permissions & permissions;
 
       if (not_has) {
@@ -90,7 +94,32 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
         add_password(client, data, permissions);
         WRITE_OK(client);
       } else {
-        _write(client, "-This password is already exist\r\n", 33);
+        _write(client, "-This password already exists\r\n", 31);
+      }
+    } if (streq(subcommand, "EDIT")) {
+      if (command->arg_count != 3) {
+        WRONG_ARGUMENT_ERROR(client, "AUTH EDIT", 9);
+        return;
+      }
+
+      const char *value = command->args[1].value;
+      char *permissions_value = command->args[2].value;
+
+      struct Password *target = get_password(value);
+
+      if (target) {
+        const uint8_t permissions = read_permissions_value(client, permissions_value);
+        const uint8_t not_has = ~password->permissions & permissions;
+
+        if (not_has) {
+          _write(client, "-Tried to give permissions your password do not have\r\n", 54);
+          return;
+        }
+
+        target->permissions = permissions;
+        WRITE_OK(client);
+      } else {
+        _write(client, "-This password does not exist\r\n", 31);
       }
     } else if (streq(subcommand, "REMOVE")) {
       if (command->arg_count != 2) {
@@ -99,6 +128,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
       }
 
       const char *value = command->args[1].value;
+
       if (remove_password(client, value)) WRITE_OK(client);
       else {
         _write(client, "-This password cannot be found\r\n", 32);
@@ -121,6 +151,12 @@ static struct Subcommand subcommands[] = {
   (struct Subcommand) {
     .name = "ADD",
     .summary = "Adds a password.",
+    .since = "0.1.7",
+    .complexity = "O(N) where N is permissions length"
+  },
+  (struct Subcommand) {
+    .name = "EDIT",
+    .summary = "Edits a password permissions.",
     .since = "0.1.7",
     .complexity = "O(N) where N is permissions length"
   },

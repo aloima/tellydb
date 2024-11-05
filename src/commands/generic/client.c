@@ -6,6 +6,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <ctype.h>
 #include <time.h>
 
 static void run(struct Client *client, commanddata_t *command, __attribute__((unused)) struct Password *password) {
@@ -34,6 +35,28 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
             break;
         }
 
+        char permissions[44];
+        permissions[0] = '\0';
+
+        {
+          const uint8_t value = client->password->permissions;
+          uint32_t length = 0;
+
+          if (value == 0) {
+            memcpy(permissions, "None", 5);
+          } else {
+            if (value & P_READ) strcat(permissions, "read, "), length += 6;
+            if (value & P_WRITE) strcat(permissions, "write, "), length += 7;
+            if (value & P_CLIENT) strcat(permissions, "client, "), length += 8;
+            if (value & P_CONFIG) strcat(permissions, "config, "), length += 8;
+            if (value & P_AUTH) strcat(permissions, "auth, "), length += 6;
+            if (value & P_SERVER) strcat(permissions, "server, "), length += 8;
+
+            permissions[0] = toupper(permissions[0]);
+            permissions[length - 2] = '\0';
+          }
+        }
+
         char buf[512];
         const size_t buf_len = sprintf(buf, (
           "ID: %d\r\n"
@@ -43,7 +66,8 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
           "Library name: %s\r\n"
           "Library version: %s\r\n"
           "Protocol: %s\r\n"
-        ), client->id, client->connfd, ctime(&client->connected_at), client->command->name, lib_name, lib_ver, protocol);
+          "Permissions: %s\r\n"
+        ), client->id, client->connfd, ctime(&client->connected_at), client->command->name, lib_name, lib_ver, protocol, permissions);
 
         char res[1024];
         const size_t nbytes = sprintf(res, "$%ld\r\n%s\r\n", buf_len, buf);

@@ -80,6 +80,7 @@ void free_passwords();
 void add_password(struct Client *client, const string_t data, const uint8_t permissions);
 bool remove_password(struct Client *executor, const char *value);
 int32_t where_password(const char *value);
+struct Password *get_password(const char *value);
 bool edit_password(const char *value, const uint32_t permissions);
 /* /AUTH */
 
