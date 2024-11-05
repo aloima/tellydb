@@ -14,8 +14,9 @@
 #include <fcntl.h>
 #include <sys/poll.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <unistd.h>
-#include <arpa/inet.h>
+#include <netinet/in.h>
 
 static int sockfd;
 static SSL_CTX *ctx;
@@ -98,6 +99,8 @@ static void close_server() {
   write_log(LOG_INFO, "Closing log file, free'ing configuration and exiting the process...");
   close_logs();
   free_configuration(conf);
+
+  unlink(".tellylock");
   exit(EXIT_SUCCESS);
 }
 
@@ -107,6 +110,13 @@ static void sigint_signal(__attribute__((unused)) int arg) {
 }
 
 void start_server(struct Configuration *config) {
+  struct stat lock;
+
+  if (stat(".tellylock", &lock) != -1) {
+    fputs("tellydb is already opened in this machine.\n", stderr);
+    exit(EXIT_FAILURE);
+  } else creat(".tellylock", 0);
+
   conf = config;
   initialize_logs(conf);
   write_log(LOG_INFO, "Initialized logs and configuration.");
