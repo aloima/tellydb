@@ -1,22 +1,9 @@
 #include "../../../headers/server.h"
 #include "../../../headers/commands.h"
+#include "../../../headers/utils.h"
 
-#include <stdlib.h>
 #include <stddef.h>
 #include <stdint.h>
-
-static void generate_random(char *dest, size_t length) {
-  const char charset[] = "0123456789"
-                         "abcdefghijklmnopqrstuvwxyz"
-                         "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-  while (length-- > 0) {
-    const size_t index = (double) rand() / RAND_MAX * (sizeof(charset) - 1);
-    *dest++ = charset[index];
-  }
-
-  *dest = '\0';
-}
 
 static uint8_t read_permissions_value(struct Client *client, char *permissions_value) {
   uint8_t permissions = 0;
@@ -135,7 +122,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
       }
     } else if (streq(subcommand, "GENERATE")) {
       char value[33];
-      generate_random(value, 32);
+      generate_random_string(value, 32);
 
       char buf[41];
       sprintf(buf, "$32\r\n%s\r\n", value);

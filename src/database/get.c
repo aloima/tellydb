@@ -14,26 +14,18 @@ void get_all_keys(const off_t from) {
   const int fd = get_database_fd();
   struct BTree *cache = get_cache();
 
-  uint8_t first;
+  uint8_t eof;
   lseek(fd, from, SEEK_SET);
 
-  while (read(fd, &first, 1)) {
+  while (read(fd, &eof, 1)) {
+    lseek(fd, -1, SEEK_CUR);
+
     string_t key;
     uint8_t type;
     off_t start_at, end_at;
 
     // Key reading
-    {
-      const uint8_t byte_count = first >> 6;
-      key.len = 0;
-      read(fd, &key.len, byte_count);
-
-      key.len = (key.len << 6) | (first & 0b111111);
-      key.value = malloc(key.len + 1),
-
-      read(fd, key.value, key.len);
-      key.value[key.len] = '\0';
-    }
+    read_string_from_file(fd, &key, true, true);
 
     // Value reading
     {
@@ -261,20 +253,10 @@ struct KVPair *get_data(const char *key) {
           read(fd, &type, 1);
           if (type == 0x17) break;
 
-          {
-            uint8_t first;
-            read(fd, &first, 1);
+          // Element key reading
+          read_string_from_file(fd, &name, false, true);
 
-            const uint8_t byte_count = first >> 6;
-            name.len = 0;
-            read(fd, &name.len, byte_count);
-            name.len = (name.len << 6) | (first & 0b111111);
-
-            name.value = realloc(name.value, name.len + 1);
-            read(fd, name.value, name.len);
-            name.value[name.len] = '\0';
-          }
-
+          // Element value reading
           switch (type) {
             case TELLY_NULL:
               add_fv_to_hashtable(table, name, NULL, TELLY_NULL);
@@ -294,19 +276,7 @@ struct KVPair *get_data(const char *key) {
 
             case TELLY_STR: {
               string_t *string = malloc(sizeof(string_t));
-
-              uint8_t first;
-              read(fd, &first, 1);
-
-              const uint8_t byte_count = first >> 6;
-              string->len = 0;
-
-              read(fd, &string->len, byte_count);
-              string->len = (string->len << 6) | (first & 0b111111);
-
-              string->value = malloc(string->len);
-              read(fd, string->value, string->len);
-
+              read_string_from_file(fd, string, true, false);
               add_fv_to_hashtable(table, name, string, TELLY_STR);
               break;
             }
@@ -353,19 +323,7 @@ struct KVPair *get_data(const char *key) {
 
             case TELLY_STR: {
               string_t *string = malloc(sizeof(string_t));
-
-              uint8_t first;
-              read(fd, &first, 1);
-
-              const uint8_t byte_count = first >> 6;
-              string->len = 0;
-
-              read(fd, &string->len, byte_count);
-              string->len = (string->len << 6) | (first & 0b111111);
-
-              string->value = malloc(string->len);
-              read(fd, string->value, string->len);
-
+              read_string_from_file(fd, string, true, false);
               node = create_listnode(string, TELLY_STR);
               break;
             }

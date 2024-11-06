@@ -113,7 +113,7 @@ void start_server(struct Configuration *config) {
   struct stat lock;
 
   if (stat(".tellylock", &lock) != -1) {
-    fputs("tellydb is already opened in this machine.\n", stderr);
+    fputs("tellydb is already opened in this directory.\n", stderr);
     exit(EXIT_FAILURE);
   } else creat(".tellylock", 0);
 

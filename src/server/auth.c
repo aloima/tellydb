@@ -5,6 +5,19 @@
 
 #include <unistd.h>
 
+void remove_password_from_clients(struct Password *password) {
+  struct Client **clients = get_clients();
+  const uint32_t client_count = get_client_count();
+
+  for (uint32_t i = 0; i < client_count; ++i) {
+    struct Client *client = clients[i];
+
+    if (client->password == (password)) {
+      client->password = get_empty_password();
+    }
+  }
+}
+
 static struct Password **passwords;
 static uint32_t password_count = 0;
 
@@ -18,23 +31,11 @@ uint32_t get_password_count() {
 
 static void get_password_from_file(const int fd, const uint32_t i) {
   struct Password *password = (passwords[i] = malloc(sizeof(struct Password)));
-  string_t *data = &password->data;
 
-  // String length specifier
-  {
-    uint8_t first;
-    read(fd, &first, 1);
+  read_string_from_file(fd, &password->data, true, true);
 
-    const uint8_t byte_count = first >> 6;
-    data->len = 0;
-    read(fd, &data->len, byte_count);
-
-    data->len = (data->len << 6) | (first & 0b111111);
-    data->value = malloc(data->len + 1);
-  }
-
-  read(fd, data->value, data->len);
-  data->value[data->len] = '\0';
+  read(fd, password->salt, 2);
+  password->salt[2] = '\0';
 
   read(fd, &password->permissions, 1);
 }
@@ -60,7 +61,10 @@ off_t get_authorization_from_file(const int fd) {
 
 int32_t where_password(const char *value) {
   for (uint32_t i = 0; i < password_count; ++i) {
-    if (streq(value, passwords[i]->data.value)) return i;
+    struct Password *password = passwords[i];
+    const char *hashed = crypt(value, password->salt);
+
+    if (streq(hashed, password->data.value)) return i;
   }
 
   return -1;
@@ -69,7 +73,9 @@ int32_t where_password(const char *value) {
 struct Password *get_password(const char *value) {
   for (uint32_t i = 0; i < password_count; ++i) {
     struct Password *password = passwords[i];
-    if (streq(value, password->data.value)) return password;
+    const char *hashed = crypt(value, password->salt);
+
+    if (streq(hashed, password->data.value)) return password;
   }
 
   return NULL;
@@ -78,8 +84,9 @@ struct Password *get_password(const char *value) {
 bool edit_password(const char *value, const uint32_t permissions) {
   for (uint32_t i = 0; i < password_count; ++i) {
     struct Password *password = passwords[i];
+    const char *hashed = crypt(value, password->salt);
 
-    if (streq(value, password->data.value)) {
+    if (streq(hashed, password->data.value)) {
       password->permissions = permissions;
       return true;
     }
@@ -103,10 +110,13 @@ void add_password(struct Client *client, const string_t data, const uint8_t perm
     passwords[password_count - 1] = password;
   }
 
+  generate_random_string(password->salt, 2);
+  const char *hashed = crypt(data.value, password->salt);
   password->permissions = permissions;
-  password->data.len = data.len;
-  password->data.value = malloc(data.len + 1);
-  memcpy(password->data.value, data.value, data.len + 1);
+
+  const uint32_t size = (password->data.len = strlen(hashed)) + 1;
+  password->data.value = malloc(size);
+  memcpy(password->data.value, hashed, size);
 }
 
 void free_password(struct Password *password) {
@@ -129,10 +139,13 @@ void free_passwords() {
 bool remove_password(struct Client *executor, const char *value) {
   if (password_count == 1) {
     if (where_password(value) == 0) {
+      struct Password *password = passwords[0];
+      remove_password_from_clients(password);
+
       executor->password = get_full_password();
       password_count = 0;
 
-      free_password(passwords[0]);
+      free_password(password);
       free(passwords);
 
       return true;
@@ -142,18 +155,10 @@ bool remove_password(struct Client *executor, const char *value) {
 
     if (at == -1) return false;
     else {
-      struct Client **clients = get_clients();
-      const uint32_t client_count = get_client_count();
+      struct Password *password = passwords[at];
+      remove_password_from_clients(password);
 
-      for (uint32_t i = 0; i < client_count; ++i) {
-        struct Client *client = clients[i];
-
-        if (streq(client->password->data.value, value)) {
-          client->password = NULL;
-        }
-      }
-
-      free_password(passwords[at]);
+      free_password(password);
       password_count -= 1;
 
       memcpy(passwords + at, passwords + at + 1, (password_count - at) * sizeof(struct Password));

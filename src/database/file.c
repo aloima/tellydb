@@ -295,12 +295,13 @@ static off_t generate_authorization_part(char **part) {
     const uint8_t first = (byte_count << 6) | (data.len & 0b111111);
     const uint32_t length_in_bytes = data.len >> 6;
 
-    const uint32_t buf_len = 2 + byte_count + data.len;
+    const uint32_t buf_len = 4 + byte_count + data.len;
     buf = realloc(buf, buf_len);
     buf[0] = first;
     memcpy(buf + 1, &length_in_bytes, byte_count);
     memcpy(buf + 1 + byte_count, data.value, data.len);
-    buf[1 + byte_count + data.len] = password->permissions;
+    memcpy(buf + 1 + byte_count + data.len, password->salt, 2);
+    buf[3 + byte_count + data.len] = password->permissions;
 
     *part = realloc(*part, part_length + buf_len);
     memcpy(*part + part_length, buf, buf_len);

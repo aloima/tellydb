@@ -28,13 +28,13 @@ Authorization part consists of passwords and their permissions and as follows:
 * `password count byte count (1 byte, n) + password count (n byte) + passwords`
 
 A password is as follows:
-* `string length specifier (4 byte) + password + password permissions (1 byte)`
+* `string length specifier + hashed password + password salt (2 bytes) + password permissions (1 byte)`
 
 For permissions, look at [AUTH.md](./AUTH.md).
 
 ### Data lines
 A data line is as follows:
-* `string length specifier (4 byte) + data key + data type + data value`
+* `string length specifier + data key + data type + data value`
 * Data key is a string.
 
 Data value scheme is defined as:
@@ -43,7 +43,7 @@ Data value scheme is defined as:
 
 * For `TELLY_NULL (0x00)` type, data value is nothing and the line consists of `data key + 0x1D + TELLY_NULL`.
 * For `TELLY_NUM (0x01)` type, data value is `byte count (1 byte) + number`. For example, data value is `0x02 + (0x00 + 0x01)` or `0x020001` to get 256.
-* For `TELLY_STR (0x02)` type, data value is `string length specifier (4 byte) + string data`.
+* For `TELLY_STR (0x02)` type, data value is `string length specifier + string data`.
 * For `TELLY_BOOL (0x03)` type, data value is `0x00` or `0x01`.
 
 * For `TELLY_HASHTABLE (0x04)` type, data value is `hash table allocated size (n) + hash table element 1 + hash table element 2 ... hash table element n + 0x17`.

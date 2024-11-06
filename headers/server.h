@@ -65,6 +65,7 @@ enum Permissions {
 struct Password {
   string_t data;
   uint8_t permissions;
+  char salt[3];
 };
 
 void create_constant_passwords();

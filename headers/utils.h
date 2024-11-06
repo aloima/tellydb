@@ -37,4 +37,7 @@ void close_logs();
 bool is_integer(const char *value);
 uint32_t get_digit_count(int64_t number);
 
+void read_string_from_file(const int fd, string_t *string, const bool unallocated, const bool terminator);
+void generate_random_string(char *dest, size_t length);
+
 uint64_t hash(char *key);
