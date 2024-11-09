@@ -31,7 +31,7 @@ struct KVPair *get_kv_from_cache(const char *key) {
 
 bool delete_kv_from_cache(const char *key) {
   const uint64_t index = hash((char *) key);
-  return delete_value_from_btree(cache, index);
+  return delete_value_from_btree(cache, index, (void (*)(void *)) free_kv);
 }
 
 void free_cache() {

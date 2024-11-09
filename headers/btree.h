@@ -3,6 +3,7 @@
 #include "database.h"
 
 #include <stdint.h>
+#include <stdbool.h>
 
 struct BTreeIntegers {
   uint8_t order;
@@ -38,6 +39,6 @@ uint32_t find_node_of_index(struct BTreeNode **result, struct BTreeNode *search,
 
 struct BTreeValue *insert_value_to_btree(struct BTree *tree, const uint64_t index, void *data);
 struct BTreeValue *find_value_from_btree(struct BTree *tree, const uint64_t index);
-void *delete_value_from_btree(struct BTree *tree, const uint64_t index);
+bool delete_value_from_btree(struct BTree *tree, const uint64_t index, void (*free_value)(void *value));
 
 void free_btree(struct BTree *tree, void (*free_value)(void *value));

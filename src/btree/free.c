@@ -5,7 +5,7 @@
 static void free_btree_node(struct BTreeNode *node, void (*free_value)(void *value)) {
   if (node->children != NULL) {
     for (uint32_t i = 0; i < node->size; ++i) {
-      free_value(node->data[i]->data);
+      if (free_value) free_value(node->data[i]->data);
       free(node->data[i]);
       free_btree_node(node->children[i], free_value);
     }
@@ -14,7 +14,7 @@ static void free_btree_node(struct BTreeNode *node, void (*free_value)(void *val
     free(node->children);
   } else {
     for (uint32_t i = 0; i < node->size; ++i) {
-      free_value(node->data[i]->data);
+      if (free_value) free_value(node->data[i]->data);
       free(node->data[i]);
     }
   }

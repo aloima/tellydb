@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-// Adds seperator from root to left node, adds elements and children of right node to left node, deletes right node and sets left node as new root
+// Adds separator from root to left node, adds elements and children of right node to left node, deletes right node and sets left node as new root
 static void merge_and_set_root(struct BTree *tree) {
   struct BTreeNode *root = tree->root;
   struct BTreeNode *right = root->children[1];
@@ -198,7 +198,7 @@ static void delete_from_leaf(struct BTree *tree, struct BTreeNode *node, const u
   }
 }
 
-void *delete_value_from_btree(struct BTree *tree, const uint64_t index) {
+bool delete_value_from_btree(struct BTree *tree, const uint64_t index, void (*free_value)(void *value)) {
   struct BTreeNode *node;
   const uint32_t target_at = find_node_of_index(&node, tree->root, index);
 
@@ -207,6 +207,8 @@ void *delete_value_from_btree(struct BTree *tree, const uint64_t index) {
   struct BTreeValue *target = node->data[target_at];
 
   if (target->index == index) {
+    if (free_value) free_value(target->data);
+    free(target);
     tree->size -= 1;
 
     if (!node->children) {
@@ -219,8 +221,8 @@ void *delete_value_from_btree(struct BTree *tree, const uint64_t index) {
       // TODO
     }
 
-    return target;
+    return true;
   }
 
-  return NULL;
+  return false;
 }
