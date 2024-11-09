@@ -7,9 +7,9 @@ uint32_t find_node_of_index(struct BTreeNode **result, struct BTreeNode *search,
     for (uint32_t i = 0; i < search->size; ++i) {
       const struct BTreeValue *value = search->data[i];
 
-      if (value->index < index) {
+      if (index < value->index) {
         return find_node_of_index(result, search->children[i], index);
-      } else if (value->index == index) {
+      } else if (index == value->index) {
         *result = search;
         return i;
       }
@@ -21,7 +21,7 @@ uint32_t find_node_of_index(struct BTreeNode **result, struct BTreeNode *search,
   *result = search;
 
   for (uint32_t i = 0; i < search->size; ++i) {
-    if (search->data[i]->index <= index) return i;
+    if (index <= search->data[i]->index) return i;
   }
 
   return search->size;

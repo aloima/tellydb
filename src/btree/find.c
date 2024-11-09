@@ -7,15 +7,15 @@ static struct BTreeValue *find_value_from_node(struct BTreeNode *node, const uin
   if (node->children) {
     for (uint32_t i = 0; i < node->size; ++i) {
       struct BTreeValue *value = node->data[i];
-      if (value->index < index) return find_value_from_node(node->children[i], index);
-      else if (value->index == index) return value;
+      if (index < value->index) return find_value_from_node(node->children[i], index);
+      else if (index == value->index) return value;
     }
 
     return find_value_from_node(node->children[node->size], index);
   } else {
     for (uint32_t i = 0; i < node->size; ++i) {
       struct BTreeValue *value = node->data[i];
-      if (value->index == index) return value;
+      if (index == value->index) return value;
     }
   }
 

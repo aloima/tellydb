@@ -26,6 +26,7 @@ static void merge_and_set_root(struct BTree *tree) {
 
     for (uint32_t i = size + 1; i < child_count; ++i) {
       left->children[i]->at = i;
+      left->children[i]->parent = left;
     }
 
     free(right->children);
@@ -44,7 +45,8 @@ static void merge_and_set_root(struct BTree *tree) {
 }
 
 // TODO: improve readability
-// TODO: rebalancing with internal nodes after deleting from leaf
+// TODO: fix deleting value from root if it has children nodes
+// TODO: invalid rebalancing for multi-layered B-Tree for deleting from second layer if you say leaf is first layer
 static void rebalance(struct BTree *tree, struct BTreeNode *node, const uint32_t target_at, const uint32_t min) {
   struct BTreeNode *parent = node->parent;
   const uint32_t right_at = node->at + 1;
@@ -183,6 +185,17 @@ static void delete_from_root(struct BTree *tree, struct BTreeNode *root, const u
   }
 }
 
+static void delete_from_internal(struct BTree *tree, struct BTreeNode *node, const uint32_t target_at) {
+  struct BTreeNode *left = node->children[target_at];
+  const uint32_t separator_at = (left->size - 1);
+  struct BTreeValue *separator = left->data[separator_at];
+
+  node->data[target_at] = separator;
+  const uint8_t min = !left->children ? tree->integers.leaf_min : tree->integers.internal_min;
+
+  if (node->size == min) rebalance(tree, left, separator_at, min);
+}
+
 static void delete_from_leaf(struct BTree *tree, struct BTreeNode *node, const uint32_t target_at) {
   if (node->size == tree->integers.leaf_min) {
     rebalance(tree, node, target_at, tree->integers.leaf_min);
@@ -218,7 +231,7 @@ bool delete_value_from_btree(struct BTree *tree, const uint64_t index, void (*fr
         delete_from_root(tree, node, target_at);
       }
     } else {
-      // TODO
+      delete_from_internal(tree, node, target_at);
     }
 
     return true;
