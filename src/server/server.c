@@ -97,7 +97,7 @@ static void close_server() {
   write_log(LOG_INFO, "Free'd all memory blocks and closed the server.");
 
   write_log(LOG_INFO, "Closing log file, free'ing configuration and exiting the process...");
-  close_logs();
+  save_and_close_logs();
   free_configuration(conf);
 
   unlink(".tellylock");
@@ -110,16 +110,22 @@ static void sigint_signal(__attribute__((unused)) int arg) {
 }
 
 void start_server(struct Configuration *config) {
+  conf = config;
   struct stat lock;
 
   if (stat(".tellylock", &lock) != -1) {
-    fputs("tellydb is already opened in this directory.\n", stderr);
+    write_log(LOG_ERR, "tellydb is already opened in this directory.");
+    free_configuration(config);
     exit(EXIT_FAILURE);
   } else creat(".tellylock", 0);
 
-  conf = config;
-  initialize_logs(conf);
-  write_log(LOG_INFO, "Initialized logs and configuration.");
+  if (!initialize_logs(conf)) {
+    write_log(LOG_ERR, "Cannot initialized logs.");
+    write_log(LOG_INFO, "Initialized configuration.");
+  } else {
+    write_log(LOG_INFO, "Initialized logs and configuration.");
+  }
+
   write_log(LOG_INFO, "version=" VERSION ", commit hash=" GIT_HASH);
 
   if (conf->default_conf) {
@@ -242,7 +248,7 @@ void start_server(struct Configuration *config) {
       write_log(LOG_INFO, "Read authorization part of database file. Loaded password count: %d", get_password_count());
 
       get_all_keys(authorization_end_at);
-      write_log(LOG_INFO, "Read all database file to created keyspace. Loaded key count: %d", cache->size);
+      write_log(LOG_INFO, "Read all database file to create keyspace. Loaded key count: %d", cache->size);
     } else {
       write_log(LOG_INFO, "Database file is empty. Loaded key and password count: 0");
     }

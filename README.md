@@ -14,7 +14,8 @@ A key-value database project for educational purposes.
 > Look at:  
 > [docs/SPECS.md](./docs/SPECS.md) for more technical information,  
 > [docs/FILE.md](./docs/FILE.md) for information about provided files by tellydb,  
-> [docs/COMMANDS.md](./docs/COMMANDS.md) for information about commands
+> [docs/COMMANDS.md](./docs/COMMANDS.md) for information about commands,  
+> [docs/AUTH.md](./docs/AUTH.md) for information about authorization
 
 ## Quick Start
 * Install a client that allows to connect tellydb or redis server

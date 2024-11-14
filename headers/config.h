@@ -8,7 +8,6 @@ struct Configuration {
   uint16_t port;
   uint16_t max_clients;
   uint8_t allowed_log_levels;
-  uint32_t max_log_len;
   int32_t max_log_lines;
   char data_file[49];
   char log_file[49];

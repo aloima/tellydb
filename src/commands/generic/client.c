@@ -58,16 +58,20 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
         }
 
         char buf[512];
+
+        char connected_at[21];
+        generate_date_string(connected_at, client->connected_at);
+
         const size_t buf_len = sprintf(buf, (
           "ID: %d\r\n"
           "Socket file descriptor: %d\r\n"
-          "Connected at: %.24s\r\n"
+          "Connected at: %.20s\r\n"
           "Last used command: %s\r\n"
           "Library name: %s\r\n"
           "Library version: %s\r\n"
           "Protocol: %s\r\n"
           "Permissions: %s\r\n"
-        ), client->id, client->connfd, ctime(&client->connected_at), client->command->name, lib_name, lib_ver, protocol, permissions);
+        ), client->id, client->connfd, connected_at, client->command->name, lib_name, lib_ver, protocol, permissions);
 
         char res[1024];
         const size_t nbytes = sprintf(res, "$%ld\r\n%s\r\n", buf_len, buf);

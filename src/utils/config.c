@@ -10,7 +10,6 @@ static struct Configuration default_conf = {
   .port = 6379,
   .max_clients = 128,
   .allowed_log_levels = LOG_INFO | LOG_ERR | LOG_WARN,
-  .max_log_len = 8192,
   .max_log_lines = 128,
   .data_file = ".tellydb",
   .log_file = ".tellylog",
@@ -81,10 +80,6 @@ struct Configuration parse_configuration(FILE *file) {
                 break;
             }
           }
-        } else if (streq(buf, "MAX_LOG_LEN")) {
-          buf[0] = '\0';
-          parse_value(file, buf);
-          conf.max_log_len = atoi(buf);
         } else if (streq(buf, "MAX_LOG_LINES")) {
           buf[0] = '\0';
           parse_value(file, buf);
@@ -160,13 +155,12 @@ size_t get_configuration_string(char *buf, struct Configuration conf) {
     "# e = error\n\n"
     "# Order of keys does not matter\n"
     "ALLOWED_LOG_LEVELS=%s\n\n"
-    "# Specifies maximum writeable log length to STDOUT\n"
-    "MAX_LOG_LEN=%u\n\n"
     "# Specifies maximum line count of logs will be saved to log file, to make undetermined, change it to -1\n"
+    "# MAX_LOG_LINES * (FILE BLOCK SIZE [512, 4096 or a power of 2] + 1) bytes will be allocated, so be careful\n"
     "MAX_LOG_LINES=%d\n\n"
     "# Specifies database file where data will be saved\n"
     "DATA_FILE=%s\n\n"
-    "# Specifies log file where logs will be appended\n"
+    "# Specifies log file where logs will be saved\n"
     "LOG_FILE=%s\n\n"
     "# Enables/disables creating TLS server\n"
     "# If it is enabled, CERT specifies certificate file path of TLS server and PRIVATE_KEY specifies private key file path of TLS server\n"
@@ -174,7 +168,7 @@ size_t get_configuration_string(char *buf, struct Configuration conf) {
     "TLS=%s\n"
     "CERT=%s\n"
     "PRIVATE_KEY=%s\n"
-  ), conf.port, conf.max_clients, allowed_log_levels, conf.max_log_len, conf.max_log_lines, conf.data_file, conf.log_file,
+  ), conf.port, conf.max_clients, allowed_log_levels, conf.max_log_lines, conf.data_file, conf.log_file,
      conf.tls ? "true" : "false", conf.cert, conf.private_key
   );
 }

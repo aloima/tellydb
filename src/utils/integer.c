@@ -1,5 +1,6 @@
 #include "../../headers/utils.h"
 
+#include <stdio.h>
 #include <stdbool.h>
 #include <ctype.h>
 #include <stdint.h>
@@ -28,5 +29,13 @@ uint32_t get_digit_count(int64_t number) {
     return 2 + log10(number * -1);
   } else {
     return 1 + log10(number);
+  }
+}
+
+void number_pad(char *res, const uint32_t value) {
+  if (value < 10) {
+    sprintf(res, "0%u", value);
+  } else if (value < 100) {
+    sprintf(res, "%u", value);
   }
 }

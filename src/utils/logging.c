@@ -9,57 +9,83 @@
 
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
-static struct Configuration *conf;
+static struct Configuration *_conf = NULL;
 static int fd = -1;
+
+// Also, use it as default log length
+static uint16_t block_size = 4096;
+
+char **lines;
 static int32_t log_lines = 0;
 
-static const char month_name[][4] = {
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-};
+// TODO: make only one block allocation
+bool initialize_logs(struct Configuration *config) {
+  _conf = config;
 
-static void number_pad(char *res, const uint32_t value) {
-  if (value < 10) {
-    sprintf(res, "0%u", value);
-  } else if (value < 100) {
-    sprintf(res, "%u", value);
-  }
-}
+  if ((fd = open_file(_conf->log_file, 0)) != -1) {
+    struct stat sostat;
+    stat(_conf->log_file, &sostat);
 
-void initialize_logs(struct Configuration *config) {
-  conf = config;
-  fd = open(conf->log_file, (O_RDWR | O_CREAT), (S_IRUSR | S_IWUSR));
+    const off64_t file_size = sostat.st_size;
+    block_size = sostat.st_blksize;
 
-  if (conf->max_log_lines != -1) {
-    char buffer[4096];
-    uint32_t count;
+    if (_conf->max_log_lines != -1) {
+      const uint32_t max_log_size = (block_size + 1);
+      lines = malloc(_conf->max_log_lines * sizeof(char *));
 
-    while ((count = read(fd, buffer, 4096)) != 0) {
-      for (uint32_t i = 0; i < count; ++i) {
-        if (buffer[i] == '\n') log_lines += 1;
+      for (int32_t i = 0; i < _conf->max_log_lines; ++i) {
+        lines[i] = malloc(max_log_size);
+      }
+
+      if (file_size != 0) {
+        const uint16_t block_count = ((file_size + block_size - 1) / block_size);
+        char *buf;
+
+        if (posix_memalign((void **) &buf, block_size, block_size * block_count) == 0) {
+          char line[max_log_size];
+          uint32_t len = 0;
+
+          read(fd, buf, block_count * block_size);
+
+          for (uint32_t i = 0; i < file_size; ++i) {
+            const char c = buf[i];
+
+            if (c == '\n') {
+              line[len] = '\n';
+              line[len + 1] = '\0';
+              memcpy(lines[log_lines], line, len + 2);
+              len = 0;
+
+              log_lines += 1;
+            } else {
+              line[len] = c;
+              len += 1;
+            }
+          }
+
+          free(buf);
+        } else {
+          return false;
+        }
       }
     }
+
+    return true;
+  } else {
+    return false;
   }
 }
 
 void write_log(enum LogLevel level, const char *fmt, ...) {
-  const uint8_t check = conf->allowed_log_levels & level;
+  struct Configuration conf = _conf ? *_conf : get_default_configuration();
+  const uint8_t check = (conf.allowed_log_levels & level);
 
-  time_t rawtime = time(NULL);
-  struct tm *tm = localtime(&rawtime);
-  
-  char date[3], mon[4], hour[3], min[3], sec[3];
-  number_pad(date, tm->tm_mday);
-  sprintf(mon, "%.3s", month_name[tm->tm_mon]);
-  number_pad(hour, tm->tm_hour);
-  number_pad(min, tm->tm_min);
-  number_pad(sec, tm->tm_sec);
+  char time_text[21];
+  generate_date_string(time_text, time(NULL));
 
-  char time_text[28]; // tm->tm_year is integer, not 4-digit
-  sprintf(time_text, "%s %s %d %s:%s:%s", date, mon, 1900 + tm->tm_year, hour, min, sec);
-
-  const uint32_t buf_size = conf->max_log_len + 1;
+  const uint32_t buf_size = block_size + 1;
   char buf[buf_size];
   va_list args;
 
@@ -67,61 +93,109 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
   vsnprintf(buf, buf_size, fmt, args);
   va_end(args);
 
-  uint32_t message_len = conf->max_log_len + 41;
-  char message[message_len + 1];
+  uint32_t message_len = 0;
+  char message[block_size + 34];
+
+  FILE *stream;
 
   switch (check) {
     case LOG_INFO:
+      stream = stdout;
       message_len = sprintf(message, "[%s / INFO] | %s\n", time_text, buf);
       break;
 
     case LOG_WARN:
+      stream = stdout;
       message_len = sprintf(message, "[%s / WARN] | %s\n", time_text, buf);
       break;
 
     case LOG_ERR:
+      stream = stderr;
       message_len = sprintf(message, "[%s / ERR]  | %s\n", time_text, buf);
       break;
+
+    default:
+      stream = NULL;
   }
 
-  fputs(message, stdout);
+  fputs(message, stream);
 
-  if (conf->max_log_lines != -1) {
-    if (log_lines >= conf->max_log_lines) {
-      const off_t size = lseek(fd, 0, SEEK_END);
-
-      lseek(fd, 0, SEEK_SET);
-      char c;
-
-      while (read(fd, &c, 1) != 0) {
-        if (c == '\n') {
-          if (log_lines == conf->max_log_lines) {
-            const off_t at = lseek(fd, 0, SEEK_CUR);
-            const off_t data_len = size - at;
-            char *data = malloc(data_len);
-            read(fd, data, data_len);
-            lseek(fd, 0, SEEK_SET);
-            write(fd, data, data_len);
-
-            write(fd, message, message_len);
-            ftruncate(fd, data_len + message_len);
-            free(data);
-
-            break;
-          } else {
-            log_lines -= 1;
-          }
-        }
-      }
-    } else {
-      write(fd, message, message_len);
+  if (fd != -1) {
+    if (conf.max_log_lines == -1) {
       log_lines += 1;
+
+      if (log_lines != 1) lines = realloc(lines, log_lines * sizeof(char *));
+      else lines = malloc(sizeof(char *));
+
+      const uint32_t size = (block_size + 41);
+      const int32_t at = (log_lines - 1);
+      lines[at] = malloc(size);
+      memcpy(lines[at], message, (message_len + 1));
+    } else {
+      if (log_lines == conf.max_log_lines) {
+        const int32_t at = (log_lines - 1);
+        char *line = lines[0];
+
+        memcpy(lines, lines + 1, (log_lines - 1) * sizeof(char *));
+        memcpy(line, message, (message_len + 1));
+        lines[at] = line;
+      } else {
+        memcpy(lines[log_lines], message, (message_len + 1));
+        log_lines += 1;
+      }
     }
-  } else {
-    write(fd, message, message_len);
   }
 }
 
-void close_logs() {
+void save_and_close_logs() {
+  if (fd != -1) {
+    char *buf;
+
+    if (posix_memalign((void **) &buf, block_size, block_size) == 0) {
+      memset(buf, 0, block_size);
+
+      off64_t length = 0;
+      uint16_t at = 0;
+      lseek(fd, 0, SEEK_SET);
+
+      for (int32_t i = 0; i < log_lines; ++i) {
+        const char *line = lines[i];
+        const uint32_t len = strlen(line);
+
+        if ((at + len) <= block_size) {
+          memcpy(buf + at, line, len);
+          at += len;
+        } else {
+          const uint16_t remaining = (block_size - at);
+          memcpy(buf + at, line, remaining);
+          length += write(fd, buf, block_size);
+
+          memcpy(buf, line + remaining, (at = (len - remaining)));
+        }
+      }
+
+      if (at != 0) {
+        write(fd, buf, block_size);
+        ftruncate64(fd, length + at);
+      } else {
+        ftruncate64(fd, length);
+      }
+
+      free(buf);
+    }
+
+    if (_conf->max_log_lines != -1) {
+      for (int32_t i = 0; i < _conf->max_log_lines; ++i) {
+        free(lines[i]);
+      }
+    } else {
+      for (int32_t i = 0; i < log_lines; ++i) {
+        free(lines[i]);
+      }
+    }
+
+    free(lines);
+  }
+
   close(fd);
 }
