@@ -43,7 +43,7 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
   }
 }
 
-struct Command cmd_exists = {
+const struct Command cmd_exists = {
   .name = "EXISTS",
   .summary = "Checks if specified keys exist or not.",
   .since = "0.1.4",

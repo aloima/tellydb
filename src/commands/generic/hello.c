@@ -90,7 +90,7 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
   }
 }
 
-struct Command cmd_hello = {
+const struct Command cmd_hello = {
   .name = "HELLO",
   .summary = "Handshakes with the tellydb server.",
   .since = "0.1.6",

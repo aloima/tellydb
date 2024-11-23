@@ -40,7 +40,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
   }
 }
 
-struct Command cmd_hlen = {
+const struct Command cmd_hlen = {
   .name = "HLEN",
   .summary = "Returns field count information of the hash table.",
   .since = "0.1.3",

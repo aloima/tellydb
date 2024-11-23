@@ -49,7 +49,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
   }
 }
 
-struct Command cmd_append = {
+const struct Command cmd_append = {
   .name = "APPEND",
   .summary = "Appends string to existed value. If key is not exist, creates a new one.",
   .since = "0.1.7",

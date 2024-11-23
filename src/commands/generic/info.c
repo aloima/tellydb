@@ -102,7 +102,7 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
   }
 }
 
-struct Command cmd_info = {
+const struct Command cmd_info = {
   .name = "INFO",
   .summary = "Displays server information.",
   .since = "0.1.0",

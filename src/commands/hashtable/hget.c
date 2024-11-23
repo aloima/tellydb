@@ -34,7 +34,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
   }
 }
 
-struct Command cmd_hget = {
+const struct Command cmd_hget = {
   .name = "HGET",
   .summary = "Gets a field from the hash table.",
   .since = "0.1.3",

@@ -128,7 +128,7 @@ static struct Subcommand subcommands[] = {
   }
 };
 
-struct Command cmd_command = {
+const struct Command cmd_command = {
   .name = "COMMAND",
   .summary = "Gives information about the commands in the server.",
   .since = "0.1.0",

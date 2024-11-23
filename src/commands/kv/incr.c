@@ -39,7 +39,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
   }
 }
 
-struct Command cmd_incr = {
+const struct Command cmd_incr = {
   .name = "INCR",
   .summary = "Increments value.",
   .since = "0.1.0",

@@ -31,7 +31,7 @@ static void run(struct Client *client, __attribute__((unused)) commanddata_t *co
   }
 }
 
-struct Command cmd_lastsave = {
+const struct Command cmd_lastsave = {
   .name = "LASTSAVE",
   .summary = "Returns last save time of database as UNIX time.",
   .since = "0.1.6",

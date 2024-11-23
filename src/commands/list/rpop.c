@@ -42,7 +42,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
   }
 }
 
-struct Command cmd_rpop = {
+const struct Command cmd_rpop = {
   .name = "RPOP",
   .summary = "Removes and returns last element of the list.",
   .since = "0.1.3",

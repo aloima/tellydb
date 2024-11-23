@@ -19,7 +19,7 @@ static void run(struct Client *client, __attribute__((unused)) commanddata_t *co
   }
 }
 
-struct Command cmd_age = {
+const struct Command cmd_age = {
   .name = "AGE",
   .summary = "Sends the server age as seconds.",
   .since = "0.1.6",

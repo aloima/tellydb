@@ -19,7 +19,7 @@ static void run(struct Client *client, __attribute__((unused)) commanddata_t *co
   }
 }
 
-struct Command cmd_time = {
+const struct Command cmd_time = {
   .name = "TIME",
   .summary = "Returns the current server time.",
   .since = "0.1.2",

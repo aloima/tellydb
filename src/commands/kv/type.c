@@ -47,7 +47,7 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
   }
 }
 
-struct Command cmd_type = {
+const struct Command cmd_type = {
   .name = "TYPE",
   .summary = "Returns type of the value.",
   .since = "0.1.0",

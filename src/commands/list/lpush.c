@@ -83,7 +83,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
   }
 }
 
-struct Command cmd_lpush = {
+const struct Command cmd_lpush = {
   .name = "LPUSH",
   .summary = "Pushes element(s) to beginning of the list.",
   .since = "0.1.3",

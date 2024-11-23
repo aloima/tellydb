@@ -24,7 +24,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
   }
 }
 
-struct Command cmd_get = {
+const struct Command cmd_get = {
   .name = "GET",
   .summary = "Gets value.",
   .since = "0.1.0",

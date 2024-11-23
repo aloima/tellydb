@@ -30,7 +30,7 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
   }
 }
 
-struct Command cmd_ping = {
+const struct Command cmd_ping = {
   .name = "PING",
   .summary = "Pings the server and returns a simple/bulk string.",
   .since = "0.1.2",

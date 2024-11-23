@@ -39,7 +39,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
   }
 }
 
-struct Command cmd_decr = {
+const struct Command cmd_decr = {
   .name = "DECR",
   .summary = "Decrements value.",
   .since = "0.1.0",

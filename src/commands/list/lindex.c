@@ -67,7 +67,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
   }
 }
 
-struct Command cmd_lindex = {
+const struct Command cmd_lindex = {
   .name = "LINDEX",
   .summary = "Returns element at the index in the list.",
   .since = "0.1.4",

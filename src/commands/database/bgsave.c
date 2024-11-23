@@ -19,7 +19,7 @@ static void run(struct Client *client, __attribute__((unused)) commanddata_t *co
   }
 }
 
-struct Command cmd_bgsave = {
+const struct Command cmd_bgsave = {
   .name = "BGSAVE",
   .summary = "Saves all data to database file in background using a thread.",
   .since = "0.1.6",

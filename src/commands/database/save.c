@@ -19,7 +19,7 @@ static void run(struct Client *client, __attribute__((unused)) commanddata_t *co
   }
 }
 
-struct Command cmd_save = {
+const struct Command cmd_save = {
   .name = "SAVE",
   .summary = "Saves all data to database file.",
   .since = "0.1.6",

@@ -132,7 +132,7 @@ static struct Subcommand subcommands[] = {
   }
 };
 
-struct Command cmd_client = {
+const struct Command cmd_client = {
   .name = "CLIENT",
   .summary = "Main command of client(s).",
   .since = "0.1.0",

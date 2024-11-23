@@ -55,7 +55,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
   }
 }
 
-struct Command cmd_hdel = {
+const struct Command cmd_hdel = {
   .name = "HDEL",
   .summary = "Deletes field(s) of the hash table.",
   .since = "0.1.5",

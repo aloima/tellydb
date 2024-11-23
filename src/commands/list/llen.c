@@ -35,7 +35,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
   }
 }
 
-struct Command cmd_llen = {
+const struct Command cmd_llen = {
   .name = "LLEN",
   .summary = "Returns length of the list.",
   .since = "0.1.3",

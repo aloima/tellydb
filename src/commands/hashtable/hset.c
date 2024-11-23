@@ -76,7 +76,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
   }
 }
 
-struct Command cmd_hset = {
+const struct Command cmd_hset = {
   .name = "HSET",
   .summary = "Sets field(s) of the hash table.",
   .since = "0.1.3",

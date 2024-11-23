@@ -161,7 +161,7 @@ static struct Subcommand subcommands[] = {
   }
 };
 
-struct Command cmd_pwd = {
+const struct Command cmd_pwd = {
   .name = "PWD",
   .summary = "Allows to manage passwords.",
   .since = "0.1.7",

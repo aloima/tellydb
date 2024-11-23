@@ -21,7 +21,7 @@ static void run(struct Client *client, __attribute__((unused)) commanddata_t *co
   }
 }
 
-struct Command cmd_dbsize = {
+const struct Command cmd_dbsize = {
   .name = "DBSIZE",
   .summary = "Returns key count in the database.",
   .since = "0.1.6",

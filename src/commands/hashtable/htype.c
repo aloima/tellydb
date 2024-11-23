@@ -50,7 +50,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
   }
 }
 
-struct Command cmd_htype = {
+const struct Command cmd_htype = {
   .name = "HTYPE",
   .summary = "Returns type of the field from hash table.",
   .since = "0.1.3",

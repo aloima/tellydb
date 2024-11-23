@@ -41,7 +41,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
   }
 }
 
-struct Command cmd_auth = {
+const struct Command cmd_auth = {
   .name = "AUTH",
   .summary = "Allows to authorize client via passwords.",
   .since = "0.1.7",

@@ -83,7 +83,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
   }
 }
 
-struct Command cmd_rpush = {
+const struct Command cmd_rpush = {
   .name = "RPUSH",
   .summary = "Pushes element(s) to ending of the list.",
   .since = "0.1.3",
