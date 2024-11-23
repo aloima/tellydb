@@ -67,9 +67,10 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
         return;
       }
 
+      const uint8_t all = get_full_password()->permissions;
       const string_t data = command->args[1];
       char *permissions_value = command->args[2].value;
-      const uint8_t permissions = read_permissions_value(client, permissions_value);
+      const uint8_t permissions = (streq(permissions_value, "all") ? all : read_permissions_value(client, permissions_value));
       const uint8_t not_has = ~password->permissions & permissions;
 
       if (not_has) {

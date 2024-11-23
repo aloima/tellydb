@@ -215,7 +215,7 @@ This document provides a detailed description of all the available commands. Eac
 
 **Arguments**:
 - **password**: Password value
-- **permissions**: For permissions, look at [AUTH.md](./AUTH.md). Each character represents a permissions:
+- **permissions**: Look at [AUTH.md](./AUTH.md). If argument is `all`, it means that all permissions. If not, each character represents a permissions:
   + `r` => `P_READ`
   + `w` => `P_WRITE`
   + `c` => `P_CLIENT`

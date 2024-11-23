@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <ctype.h>
-#include <time.h>
 
 static void run(struct Client *client, commanddata_t *command, __attribute__((unused)) struct Password *password) {
   if (client) {
