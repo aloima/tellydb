@@ -52,7 +52,7 @@ static uint8_t read_permissions_value(struct Client *client, char *permissions_v
 
 static void run(struct Client *client, commanddata_t *command, struct Password *password) {
   if (command->arg_count == 0) {
-    WRONG_ARGUMENT_ERROR(client, "AUTH", 4);
+    WRONG_ARGUMENT_ERROR(client, "PWD", 3);
     return;
   }
 
@@ -63,7 +63,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
 
     if (streq(subcommand, "ADD")) {
       if (command->arg_count != 3) {
-        WRONG_ARGUMENT_ERROR(client, "AUTH ADD", 8);
+        WRONG_ARGUMENT_ERROR(client, "PWD ADD", 7);
         return;
       }
 
@@ -85,7 +85,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
       }
     } if (streq(subcommand, "EDIT")) {
       if (command->arg_count != 3) {
-        WRONG_ARGUMENT_ERROR(client, "AUTH EDIT", 9);
+        WRONG_ARGUMENT_ERROR(client, "PWD EDIT", 8);
         return;
       }
 
@@ -110,7 +110,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
       }
     } else if (streq(subcommand, "REMOVE")) {
       if (command->arg_count != 2) {
-        WRONG_ARGUMENT_ERROR(client, "AUTH REMOVE", 11);
+        WRONG_ARGUMENT_ERROR(client, "PWD REMOVE", 10);
         return;
       }
 
