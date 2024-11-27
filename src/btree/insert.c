@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+// TODO: invalid inserting on multiple same value indexes
 static struct BTreeValue *insert_value_to_node(struct BTree *tree, struct BTreeNode *node, struct BTreeValue *value, const uint32_t value_at) {
   tree->size += 1;
   node->size += 1;

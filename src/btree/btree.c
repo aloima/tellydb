@@ -32,12 +32,8 @@ static void get_values_from_node(struct BTreeValue **values, uint32_t *size, str
     get_values_from_node(values, size, node->children[node->size]);
   } else {
     for (uint32_t i = 0; i < node->size; ++i) {
-      struct BTreeValue *value = node->data[i];
-
-      if (((struct KVPair *) value->data)->value) {
-        values[*size] = value;
-        *size += 1;
-      }
+      values[*size] = node->data[i];
+      *size += 1;
     }
   }
 }
