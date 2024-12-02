@@ -1,6 +1,4 @@
 #include "../../headers/database.h"
-#include "../../headers/btree.h"
-#include "../../headers/hashtable.h"
 #include "../../headers/utils.h"
 
 #include <stdio.h>
@@ -11,28 +9,55 @@
 
 #include <fcntl.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <pthread.h>
 
 static int fd = -1;
 static bool saving = false;
+static uint16_t block_size;
+static off64_t file_size;
 
 bool open_database_fd(const char *filename, uint64_t *server_age) {
-  fd = open(filename, (O_RDWR | O_CREAT), (S_IRUSR | S_IWUSR));
+  if ((fd = open_file(filename, O_LARGEFILE)) != -1) {
+    struct stat sostat;
+    stat(filename, &sostat);
 
-  if (fd == -1) {
-    write_log(LOG_ERR, "Database file cannot be opened or created.");
-    return false;
-  }
+    block_size = sostat.st_blksize;
+    file_size = sostat.st_size;
 
-  if (lseek(fd, 0, SEEK_END) != 0) {
-    lseek(fd, 2, SEEK_SET);
-    read(fd, server_age, sizeof(long));
-  } else {
-    *server_age = 0;
+    if (file_size != 0) {
+      char *block;
+
+      if (posix_memalign((void **) &block, block_size, block_size) == 0) {
+        read(fd, block, block_size);
+
+        if (block[0] != 0x18 || block[1] != 0x10) {
+          close(fd);
+          free(block);
+          write_log(LOG_ERR, "Invalid headers for database file, file is closed.");
+          return false;
+        }
+
+        memcpy(server_age, block + 2, 8);
+
+        const uint64_t filled_block_size = get_authorization_from_file(fd, block, block_size);
+        get_all_data_from_file(fd, file_size, block, block_size, filled_block_size);
+        write_log(LOG_INFO, "Read authorization part of database file. Loaded password count: %d", get_password_count());
+
+        free(block);
+      }
+    } else {
+      write_log(LOG_INFO, "Database file is empty, loaded password and data count: 0");
+      *server_age = 0;
+    }
   }
 
   return true;
+}
+
+uint16_t get_block_size() {
+  return block_size;
 }
 
 int get_database_fd() {
@@ -44,15 +69,31 @@ void close_database_fd() {
   close(fd);
 }
 
-static off_t generate_value(char **line, struct KVPair *kv) {
-  off_t len;
+static off64_t generate_value(char **data, struct KVPair *kv) {
+  off64_t len;
+
+  {
+    string_t key = kv->key;
+
+    const uint8_t bit_count = log2(key.len) + 1;
+    const uint8_t byte_count = ceil((float) (bit_count - 6) / 8);
+    const uint8_t first = (byte_count << 6) | (key.len & 0b111111);
+    const uint32_t length_in_bytes = key.len >> 6;
+
+    len = key.len + byte_count + 1;
+    *data = realloc(*data, len);
+
+    (*data)[0] = first;
+    memcpy(*data + 1, &length_in_bytes, byte_count);
+    memcpy(*data + byte_count + 1, key.value, key.len);
+  }
 
   switch (kv->type) {
     case TELLY_NULL:
-      len = 1;
-      *line = malloc(len);
+      *data = realloc(*data, len + 1);
+      (*data)[len] = TELLY_NULL;
 
-      (*line)[0] = TELLY_NULL;
+      len += 1;
       break;
 
     case TELLY_NUM: {
@@ -60,12 +101,12 @@ static off_t generate_value(char **line, struct KVPair *kv) {
       const uint32_t bit_count = log2(*number) + 1;
       const uint32_t byte_count = (bit_count / 8) + 1;
 
-      len = byte_count + 2;
-      *line = malloc(len);
+      *data = realloc(*data, len + byte_count + 2);
+      (*data)[len] = TELLY_NUM;
+      (*data)[len += 1] = byte_count;
+      memcpy(*data + (len += 1), number, byte_count);
 
-      (*line)[0] = TELLY_NUM;
-      (*line)[1] = byte_count;
-      memcpy(*line + 2, number, byte_count);
+      len += byte_count;
       break;
     }
 
@@ -77,195 +118,23 @@ static off_t generate_value(char **line, struct KVPair *kv) {
       const uint8_t first = (byte_count << 6) | (string->len & 0b111111);
       const uint32_t length_in_bytes = string->len >> 6;
 
-      len = string->len + byte_count + 2;
-      *line = malloc(len);
+      *data = realloc(*data, len + string->len + byte_count + 2);
+      (*data)[len] = TELLY_STR;
+      (*data)[len += 1] = first;
+      memcpy(*data + (len += 1), &length_in_bytes, byte_count);
+      memcpy(*data + (len += byte_count), string->value, string->len);
 
-      (*line)[0] = TELLY_STR;
-      (*line)[1] = first;
-      memcpy(*line + 2, &length_in_bytes, byte_count);
-
-      memcpy(*line + byte_count + 2, string->value, string->len);
+      len += string->len;
       break;
     }
 
     case TELLY_BOOL:
-      len = 2;
-      *line = malloc(len);
-
-      (*line)[0] = TELLY_BOOL;
-      (*line)[1] = *((bool *) kv->value);
-      break;
-
-    case TELLY_HASHTABLE: {
-      struct HashTable *table = kv->value;
-
-      len = 5;
-      *line = malloc(len);
-
-      (*line)[0] = TELLY_HASHTABLE;
-      memcpy(*line + 1, &table->size.allocated, sizeof(uint32_t));
-
-      off_t at = len;
-
-      for (uint32_t i = 0; i < table->size.allocated; ++i) {
-        struct FVPair *fv = table->fvs[i];
-
-        while (fv) {
-          const string_t name = fv->name;
-          const uint8_t n_bit_count = log2(name.len) + 1;
-          const uint8_t n_byte_count = ceil((float) (n_bit_count - 6) / 8);
-          const uint8_t n_first = (n_byte_count << 6) | (name.len & 0b111111);
-          const uint32_t n_length_in_bytes = name.len >> 6;
-
-          switch (fv->type) {
-            case TELLY_NULL:
-              len += 2 + n_byte_count + name.len;
-              *line = realloc(*line, len);
-
-              (*line)[at] = TELLY_NULL;
-              (*line)[at += 1] = n_first;
-              memcpy(*line + (at += 1), &n_length_in_bytes, n_byte_count);
-              memcpy(*line + (at += n_byte_count), name.value, name.len);
-              at += name.len;
-              break;
-
-            case TELLY_NUM: {
-              const long *number = fv->value;
-              const uint32_t bit_count = log2(*number) + 1;
-              const uint32_t byte_count = (bit_count / 8) + 1;
-
-              len += 3 + n_byte_count + name.len + byte_count;
-              *line = realloc(*line, len);
-
-              (*line)[at] = TELLY_NUM;
-              (*line)[at += 1] = n_first;
-              memcpy(*line + (at += 1), &n_length_in_bytes, n_byte_count);
-              memcpy(*line + (at += n_byte_count), name.value, name.len);
-
-              (*line)[at += name.len] = byte_count;
-              memcpy(*line + (at += 1), number, byte_count);
-              at += byte_count;
-              break;
-            }
-
-            case TELLY_STR: {
-              string_t *string = fv->value;
-
-              const uint8_t bit_count = log2(string->len) + 1;
-              const uint8_t byte_count = ceil((float) (bit_count - 6) / 8);
-              const uint8_t first = (byte_count << 6) | (string->len & 0b111111);
-              const uint32_t length_in_bytes = string->len >> 6;
-
-              len += 3 + n_byte_count + name.len + byte_count + string->len;
-              *line = realloc(*line, len);
-
-              (*line)[at] = TELLY_STR;
-              (*line)[at += 1] = n_first;
-              memcpy(*line + (at += 1), &n_length_in_bytes, n_byte_count);
-              memcpy(*line + (at += n_byte_count), name.value, name.len);
-
-              (*line)[at += name.len] = first;
-              memcpy(*line + (at += 1), &length_in_bytes, byte_count);
-              memcpy(*line + (at += byte_count), string->value, string->len);
-              at += string->len;
-              break;
-            }
-
-            case TELLY_BOOL:
-              len += 3 + n_byte_count + name.len;
-              *line = realloc(*line, len);
-
-              (*line)[at] = TELLY_BOOL;
-              (*line)[at += 1] = n_first;
-              memcpy(*line + (at += 1), &n_length_in_bytes, n_byte_count);
-              memcpy(*line + (at += n_byte_count), name.value, name.len);
-
-              (*line)[at += name.len] = *((bool *) fv->value);
-              at += 1;
-              break;
-
-            default:
-              break;
-          }
-
-          fv = fv->next;
-        }
-      }
+      *data = realloc(*data, len + 2);
+      (*data)[len] = TELLY_BOOL;
+      (*data)[len += 1] = *((bool *) kv->value);
 
       len += 1;
-      *line = realloc(*line, len);
-      (*line)[at] = 0x17;
       break;
-    }
-
-    case TELLY_LIST: {
-      struct List *list = kv->value;
-      struct ListNode *node = list->begin;
-
-      len = 5;
-      *line = malloc(len);
-
-      (*line)[0] = TELLY_LIST;
-      memcpy(*line + 1, &list->size, sizeof(uint32_t));
-
-      while (node) {
-        switch (node->type) {
-          case TELLY_NULL:
-            len += 1;
-            *line = realloc(*line, len + 1);
-
-            (*line)[len - 1] = TELLY_NULL;
-            break;
-
-          case TELLY_NUM: {
-            const long *number = node->value;
-            const uint32_t bit_count = log2(*number) + 1;
-            const uint32_t byte_count = (bit_count / 8) + 1;
-
-            len += byte_count + 2;
-            *line = realloc(*line, len + 1);
-
-            (*line)[len - byte_count - 2] = TELLY_NUM;
-            (*line)[len - byte_count - 1] = byte_count;
-            memcpy(*line + len - byte_count, number, byte_count);
-            break;
-          }
-
-          case TELLY_STR: {
-            string_t *string = node->value;
-
-            const uint8_t bit_count = log2(string->len) + 1;
-            const uint8_t byte_count = ceil((float) (bit_count - 6) / 8);
-            const uint8_t first = (byte_count << 6) | (string->len & 0b111111);
-            const uint32_t length_in_bytes = string->len >> 6;
-
-            len += string->len + byte_count + 2;
-            *line = realloc(*line, len + 1);
-
-            (*line)[len - string->len - byte_count - 2] = TELLY_STR;
-            (*line)[len - string->len - byte_count - 1] = first;
-            memcpy(*line + len - string->len - byte_count, &length_in_bytes, byte_count);
-            memcpy(*line + len - string->len, string->value, string->len);
-            break;
-          }
-
-          case TELLY_BOOL:
-            len += 2;
-            *line = realloc(*line, len + 1);
-
-            (*line)[len - 2] = TELLY_BOOL;
-            (*line)[len - 1] = *((bool *) node->value);
-            break;
-
-          default:
-            break;
-        }
-
-        node = node->next;
-      }
-
-      break;
-    }
 
     default:
       len = 0;
@@ -274,170 +143,104 @@ static off_t generate_value(char **line, struct KVPair *kv) {
   return len;
 }
 
-static off_t generate_authorization_part(char **part) {
-  struct Password **passwords = get_passwords();
-  const uint32_t password_count = get_password_count();
-  const uint8_t password_count_byte_count = (password_count != 0) ? (log2(password_count) + 1) : 0;
-  off_t part_length = 1 + password_count_byte_count;
-  *part = malloc(part_length);
-
-  (*part)[0] = password_count_byte_count;
-  memcpy(*part + 1, &password_count, password_count_byte_count);
-
-  char *buf = malloc(1);
-
-  for (uint32_t i = 0; i < password_count; ++i) {
-    struct Password *password = passwords[i];
-    string_t data = password->data;
-
-    const uint8_t bit_count = log2(data.len) + 1;
-    const uint8_t byte_count = ceil((float) (bit_count - 6) / 8);
-    const uint8_t first = (byte_count << 6) | (data.len & 0b111111);
-    const uint32_t length_in_bytes = data.len >> 6;
-
-    const uint32_t buf_len = 4 + byte_count + data.len;
-    buf = realloc(buf, buf_len);
-    buf[0] = first;
-    memcpy(buf + 1, &length_in_bytes, byte_count);
-    memcpy(buf + 1 + byte_count, data.value, data.len);
-    memcpy(buf + 1 + byte_count + data.len, password->salt, 2);
-    buf[3 + byte_count + data.len] = password->permissions;
-
-    *part = realloc(*part, part_length + buf_len);
-    memcpy(*part + part_length, buf, buf_len);
-    part_length += buf_len;
-  }
-
-  free(buf);
-  return part_length;
+static void generate_headers(char *headers, const uint64_t server_age) {
+  headers[0] = 0x18;
+  headers[1] = 0x10;
+  memcpy(headers + 2, &server_age, sizeof(uint64_t));
 }
 
 void save_data(const uint64_t server_age) {
   if (saving) return;
   saving = true;
 
-  uint32_t size;
-  struct BTreeValue **values = get_sorted_kvs_by_pos_as_values(&size);
+  lseek(fd, 0, SEEK_SET);
 
-  uint32_t file_size = lseek(fd, 0, SEEK_END);
-  int32_t diff = 0;
+  char *block;
+  
+  if (posix_memalign((void **) &block, block_size, block_size) == 0) {
+    memset(block, 0, block_size);
 
-  if (file_size != 0) {
-    // File headers
+    uint32_t length, total = 0;
+    generate_headers(block, server_age);
+
     {
-      uint8_t constants[2];
-      lseek(fd, 0, SEEK_SET);
+      struct Password **passwords = get_passwords();
+      const uint32_t password_count = get_password_count();
+      const uint8_t password_count_byte_count = (password_count != 0) ? (log2(password_count) + 1) : 0;
+      length = 11 + password_count_byte_count;
 
-      if (read(fd, constants, 2) != 2 || constants[0] != 0x18 || constants[1] != 0x10 || file_size < 11) {
-        write_log(LOG_ERR, "Cannot save data, invalid file headers");
-        free(values);
-        return;
-      }
+      block[10] = password_count_byte_count;
+      memcpy(block + 11, &password_count, password_count_byte_count);
 
-      write(fd, &server_age, sizeof(uint64_t));
-    }
+      for (uint32_t i = 0; i < password_count; ++i) {
+        struct Password *password = passwords[i];
+        const uint32_t new_length = (length + 49);
 
-    // Authorization part
-    {
-      char *part;
-      const off_t length = generate_authorization_part(&part);
-      off_t *end_at = get_authorization_end_at();
+        if (new_length > block_size) {
+          const uint32_t allowed = (new_length - block_size);
+          memcpy(block + length, password->data, allowed);
+          write(fd, block, block_size);
 
-      char *buf = malloc(file_size - *end_at);
-      lseek(fd, *end_at, SEEK_SET);
-      read(fd, buf, file_size - *end_at);
-
-      lseek(fd, 10, SEEK_SET);
-      write(fd, part, length);
-      write(fd, buf, file_size - *end_at);
-
-      file_size += length - (*end_at - 10);
-      *end_at += (length + 10) - *end_at;
-      free(part);
-      free(buf);
-    }
-  } else {
-    // File headers
-    {
-      uint8_t data[10] = {0x18, 0x10};
-      memcpy(data + 2, &server_age, 8);
-
-      lseek(fd, 0, SEEK_SET);
-      write(fd, data, 10);
-    }
-
-    // Authorization part
-    {
-      char *part;
-      const off_t length = generate_authorization_part(&part);
-      off_t *end_at = get_authorization_end_at();
-
-      write(fd, part, length);
-      *end_at = (file_size = 10 + length);
-      free(part);
-    }
-  }
-
-  for (uint32_t i = 0; i < size; ++i) {
-    struct KVPair *kv = values[i]->data;
-
-    char *line;
-    const off_t line_len = generate_value(&line, kv);
-
-    if (line_len != 0) {
-      if (kv->pos.start_at != -1) {
-        const off_t line_len_in_file = kv->pos.end_at - (kv->pos.start_at - 1);
-
-        if (line_len_in_file != line_len) {
-          const off_t buf_len = file_size - kv->pos.end_at;
-          const off_t total_len = line_len + buf_len;
-          line = realloc(line, total_len);
-
-          lseek(fd, kv->pos.end_at, SEEK_SET);
-          read(fd, line + line_len, buf_len);
-          lseek(fd, kv->pos.start_at + diff - 1, SEEK_SET);
-          write(fd, line, total_len);
-
-          diff += line_len - line_len_in_file;
-          kv->pos.end_at += diff;
+          const uint32_t remaining = (48 - allowed); // remaining byte count except permissions
+          memcpy(block, password->data, remaining);
+          block[remaining] = password->permissions;
+          total += block_size;
+          length = (remaining + 1);
         } else {
-          lseek(fd, kv->pos.start_at + diff - 1, SEEK_SET);
-          write(fd, line, line_len);
+          memcpy(block + length, password->data, 48);
+          block[length + 48] = password->permissions;
+          length = new_length;
         }
-      } else {
-        kv->pos.start_at = lseek(fd, 0, SEEK_END);
+      }
+    }
 
-        const string_t key = kv->key;
+    {
+      uint32_t size;
+      struct BTree *cache = get_cache();
+      struct BTreeValue **values = get_values_from_btree(cache, &size);
 
-        const uint8_t bit_count = log2(key.len) + 1;
-        const uint8_t byte_count = ceil((float) (bit_count - 6) / 8);
-        const uint8_t first = (byte_count << 6) | (key.len & 0b111111);
-        const uint32_t length_in_bytes = key.len >> 6;
+      char *data = malloc(1);
 
-        const uint32_t length_specifier_len = byte_count + 1;
-        const uint32_t key_part_len = key.len + length_specifier_len;
+      for (uint32_t i = 0; i < size; ++i) {
+        struct KVPair *kv = values[i]->data;
+        const off64_t data_length = generate_value(&data, kv);
 
-        kv->pos.end_at = kv->pos.start_at + key_part_len + line_len;
-        kv->pos.start_at += key_part_len + 1;
+        const uint32_t block_count = ((length + data_length + block_size - 1) / block_size);
 
-        const uint32_t buf_len = key_part_len + line_len;
-        char buf[buf_len];
+        if (block_count != 1) {
+          off64_t remaining = data_length;
+          const uint16_t complete = (block_size - length);
 
-        buf[0] = first;
-        memcpy(buf + 1, &length_in_bytes, byte_count);
-        memcpy(buf + length_specifier_len, key.value, key.len);
-        memcpy(buf + length_specifier_len + key.len, line, line_len);
+          memcpy(block + length, data, complete);
+          write(fd, data, complete);
+          remaining -= complete;
 
-        write(fd, buf, buf_len);
-        file_size += buf_len;
+          if (remaining > block_size) {
+            do {
+              memcpy(block, data + (data_length - remaining), block_size);
+              write(fd, block, block_size);
+              remaining -= block_size;
+            } while (remaining > block_size);
+
+            length = (data_length - remaining);
+          } else {
+            length += (data_length - remaining);
+          }
+        } else {
+          memcpy(block + length, data, data_length);
+          length += data_length;
+        }
       }
 
-      free(line);
+      total += length;
+      if (values) free(values);
+      free(data);
     }
-  }
 
-  ftruncate(fd, file_size + diff);
-  free(values);
+    if (length != block_size) write(fd, block, block_size);
+    ftruncate(fd, total);
+    free(block);
+  }
 
   saving = false;
 }

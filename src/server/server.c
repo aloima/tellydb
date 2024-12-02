@@ -1,7 +1,6 @@
 #include "../../headers/server.h"
 #include "../../headers/database.h"
 #include "../../headers/commands.h"
-#include "../../headers/btree.h"
 #include "../../headers/utils.h"
 
 #include <stdint.h>
@@ -25,14 +24,9 @@ static uint32_t nfds;
 static struct Configuration *conf;
 static time_t start_at;
 static uint64_t age;
-static off_t authorization_end_at;
 
 struct Configuration *get_server_configuration() {
   return conf;
-}
-
-off_t *get_authorization_end_at() {
-  return &authorization_end_at;
 }
 
 void get_server_time(time_t *server_start_at, uint64_t *server_age) {
@@ -86,6 +80,7 @@ static void close_server() {
   usleep(15);
   write_log(LOG_INFO, "Exited transaction thread.");
 
+  free_kdf();
   free_constant_passwords();
   free_passwords();
   free_transactions();
@@ -221,7 +216,14 @@ void start_server(struct Configuration *config) {
     return;
   }
 
-  struct BTree *cache = create_cache();
+  write_log(LOG_INFO, "tellydb server age: %ld seconds", age);
+
+  create_constant_passwords();
+  initialize_kdf();
+  write_log(LOG_INFO, "Created constant passwords and key deriving algorithm.");
+
+  create_cache();
+  write_log(LOG_INFO, "Created cache.");
 
   if (!open_database_fd(conf->data_file, &age)) {
     deactive_transaction_thread();
@@ -233,25 +235,6 @@ void start_server(struct Configuration *config) {
     free_configuration(conf);
     unlink(".tellylock");
     return;
-  }
-
-  write_log(LOG_INFO, "Created cache and opened database file.");
-  write_log(LOG_INFO, "tellydb server age: %ld seconds", age);
-
-  create_constant_passwords();
-
-  {
-    const int fd = get_database_fd();
-
-    if (lseek(fd, 0, SEEK_END) != 0) {
-      authorization_end_at = get_authorization_from_file(fd);
-      write_log(LOG_INFO, "Read authorization part of database file. Loaded password count: %d", get_password_count());
-
-      get_all_keys(authorization_end_at);
-      write_log(LOG_INFO, "Read all database file to create keyspace. Loaded key count: %d", cache->size);
-    } else {
-      write_log(LOG_INFO, "Database file is empty. Loaded key and password count: 0");
-    }
   }
 
   nfds = 1;

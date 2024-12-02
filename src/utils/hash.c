@@ -2,10 +2,9 @@
 
 #include <stdint.h>
 
-uint64_t hash(char *key) {
+uint64_t hash(char *key, uint32_t length) {
   uint64_t hash = 5381;
-  char c;
 
-  while ((c = *key++)) hash = ((hash << 5) + hash) + c;
+  while (length--) hash = ((hash << 5) + hash) + (*key++);
   return hash;
 }

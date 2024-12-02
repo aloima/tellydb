@@ -1,5 +1,5 @@
 # tellydb
-A key-value database project for educational purposes.
+An in-memory key-value database project for educational purposes.
 
 ## Features
 + Follows [RESP2/RESP3](https://redis.io/docs/latest/develop/reference/protocol-spec/) specification from redis, so all redis clients are compatible
@@ -9,7 +9,8 @@ A key-value database project for educational purposes.
 + Supports integer, string, null, boolean, list and hash table types
 + Provides atomicity when saving to the database file
 + Provides saving to the database file using a background thread
-+ Provides authorization system with permissions
++ Provides authorization system with permissions using passwords
++ Uses Direct I/O for logging and database files
 
 > Look at:  
 > [docs/SPECS.md](./docs/SPECS.md) for more technical information,  

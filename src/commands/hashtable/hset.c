@@ -18,7 +18,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
     }
 
     const string_t key = command->args[0];
-    struct KVPair *kv = get_data(key.value);
+    struct KVPair *kv = get_data(key);
     struct HashTable *table;
 
     if (kv) {

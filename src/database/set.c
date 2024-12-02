@@ -37,8 +37,8 @@ struct KVPair *set_data(struct KVPair *data, const string_t key, void *value, co
   } else {
     struct BTree *cache = get_cache();
     struct KVPair *kv = malloc(sizeof(struct KVPair));
-    set_kv(kv, key, value, type, -1, -1);
+    set_kv(kv, key, value, type);
 
-    return insert_value_to_btree(cache, hash(key.value), kv)->data;
+    return insert_value_to_btree(cache, hash(key.value, key.len), kv)->data;
   }
 }

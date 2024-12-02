@@ -12,8 +12,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
     }
 
     if (password->permissions & P_READ) {
-      const char *key = command->args[0].value;
-      const struct KVPair *kv = get_data(key);
+      const struct KVPair *kv = get_data(command->args[0]);
 
       if (kv) {
         write_value(client, kv->value, kv->type);

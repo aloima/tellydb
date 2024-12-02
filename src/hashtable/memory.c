@@ -7,7 +7,7 @@
 #include <stdbool.h>
 
 void add_fv_to_hashtable(struct HashTable *table, const string_t name, void *value, const enum TellyTypes type) {
-  const uint64_t hashed = hash(name.value);
+  const uint64_t hashed = hash(name.value, name.len);
   uint32_t index = hashed % table->size.allocated;
 
   struct FVPair *fv;
@@ -78,7 +78,7 @@ void add_fv_to_hashtable(struct HashTable *table, const string_t name, void *val
 }
 
 bool del_fv_to_hashtable(struct HashTable *table, const string_t name) {
-  const uint64_t hashed = hash(name.value);
+  const uint64_t hashed = hash(name.value, name.len);
   uint32_t index = hashed % table->size.allocated;
 
   struct FVPair *fv;

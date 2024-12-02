@@ -517,6 +517,19 @@ APPEND user_name " Black"
 DECR user_age
 ```
 
+#### DEL
+**Syntax**: `DEL key [key ...]`  
+**Description**: Deletes the specified keys.  
+**Since**: `0.1.7`  
+**Time complexity**: `O(N) where N is key count`  
+**Permissions**: `P_WRITE`  
+**Returns**: Deleted key count  
+
+**Example**:
+```shell
+DEL user_name user_id
+```
+
 ---
 
 ### EXISTS
@@ -568,6 +581,23 @@ GET user_name
 **Example**:
 ```shell
 INCR user_age
+```
+
+---
+
+#### RENAME
+**Syntax**: `RENAME old new`  
+**Description**: Renames existing key to new key.  
+**Since**: `0.1.7`  
+**Time complexity**: `O(1)`  
+**Permissions**: `P_WRITE`  
+**Returns**: `OK` or null reply if key is ntot exist  
+**Behavior**:
+* If new key already exists, throws an error.
+
+**Example**:
+```shell
+RENAME name user_name
 ```
 
 ---

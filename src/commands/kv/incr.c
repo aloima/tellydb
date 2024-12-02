@@ -15,7 +15,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
 
   if (password->permissions & (P_READ | P_WRITE)) {
     const string_t key = command->args[0];
-    struct KVPair *result = get_data(key.value);
+    struct KVPair *result = get_data(key);
 
     if (!result) {
       long *number = calloc(1, sizeof(long));

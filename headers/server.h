@@ -63,9 +63,8 @@ enum Permissions {
 };
 
 struct Password {
-  string_t data;
+  unsigned char data[48];
   uint8_t permissions;
-  char salt[3];
 };
 
 void create_constant_passwords();
@@ -73,16 +72,19 @@ void free_constant_passwords();
 struct Password *get_full_password();
 struct Password *get_empty_password();
 
+bool initialize_kdf();
+void free_kdf();
+
 struct Password **get_passwords();
 uint32_t get_password_count();
-off_t get_authorization_from_file(const int fd);
+uint16_t get_authorization_from_file(const int fd, char *block, const uint16_t block_size);
 void free_passwords();
 
 void add_password(struct Client *client, const string_t data, const uint8_t permissions);
-bool remove_password(struct Client *executor, const char *value);
-int32_t where_password(const char *value);
-struct Password *get_password(const char *value);
-bool edit_password(const char *value, const uint32_t permissions);
+bool remove_password(struct Client *executor, char *value, const size_t value_len);
+int32_t where_password(char *value, const size_t value_len);
+struct Password *get_password(char *value, const size_t value_len);
+bool edit_password(char *value, const size_t value_len, const uint32_t permissions);
 /* /AUTH */
 
 

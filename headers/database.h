@@ -15,33 +15,29 @@ struct KVPair {
   string_t key;
   void *value;
   enum TellyTypes type;
-
-  struct {
-    off_t start_at;
-    off_t end_at;
-  } pos;
 };
 
 struct BTree *create_cache();
 struct BTree *get_cache();
-struct KVPair *get_kv_from_cache(const char *key);
-struct BTreeValue **get_sorted_kvs_by_pos_as_values(uint32_t *size);
-bool delete_kv_from_cache(const char *key);
+struct KVPair *get_kv_from_cache(const char *key, const size_t length);
+bool delete_kv_from_cache(const char *key, const size_t length);
 void free_cache();
 
-void get_all_keys(off_t from);
-struct KVPair *get_data(const char *key);
+void get_all_data_from_file(const int fd, const off64_t file_size, char *block, const uint16_t block_size, const uint16_t filled_block_size);
+struct KVPair *get_data(const string_t key);
 struct KVPair *set_data(struct KVPair *data, const string_t key, void *value, const enum TellyTypes type);
+bool delete_data(const string_t key);
 void save_data(const uint64_t server_age);
 bool bg_save(uint64_t server_age);
 
-void set_kv(struct KVPair *kv, const string_t key, void *value, const enum TellyTypes type, const off_t start_at, const off_t end_at);
+void set_kv(struct KVPair *kv, const string_t key, void *value, const enum TellyTypes type);
 void free_kv(struct KVPair *kv);
 /* /DATABASE */
 
 
 /* DATABASE FILE */
 bool open_database_fd(const char *filename, uint64_t *server_age);
+uint16_t get_block_size();
 int get_database_fd();
 void close_database_fd();
 /* /DATABASE FILE */

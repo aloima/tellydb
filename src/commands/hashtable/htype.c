@@ -14,13 +14,11 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
     }
 
     if (password->permissions & P_READ) {
-      const char *key = command->args[0].value;
-      const struct KVPair *kv = get_data(key);
+      const struct KVPair *kv = get_data(command->args[0]);
 
       if (kv) {
         if (kv->type == TELLY_HASHTABLE) {
-          char *name = command->args[1].value;
-          struct FVPair *fv = get_fv_from_hashtable(kv->value, name);
+          struct FVPair *fv = get_fv_from_hashtable(kv->value, command->args[1]);
 
           switch (fv->type) {
             case TELLY_NULL:

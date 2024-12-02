@@ -78,7 +78,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
         return;
       }
 
-      if (where_password(data.value) == -1) {
+      if (where_password(data.value, data.len) == -1) {
         add_password(client, data, permissions);
         WRITE_OK(client);
       } else {
@@ -90,10 +90,10 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
         return;
       }
 
-      const char *value = command->args[1].value;
+      const string_t input = command->args[1];
       char *permissions_value = command->args[2].value;
 
-      struct Password *target = get_password(value);
+      struct Password *target = get_password(input.value, input.len);
 
       if (target) {
         const uint8_t permissions = read_permissions_value(client, permissions_value);
@@ -115,9 +115,9 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
         return;
       }
 
-      const char *value = command->args[1].value;
+      const string_t input = command->args[1];
 
-      if (remove_password(client, value)) WRITE_OK(client);
+      if (remove_password(client, input.value, input.len)) WRITE_OK(client);
       else {
         _write(client, "-This password cannot be found\r\n", 32);
       }

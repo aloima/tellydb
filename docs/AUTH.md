@@ -5,7 +5,11 @@ This file defines authorization system concepts.
 If a client use a password defined in the server with `AUTH`, this client have all permissions of the password.  
 
 ## Limitations
-Server can have up to `2^6-1` passwords.
+* Server can have up to `2^6-1` passwords.
+
+## Notes
+* Password deriving algorithm is HKDF SHA384.
+* The length of derived passwords is 48.
 
 ## Permissions
 * `P_READ`, read a value from database, not included data type and data existence

@@ -39,7 +39,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
     const string_t key = command->args[0];
     void *value;
     enum TellyTypes type;
-    struct KVPair *res = get_data(key.value);
+    struct KVPair *res = get_data(key);
 
     if (nx && res) {
       if (client) WRITE_NULL_REPLY(client);

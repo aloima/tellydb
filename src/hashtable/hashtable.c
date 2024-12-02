@@ -40,11 +40,11 @@ void resize_hashtable(struct HashTable *table, const uint32_t size) {
   table->fvs = fvs;
 }
 
-struct FVPair *get_fv_from_hashtable(struct HashTable *table, char *name) {
-  const uint32_t index = hash(name) % table->size.allocated;
+struct FVPair *get_fv_from_hashtable(struct HashTable *table, const string_t name) {
+  const uint32_t index = hash(name.value, name.len) % table->size.allocated;
   struct FVPair *fv = table->fvs[index];
 
-  while (fv && !streq(fv->name.value, name)) fv = fv->next;
+  while (fv && !streq(fv->name.value, name.value)) fv = fv->next;
   return fv;
 }
 

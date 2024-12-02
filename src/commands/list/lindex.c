@@ -14,8 +14,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
     }
 
     if (password->permissions & P_READ) {
-      const char *key = command->args[0].value;
-      const struct KVPair *kv = get_data(key);
+      const struct KVPair *kv = get_data(command->args[0]);
 
       if (!kv || kv->type != TELLY_LIST) {
         _write(client, "-Value stored at the key is not a list\r\n", 40);

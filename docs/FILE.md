@@ -28,7 +28,7 @@ Authorization part consists of passwords and their permissions and as follows:
 * `password count byte count (1 byte, n) + password count (n byte) + passwords`
 
 A password is as follows:
-* `string length specifier + hashed password + password salt (2 bytes) + password permissions (1 byte)`
+* `derived password (48 byte) + password permissions (1 byte)`
 
 For permissions, look at [AUTH.md](./AUTH.md).
 

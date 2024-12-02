@@ -28,7 +28,7 @@ struct HashTable {
 
 struct HashTable *create_hashtable(uint32_t default_size);
 void resize_hashtable(struct HashTable *table, const uint32_t size);
-struct FVPair *get_fv_from_hashtable(struct HashTable *table, char *name);
+struct FVPair *get_fv_from_hashtable(struct HashTable *table, const string_t name);
 void free_hashtable(struct HashTable *table);
 
 void free_fv(struct FVPair *fv);

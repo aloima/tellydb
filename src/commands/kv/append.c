@@ -12,7 +12,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
 
   if (password->permissions & (P_READ | P_WRITE)) {
     const string_t key = command->args[0];
-    const struct KVPair *kv = get_data(key.value);
+    const struct KVPair *kv = get_data(key);
 
     if (kv) {
       if (kv->type == TELLY_STR) {

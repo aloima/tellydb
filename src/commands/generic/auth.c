@@ -13,10 +13,10 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
       return;
     }
 
-    const char *value = command->args[0].value;
-    const int32_t at = where_password(value);
+    const string_t input = command->args[0];
+    struct Password *found = get_password(input.value, input.len);
 
-    if (at == -1) {
+    if (!found) {
       _write(client, "-This password does not exist\r\n", 31);
     } else {
       if (password && password != get_empty_password()) {
@@ -33,9 +33,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
         }
       }
 
-      struct Password **passwords = get_passwords();
-      client->password = passwords[at];
-
+      client->password = found;
       WRITE_OK(client);
     }
   }

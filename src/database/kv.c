@@ -7,17 +7,12 @@
 
 #include <unistd.h>
 
-void set_kv(struct KVPair *kv, const string_t key, void *value, const enum TellyTypes type, const off_t start_at, const off_t end_at) {
-  kv->pos.start_at = start_at;
-  kv->pos.end_at = end_at;
-
-  const uint32_t key_size = key.len + 1;
-
+void set_kv(struct KVPair *kv, const string_t key, void *value, const enum TellyTypes type) {
   kv->type = type;
   kv->value = value;
   kv->key.len = key.len;
-  kv->key.value = malloc(key_size);
-  memcpy(kv->key.value, key.value, key_size);
+  kv->key.value = malloc(key.len);
+  memcpy(kv->key.value, key.value, key.len);
 }
 
 void free_kv(struct KVPair *kv) {

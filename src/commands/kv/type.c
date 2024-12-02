@@ -11,8 +11,7 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
       return;
     }
 
-    const char *key = command->args[0].value;
-    struct KVPair *res = get_data(key);
+    struct KVPair *res = get_data(command->args[0]);
 
     if (res) {
       switch (res->type) {

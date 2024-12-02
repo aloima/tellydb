@@ -20,7 +20,7 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
     buf[0] = '\0';
 
     for (uint32_t i = 0; i < command->arg_count; ++i) {
-      const char *key = command->args[i].value;
+      const string_t key = command->args[i];
 
       if (get_data(key)) {
         existed += 1;

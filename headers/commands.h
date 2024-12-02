@@ -62,9 +62,11 @@ extern const struct Command cmd_htype;
 /* KV COMMANDS */
 extern const struct Command cmd_append;
 extern const struct Command cmd_decr;
+extern const struct Command cmd_del;
 extern const struct Command cmd_get;
 extern const struct Command cmd_exists;
 extern const struct Command cmd_incr;
+extern const struct Command cmd_rename;
 extern const struct Command cmd_set;
 extern const struct Command cmd_type;
 /* /KV COMMANDS */

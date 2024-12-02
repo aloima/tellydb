@@ -16,7 +16,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
 
   if (password->permissions & P_WRITE) {
     const string_t key = command->args[0];
-    struct KVPair *kv = get_data(key.value);
+    struct KVPair *kv = get_data(key);
     struct HashTable *table;
 
     if (kv) {
@@ -39,6 +39,8 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
           del_fv_to_hashtable(table, command->args[i]);
         }
 
+        if (table->size.all == 0) delete_data(key);
+
         char buf[14];
         const size_t nbytes = sprintf(buf, ":%d\r\n", old_size - table->size.all);
         _write(client, buf, nbytes);
@@ -49,6 +51,8 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
       for (uint32_t i = 1; i < command->arg_count; ++i) {
         del_fv_to_hashtable(table, command->args[i]);
       }
+
+      if (table->size.all == 0) delete_data(key);
     }
   } else if (client) {
     _write(client, "-Not allowed to use this command, need P_WRITE\r\n", 48);

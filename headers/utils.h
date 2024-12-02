@@ -45,4 +45,4 @@ void generate_date_string(char *text, const time_t value);
 
 int open_file(const char *file, int flags);
 
-uint64_t hash(char *key);
+uint64_t hash(char *key, uint32_t length);

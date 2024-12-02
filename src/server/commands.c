@@ -8,7 +8,7 @@
 #include <stdlib.h>
 
 static struct Command *commands = NULL;
-static uint32_t command_count = 31;
+static uint32_t command_count = 33;
 
 void load_commands() {
   const struct Command _commands[] = {
@@ -39,9 +39,11 @@ void load_commands() {
     // KV commands
     cmd_append,
     cmd_decr,
+    cmd_del,
     cmd_exists,
     cmd_get,
     cmd_incr,
+    cmd_rename,
     cmd_set,
     cmd_type,
 

@@ -12,7 +12,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
   }
 
   if (password->permissions & (P_READ & P_WRITE)) {
-    const char *key = command->args[0].value;
+    const string_t key = command->args[0];
     struct KVPair *kv = get_data(key);
 
     if (kv) {
@@ -27,8 +27,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
       if (client) write_value(client, list->end->value, list->end->type);
 
       if (list->size == 1) {
-        // TODO: complete deletion of the list
-        delete_kv_from_cache(key);
+        delete_data(key);
       } else {
         list->end = list->end->prev;
         list->end->next = NULL;
