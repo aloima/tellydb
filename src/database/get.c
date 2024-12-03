@@ -1,5 +1,6 @@
 #include "../../headers/database.h"
 #include "../../headers/btree.h"
+#include "../../headers/hashtable.h"
 #include "../../headers/utils.h"
 
 #include <stdio.h>
@@ -63,26 +64,112 @@ static void collect_kv(struct KVPair *kv, const int fd, char *block, const uint1
     case TELLY_NULL:
       break;
 
-    case TELLY_NUM: {
+    case TELLY_NUM:
       value = malloc(sizeof(long));
       collect_number(value, fd, block, block_size, at);
       break;
-    }
 
-    case TELLY_STR: {
+    case TELLY_STR:
       value = malloc(sizeof(string_t));
       collect_string(value, fd, block, block_size, at);
       break;
-    }
 
-    case TELLY_BOOL: {
+    case TELLY_BOOL:
       value = malloc(sizeof(bool));
       collect_bytes(fd, block, block_size, at, 1, value);
       break;
+
+    case TELLY_HASHTABLE: {
+      uint32_t size;
+      collect_bytes(fd, block, block_size, at, 4, &size);
+
+      struct HashTable *table = (value = create_hashtable(size));
+
+      while (true) {
+        uint8_t byte;
+        void *fv_value = NULL;
+        collect_bytes(fd, block, block_size, at, 1, &byte);
+
+        if (byte == 0x17) {
+          break;
+        } else {
+          string_t name;
+          collect_string(&name, fd, block, block_size, at);
+
+          switch (byte) {
+            case TELLY_NULL:
+              break;
+
+            case TELLY_NUM:
+              fv_value = malloc(sizeof(long));
+              collect_number(fv_value, fd, block, block_size, at);
+              break;
+
+            case TELLY_STR:
+              value = malloc(sizeof(string_t));
+              collect_string(fv_value, fd, block, block_size, at);
+              break;
+
+            case TELLY_BOOL:
+              fv_value = malloc(sizeof(bool));
+              collect_bytes(fd, block, block_size, at, 1, fv_value);
+              break;
+          }
+
+          add_fv_to_hashtable(table, name, value, type);
+          free(name.value);
+        }
+      }
+
+      break;
     }
 
-    default:
-      break;
+    case TELLY_LIST: {
+      uint32_t size;
+      collect_bytes(fd, block, block_size, at, 4, &size);
+
+      struct List *list = (value = create_list());
+      list->size = size;
+
+      for (uint32_t i = 0; i < size; ++i) {
+        uint8_t byte;
+        void *fv_value = NULL;
+        collect_bytes(fd, block, block_size, at, 1, &byte);
+
+        switch (byte) {
+          case TELLY_NULL:
+            break;
+
+          case TELLY_NUM:
+            fv_value = malloc(sizeof(long));
+            collect_number(fv_value, fd, block, block_size, at);
+            break;
+
+          case TELLY_STR:
+            value = malloc(sizeof(string_t));
+            collect_string(fv_value, fd, block, block_size, at);
+            break;
+
+          case TELLY_BOOL:
+            fv_value = malloc(sizeof(bool));
+            collect_bytes(fd, block, block_size, at, 1, fv_value);
+            break;
+        }
+
+        struct ListNode *node = create_listnode(value, byte);
+
+        node->prev = list->end;
+        list->end = node;
+
+        if (i == 0) {
+          list->begin = node;
+        } else {
+          node->prev->next = node;
+        }
+      }
+    }
+
+    break;
   }
 
   set_kv(kv, key, value, type);

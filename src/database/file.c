@@ -16,15 +16,14 @@
 static int fd = -1;
 static bool saving = false;
 static uint16_t block_size;
-static off64_t file_size;
 
 bool open_database_fd(const char *filename, uint64_t *server_age) {
   if ((fd = open_file(filename, O_LARGEFILE)) != -1) {
     struct stat sostat;
     stat(filename, &sostat);
 
+    const off64_t file_size = sostat.st_size;;
     block_size = sostat.st_blksize;
-    file_size = sostat.st_size;
 
     if (file_size != 0) {
       char *block;
