@@ -78,7 +78,7 @@ uint16_t get_authorization_from_file(const int fd, char *block, const uint16_t b
   memcpy(&password_count, block + 11, password_count_byte_count);
 
   off64_t at = 11 + password_count_byte_count;
-  off_t total = at;
+  off_t total = 0;
 
   if (password_count != 0) {
     struct Password *password;
@@ -149,7 +149,9 @@ uint16_t get_authorization_from_file(const int fd, char *block, const uint16_t b
       }
 
       total += at;
-      at = 0;
+
+      if (password_at != password_count) at = 0;
+      else break;
     } while (read(fd, block, block_size));
   }
 
