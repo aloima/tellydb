@@ -40,9 +40,11 @@ bool open_database_fd(const char *filename, uint64_t *server_age) {
 
         memcpy(server_age, block + 2, 8);
 
-        const uint64_t filled_block_size = get_authorization_from_file(fd, block, block_size);
+        const uint16_t filled_block_size = get_authorization_from_file(fd, block, block_size);
         get_all_data_from_file(fd, file_size, block, block_size, filled_block_size);
-        write_log(LOG_INFO, "Read authorization part of database file. Loaded password count: %d", get_password_count());
+
+        struct BTree *cache = get_cache();
+        write_log(LOG_INFO, "Read database file. Loaded password count: %d, loaded data count: %d", get_password_count(), cache->size);
 
         free(block);
       }

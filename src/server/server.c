@@ -216,8 +216,6 @@ void start_server(struct Configuration *config) {
     return;
   }
 
-  write_log(LOG_INFO, "tellydb server age: %ld seconds", age);
-
   create_constant_passwords();
   initialize_kdf();
   write_log(LOG_INFO, "Created constant passwords and key deriving algorithm.");
@@ -236,6 +234,8 @@ void start_server(struct Configuration *config) {
     unlink(".tellylock");
     return;
   }
+
+  write_log(LOG_INFO, "tellydb server age: %ld seconds", age);
 
   nfds = 1;
   fds = malloc(sizeof(struct pollfd));

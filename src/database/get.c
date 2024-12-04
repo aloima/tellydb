@@ -181,8 +181,6 @@ void get_all_data_from_file(const int fd, off64_t file_size, char *block, const 
   uint16_t at = filled_block_size;
 
   if (at != file_size) {
-    if (at != 0) read(fd, block, block_size);
-
     if (file_size <= block_size) {
       while (at != file_size) {
         struct KVPair *kv = malloc(sizeof(struct KVPair));
