@@ -241,6 +241,7 @@ static void delete_from_leaf(struct BTree *tree, struct BTreeNode *node, const u
   }
 }
 
+// TODO: deleting correct values for collised indexes on inserting values to b-tree
 bool delete_value_from_btree(struct BTree *tree, const uint64_t index, void (*free_value)(void *value)) {
   struct BTreeNode *node;
   const uint32_t target_at = find_node_of_index(&node, tree->root, index);

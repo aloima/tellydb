@@ -17,17 +17,10 @@ struct BTree *get_cache() {
 
 struct KVPair *get_kv_from_cache(const char *key, const size_t length) {
   uint64_t index = hash((char *) key, length);
+  struct BTreeValue *value = find_value_from_btree(cache, index, (char *) key, (bool (*)(void *, void *)) check_correct_kv);
 
-  while (true) {
-    struct BTreeValue *value = find_value_from_btree(cache, index);
-
-    if (value) {
-      struct KVPair *kv = value->data;
-
-      if (strncmp(kv->key.value, key, length) == 0) return kv;
-      else index += 1;
-    } else return NULL;
-  }
+  if (value) return value->data;
+  else return NULL;
 }
 
 bool delete_kv_from_cache(const char *key, const size_t length) {

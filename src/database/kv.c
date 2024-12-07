@@ -43,3 +43,7 @@ void free_kv(struct KVPair *kv) {
   free(kv->key.value);
   free(kv);
 }
+
+bool check_correct_kv(struct KVPair *kv, char *key) {
+  return streq(kv->key.value, key);
+}

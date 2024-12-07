@@ -16,7 +16,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
     const string_t search = command->args[0];
     const uint64_t index = hash(search.value, search.len);
 
-    struct BTreeValue *value = find_value_from_btree(get_cache(), index);
+    struct BTreeValue *value = find_value_from_btree(get_cache(), index, (char *) search.value, (bool (*)(void *, void *)) check_correct_kv);
 
     if (value) {
       struct KVPair *kv = value->data;

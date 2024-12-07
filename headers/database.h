@@ -31,6 +31,7 @@ void save_data(const uint64_t server_age);
 bool bg_save(uint64_t server_age);
 
 void set_kv(struct KVPair *kv, const string_t key, void *value, const enum TellyTypes type);
+bool check_correct_kv(struct KVPair *kv, char *key);
 void free_kv(struct KVPair *kv);
 /* /DATABASE */
 
