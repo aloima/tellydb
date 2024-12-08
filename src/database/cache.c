@@ -15,9 +15,9 @@ struct BTree *get_cache() {
   return cache;
 }
 
-struct KVPair *get_kv_from_cache(const char *key, const size_t length) {
-  uint64_t index = hash((char *) key, length);
-  struct BTreeValue *value = find_value_from_btree(cache, index, (char *) key, (bool (*)(void *, void *)) check_correct_kv);
+struct KVPair *get_kv_from_cache(string_t key) {
+  uint64_t index = hash(key.value, key.len);
+  struct BTreeValue *value = find_value_from_btree(cache, index, &key, (bool (*)(void *, void *)) check_correct_kv);
 
   if (value) return value->data;
   else return NULL;

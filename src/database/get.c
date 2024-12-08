@@ -47,6 +47,8 @@ static void collect_string(string_t *string, const int fd, char *block, const ui
 }
 
 static void collect_number(long *number, const int fd, char *block, const uint16_t block_size, uint16_t *at) {
+  *number = 0;
+
   uint8_t byte_count;
   collect_bytes(fd, block, block_size, at, 1, &byte_count);
   collect_bytes(fd, block, block_size, at, byte_count, number);
@@ -208,5 +210,5 @@ void get_all_data_from_file(const int fd, off64_t file_size, char *block, const 
 }
 
 struct KVPair *get_data(const string_t key) {
-  return get_kv_from_cache(key.value, key.len);
+  return get_kv_from_cache(key);
 }

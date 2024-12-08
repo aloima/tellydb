@@ -19,7 +19,7 @@ struct KVPair {
 
 struct BTree *create_cache();
 struct BTree *get_cache();
-struct KVPair *get_kv_from_cache(const char *key, const size_t length);
+struct KVPair *get_kv_from_cache(string_t key);
 bool delete_kv_from_cache(const char *key, const size_t length);
 void free_cache();
 
@@ -31,7 +31,7 @@ void save_data(const uint64_t server_age);
 bool bg_save(uint64_t server_age);
 
 void set_kv(struct KVPair *kv, const string_t key, void *value, const enum TellyTypes type);
-bool check_correct_kv(struct KVPair *kv, char *key);
+bool check_correct_kv(struct KVPair *kv, string_t *key);
 void free_kv(struct KVPair *kv);
 /* /DATABASE */
 

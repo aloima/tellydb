@@ -44,6 +44,6 @@ void free_kv(struct KVPair *kv) {
   free(kv);
 }
 
-bool check_correct_kv(struct KVPair *kv, char *key) {
-  return streq(kv->key.value, key);
+bool check_correct_kv(struct KVPair *kv, string_t *key) {
+  return ((key->len == kv->key.len) && (memcmp(kv->key.value, key->value, key->len) == 0));
 }

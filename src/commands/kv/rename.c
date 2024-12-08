@@ -25,7 +25,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
         string_t *old = &kv->key;
         const string_t new = command->args[1];
 
-        if (get_kv_from_cache(new.value, new.len)) {
+        if (get_kv_from_cache(new)) {
           _write(client, "-The new key already exists\r\n", 26);
           return;
         }
