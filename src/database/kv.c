@@ -2,10 +2,8 @@
 #include "../../headers/hashtable.h"
 #include "../../headers/utils.h"
 
-#include <stdint.h>
+#include <string.h>
 #include <stdlib.h>
-
-#include <unistd.h>
 
 void set_kv(struct KVPair *kv, const string_t key, void *value, const enum TellyTypes type) {
   kv->type = type;

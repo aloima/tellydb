@@ -1,5 +1,6 @@
 #include "../../headers/database.h"
 #include "../../headers/btree.h"
+#include "../../headers/utils.h"
 
 #include <stdint.h>
 #include <stddef.h>

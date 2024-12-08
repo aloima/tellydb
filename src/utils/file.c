@@ -39,7 +39,7 @@ int open_file(const char *file, int flags) {
     return -1;
   }
 
-  #if defined(__APPLE__)
+#if defined(__APPLE__)
   if ((fcntl(fd, F_NOCACHE, 1)) == -1) {
     switch (errno) {
       case EACCES:
@@ -53,11 +53,11 @@ int open_file(const char *file, int flags) {
     close(file);
     return -1;
   }
-  #endif
+#endif
 
-  #if (!defined(__APPLE__) && !defined(__linux__))
+#if (!defined(__APPLE__) && !defined(__linux__))
   write_log(LOG_WARN, "File descriptor cannot be opened as no kernel caching mode or Direct I/O. Use MacOS or Linux.");
-  #endif
+#endif
 
   return fd;
 }

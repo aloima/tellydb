@@ -1,4 +1,5 @@
 #include "../../headers/database.h"
+#include "../../headers/server.h"
 #include "../../headers/utils.h"
 
 #include <stdio.h>

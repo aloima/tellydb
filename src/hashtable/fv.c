@@ -1,7 +1,6 @@
 #include "../../headers/hashtable.h"
 #include "../../headers/utils.h"
 
-#include <stdint.h>
 #include <stdlib.h>
 
 void free_fv(struct FVPair *fv) {

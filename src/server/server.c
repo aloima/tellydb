@@ -9,7 +9,6 @@
 #include <signal.h>
 #include <time.h>
 
-#include <pthread.h>
 #include <fcntl.h>
 #include <sys/poll.h>
 #include <sys/socket.h>
