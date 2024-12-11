@@ -14,13 +14,12 @@
 static struct Configuration *_conf = NULL;
 static int fd = -1;
 
-// Also, use it as default log length
+// Also, use it as default maximum log length
 static uint16_t block_size = 4096;
 
 char **lines;
 static int32_t log_lines = 0;
 
-// TODO: make only one block allocation
 bool initialize_logs(struct Configuration *config) {
   _conf = config;
 
@@ -40,32 +39,59 @@ bool initialize_logs(struct Configuration *config) {
       }
 
       if (file_size != 0) {
-        const uint16_t block_count = ((file_size + block_size - 1) / block_size);
-        char *buf;
+        char *block;
 
-        if (posix_memalign((void **) &buf, block_size, block_size * block_count) == 0) {
-          char line[max_log_size];
-          uint32_t len = 0;
+        if (posix_memalign((void **) &block, block_size, block_size) == 0) {
+          uint16_t latest = 0;
+          uint16_t count = 0;
+          char **buf = &lines[0];
 
-          read(fd, buf, block_count * block_size);
+          while ((count = read(fd, block, block_size))) {
+            uint32_t i = 0;
 
-          for (uint32_t i = 0; i < file_size; ++i) {
-            const char c = buf[i];
+            INSIDE_LOOP:
+            while (i < count) {
+              const char c = block[i];
 
-            if (c == '\n') {
-              line[len] = '\n';
-              line[len + 1] = '\0';
-              memcpy(lines[log_lines], line, len + 2);
-              len = 0;
+              if (c == '\n') {
+                memcpy(*buf, (block + latest), (i - latest + 1));
+                (*buf)[i - latest + 1] = '\0';
+                log_lines += 1;
+                buf = &lines[log_lines];
+                latest = i + 1;
+              }
 
-              log_lines += 1;
+              i += 1;
+            }
+
+            if (count == latest) {
+              latest = 0;
             } else {
-              line[len] = c;
-              len += 1;
+              memcpy(*buf, (block + latest), (count - latest));
+
+              const uint16_t old_count = count;
+              count = read(fd, block, block_size);
+              i = 0;
+
+              while (i < count) {
+                const char c = block[i];
+
+                if (c == '\n') {
+                  memcpy(*buf + (old_count - latest), block, (i + 1));
+                  (*buf)[old_count - latest + i + 1] = '\0';
+                  log_lines += 1;
+                  buf = &lines[log_lines];
+                  i += 1;
+                  latest = i;
+                  goto INSIDE_LOOP;
+                }
+
+                i += 1;
+              }
             }
           }
 
-          free(buf);
+          free(block);
         } else {
           return false;
         }

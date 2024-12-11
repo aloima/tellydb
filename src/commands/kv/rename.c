@@ -11,7 +11,6 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
     return;
   }
 
-  // TODO: conflict kv names
   if (password->permissions & P_WRITE) {
     const string_t search = command->args[0];
     const uint64_t index = hash(search.value, search.len);
