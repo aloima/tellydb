@@ -1,10 +1,8 @@
 #include "../../headers/utils.h"
 
-#include <stdio.h>
 #include <stdbool.h>
 #include <ctype.h>
 #include <stdint.h>
-#include <math.h>
 
 bool is_integer(const char *value) {
   char *_value = (char *) value;
@@ -22,20 +20,14 @@ bool is_integer(const char *value) {
   return (_value != value) && (*_value == 0x00);
 }
 
-uint32_t get_digit_count(int64_t number) {
-  if (number == 0) {
-    return 1;
-  } else if (number < 0) {
-    return 2 + log10(number * -1);
-  } else {
-    return 1 + log10(number);
-  }
-}
-
 void number_pad(char *res, const uint32_t value) {
   if (value < 10) {
-    sprintf(res, "0%u", value);
+    res[0] = '0';
+    res[1] = (value + 48);
   } else if (value < 100) {
-    sprintf(res, "%u", value);
+    res[0] = ((value / 10) + 48);
+    res[1] = ((value % 10) + 48);
   }
+
+  res[2] = '\0';
 }

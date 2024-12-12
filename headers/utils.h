@@ -36,10 +36,8 @@ void write_log(enum LogLevel level, const char *fmt, ...);
 void save_and_close_logs();
 
 bool is_integer(const char *value);
-uint32_t get_digit_count(int64_t number);
 void number_pad(char *res, const uint32_t value);
 
-void read_string_from_file(const int fd, string_t *string, const bool unallocated, const bool terminator);
 void generate_random_string(char *dest, size_t length);
 void generate_date_string(char *text, const time_t value);
 
