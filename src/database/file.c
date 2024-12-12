@@ -58,14 +58,6 @@ bool open_database_fd(const char *filename, uint64_t *server_age) {
   return true;
 }
 
-uint16_t get_block_size() {
-  return block_size;
-}
-
-int get_database_fd() {
-  return fd;
-}
-
 void close_database_fd() {
   while (saving) usleep(100);
   close(fd);

@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <sys/types.h>
 #include <unistd.h>
 
 static void collect_bytes(const int fd, char *block, const uint16_t block_size, uint16_t *at, const uint32_t count, void *data) {
@@ -136,7 +137,7 @@ static void collect_kv(struct KVPair *kv, const int fd, char *block, const uint1
 
       for (uint32_t i = 0; i < size; ++i) {
         uint8_t byte;
-        void *fv_value = NULL;
+        void *list_value = NULL;
         collect_bytes(fd, block, block_size, at, 1, &byte);
 
         switch (byte) {
@@ -144,22 +145,22 @@ static void collect_kv(struct KVPair *kv, const int fd, char *block, const uint1
             break;
 
           case TELLY_NUM:
-            fv_value = malloc(sizeof(long));
-            collect_number(fv_value, fd, block, block_size, at);
+            list_value = malloc(sizeof(long));
+            collect_number(list_value, fd, block, block_size, at);
             break;
 
           case TELLY_STR:
-            value = malloc(sizeof(string_t));
-            collect_string(fv_value, fd, block, block_size, at);
+            list_value = malloc(sizeof(string_t));
+            collect_string(list_value, fd, block, block_size, at);
             break;
 
           case TELLY_BOOL:
-            fv_value = malloc(sizeof(bool));
-            collect_bytes(fd, block, block_size, at, 1, fv_value);
+            list_value = malloc(sizeof(bool));
+            collect_bytes(fd, block, block_size, at, 1, list_value);
             break;
         }
 
-        struct ListNode *node = create_listnode(value, byte);
+        struct ListNode *node = create_listnode(list_value, byte);
 
         node->prev = list->end;
         list->end = node;
@@ -193,18 +194,20 @@ void get_all_data_from_file(const int fd, off64_t file_size, char *block, const 
         insert_value_to_btree(cache, index, kv);
       }
     } else {
+      off64_t collected_bytes = 0;
+
       do {
         while (at <= block_size) {
           struct KVPair *kv = malloc(sizeof(struct KVPair));
           collect_kv(kv, fd, block, block_size, &at);
+          collected_bytes += at;
 
           const uint64_t index = hash(kv->key.value, kv->key.len);
           insert_value_to_btree(cache, index, kv);
         }
 
-        if (lseek(fd, 0, SEEK_CUR) != file_size) {
-          read(fd, block, block_size);
-        } else break;
+        if (collected_bytes != file_size) read(fd, block, block_size);
+        else break;
       } while (true);
     }
   }

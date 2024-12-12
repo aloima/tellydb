@@ -38,8 +38,6 @@ void free_kv(struct KVPair *kv);
 
 /* DATABASE FILE */
 bool open_database_fd(const char *filename, uint64_t *server_age);
-uint16_t get_block_size();
-int get_database_fd();
 void close_database_fd();
 /* /DATABASE FILE */
 
