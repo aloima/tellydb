@@ -63,75 +63,122 @@ void close_database_fd() {
   close(fd);
 }
 
+static void generate_name_key(char **data, off64_t *len, const string_t key) {
+  const uint8_t bit_count = log2(key.len) + 1;
+  const uint8_t byte_count = ceil((float) (bit_count - 6) / 8);
+  const uint8_t first = (byte_count << 6) | (key.len & 0b111111);
+  const uint32_t length_in_bytes = key.len >> 6;
+
+  *data = realloc(*data, (*len + key.len + byte_count + 1));
+
+  (*data)[*len] = first;
+  memcpy(*data + (*len += 1), &length_in_bytes, byte_count);
+  memcpy(*data + (*len += byte_count), key.value, key.len);
+  *len += key.len;
+}
+
+static void generate_number_value(char **data, off64_t *len, const long *number) {
+  const uint32_t bit_count = log2(*number) + 1;
+  const uint32_t byte_count = (bit_count / 8) + 1;
+
+  *data = realloc(*data, (*len + byte_count + 2));
+  (*data)[*len] = TELLY_NUM;
+  (*data)[*len += 1] = byte_count;
+  memcpy(*data + (*len += 1), number, byte_count);
+  *len += byte_count;
+}
+
+static void generate_string_value(char **data, off64_t *len, const string_t *string) {
+  const uint8_t bit_count = log2(string->len) + 1;
+  const uint8_t byte_count = ceil((float) (bit_count - 6) / 8);
+  const uint8_t first = (byte_count << 6) | (string->len & 0b111111);
+  const uint32_t length_in_bytes = string->len >> 6;
+
+  *data = realloc(*data, (*len + string->len + byte_count + 2));
+  (*data)[*len] = TELLY_STR;
+  (*data)[*len += 1] = first;
+  memcpy(*data + (*len += 1), &length_in_bytes, byte_count);
+  memcpy(*data + (*len += byte_count), string->value, string->len);
+  *len += string->len;
+}
+
+static void generate_boolean_value(char **data, off64_t *len, const bool *boolean) {
+  *data = realloc(*data, (*len + 2));
+  (*data)[*len] = TELLY_BOOL;
+  (*data)[*len += 1] = *boolean;
+
+  *len += 1;
+}
+
+static void generate_null_value(char **data, off64_t *len) {
+  *data = realloc(*data, (*len + 1));
+  (*data)[*len] = TELLY_NULL;
+  *len += 1;
+}
+
 static off64_t generate_value(char **data, struct KVPair *kv) {
-  off64_t len;
+  off64_t len = 0;
 
-  {
-    string_t key = kv->key;
-
-    const uint8_t bit_count = log2(key.len) + 1;
-    const uint8_t byte_count = ceil((float) (bit_count - 6) / 8);
-    const uint8_t first = (byte_count << 6) | (key.len & 0b111111);
-    const uint32_t length_in_bytes = key.len >> 6;
-
-    len = key.len + byte_count + 1;
-    *data = realloc(*data, len);
-
-    (*data)[0] = first;
-    memcpy(*data + 1, &length_in_bytes, byte_count);
-    memcpy(*data + byte_count + 1, key.value, key.len);
-  }
+  generate_name_key(data, &len, kv->key);
 
   switch (kv->type) {
     case TELLY_NULL:
-      *data = realloc(*data, len + 1);
-      (*data)[len] = TELLY_NULL;
-
-      len += 1;
+      generate_null_value(data, &len);
       break;
 
-    case TELLY_NUM: {
-      const long *number = kv->value;
-      const uint32_t bit_count = log2(*number) + 1;
-      const uint32_t byte_count = (bit_count / 8) + 1;
-
-      *data = realloc(*data, len + byte_count + 2);
-      (*data)[len] = TELLY_NUM;
-      (*data)[len += 1] = byte_count;
-      memcpy(*data + (len += 1), number, byte_count);
-
-      len += byte_count;
+    case TELLY_NUM:
+      generate_number_value(data, &len, kv->value);
       break;
-    }
 
-    case TELLY_STR: {
-      const string_t *string = kv->value;
-
-      const uint8_t bit_count = log2(string->len) + 1;
-      const uint8_t byte_count = ceil((float) (bit_count - 6) / 8);
-      const uint8_t first = (byte_count << 6) | (string->len & 0b111111);
-      const uint32_t length_in_bytes = string->len >> 6;
-
-      *data = realloc(*data, len + string->len + byte_count + 2);
-      (*data)[len] = TELLY_STR;
-      (*data)[len += 1] = first;
-      memcpy(*data + (len += 1), &length_in_bytes, byte_count);
-      memcpy(*data + (len += byte_count), string->value, string->len);
-
-      len += string->len;
+    case TELLY_STR:
+      generate_string_value(data, &len, kv->value);
       break;
-    }
 
     case TELLY_BOOL:
-      *data = realloc(*data, len + 2);
-      (*data)[len] = TELLY_BOOL;
-      (*data)[len += 1] = *((bool *) kv->value);
-
-      len += 1;
+      generate_boolean_value(data, &len, kv->value);
       break;
+
+    case TELLY_LIST: {
+      struct List *list = kv->value;
+
+      *data = realloc(*data, (len + 5));
+      (*data)[len] = TELLY_LIST;
+      memcpy(*data + (len += 1), &list->size, 4);
+      len += 4;
+
+      struct ListNode *node = list->begin;
+
+      while (node) {
+        switch (node->type) {
+          case TELLY_NULL:
+            generate_null_value(data, &len);
+            break;
+
+          case TELLY_NUM:
+            generate_number_value(data, &len, node->value);
+            break;
+
+          case TELLY_STR:
+            generate_string_value(data, &len, node->value);
+            break;
+
+          case TELLY_BOOL:
+            generate_boolean_value(data, &len, node->value);
+            break;
+
+          default:
+            break;
+        }
+
+        node = node->next;
+      }
+
+      break;
+    }
 
     default:
       len = 0;
+      break;
   }
 
   return len;
