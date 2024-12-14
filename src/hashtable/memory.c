@@ -15,7 +15,7 @@ void add_fv_to_hashtable(struct HashTable *table, const string_t name, void *val
 
   if ((fv = table->fvs[index])) {
     do {
-      if (streq(fv->name.value, name.value)) {
+      if ((name.len == fv->name.len) && (memcmp(fv->name.value, name.value, name.len) == 0)) {
         found = true;
         break;
       } else if (fv->next) fv = fv->next;
@@ -54,10 +54,9 @@ void add_fv_to_hashtable(struct HashTable *table, const string_t name, void *val
       fv->hash = hashed;
       fv->next = NULL;
 
-      const uint32_t size = name.len + 1;
       fv->name.len = name.len;
-      fv->name.value = malloc(size);
-      memcpy(fv->name.value, name.value, size);
+      fv->name.value = malloc(name.len);
+      memcpy(fv->name.value, name.value, name.len);
     }
   } else {
     table->size.all += 1;
@@ -68,10 +67,9 @@ void add_fv_to_hashtable(struct HashTable *table, const string_t name, void *val
     fv->hash = hashed;
     fv->next = NULL;
 
-    const uint32_t size = name.len + 1;
     fv->name.len = name.len;
-    fv->name.value = malloc(size);
-    memcpy(fv->name.value, name.value, size);
+    fv->name.value = malloc(name.len);
+    memcpy(fv->name.value, name.value, name.len);
 
     table->fvs[index] = fv;
   }
@@ -86,7 +84,7 @@ bool del_fv_to_hashtable(struct HashTable *table, const string_t name) {
 
   if ((fv = table->fvs[index])) {
     do {
-      if (streq(fv->name.value, name.value)) {
+      if ((name.len == fv->name.len) && (memcmp(fv->name.value, name.value, name.len) == 0)) {
         // b is element will be deleted
         if (prev) { // a b a or a a b
           prev->next = fv->next;

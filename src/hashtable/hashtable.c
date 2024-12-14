@@ -44,7 +44,7 @@ struct FVPair *get_fv_from_hashtable(struct HashTable *table, const string_t nam
   const uint32_t index = hash(name.value, name.len) % table->size.allocated;
   struct FVPair *fv = table->fvs[index];
 
-  while (fv && !streq(fv->name.value, name.value)) fv = fv->next;
+  while (fv && ((name.len != fv->name.len) || (memcmp(fv->name.value, name.value, name.len) != 0))) fv = fv->next;
   return fv;
 }
 

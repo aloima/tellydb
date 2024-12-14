@@ -1,5 +1,6 @@
 #include "../../headers/database.h"
 #include "../../headers/server.h"
+#include "../../headers/hashtable.h"
 #include "../../headers/utils.h"
 
 #include <stdio.h>
@@ -63,27 +64,66 @@ void close_database_fd() {
   close(fd);
 }
 
-static void generate_name_key(char **data, off64_t *len, const string_t key) {
-  const uint8_t bit_count = log2(key.len) + 1;
-  const uint8_t byte_count = ceil((float) (bit_count - 6) / 8);
-  const uint8_t first = (byte_count << 6) | (key.len & 0b111111);
-  const uint32_t length_in_bytes = key.len >> 6;
+static off64_t get_value_size(const enum TellyTypes type, void *value) {
+  switch (type) {
+    case TELLY_NULL:
+      return 0;
 
-  *data = realloc(*data, (*len + key.len + byte_count + 1));
+    case TELLY_NUM: {
+      const uint32_t bit_count = log2(*((long *) value)) + 1;
+      return ((bit_count / 8) + 1);
+    }
 
-  (*data)[*len] = first;
-  memcpy(*data + (*len += 1), &length_in_bytes, byte_count);
-  memcpy(*data + (*len += byte_count), key.value, key.len);
-  *len += key.len;
+    case TELLY_STR: {
+      const string_t *string = value;
+      const uint8_t bit_count = log2(string->len) + 1;
+      const uint8_t byte_count = ceil(((float) bit_count) / 8);
+
+      return (byte_count + string->len);
+    }
+
+    case TELLY_BOOL:
+      return 1;
+
+    case TELLY_HASHTABLE: {
+      const struct HashTable *table = value;
+      off64_t length = 5;
+
+      for (uint32_t i = 0; i < table->size.allocated; ++i) {
+        struct FVPair *fv = table->fvs[i];
+
+        while (fv) {
+          length += (1 + get_value_size(TELLY_STR, &fv->name) + get_value_size(fv->type, value));
+          fv = fv->next;
+        }
+      }
+
+      return length;
+    }
+
+    case TELLY_LIST: {
+      const struct List *list = value;
+      struct ListNode *node = list->begin;
+      off64_t length = 4;
+
+      while (node) {
+        length += (1 + get_value_size(node->type, node->value));
+        node = node->next;
+      }
+
+      return length;
+    }
+
+    default:
+      return 0;
+  }
 }
 
 static void generate_number_value(char **data, off64_t *len, const long *number) {
   const uint32_t bit_count = log2(*number) + 1;
   const uint32_t byte_count = (bit_count / 8) + 1;
 
-  *data = realloc(*data, (*len + byte_count + 2));
-  (*data)[*len] = TELLY_NUM;
-  (*data)[*len += 1] = byte_count;
+  (*data)[*len] = byte_count;
   memcpy(*data + (*len += 1), number, byte_count);
   *len += byte_count;
 }
@@ -94,24 +134,18 @@ static void generate_string_value(char **data, off64_t *len, const string_t *str
   const uint8_t first = (byte_count << 6) | (string->len & 0b111111);
   const uint32_t length_in_bytes = string->len >> 6;
 
-  *data = realloc(*data, (*len + string->len + byte_count + 2));
-  (*data)[*len] = TELLY_STR;
-  (*data)[*len += 1] = first;
+  (*data)[*len] = first;
   memcpy(*data + (*len += 1), &length_in_bytes, byte_count);
   memcpy(*data + (*len += byte_count), string->value, string->len);
   *len += string->len;
 }
 
 static void generate_boolean_value(char **data, off64_t *len, const bool *boolean) {
-  *data = realloc(*data, (*len + 2));
-  (*data)[*len] = TELLY_BOOL;
-  (*data)[*len += 1] = *boolean;
-
+  (*data)[*len] = *boolean;
   *len += 1;
 }
 
 static void generate_null_value(char **data, off64_t *len) {
-  *data = realloc(*data, (*len + 1));
   (*data)[*len] = TELLY_NULL;
   *len += 1;
 }
@@ -119,7 +153,9 @@ static void generate_null_value(char **data, off64_t *len) {
 static off64_t generate_value(char **data, struct KVPair *kv) {
   off64_t len = 0;
 
-  generate_name_key(data, &len, kv->key);
+  generate_string_value(data, &len, &kv->key);
+  (*data)[len] = kv->type;
+  len += 1;
 
   switch (kv->type) {
     case TELLY_NULL:
@@ -138,17 +174,62 @@ static off64_t generate_value(char **data, struct KVPair *kv) {
       generate_boolean_value(data, &len, kv->value);
       break;
 
+    case TELLY_HASHTABLE: {
+      struct HashTable *table = kv->value;
+      memcpy(*data + len, &table->size.allocated, 4);
+      len += 4;
+
+      for (uint32_t i = 0; i < table->size.allocated; ++i) {
+        struct FVPair *fv = table->fvs[i];
+
+        while (fv) {
+          (*data)[len] = fv->type;
+          len += 1;
+
+          generate_string_value(data, &len, &fv->name);
+
+          switch (fv->type) {
+            case TELLY_NULL:
+              generate_null_value(data, &len);
+              break;
+
+            case TELLY_NUM:
+              generate_number_value(data, &len, fv->value);
+              break;
+
+            case TELLY_STR:
+              generate_string_value(data, &len, fv->value);
+              break;
+
+            case TELLY_BOOL:
+              generate_boolean_value(data, &len, fv->value);
+              break;
+
+            default:
+              break;
+          }
+
+          fv = fv->next;
+        }
+      }
+
+      (*data)[len] = 0x17;
+      len += 1;
+
+      break;
+    }
+
     case TELLY_LIST: {
       struct List *list = kv->value;
-
-      *data = realloc(*data, (len + 5));
-      (*data)[len] = TELLY_LIST;
-      memcpy(*data + (len += 1), &list->size, 4);
+      memcpy(*data + len, &list->size, 4);
       len += 4;
 
       struct ListNode *node = list->begin;
 
       while (node) {
+        (*data)[len] = node->type;
+        len += 1;
+
         switch (node->type) {
           case TELLY_NULL:
             generate_null_value(data, &len);
@@ -240,7 +321,14 @@ void save_data(const uint64_t server_age) {
       struct BTree *cache = get_cache();
       struct BTreeValue **values = get_values_from_btree(cache, &size);
 
-      char *data = malloc(1);
+      off64_t memory_block_length = 0;
+
+      for (uint32_t i = 0; i < size; ++i) {
+        struct KVPair *kv = values[i]->data;
+        memory_block_length += (1 + get_value_size(TELLY_STR, &kv->key) + get_value_size(kv->type, kv->value));
+      }
+
+      char *data = malloc(memory_block_length);
 
       for (uint32_t i = 0; i < size; ++i) {
         struct KVPair *kv = values[i]->data;
