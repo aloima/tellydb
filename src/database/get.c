@@ -3,7 +3,6 @@
 #include "../../headers/hashtable.h"
 #include "../../headers/utils.h"
 
-#include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -91,12 +90,13 @@ static void collect_kv(struct KVPair *kv, const int fd, char *block, const uint1
 
       while (true) {
         uint8_t byte;
-        void *fv_value = NULL;
         collect_bytes(fd, block, block_size, at, 1, &byte);
 
         if (byte == 0x17) {
           break;
         } else {
+          void *fv_value = NULL;
+
           string_t name;
           collect_string(&name, fd, block, block_size, at);
 
@@ -110,7 +110,7 @@ static void collect_kv(struct KVPair *kv, const int fd, char *block, const uint1
               break;
 
             case TELLY_STR:
-              value = malloc(sizeof(string_t));
+              fv_value = malloc(sizeof(string_t));
               collect_string(fv_value, fd, block, block_size, at);
               break;
 
@@ -120,7 +120,7 @@ static void collect_kv(struct KVPair *kv, const int fd, char *block, const uint1
               break;
           }
 
-          add_fv_to_hashtable(table, name, value, type);
+          add_fv_to_hashtable(table, name, fv_value, byte);
           free(name.value);
         }
       }
