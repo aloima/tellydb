@@ -317,7 +317,7 @@ void save_data(const uint64_t server_age) {
     }
 
     {
-      uint32_t size;
+      uint32_t size = 0;
       struct BTree *cache = get_cache();
       struct BTreeValue **values = get_values_from_btree(cache, &size);
 

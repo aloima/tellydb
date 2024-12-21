@@ -39,16 +39,21 @@ static void get_values_from_node(struct BTreeValue **values, uint32_t *size, str
 }
 
 struct BTreeValue **get_values_from_btree(struct BTree *tree, uint32_t *size) {
-  *size = 0;
   if (!tree->root) return NULL;
 
-  struct BTreeValue **values = malloc(tree->size * sizeof(struct BTreeValue *));
-  get_values_from_node(values, size, tree->root);
+  struct BTreeValue **values;
 
-  if (*size == 0) {
-    free(values);
-    return NULL;
+  if (posix_memalign((void **) &values, 8, (tree->size * sizeof(struct BTreeValue *))) == 0) {
+    get_values_from_node(values, size, tree->root);
+
+    if (*size == 0) {
+      free(values);
+      return NULL;
+    } else {
+      return realloc(values, *size * sizeof(struct BTreeValue *));
+    }
   } else {
-    return realloc(values, *size * sizeof(struct BTreeValue *));
+    write_log(LOG_ERR, "Cannot collect data to save to database file, out of memory.");
+    return NULL;
   }
 }

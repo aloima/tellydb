@@ -5,22 +5,14 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <errno.h>
 
 static void _memalign(void **memptr, size_t alignment, size_t size) {
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wnonnull"
-
   if (posix_memalign(memptr, alignment, size) != 0) {
-    if (errno == ENOMEM) {
-      write_log(LOG_ERR, "Cannot inserting data, out of memory.");
-    }
+    write_log(LOG_ERR, "Cannot insert data, out of memory.");
 
     // TODO: write safe close_server method
     exit(EXIT_FAILURE);
   }
-
-  #pragma GCC diagnostic pop
 }
 
 static struct BTreeValue *insert_value_to_node(struct BTree *tree, struct BTreeNode *node, struct BTreeValue *value, const uint32_t value_at) {
