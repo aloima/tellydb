@@ -5,31 +5,47 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <errno.h>
+
+static void _memalign(void **memptr, size_t alignment, size_t size) {
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wnonnull"
+
+  if (posix_memalign(memptr, alignment, size) != 0) {
+    if (errno == ENOMEM) {
+      write_log(LOG_ERR, "Cannot inserting data, out of memory.");
+    }
+
+    // TODO: write safe close_server method
+    exit(EXIT_FAILURE);
+  }
+
+  #pragma GCC diagnostic pop
+}
 
 static struct BTreeValue *insert_value_to_node(struct BTree *tree, struct BTreeNode *node, struct BTreeValue *value, const uint32_t value_at) {
+  const uint8_t order = tree->integers.order;
+
   tree->size += 1;
   node->size += 1;
-  node->data = realloc(node->data, node->size * sizeof(struct BTreeValue *));
 
   memcpy(node->data + value_at + 1, node->data + value_at, (node->size - value_at - 1) * sizeof(struct BTreeValue *));
   node->data[value_at] = value;
 
-  const uint32_t order = tree->integers.order;
-
   if (node->size == order) {
     const uint32_t at = (order - 1) / 2;
+    const size_t data_size = (order * sizeof(struct BTreeValue *));
+    const size_t children_size = ((order + 1) * sizeof(struct BTreeValue *));
 
     if (node->parent) {
       do {
         struct BTreeValue *middle = node->data[at];
 
         node->parent->size += 1;
-        node->parent->data = realloc(node->parent->data, node->parent->size * sizeof(struct BTreeValue *));
         memcpy(node->parent->data + node->at + 1, node->parent->data + node->at, (node->parent->size - 1 - node->at) * sizeof(struct BTreeValue *));
         node->parent->data[node->at] = middle;
 
-        node->parent->children = realloc(node->parent->children, (node->parent->size + 1) * sizeof(struct BTreeNode *));
-        node->parent->children[node->parent->size] = malloc(sizeof(struct BTreeNode));
+        _memalign((void **) &node->parent->children[node->parent->size], 32, sizeof(struct BTreeNode));
 
         struct BTreeNode *leaf = node->parent->children[node->parent->size];
 
@@ -50,15 +66,16 @@ static struct BTreeValue *insert_value_to_node(struct BTree *tree, struct BTreeN
         leaf->parent = node->parent;
         leaf->size = node->size - at - 1;
 
-        const uint8_t size_n = leaf->size * sizeof(struct BTreeValue *);
-        leaf->data = malloc(size_n);
+        _memalign((void **) &leaf->data, 8, data_size);
+
+        const uint8_t size_n = (leaf->size * sizeof(struct BTreeValue *));
         memcpy(leaf->data, node->data + at + 1, size_n);
 
         if (node->children) {
           const uint32_t leaf_count = (leaf->size + 1);
-          const uint8_t leaf_count_n = leaf_count * sizeof(struct BTreeNode *);
-          leaf->children = malloc(leaf_count_n);
-          memcpy(leaf->children, node->children + at + 1, leaf_count_n);
+
+          _memalign((void **) &leaf->children, 8, children_size);
+          memcpy(leaf->children, node->children + at + 1, (leaf_count * sizeof(struct BTreeNode *)));
 
           for (uint32_t i = 0; i < leaf_count; ++i) {
             leaf->children[i]->parent = leaf;
@@ -66,13 +83,9 @@ static struct BTreeValue *insert_value_to_node(struct BTree *tree, struct BTreeN
           }
 
           node->size = at;
-          node->data = realloc(node->data, node->size * sizeof(struct BTreeValue *));
-          node->children = realloc(node->children, (node->size + 1) * sizeof(struct BTreeNode *));
         } else {
-          leaf->children = NULL;
-
           node->size = at;
-          node->data = realloc(node->data, node->size * sizeof(struct BTreeValue *));
+          leaf->children = NULL;
         }
 
         node = node->parent;
@@ -81,15 +94,13 @@ static struct BTreeValue *insert_value_to_node(struct BTree *tree, struct BTreeN
       if (node->size == order) {
         const uint32_t leaf_count = node->size + 1;
         struct BTreeNode *children[leaf_count];
-        memcpy(children, node->children, leaf_count * sizeof(struct BTreeNode *));
+        memcpy(children, node->children, (leaf_count * sizeof(struct BTreeNode *)));
 
-        free(node->children);
-        node->children = malloc(2 * sizeof(struct BTreeNode *));
-        node->children[0] = malloc(sizeof(struct BTreeNode));
-        node->children[1] = malloc(sizeof(struct BTreeNode));
+        _memalign((void **) &node->children[0], 32, sizeof(struct BTreeNode));
+        _memalign((void **) &node->children[1], 32, sizeof(struct BTreeNode));
 
         struct BTreeNode *leaf;
-        uint8_t leaf_count_of_leaf, size_n, leaf_count_n;
+        uint8_t leaf_count_of_leaf;
 
         leaf = node->children[0];
         leaf->parent = node;
@@ -97,13 +108,11 @@ static struct BTreeValue *insert_value_to_node(struct BTree *tree, struct BTreeN
         leaf->size = at;
         leaf_count_of_leaf = (leaf->size + 1);
 
-        size_n = leaf->size * sizeof(struct BTreeValue *);
-        leaf->data = malloc(size_n);
-        memcpy(leaf->data, node->data, size_n);
+        _memalign((void **) &leaf->data, 8, data_size);
+        memcpy(leaf->data, node->data, (leaf->size * sizeof(struct BTreeValue *)));
 
-        leaf_count_n = leaf_count_of_leaf * sizeof(struct BTreeNode *);
-        leaf->children = malloc(leaf_count_n);
-        memcpy(leaf->children, children, leaf_count_n);
+        _memalign((void **) &leaf->children, 8, children_size);
+        memcpy(leaf->children, children, (leaf_count_of_leaf * sizeof(struct BTreeNode *)));
 
         for (uint32_t i = 0; i < leaf_count_of_leaf; ++i) {
           leaf->children[i]->parent = leaf;
@@ -116,13 +125,11 @@ static struct BTreeValue *insert_value_to_node(struct BTree *tree, struct BTreeN
         leaf->size = node->size - at - 1;
         leaf_count_of_leaf = (leaf->size + 1);
 
-        size_n = leaf->size * sizeof(struct BTreeValue *);
-        leaf->data = malloc(size_n);
-        memcpy(leaf->data, node->data + at + 1, size_n);
+        _memalign((void **) &leaf->data, 8, data_size);
+        memcpy(leaf->data, node->data + at + 1, (leaf->size * sizeof(struct BTreeValue *)));
 
-        leaf_count_n = leaf_count_of_leaf * sizeof(struct BTreeNode *);
-        leaf->children = malloc(leaf_count_n);
-        memcpy(leaf->children, children + at + 1, leaf_count_n);
+        _memalign((void **) &leaf->children, 8, children_size);
+        memcpy(leaf->children, children + at + 1, (leaf_count_of_leaf * sizeof(struct BTreeNode *)));
 
         for (uint32_t i = 0; i < leaf_count_of_leaf; ++i) {
           leaf->children[i]->parent = leaf;
@@ -131,12 +138,11 @@ static struct BTreeValue *insert_value_to_node(struct BTree *tree, struct BTreeN
 
         node->size = 1;
         node->data[0] = node->data[at];
-        node->data = realloc(node->data, node->size * sizeof(struct BTreeValue *));
       }
     } else {
-      node->children = malloc(2 * sizeof(struct BTreeNode *));
-      node->children[0] = malloc(sizeof(struct BTreeNode));
-      node->children[1] = malloc(sizeof(struct BTreeNode));
+      _memalign((void **) &node->children, 8, children_size);
+      _memalign((void **) &node->children[0], 32, sizeof(struct BTreeNode));
+      _memalign((void **) &node->children[1], 32, sizeof(struct BTreeNode));
 
       struct BTreeNode *leaf = node->children[0];
       leaf->parent = node;
@@ -144,9 +150,8 @@ static struct BTreeValue *insert_value_to_node(struct BTree *tree, struct BTreeN
       leaf->children = NULL;
       leaf->size = at;
 
-      uint8_t size_n = leaf->size * sizeof(struct BTreeValue *);
-      leaf->data = malloc(size_n);
-      memcpy(leaf->data, node->data, size_n);
+      _memalign((void **) &leaf->data, 8, data_size);
+      memcpy(leaf->data, node->data, (leaf->size * sizeof(struct BTreeValue *)));
 
       leaf = node->children[1];
       leaf->parent = node;
@@ -154,13 +159,11 @@ static struct BTreeValue *insert_value_to_node(struct BTree *tree, struct BTreeN
       leaf->children = NULL;
       leaf->size = node->size - at - 1;
 
-      size_n = leaf->size * sizeof(struct BTreeValue *);
-      leaf->data = malloc(size_n);
-      memcpy(leaf->data, node->data + at + 1, size_n);
+      _memalign((void **) &leaf->data, 8, data_size);
+      memcpy(leaf->data, node->data + at + 1, (leaf->size * sizeof(struct BTreeValue *)));
 
       node->size = 1;
       node->data[0] = node->data[at];
-      node->data = realloc(node->data, node->size * sizeof(struct BTreeValue *));
     }
   }
 
@@ -168,19 +171,23 @@ static struct BTreeValue *insert_value_to_node(struct BTree *tree, struct BTreeN
 }
 
 struct BTreeValue *insert_value_to_btree(struct BTree *tree, uint64_t index, void *data) {
-  struct BTreeValue *value = malloc(sizeof(struct BTreeValue));
+  struct BTreeValue *value;
+  _memalign((void **) &value, 16, sizeof(struct BTreeValue));
+
   value->data = data;
   value->index = index;
 
   if (!tree->root) {
-    tree->root = malloc(sizeof(struct BTreeNode));
+    _memalign((void **) &tree->root, 32, sizeof(struct BTreeNode));
     tree->root->children = NULL;
     tree->root->parent = NULL;
     tree->root->at = 0;
+    tree->size = 0;
+    tree->root->size = 0;
 
+    _memalign((void **) &tree->root->data, 8, (sizeof(struct BTreeValue *) * tree->integers.order));
     tree->size = 1;
     tree->root->size = 1;
-    tree->root->data = malloc(sizeof(struct BTreeValue *));
     tree->root->data[0] = value;
 
     return value;

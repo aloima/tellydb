@@ -31,7 +31,7 @@ struct BTree {
   uint32_t size;
 };
 
-struct BTree *create_btree(const uint32_t max);
+struct BTree *create_btree(const uint32_t order);
 struct BTreeValue **get_values_from_btree(struct BTree *tree, uint32_t *size);
 
 void move_kv(struct BTreeNode *node, const uint32_t at, const uint32_t to);
