@@ -215,16 +215,41 @@ void start_server(struct Configuration *config) {
     return;
   }
 
-  create_constant_passwords();
+  if (!create_constant_passwords()) {
+    deactive_transaction_thread();
+    usleep(15);
+    free_constant_passwords();
+    free_commands();
+    close(sockfd);
+    write_log(LOG_ERR, "Safely exiting...");
+    free_configuration(conf);
+    unlink(".tellylock");
+    return;
+  }
+
   initialize_kdf();
   write_log(LOG_INFO, "Created constant passwords and key deriving algorithm.");
 
-  create_cache();
-  write_log(LOG_INFO, "Created cache.");
+  if (create_cache() != NULL) {
+    write_log(LOG_INFO, "Created cache.");
+  } else {
+    deactive_transaction_thread();
+    usleep(15);
+    free_kdf();
+    free_constant_passwords();
+    free_commands();
+    close(sockfd);
+    write_log(LOG_ERR, "Safely exiting...");
+    free_configuration(conf);
+    unlink(".tellylock");
+    return;
+  }
 
   if (!open_database_fd(conf->data_file, &age)) {
     deactive_transaction_thread();
     usleep(15);
+    free_kdf();
+    free_constant_passwords();
     free_commands();
     free_cache();
     close(sockfd);

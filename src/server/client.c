@@ -1,6 +1,7 @@
 #include "../../headers/server.h"
 
 #include <string.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <time.h>
@@ -9,23 +10,30 @@ struct Client **clients;
 uint32_t client_count = 0;
 uint32_t last_connection_client_id = 0;
 
-struct Password *default_password, *empty_password, *full_password;
+struct Password *default_password = NULL, *empty_password = NULL, *full_password = NULL;
 
-void create_constant_passwords() {
-  default_password = malloc(sizeof(struct Password));
+#define alloc_constant_password(password) if (posix_memalign(password, 64, sizeof(struct Password)) != 0) {\
+  write_log(LOG_ERR, "Cannot create constant passwords, out of memory.");\
+  return false;\
+}
+
+bool create_constant_passwords() {
+  alloc_constant_password((void **) &default_password);
   default_password->permissions = (P_READ | P_WRITE | P_CLIENT | P_CONFIG | P_AUTH | P_SERVER);
 
-  empty_password = malloc(sizeof(struct Password));
+  alloc_constant_password((void **) &empty_password);
   empty_password->permissions = 0;
 
-  full_password = malloc(sizeof(struct Password));
+  alloc_constant_password((void **) &full_password);
   full_password->permissions = (P_READ | P_WRITE | P_CLIENT | P_CONFIG | P_AUTH | P_SERVER);
+
+  return true;
 }
 
 void free_constant_passwords() {
-  free(default_password);
-  free(empty_password);
-  free(full_password);
+  if (default_password) free(default_password);
+  if (empty_password) free(empty_password);
+  if (full_password) free(full_password);
 }
 
 struct Password *get_empty_password() {

@@ -321,6 +321,11 @@ void save_data(const uint64_t server_age) {
       struct BTree *cache = get_cache();
       struct BTreeValue **values = get_values_from_btree(cache, &size);
 
+      if (values == NULL && cache->size != 0) {
+        write_log(LOG_ERR, "Cannot collect data to save to database file, out of memory.");
+        free(block);
+      }
+
       off64_t memory_block_length = 0;
 
       for (uint32_t i = 0; i < size; ++i) {

@@ -6,6 +6,7 @@
 #include <openssl/ssl.h>
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <time.h>
 
 #define WRITE_NULL_REPLY(client) \
@@ -67,7 +68,7 @@ struct Password {
   uint8_t permissions;
 };
 
-void create_constant_passwords();
+bool create_constant_passwords();
 void free_constant_passwords();
 struct Password *get_full_password();
 struct Password *get_empty_password();

@@ -5,17 +5,23 @@
 #include <math.h>
 
 struct BTree *create_btree(const uint32_t order) {
-  const uint32_t k = (order - 1);
-  struct BTree *tree = malloc(sizeof(struct BTree));
-  tree->size = 0;
-  tree->root = NULL;
-  tree->integers = (struct BTreeIntegers) {
-    .order = order,
-    .leaf_min = ceil((float) k / 2),
-    .internal_min = k / 2
-  };
+  struct BTree *tree;
 
-  return tree;
+  if (posix_memalign((void **) &tree, 16, sizeof(struct BTree)) == 0) {
+    const uint32_t k = (order - 1);
+
+    tree->size = 0;
+    tree->root = NULL;
+    tree->integers = (struct BTreeIntegers) {
+      .order = order,
+      .leaf_min = ceil((float) k / 2),
+      .internal_min = (k / 2)
+    };
+
+    return tree;
+  } else {
+    return NULL;
+  }
 }
 
 static void get_values_from_node(struct BTreeValue **values, uint32_t *size, struct BTreeNode *node) {
@@ -50,10 +56,9 @@ struct BTreeValue **get_values_from_btree(struct BTree *tree, uint32_t *size) {
       free(values);
       return NULL;
     } else {
-      return realloc(values, *size * sizeof(struct BTreeValue *));
+      return values;
     }
   } else {
-    write_log(LOG_ERR, "Cannot collect data to save to database file, out of memory.");
     return NULL;
   }
 }

@@ -9,7 +9,11 @@
 static struct BTree *cache = NULL;
 
 struct BTree *create_cache() {
-  return (cache = create_btree(3));
+  if ((cache = create_btree(3)) == NULL) {
+    write_log(LOG_ERR, "Cannot create cache, out of memory.");
+  }
+
+  return cache;
 }
 
 struct BTree *get_cache() {

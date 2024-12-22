@@ -1,7 +1,7 @@
 #include "../../headers/btree.h"
 #include "../../headers/database.h"
+#include "../../headers/utils.h"
 
-#include <stdbool.h>
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
