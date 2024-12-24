@@ -11,7 +11,7 @@ static void merge_and_set_root(struct BTree *tree) {
   struct BTreeNode *left = root->children[0];
 
   const uint32_t size = left->size;
-  left->size += 1 + right->size; // (separator that moved from parent to left node) + (elements of right node because of merging)
+  left->size += (1 + right->size); // (separator that moved from parent to left node) + (elements of right node because of merging)
 
   // Adds separator from root and elements of right node to left node
   left->data[size] = root->data[0];
@@ -43,7 +43,6 @@ static void merge_and_set_root(struct BTree *tree) {
 }
 
 // TODO: improve readability
-// TODO: fix deleting value from root if it has children nodes
 static void rebalance(struct BTree *tree, struct BTreeNode *node, const uint32_t target_at, const uint32_t min) {
   struct BTreeNode *parent = node->parent;
   const uint32_t right_at = node->at + 1;
@@ -137,6 +136,11 @@ static void rebalance(struct BTree *tree, struct BTreeNode *node, const uint32_t
       }
 
       if (right->children) {
+        for (uint32_t i = 0; i < right->size + 1; ++i) {
+          right->children[i]->at = (size + i);
+          right->children[i]->parent = node;
+        }
+
         memcpy(node->children + size, right->children, (right->size + 1) * sizeof(struct BTreeNode *));
         free(right->children);
       }
@@ -163,6 +167,11 @@ static void rebalance(struct BTree *tree, struct BTreeNode *node, const uint32_t
       }
 
       if (node->children) {
+        for (uint32_t i = 0; i < node->size; ++i) {
+          node->children[i]->at = (left->size + i);
+          node->children[i]->parent = left;
+        }
+
         memcpy(left->children + left->size, node->children, node->size * sizeof(struct BTreeNode *));
         free(node->children);
       }
@@ -199,6 +208,7 @@ static void delete_from_internal(struct BTree *tree, struct BTreeNode *node, con
   const uint8_t min = (!leaf->children ? tree->integers.leaf_min : tree->integers.internal_min);
 
   if (leaf->size == min) rebalance(tree, leaf, separator_at, min);
+  else leaf->size -= 1;
 }
 
 static void delete_from_leaf(struct BTree *tree, struct BTreeNode *node, const uint32_t target_at) {
