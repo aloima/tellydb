@@ -25,16 +25,17 @@ void *transaction_thread() {
   sigaddset(&set, SIGINT);
   pthread_sigmask(SIG_BLOCK, &set, NULL);
 
+  pthread_mutex_lock(&mutex);
+
   while (thread_loop) {
-    pthread_mutex_lock(&mutex);
     pthread_cond_wait(&cond, &mutex);
 
     struct Transaction *transaction = transactions[0];
     execute_command(transaction);
     remove_transaction(transaction);
-    pthread_mutex_unlock(&mutex);
   }
 
+  pthread_mutex_unlock(&mutex);
   return NULL;
 }
 
@@ -78,10 +79,11 @@ void add_transaction(struct Client *client, commanddata_t *command) {
   transactions[id]->command = command;
   transactions[id]->password = client->password;
 
-  pthread_mutex_unlock(&mutex);
   pthread_cond_signal(&cond);
+  pthread_mutex_unlock(&mutex);
 }
 
+// Run by thread, no need mutex
 void remove_transaction(struct Transaction *transaction) {
   const uint64_t id = transaction - transactions[0];
 
@@ -100,17 +102,12 @@ void remove_transaction(struct Transaction *transaction) {
 
 void free_transactions() {
   if (transaction_count != 0) {
-    for (uint32_t i = 1; i < transaction_count; ++i) {
+    for (uint32_t i = 0; i < transaction_count; ++i) {
       struct Transaction *transaction = transactions[i];
 
       free_command_data(transaction->command);
       free(transaction);
     }
-
-    struct Transaction *transaction = transactions[0];
-
-    free_command_data(transaction->command);
-    free(transaction);
 
     free(transactions);
   }

@@ -7,8 +7,8 @@ tellydb contains a process and a thread:
 * Process accepts clients, receives data sent by client, interprets received data as commands and manages the server.
 
 tellydb handles received data as follows:
-* Data will be saved to cache
-* When closing the server, data will be taken from cache and written to database file
+* Data will be saved to cache.
+* When closing the server, data will be taken from cache and written to database file.
 
 ## Authorization
 To get information, look at [AUTH.md](./AUTH.md).
