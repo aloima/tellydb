@@ -2,6 +2,7 @@
 #include "../../headers/utils.h"
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
@@ -195,21 +196,26 @@ bool edit_password(char *value, const size_t value_len, const uint32_t permissio
 
 void add_password(struct Client *client, const string_t data, const uint8_t permissions) {
   struct Password *password = malloc(sizeof(struct Password));
-  password_count += 1;
 
-  if (password_count == 1) {
-    passwords = malloc(sizeof(struct Password *));
-    passwords[0] = password;
+  if (posix_memalign((void **) &password, 8, sizeof(struct Password)) == 0) {
+    password_count += 1;
 
-    client->password->permissions = 0; // Resets all client permissions via reference
-    client->password = get_full_password(); // Give full permissions to client which added first password
+    if (password_count == 1) {
+      passwords = malloc(sizeof(struct Password *));
+      passwords[0] = password;
+
+      client->password->permissions = 0; // Resets all client permissions via reference
+      client->password = get_full_password(); // Give full permissions to client which added first password
+    } else {
+      passwords = realloc(passwords, password_count * sizeof(struct Password *));
+      passwords[password_count - 1] = password;
+    }
+
+    password_derive(data.value, data.len, password->data);
+    password->permissions = permissions;
   } else {
-    passwords = realloc(passwords, password_count * sizeof(struct Password));
-    passwords[password_count - 1] = password;
+    write_log(LOG_ERR, "Cannot create a password, out of memory.");
   }
-
-  password_derive(data.value, data.len, password->data);
-  password->permissions = permissions;
 }
 
 void free_password(struct Password *password) {
@@ -218,9 +224,7 @@ void free_password(struct Password *password) {
 
 void free_passwords() {
   if (password_count != 0) {
-    free_password(passwords[0]);
-
-    for (uint32_t i = 1; i < password_count; ++i) {
+    for (uint32_t i = 0; i < password_count; ++i) {
       free_password(passwords[i]);
     }
 

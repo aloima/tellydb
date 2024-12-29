@@ -90,25 +90,28 @@ struct Client *add_client(const int connfd) {
     clients = realloc(clients, client_count * sizeof(struct Client *));
   }
 
-  clients[client_count - 1] = malloc(sizeof(struct Client));
+  if (posix_memalign((void **) &clients[client_count - 1], 64, sizeof(struct Client)) == 0) {
+    struct Client *client = clients[client_count - 1];
+    client->id = last_connection_client_id;
+    client->connfd = connfd;
+    time(&client->connected_at);
+    client->command = NULL;
+    client->lib_name = NULL;
+    client->lib_ver = NULL;
+    client->ssl = NULL;
+    client->protover = RESP2;
 
-  struct Client *client = clients[client_count - 1];
-  client->id = last_connection_client_id;
-  client->connfd = connfd;
-  time(&client->connected_at);
-  client->command = NULL;
-  client->lib_name = NULL;
-  client->lib_ver = NULL;
-  client->ssl = NULL;
-  client->protover = RESP2;
+    if (get_password_count() == 0) {
+      client->password = default_password;
+    } else {
+      client->password = empty_password;
+    }
 
-  if (get_password_count() == 0) {
-    client->password = default_password;
+    return client;
   } else {
-    client->password = empty_password;
+    write_log(LOG_ERR, "Cannot create a new client, out of memory.");
+    return NULL;
   }
-
-  return client;
 }
 
 void remove_client(const int connfd) {

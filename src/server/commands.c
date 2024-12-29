@@ -57,8 +57,11 @@ void load_commands() {
     cmd_rpush
   };
 
-  commands = malloc(sizeof(_commands));
-  memcpy(commands, _commands, sizeof(_commands));
+  if (posix_memalign((void **) &commands, 8, sizeof(_commands)) == 0) {
+    memcpy(commands, _commands, sizeof(_commands));
+  } else {
+    write_log(LOG_ERR, "Cannot create commands, out of memory.");
+  }
 }
 
 void free_commands() {

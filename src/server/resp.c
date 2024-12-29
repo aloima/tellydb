@@ -130,9 +130,7 @@ commanddata_t *get_command_data(struct Client *client) {
 
 void free_command_data(commanddata_t *command) {
   if (command->arg_count != 0) {
-    free(command->args[0].value);
-
-    for (uint32_t i = 1; i < command->arg_count; ++i) {
+    for (uint32_t i = 0; i < command->arg_count; ++i) {
       free(command->args[i].value);
     }
 
