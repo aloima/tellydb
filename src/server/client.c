@@ -60,6 +60,18 @@ struct Client *get_client(const int input) {
   return NULL;
 }
 
+struct Client *get_client_from_id(const uint32_t id) {
+  for (uint32_t i = 0; i < client_count; ++i) {
+    struct Client *client = clients[i];
+
+    if (client->id == id) {
+      return client;
+    }
+  }
+
+  return NULL;
+}
+
 uint32_t get_client_count() {
   return client_count;
 }

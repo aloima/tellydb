@@ -103,6 +103,33 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
         } else {
           WRONG_ARGUMENT_ERROR(client, "CLIENT SETINFO", 14);
         }
+      } else if (streq("KILL", subcommand)) {
+        if (password->permissions & P_CLIENT) {
+          const long id = atol(command->args[1].value);
+
+          if ((id > UINT32_MAX) || (id < 0)) {
+            _write(client, "-Specified ID is out of bounds for uint32_t\r\n", 45);
+          } else {
+            struct Client *target = get_client_from_id(id);
+
+            if (target) {
+              if (target->password->permissions & P_CLIENT) {
+                char buf[56];
+                const size_t nbytes = sprintf(buf, "-Client #%ld has P_CLIENT, so cannot be killed\r\n", id);
+                _write(client, buf, nbytes);
+              } else {
+                terminate_connection(target->connfd);
+                WRITE_OK(client);
+              }
+            } else {
+              char buf[46];
+              const size_t nbytes = sprintf(buf, "-There is no client whose ID is #%ld\r\n", id);
+              _write(client, buf, nbytes);
+            }
+          }
+        } else {
+          _write(client, "-Not allowed to use this command, need P_CLIENT\r\n", 49);
+        }
       }
     } else {
       WRONG_ARGUMENT_ERROR(client, "CLIENT", 6);
@@ -128,6 +155,12 @@ static struct Subcommand subcommands[] = {
     .summary = "Sets properties for the client.",
     .since = "0.1.2",
     .complexity = "O(1)"
+  },
+  (struct Subcommand) {
+    .name = "KILL",
+    .summary = "Kills specified client.",
+    .since = "0.1.8",
+    .complexity = "O(1)"
   }
 };
 
@@ -137,6 +170,6 @@ const struct Command cmd_client = {
   .since = "0.1.0",
   .complexity = "O(1)",
   .subcommands = subcommands,
-  .subcommand_count = 3,
+  .subcommand_count = 4,
   .run = run
 };

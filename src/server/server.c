@@ -38,7 +38,7 @@ static int setnonblocking(int sockfd) {
   return 0;
 }
 
-static void terminate_connection(const int connfd) {
+void terminate_connection(const int connfd) {
   const struct Client *client = get_client(connfd);
   write_log(LOG_INFO, "Client #%d is disconnected.", client->id);
 

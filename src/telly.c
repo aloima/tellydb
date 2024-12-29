@@ -18,7 +18,11 @@ int main(int argc, char *argv[]) {
       const char *arg = argv[1];
 
       if (streq(arg, "version")) {
-        puts("tellydb version " VERSION);
+        puts((
+          "tellydb version " VERSION "\n"
+          "open source at https://github.com/aloima/tellydb\n"
+          "licensed under BSD-3 Clause Clear License"
+        ));
         return EXIT_SUCCESS;
       } else if (streq(arg, "help")) {
         puts((
@@ -26,7 +30,7 @@ int main(int argc, char *argv[]) {
           "Arguments:\n"
           " version        - Prints version\n"
           " help           - Prints this page\n"
-          " config [FILE]  - Runs the server using configuration file\n"
+          " config [FILE]  - Runs the server using configuration file. If file is not exist, use .tellyconf\n"
           " create-config  - Creates a .tellyconf file using default values. If it is exists, it will be discarded\n"
           " default-config - Prints default configuration values\n\n"
           "Without an argument, starts the server using .tellyconf file in working directory.\n"

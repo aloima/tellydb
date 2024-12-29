@@ -44,6 +44,7 @@ struct Client {
 
 struct Client **get_clients();
 struct Client *get_client(const int input);
+struct Client *get_client_from_id(const uint32_t id);
 
 uint32_t get_last_connection_client_id();
 uint32_t get_client_count();
@@ -90,6 +91,7 @@ bool edit_password(char *value, const size_t value_len, const uint32_t permissio
 
 
 /* SERVER */
+void terminate_connection(const int connfd);
 off_t *get_authorization_end_at();
 void get_server_time(time_t *server_start_at, uint64_t *server_age);
 void start_server(struct Configuration *config);

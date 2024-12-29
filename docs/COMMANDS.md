@@ -85,7 +85,7 @@ This document provides a detailed description of all the available commands. Eac
 ---
 
 ### CLIENT
-**Syntax**: `CLIENT ID|INFO|SETINFO`  
+**Syntax**: `CLIENT ID|INFO|SETINFO|KILL`  
 **Description**: Main command of client(s).  
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
@@ -118,6 +118,21 @@ This document provides a detailed description of all the available commands. Eac
 **Returns**: `OK`  
 **Behavior**:
 * If uppercased form of property is not `LIB-NAME` or `LIB-VERSION`, throws an error.
+
+#### KILL
+**Syntax**: `CLIENT KILL id`  
+**Description**: Kills specified client.  
+**Since**: `0.1.8`  
+**Time complexity**: `O(1)`  
+**Permissions**: `P_CLIENT`  
+**Returns**: `OK`  
+**Behavior**:
+* If specified client has `P_CLIENT` permissions, throws an error.
+* If specified client is not exist, throws an error.
+* If specified client ID value is higher or less than uint32_t bounds, throws an error.
+
+**Arguments**:
+- **id**: Client ID, must be unsigned integer value
 
 ---
 
