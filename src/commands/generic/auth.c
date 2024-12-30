@@ -1,10 +1,8 @@
 #include "../../../headers/server.h"
 #include "../../../headers/commands.h"
+#include "../../../headers/utils.h"
 
-#include <stdio.h>
 #include <stddef.h>
-#include <stdint.h>
-#include <time.h>
 
 static void run(struct Client *client, commanddata_t *command, struct Password *password) {
   if (client) {

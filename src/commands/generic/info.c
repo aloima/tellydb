@@ -14,6 +14,13 @@ static bool get_section(char *section, const struct Configuration *conf, const c
     char gcc_version[16];
     sprintf(gcc_version, "%d.%d.%d", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 
+    uint64_t age;
+    time_t start_at;
+    get_server_time(&start_at, &age);
+
+    char str_start_at[21];
+    generate_date_string(str_start_at, start_at);
+
     sprintf(section, (
       "# Server\r\n"
       "Version: " VERSION "\r\n"
@@ -22,7 +29,9 @@ static bool get_section(char *section, const struct Configuration *conf, const c
       "Multiplexing API: poll\r\n"
       "GCC version: %s\r\n"
       "TLS server: %s\r\n"
-    ), getpid(), gcc_version, conf->tls ? "true" : "false");
+      "Age: %ld seconds\r\n"
+      "Started at: %.20s\r\n"
+    ), getpid(), gcc_version, (conf->tls ? "yes" : "no"), age, str_start_at);
   } else if (streq(name, "clients")) {
     sprintf(section, (
       "# Clients\r\n"
