@@ -28,6 +28,8 @@ static void merge_and_set_root(struct BTree *tree) {
     }
 
     free(right->children);
+  } else {
+    left->children = NULL;
   }
 
   // Sets left node as new root
@@ -56,7 +58,12 @@ static void rebalance(struct BTree *tree, struct BTreeNode *node, const uint32_t
 
     if (right->children) {
       node->children[node->size] = right->children[0];
+      node->children[node->size]->at = (node->size + 1);
       memcpy(right->children, right->children + 1, right->size * sizeof(struct BTreeNode *));
+
+      for (uint32_t i = 0; i < right->size; ++i) {
+        right->children[i]->at = i;
+      }
     }
 
     right->size -= 1;
@@ -70,6 +77,12 @@ static void rebalance(struct BTree *tree, struct BTreeNode *node, const uint32_t
     if (left->children) {
       memcpy(node->children + 1, node->children, node->size * sizeof(struct BTreeNode *));
       node->children[0] = left->children[left->size];
+
+      const uint32_t child_count = (node->size + 1);
+
+      for (uint32_t i = 0; i < child_count; ++i) {
+        node->children[i]->at = i;
+      }
     }
 
     left->size -= 1;
@@ -110,7 +123,7 @@ static void rebalance(struct BTree *tree, struct BTreeNode *node, const uint32_t
     struct BTreeNode *right = parent->children[1];
 
     if (parent == tree->root && parent->size == 1) {
-      // TODO: fix this line
+      node->size -= 1;
       memcpy(node->data + target_at, node->data + target_at + 1, (node->size - target_at) * sizeof(struct BTreeValue *));
       merge_and_set_root(tree);
     } else {
@@ -152,6 +165,7 @@ static void rebalance(struct BTree *tree, struct BTreeNode *node, const uint32_t
     struct BTreeNode *left = parent->children[left_at];
 
     if (parent == tree->root && parent->size == 1) {
+      node->size -= 1;
       memcpy(node->data + target_at, node->data + target_at + 1, (node->size - target_at) * sizeof(struct BTreeValue *));
       merge_and_set_root(tree);
     } else {
