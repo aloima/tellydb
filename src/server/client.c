@@ -100,6 +100,7 @@ struct Client *add_client(const int connfd) {
     client->lib_ver = NULL;
     client->ssl = NULL;
     client->protover = RESP2;
+    client->locked = false;
 
     if (get_password_count() == 0) {
       client->password = default_password;

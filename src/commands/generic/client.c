@@ -74,6 +74,41 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
       char res[1024];
       const size_t nbytes = sprintf(res, "$%ld\r\n%s\r\n", buf_len, buf);
       _write(client, res, nbytes);
+    }  else if (streq("LOCK", subcommand)) {
+      if (password->permissions & P_CLIENT) {
+        const long id = atol(command->args[1].value);
+
+        if ((id > UINT32_MAX) || (id < 0)) {
+          if (client) _write(client, "-Specified ID is out of bounds for uint32_t\r\n", 45);
+        } else {
+          struct Client *target = get_client_from_id(id);
+
+          if (target) {
+            if (target->password->permissions & P_CLIENT) {
+              if (client) {
+                char buf[56];
+                const size_t nbytes = sprintf(buf, "-Client #%ld has P_CLIENT, so cannot be locked\r\n", id);
+                _write(client, buf, nbytes);
+              }
+            } else if (target->locked) {
+              if (client) {
+                char buf[55];
+                const size_t nbytes = sprintf(buf, "-Client #%ld is locked, so cannot be relocked\r\n", id);
+                _write(client, buf, nbytes);
+              }
+            } else {
+              target->locked = true;
+              if (client) WRITE_OK(client);
+            }
+          } else if (client) {
+            char buf[46];
+            const size_t nbytes = sprintf(buf, "-There is no client whose ID is #%ld\r\n", id);
+            _write(client, buf, nbytes);
+          }
+        }
+      } else if (client) {
+        _write(client, "-Not allowed to use this command, need P_CLIENT\r\n", 49);
+      }
     } else if (streq("SETINFO", subcommand) && client) {
       if (command->arg_count == 3) {
         string_t property = command->args[1];
@@ -113,17 +148,48 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
 
           if (target) {
             if (target->password->permissions & P_CLIENT) {
-              char buf[56];
-              const size_t nbytes = sprintf(buf, "-Client #%ld has P_CLIENT, so cannot be killed\r\n", id);
-              if (client) _write(client, buf, nbytes);
+              if (client) {
+                char buf[56];
+                const size_t nbytes = sprintf(buf, "-Client #%ld has P_CLIENT, so cannot be killed\r\n", id);
+                _write(client, buf, nbytes);
+              }
             } else {
               terminate_connection(target->connfd);
               if (client) WRITE_OK(client);
             }
-          } else {
+          } else if (client) {
             char buf[46];
             const size_t nbytes = sprintf(buf, "-There is no client whose ID is #%ld\r\n", id);
-            if (client) _write(client, buf, nbytes);
+            _write(client, buf, nbytes);
+          }
+        }
+      } else if (client) {
+        _write(client, "-Not allowed to use this command, need P_CLIENT\r\n", 49);
+      }
+    } else if (streq("UNLOCK", subcommand)) {
+      if (password->permissions & P_CLIENT) {
+        const long id = atol(command->args[1].value);
+
+        if ((id > UINT32_MAX) || (id < 0)) {
+          if (client) _write(client, "-Specified ID is out of bounds for uint32_t\r\n", 45);
+        } else {
+          struct Client *target = get_client_from_id(id);
+
+          if (target) {
+            if (!target->locked) {
+              if (client) {
+                char buf[59];
+                const size_t nbytes = sprintf(buf, "-Client #%ld is not locked, so cannot be unlocked\r\n", id);
+                _write(client, buf, nbytes);
+              }
+            } else {
+              target->locked = false;
+              if (client) WRITE_OK(client);
+            }
+          } else if (client) {
+            char buf[46];
+            const size_t nbytes = sprintf(buf, "-There is no client whose ID is #%ld\r\n", id);
+            _write(client, buf, nbytes);
           }
         }
       } else if (client) {
@@ -149,6 +215,12 @@ static struct Subcommand subcommands[] = {
     .complexity = "O(1)"
   },
   (struct Subcommand) {
+    .name = "LOCK",
+    .summary = "Locks specified client.",
+    .since = "0.1.8",
+    .complexity = "O(1)"
+  },
+  (struct Subcommand) {
     .name = "SETINFO",
     .summary = "Sets properties for the client.",
     .since = "0.1.2",
@@ -159,7 +231,13 @@ static struct Subcommand subcommands[] = {
     .summary = "Kills specified client.",
     .since = "0.1.8",
     .complexity = "O(1)"
-  }
+  },
+  (struct Subcommand) {
+    .name = "UNLOCK",
+    .summary = "Unlocks specified client.",
+    .since = "0.1.8",
+    .complexity = "O(1)"
+  },
 };
 
 const struct Command cmd_client = {
@@ -168,6 +246,6 @@ const struct Command cmd_client = {
   .since = "0.1.0",
   .complexity = "O(1)",
   .subcommands = subcommands,
-  .subcommand_count = 4,
+  .subcommand_count = 6,
   .run = run
 };

@@ -40,6 +40,8 @@ struct Client {
 
   struct Password *password;
   enum ProtocolVersion protover;
+
+  bool locked;
 };
 
 struct Client **get_clients();

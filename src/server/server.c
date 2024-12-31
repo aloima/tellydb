@@ -321,20 +321,26 @@ void start_server(struct Configuration *config) {
             free(command);
           } else {
             struct Client *client = get_client(fd.fd);
-            struct Command *commands = get_commands();
-            const uint32_t command_count = get_command_count();
 
-            char used[command->name.len + 1];
-            to_uppercase(command->name.value, used);
+            if (!client->locked) {
+              struct Command *commands = get_commands();
+              const uint32_t command_count = get_command_count();
 
-            for (uint32_t i = 0; i < command_count; ++i) {
-              if (streq(commands[i].name, used)) {
-                client->command = &commands[i];
-                break;
+              char used[command->name.len + 1];
+              to_uppercase(command->name.value, used);
+
+              for (uint32_t i = 0; i < command_count; ++i) {
+                if (streq(commands[i].name, used)) {
+                  client->command = &commands[i];
+                  break;
+                }
               }
-            }
 
-            add_transaction(client, command);
+              add_transaction(client, command);
+            } else {
+              free_command_data(command);
+              _write(client, "-Your client is locked, you cannot use any commands until your client is unlocked\r\n", 83);
+            }
           }
         } else if (fd.revents & (POLLERR | POLLNVAL | POLLHUP)) {
           terminate_connection(fd.fd);

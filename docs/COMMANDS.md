@@ -85,7 +85,7 @@ This document provides a detailed description of all the available commands. Eac
 ---
 
 ### CLIENT
-**Syntax**: `CLIENT ID|INFO|SETINFO|KILL`  
+**Syntax**: `CLIENT ID|INFO|LOCK|SETINFO|KILL`  
 **Description**: Main command of client(s).  
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
@@ -108,6 +108,22 @@ This document provides a detailed description of all the available commands. Eac
 **Time complexity**: `O(1)`  
 **Permissions**: None  
 **Returns**: String
+
+#### LOCK
+**Syntax**: `CLIENT LOCK id`  
+**Description**: Locks specified client.  
+**Since**: `0.1.8`  
+**Time complexity**: `O(1)`  
+**Permissions**: `P_CLIENT`  
+**Returns**: `OK`  
+**Behavior**:
+* If specified client has `P_CLIENT` permissions, throws an error.
+* If specified client is not exist, throws an error.
+* If specified client ID value is higher or less than uint32_t bounds, throws an error.
+* If specified client ID is already locked, throws an error.
+
+**Arguments**:
+- **id**: Client ID, must be unsigned integer value
 
 #### SETINFO
 **Syntax**: `CLIENT SETINFO property value`  
@@ -133,6 +149,18 @@ This document provides a detailed description of all the available commands. Eac
 
 **Arguments**:
 - **id**: Client ID, must be unsigned integer value
+
+#### UNLOCK
+**Syntax**: `CLIENT UNLOCK id`  
+**Description**: Unlocks specified client.  
+**Since**: `0.1.8`  
+**Time complexity**: `O(1)`  
+**Permissions**: `P_CLIENT`  
+**Returns**: `OK`
+**Behavior**:
+* If specified client is not exist, throws an error.
+* If specified client ID value is higher or less than uint32_t bounds, throws an error.
+* If specified client ID is not locked, throws an error.
 
 ---
 
