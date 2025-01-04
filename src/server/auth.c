@@ -195,7 +195,7 @@ bool edit_password(char *value, const size_t value_len, const uint32_t permissio
 }
 
 void add_password(struct Client *client, const string_t data, const uint8_t permissions) {
-  struct Password *password = malloc(sizeof(struct Password));
+  struct Password *password;
 
   if (posix_memalign((void **) &password, 8, sizeof(struct Password)) == 0) {
     password_count += 1;
