@@ -52,12 +52,12 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
       if (is_integer(input_value)) {
         const long number = atol(input_value);
         long *value = malloc(sizeof(long));
-        memcpy(value, &number, sizeof(long));
+        *value = number;
 
         lpush_to_list(list, value, TELLY_NUM);
       } else if (is_true || streq(input_value, "false")) {
         bool *value = malloc(sizeof(bool));
-        memset(value, is_true, sizeof(bool));
+        *value = is_true;
 
         lpush_to_list(list, value, TELLY_BOOL);
       } else if (streq(input_value, "null")) {

@@ -54,14 +54,14 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
     bool is_true = streq(value_in, "true");
 
     if (is_integer(value_in)) {
-      const long _value = atol(value_in);
+      const long number = atol(value_in);
       type = TELLY_NUM;
       value = malloc(sizeof(long));
-      memcpy(value, &_value, sizeof(long));
+      *((long *) value) = number;
     } else if (is_true || streq(value_in, "false")) {
       type = TELLY_BOOL;
       value = malloc(sizeof(bool));
-      memset(value, is_true, sizeof(bool));
+      *((bool *) value) = is_true;
     } else if (streq(value_in, "null")) {
       type = TELLY_NULL;
       value = NULL;
