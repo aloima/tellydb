@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 static void run(struct Client *client, commanddata_t *command, struct Password *password) {
   if (command->arg_count != 1) {
@@ -19,9 +20,12 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
 
     if (!result) {
       long *number = calloc(1, sizeof(long));
-      set_data(NULL, key, number, TELLY_NUM);
+      const bool success = set_data(NULL, key, number, TELLY_NUM);
 
-      if (client) _write(client, ":0\r\n", 4);
+      if (client) {
+        if (success) _write(client, ":0\r\n", 4);
+        else WRITE_ERROR(client);
+      }
     } else if (result->type == TELLY_NUM) {
       long *number = result->value;
       *number -= 1;

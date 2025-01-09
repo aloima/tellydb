@@ -21,7 +21,7 @@ struct BTree *get_cache() {
 }
 
 struct KVPair *get_kv_from_cache(string_t key) {
-  uint64_t index = hash(key.value, key.len);
+  const uint64_t index = hash(key.value, key.len);
   struct BTreeValue *value = find_value_from_btree(cache, index, &key, (bool (*)(void *, void *)) check_correct_kv);
 
   if (value) return value->data;

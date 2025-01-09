@@ -21,6 +21,7 @@
   }
 
 #define WRITE_OK(client) _write((client), "+OK\r\n", 5)
+#define WRITE_ERROR(client) _write((client), "-ERROR\r\n", 8)
 
 
 /* CLIENT */

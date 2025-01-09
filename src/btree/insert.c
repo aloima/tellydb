@@ -6,14 +6,14 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-static void _memalign(void **memptr, size_t alignment, size_t size) {
+static bool secure_memalign(void **memptr, size_t alignment, size_t size) {
   if (posix_memalign(memptr, alignment, size) != 0) {
     write_log(LOG_ERR, "Cannot insert data, out of memory.");
-
-    // TODO: write safe close_server method
-    exit(EXIT_FAILURE);
-  }
+    return false;
+  } else return true;
 }
+
+#define _memalign(memptr, alignment, size) if (!secure_memalign((void **) (memptr), (alignment), (size))) return NULL
 
 static struct BTreeValue *insert_value_to_node(struct BTree *tree, struct BTreeNode *node, struct BTreeValue *value, const uint32_t value_at) {
   const uint8_t order = tree->integers.order;
@@ -37,7 +37,7 @@ static struct BTreeValue *insert_value_to_node(struct BTree *tree, struct BTreeN
         memcpy(node->parent->data + node->at + 1, node->parent->data + node->at, (node->parent->size - 1 - node->at) * sizeof(struct BTreeValue *));
         node->parent->data[node->at] = middle;
 
-        _memalign((void **) &node->parent->children[node->parent->size], 32, sizeof(struct BTreeNode));
+        _memalign(&node->parent->children[node->parent->size], 32, sizeof(struct BTreeNode));
 
         struct BTreeNode *leaf = node->parent->children[node->parent->size];
 
@@ -58,7 +58,7 @@ static struct BTreeValue *insert_value_to_node(struct BTree *tree, struct BTreeN
         leaf->parent = node->parent;
         leaf->size = node->size - at - 1;
 
-        _memalign((void **) &leaf->data, 8, data_size);
+        _memalign(&leaf->data, 8, data_size);
 
         const uint8_t size_n = (leaf->size * sizeof(struct BTreeValue *));
         memcpy(leaf->data, node->data + at + 1, size_n);
@@ -66,7 +66,7 @@ static struct BTreeValue *insert_value_to_node(struct BTree *tree, struct BTreeN
         if (node->children) {
           const uint32_t leaf_count = (leaf->size + 1);
 
-          _memalign((void **) &leaf->children, 8, children_size);
+          _memalign(&leaf->children, 8, children_size);
           memcpy(leaf->children, node->children + at + 1, (leaf_count * sizeof(struct BTreeNode *)));
 
           for (uint32_t i = 0; i < leaf_count; ++i) {
@@ -88,8 +88,8 @@ static struct BTreeValue *insert_value_to_node(struct BTree *tree, struct BTreeN
         struct BTreeNode *children[leaf_count];
         memcpy(children, node->children, (leaf_count * sizeof(struct BTreeNode *)));
 
-        _memalign((void **) &node->children[0], 32, sizeof(struct BTreeNode));
-        _memalign((void **) &node->children[1], 32, sizeof(struct BTreeNode));
+        _memalign(&node->children[0], 32, sizeof(struct BTreeNode));
+        _memalign(&node->children[1], 32, sizeof(struct BTreeNode));
 
         struct BTreeNode *leaf;
         uint8_t leaf_count_of_leaf;
@@ -100,10 +100,10 @@ static struct BTreeValue *insert_value_to_node(struct BTree *tree, struct BTreeN
         leaf->size = at;
         leaf_count_of_leaf = (leaf->size + 1);
 
-        _memalign((void **) &leaf->data, 8, data_size);
+        _memalign(&leaf->data, 8, data_size);
         memcpy(leaf->data, node->data, (leaf->size * sizeof(struct BTreeValue *)));
 
-        _memalign((void **) &leaf->children, 8, children_size);
+        _memalign(&leaf->children, 8, children_size);
         memcpy(leaf->children, children, (leaf_count_of_leaf * sizeof(struct BTreeNode *)));
 
         for (uint32_t i = 0; i < leaf_count_of_leaf; ++i) {
@@ -117,10 +117,10 @@ static struct BTreeValue *insert_value_to_node(struct BTree *tree, struct BTreeN
         leaf->size = node->size - at - 1;
         leaf_count_of_leaf = (leaf->size + 1);
 
-        _memalign((void **) &leaf->data, 8, data_size);
+        _memalign(&leaf->data, 8, data_size);
         memcpy(leaf->data, node->data + at + 1, (leaf->size * sizeof(struct BTreeValue *)));
 
-        _memalign((void **) &leaf->children, 8, children_size);
+        _memalign(&leaf->children, 8, children_size);
         memcpy(leaf->children, children + at + 1, (leaf_count_of_leaf * sizeof(struct BTreeNode *)));
 
         for (uint32_t i = 0; i < leaf_count_of_leaf; ++i) {
@@ -132,9 +132,9 @@ static struct BTreeValue *insert_value_to_node(struct BTree *tree, struct BTreeN
         node->data[0] = node->data[at];
       }
     } else {
-      _memalign((void **) &node->children, 8, children_size);
-      _memalign((void **) &node->children[0], 32, sizeof(struct BTreeNode));
-      _memalign((void **) &node->children[1], 32, sizeof(struct BTreeNode));
+      _memalign(&node->children, 8, children_size);
+      _memalign(&node->children[0], 32, sizeof(struct BTreeNode));
+      _memalign(&node->children[1], 32, sizeof(struct BTreeNode));
 
       struct BTreeNode *leaf = node->children[0];
       leaf->parent = node;
@@ -142,7 +142,7 @@ static struct BTreeValue *insert_value_to_node(struct BTree *tree, struct BTreeN
       leaf->children = NULL;
       leaf->size = at;
 
-      _memalign((void **) &leaf->data, 8, data_size);
+      _memalign(&leaf->data, 8, data_size);
       memcpy(leaf->data, node->data, (leaf->size * sizeof(struct BTreeValue *)));
 
       leaf = node->children[1];
@@ -151,7 +151,7 @@ static struct BTreeValue *insert_value_to_node(struct BTree *tree, struct BTreeN
       leaf->children = NULL;
       leaf->size = node->size - at - 1;
 
-      _memalign((void **) &leaf->data, 8, data_size);
+      _memalign(&leaf->data, 8, data_size);
       memcpy(leaf->data, node->data + at + 1, (leaf->size * sizeof(struct BTreeValue *)));
 
       node->size = 1;
@@ -164,20 +164,20 @@ static struct BTreeValue *insert_value_to_node(struct BTree *tree, struct BTreeN
 
 struct BTreeValue *insert_value_to_btree(struct BTree *tree, uint64_t index, void *data) {
   struct BTreeValue *value;
-  _memalign((void **) &value, 16, sizeof(struct BTreeValue));
+  _memalign(&value, 16, sizeof(struct BTreeValue));
 
   value->data = data;
   value->index = index;
 
   if (!tree->root) {
-    _memalign((void **) &tree->root, 32, sizeof(struct BTreeNode));
+    _memalign(&tree->root, 32, sizeof(struct BTreeNode));
     tree->root->children = NULL;
     tree->root->parent = NULL;
     tree->root->at = 0;
     tree->size = 0;
     tree->root->size = 0;
 
-    _memalign((void **) &tree->root->data, 8, (sizeof(struct BTreeValue *) * tree->integers.order));
+    _memalign(&tree->root->data, 8, (sizeof(struct BTreeValue *) * tree->integers.order));
     tree->size = 1;
     tree->root->size = 1;
     tree->root->data[0] = value;

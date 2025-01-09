@@ -14,28 +14,26 @@ void set_kv(struct KVPair *kv, const string_t key, void *value, const enum Telly
 }
 
 void free_kv(struct KVPair *kv) {
-  if (kv->value) {
-    switch (kv->type) {
-      case TELLY_STR:
-        free(((string_t *) kv->value)->value);
-        free(kv->value);
-        break;
+  switch (kv->type) {
+    case TELLY_STR:
+      free(((string_t *) kv->value)->value);
+      free(kv->value);
+      break;
 
-      case TELLY_HASHTABLE:
-        free_hashtable(kv->value);
-        break;
+    case TELLY_HASHTABLE:
+      free_hashtable(kv->value);
+      break;
 
-      case TELLY_LIST:
-        free_list(kv->value);
-        break;
+    case TELLY_LIST:
+      free_list(kv->value);
+      break;
 
-      case TELLY_NULL:
-        break;
+    case TELLY_NULL:
+      break;
 
-      default:
-        free(kv->value);
-        break;
-    }
+    default:
+      free(kv->value);
+      break;
   }
 
   free(kv->key.value);

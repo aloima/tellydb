@@ -12,6 +12,12 @@ This document provides a detailed description of all the available commands. Eac
 
 ---
 
+#### General Behavior of Commands
+The list of unwritten behavior to commands.
++ When a command requires some permissions and client does not have it, it throws an error message includes needed permission(s) name.
+
+---
+
 ## Database Commands
 
 ### BGSAVE
@@ -550,7 +556,7 @@ APPEND user_name " Black"
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
 **Permissions**: `P_READ` and `P_WRITE`  
-**Returns**: New integer value stored at the key  
+**Returns**: New integer value stored at the key or `ERROR`  
 **Behavior**:
 * If key is not holding a value, value will be set to `0` and will not be decremented.
 * Throws an error if the key is holding a value that is not integer.
@@ -616,7 +622,7 @@ GET user_name
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
 **Permissions**: `P_READ` and `P_WRITE`  
-**Returns**: New integer value stored at the key  
+**Returns**: New integer value stored at the key or `ERROR`  
 **Behavior**:
 * If key is not holding a value, value will be set to `0` and will not be incremented.
 * Throws an error if the key is holding a value that is not integer.
@@ -628,7 +634,7 @@ INCR user_age
 
 ---
 
-#### RENAME
+### RENAME
 **Syntax**: `RENAME old new`  
 **Description**: Renames existing key to new key.  
 **Since**: `0.1.7`  
@@ -651,7 +657,7 @@ RENAME name user_name
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
 **Permissions**: (`P_READ` if used `GET` argument) and `P_WRITE`  
-**Returns**: `OK` or a value  
+**Returns**: `OK` or a value or `ERROR`  
 **Behavior**:
 * If the key is exist, new value will be overwritten.
 

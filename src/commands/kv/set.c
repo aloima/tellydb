@@ -5,6 +5,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 static void run(struct Client *client, commanddata_t *command, struct Password *password) {
   if (command->arg_count < 2) {
@@ -86,8 +87,12 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
         _write(client, "-Not allowed to use this command, need P_READ\r\n", 47);
       }
     } else {
-      set_data(res, key, value, type);
-      if (client) WRITE_OK(client);
+      const bool success = set_data(res, key, value, type);
+
+      if (client) {
+        if (success) WRITE_OK(client);
+        else WRITE_ERROR(client);
+      }
     }
   } else {
     _write(client, "-Not allowed to use this command, need P_WRITE\r\n", 48);
