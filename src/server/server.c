@@ -94,7 +94,6 @@ static void close_server() {
   save_and_close_logs();
   free_configuration(conf);
 
-  unlink(".tellylock");
   exit(EXIT_SUCCESS);
 }
 
@@ -105,13 +104,6 @@ static void sigint_signal(__attribute__((unused)) int arg) {
 
 void start_server(struct Configuration *config) {
   conf = config;
-  struct stat lock;
-
-  if (stat(".tellylock", &lock) != -1) {
-    write_log(LOG_ERR, "tellydb is already opened in this directory.");
-    free_configuration(config);
-    exit(EXIT_FAILURE);
-  } else creat(".tellylock", 0);
 
   if (!initialize_logs(conf)) {
     write_log(LOG_ERR, "Cannot initialized logs.");
@@ -135,7 +127,6 @@ void start_server(struct Configuration *config) {
     if (!ctx) {
       write_log(LOG_ERR, "Cannot open SSL context, safely exiting...");
       free_configuration(conf);
-      unlink(".tellylock");
       return;
     }
 
@@ -143,7 +134,6 @@ void start_server(struct Configuration *config) {
       write_log(LOG_ERR, "Server certificate file cannot be used.");
       SSL_CTX_free(ctx);
       free_configuration(conf);
-      unlink(".tellylock");
       return;
     }
 
@@ -151,7 +141,6 @@ void start_server(struct Configuration *config) {
       write_log(LOG_ERR, "Server private key cannot be used.");
       SSL_CTX_free(ctx);
       free_configuration(conf);
-      unlink(".tellylock");
       return;
     }
 
@@ -174,7 +163,6 @@ void start_server(struct Configuration *config) {
     free_commands();
     write_log(LOG_ERR, "Cannot open socket, safely exiting...");
     free_configuration(conf);
-    unlink(".tellylock");
     return;
   }
 
@@ -189,7 +177,6 @@ void start_server(struct Configuration *config) {
     close(sockfd);
     write_log(LOG_ERR, "Cannot bind socket and address, safely exiting...");
     free_configuration(conf);
-    unlink(".tellylock");
     return;
   }
 
@@ -200,7 +187,6 @@ void start_server(struct Configuration *config) {
     close(sockfd);
     write_log(LOG_ERR, "Cannot set non-blocking socket, safely exiting...");
     free_configuration(conf);
-    unlink(".tellylock");
     return;
   }
 
@@ -211,7 +197,6 @@ void start_server(struct Configuration *config) {
     close(sockfd);
     write_log(LOG_ERR, "Cannot listen socket, safely exiting...");
     free_configuration(conf);
-    unlink(".tellylock");
     return;
   }
 
@@ -223,7 +208,6 @@ void start_server(struct Configuration *config) {
     close(sockfd);
     write_log(LOG_ERR, "Safely exiting...");
     free_configuration(conf);
-    unlink(".tellylock");
     return;
   }
 
@@ -241,7 +225,6 @@ void start_server(struct Configuration *config) {
     close(sockfd);
     write_log(LOG_ERR, "Safely exiting...");
     free_configuration(conf);
-    unlink(".tellylock");
     return;
   }
 
@@ -255,7 +238,6 @@ void start_server(struct Configuration *config) {
     close(sockfd);
     write_log(LOG_WARN, "Safely exiting...");
     free_configuration(conf);
-    unlink(".tellylock");
     return;
   }
 

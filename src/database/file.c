@@ -54,13 +54,14 @@ bool open_database_fd(const char *filename, uint64_t *server_age) {
       write_log(LOG_INFO, "Database file is empty, loaded password and data count: 0");
       *server_age = 0;
     }
-  }
 
-  return true;
+    return true;
+  } else return false;
 }
 
 void close_database_fd() {
   while (saving) usleep(100);
+  lockf(fd, F_ULOCK, 0);
   close(fd);
 }
 

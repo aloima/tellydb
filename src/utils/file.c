@@ -59,5 +59,27 @@ int open_file(const char *file, int flags) {
   write_log(LOG_WARN, "File descriptor cannot be opened as no kernel caching mode or Direct I/O. Use MacOS or Linux.");
 #endif
 
-  return fd;
+  if (lockf(fd, F_TEST, 0) == -1) {
+    write_log(LOG_ERR, "%s file cannot be locked, because it is already locked by another process.", file);
+    close(fd);
+
+    return -1;
+  } else {
+    if (lockf(fd, F_LOCK, 0) == -1) {
+      switch (errno) {
+        case EDEADLK:
+          write_log(LOG_ERR, "%s file cannot be locked, because a deadlock is detected.", file);
+          break;
+
+        case EINTR:
+          write_log(LOG_ERR, "Locking operation of %s file is interrupted.", file);
+          break;
+      }
+
+      close(fd);
+      return -1;
+    } else {
+      return fd;
+    }
+  }
 }

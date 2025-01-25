@@ -223,5 +223,6 @@ void save_and_close_logs() {
     free(lines);
   }
 
+  lockf(fd, F_ULOCK, 0);
   close(fd);
 }

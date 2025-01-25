@@ -2,7 +2,6 @@ tls/
 /telly
 /.tellydb
 /.tellylog
-/.tellylock
 /vgcore.*
 /compile_commands.json
 .cache/
