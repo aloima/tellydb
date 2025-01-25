@@ -17,12 +17,30 @@
 #include <netinet/in.h>
 
 static int sockfd;
-static SSL_CTX *ctx;
+static SSL_CTX *ctx = NULL;
 static struct pollfd *fds;
 static uint32_t nfds;
 static struct Configuration *conf;
 static time_t start_at;
 static uint64_t age;
+
+#define FREE_CTX_THREAD_CMD(ctx) {\
+  if (ctx) SSL_CTX_free(ctx);\
+  deactive_transaction_thread();\
+  usleep(15);\
+  free_commands();\
+}
+
+#define FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd) {\
+  FREE_CTX_THREAD_CMD(ctx);\
+  close(sockfd);\
+}
+
+#define FREE_CTX_THREAD_CMD_SOCKET_KDF_PASS(ctx, sockfd) {\
+  FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);\
+  free_kdf();\
+  free_constant_passwords();\
+}
 
 struct Configuration *get_server_configuration() {
   return conf;
@@ -75,18 +93,10 @@ static void close_server() {
   close_database_fd();
   write_log(LOG_INFO, "Saved data and closed database file in %.2f seconds.", ((float) clock() - start) / CLOCKS_PER_SEC);
 
-  deactive_transaction_thread();
-  usleep(15);
-  write_log(LOG_INFO, "Exited transaction thread.");
-
-  free_kdf();
-  free_constant_passwords();
+  FREE_CTX_THREAD_CMD_SOCKET_KDF_PASS(ctx, sockfd);
   free_passwords();
   free_transactions();
-  free_commands();
   free_cache();
-  if (conf->tls) SSL_CTX_free(ctx);
-  close(sockfd);
   free(fds);
   write_log(LOG_INFO, "Free'd all memory blocks and closed the server.");
 
@@ -158,9 +168,7 @@ void start_server(struct Configuration *config) {
   struct sockaddr_in servaddr;
 
   if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-    deactive_transaction_thread();
-    usleep(15);
-    free_commands();
+    FREE_CTX_THREAD_CMD(ctx);
     write_log(LOG_ERR, "Cannot open socket, safely exiting...");
     free_configuration(conf);
     return;
@@ -171,41 +179,28 @@ void start_server(struct Configuration *config) {
   servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 
   if ((bind(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr))) != 0) {
-    deactive_transaction_thread();
-    usleep(15);
-    free_commands();
-    close(sockfd);
+    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
     write_log(LOG_ERR, "Cannot bind socket and address, safely exiting...");
     free_configuration(conf);
     return;
   }
 
   if (setnonblocking(sockfd) == -1) {
-    deactive_transaction_thread();
-    usleep(15);
-    free_commands();
-    close(sockfd);
+    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
     write_log(LOG_ERR, "Cannot set non-blocking socket, safely exiting...");
     free_configuration(conf);
     return;
   }
 
   if (listen(sockfd, 10) != 0) { 
-    deactive_transaction_thread();
-    usleep(15);
-    free_commands();
-    close(sockfd);
+    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
     write_log(LOG_ERR, "Cannot listen socket, safely exiting...");
     free_configuration(conf);
     return;
   }
 
   if (!create_constant_passwords()) {
-    deactive_transaction_thread();
-    usleep(15);
-    free_constant_passwords();
-    free_commands();
-    close(sockfd);
+    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
     write_log(LOG_ERR, "Safely exiting...");
     free_configuration(conf);
     return;
@@ -217,25 +212,15 @@ void start_server(struct Configuration *config) {
   if (create_cache() != NULL) {
     write_log(LOG_INFO, "Created cache.");
   } else {
-    deactive_transaction_thread();
-    usleep(15);
-    free_kdf();
-    free_constant_passwords();
-    free_commands();
-    close(sockfd);
+    FREE_CTX_THREAD_CMD_SOCKET_KDF_PASS(ctx, sockfd);
     write_log(LOG_ERR, "Safely exiting...");
     free_configuration(conf);
     return;
   }
 
   if (!open_database_fd(conf->data_file, &age)) {
-    deactive_transaction_thread();
-    usleep(15);
-    free_kdf();
-    free_constant_passwords();
-    free_commands();
+    FREE_CTX_THREAD_CMD_SOCKET_KDF_PASS(ctx, sockfd);
     free_cache();
-    close(sockfd);
     write_log(LOG_WARN, "Safely exiting...");
     free_configuration(conf);
     return;
