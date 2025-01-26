@@ -17,9 +17,11 @@ void to_uppercase(char *in, char *out) {
 }
 
 void generate_random_string(char *dest, size_t length) {
-  const char charset[] = "0123456789"
-                         "abcdefghijklmnopqrstuvwxyz"
-                         "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const char charset[] = (
+    "0123456789"
+    "abcdefghijklmnopqrstuvwxyz"
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  );
 
   while (length-- > 0) {
     const uint8_t index = (double) rand() / RAND_MAX * (sizeof(charset) - 1);

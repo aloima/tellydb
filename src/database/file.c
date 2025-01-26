@@ -20,43 +20,43 @@ static bool saving = false;
 static uint16_t block_size;
 
 bool open_database_fd(const char *filename, uint64_t *server_age) {
-  if ((fd = open_file(filename, O_LARGEFILE)) != -1) {
-    struct stat sostat;
-    stat(filename, &sostat);
+  if ((fd = open_file(filename, O_LARGEFILE)) == -1) return false;
 
-    const off64_t file_size = sostat.st_size;;
-    block_size = sostat.st_blksize;
+  struct stat sostat;
+  stat(filename, &sostat);
 
-    if (file_size != 0) {
-      char *block;
+  const off64_t file_size = sostat.st_size;;
+  block_size = sostat.st_blksize;
 
-      if (posix_memalign((void **) &block, block_size, block_size) == 0) {
-        read(fd, block, block_size);
+  if (file_size != 0) {
+    char *block;
 
-        if (block[0] != 0x18 || block[1] != 0x10) {
-          close(fd);
-          free(block);
-          write_log(LOG_ERR, "Invalid headers for database file, file is closed.");
-          return false;
-        }
+    if (posix_memalign((void **) &block, block_size, block_size) == 0) {
+      read(fd, block, block_size);
 
-        memcpy(server_age, block + 2, 8);
-
-        const uint16_t filled_block_size = get_authorization_from_file(fd, block, block_size);
-        get_all_data_from_file(fd, file_size, block, block_size, filled_block_size);
-
-        struct BTree *cache = get_cache();
-        write_log(LOG_INFO, "Read database file. Loaded password count: %d, loaded data count: %d", get_password_count(), cache->size);
-
+      if (block[0] != 0x18 || block[1] != 0x10) {
+        close(fd);
         free(block);
+        write_log(LOG_ERR, "Invalid headers for database file, file is closed.");
+        return false;
       }
-    } else {
-      write_log(LOG_INFO, "Database file is empty, loaded password and data count: 0");
-      *server_age = 0;
-    }
 
-    return true;
-  } else return false;
+      memcpy(server_age, block + 2, 8);
+
+      const uint16_t filled_block_size = get_authorization_from_file(fd, block, block_size);
+      get_all_data_from_file(fd, file_size, block, block_size, filled_block_size);
+
+      struct BTree *cache = get_cache();
+      write_log(LOG_INFO, "Read database file. Loaded password count: %d, loaded data count: %d", get_password_count(), cache->size);
+
+      free(block);
+    }
+  } else {
+    write_log(LOG_INFO, "Database file is empty, loaded password and data count: 0");
+    *server_age = 0;
+  }
+
+  return true;
 }
 
 void close_database_fd() {

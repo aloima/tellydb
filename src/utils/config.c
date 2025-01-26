@@ -166,6 +166,7 @@ size_t get_configuration_string(char *buf, struct Configuration conf) {
     "# Enables/disables creating TLS server\n"
     "# If it is enabled, CERT specifies certificate file path of TLS server and PRIVATE_KEY specifies private key file path of TLS server\n"
     "# TLS value must be true or false\n"
+    "# File paths length must be less than or equal to 48\n"
     "TLS=%s\n"
     "CERT=%s\n"
     "PRIVATE_KEY=%s\n"

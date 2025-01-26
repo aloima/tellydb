@@ -7,10 +7,10 @@
 #include <stdlib.h>
 
 static bool secure_memalign(void **memptr, size_t alignment, size_t size) {
-  if (posix_memalign(memptr, alignment, size) != 0) {
-    write_log(LOG_ERR, "Cannot insert data, out of memory.");
-    return false;
-  } else return true;
+  if (posix_memalign(memptr, alignment, size) == 0) return true;
+
+  write_log(LOG_ERR, "Cannot insert data, out of memory.");
+  return false;
 }
 
 #define _memalign(memptr, alignment, size) if (!secure_memalign((void **) (memptr), (alignment), (size))) return NULL

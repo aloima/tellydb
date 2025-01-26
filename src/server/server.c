@@ -16,13 +16,10 @@
 #include <unistd.h>
 #include <netinet/in.h>
 
-static int sockfd;
-static SSL_CTX *ctx = NULL;
-static struct pollfd *fds;
-static uint32_t nfds;
-static struct Configuration *conf;
-static time_t start_at;
-static uint64_t age;
+#define FREE_CONF_LOGS(conf) {\
+  save_and_close_logs();\
+  free_configuration(conf);\
+}
 
 #define FREE_CTX_THREAD_CMD(ctx) {\
   if (ctx) SSL_CTX_free(ctx);\
@@ -41,6 +38,14 @@ static uint64_t age;
   free_kdf();\
   free_constant_passwords();\
 }
+
+static int sockfd;
+static SSL_CTX *ctx = NULL;
+static struct pollfd *fds;
+static uint32_t nfds;
+static struct Configuration *conf;
+static time_t start_at;
+static uint64_t age;
 
 struct Configuration *get_server_configuration() {
   return conf;
@@ -99,8 +104,7 @@ static void close_server() {
   write_log(LOG_INFO, "Free'd all memory blocks and closed the server.");
 
   write_log(LOG_INFO, "Closing log file, free'ing configuration and exiting the process...");
-  save_and_close_logs();
-  free_configuration(conf);
+  FREE_CONF_LOGS(conf);
 
   exit(EXIT_SUCCESS);
 }
@@ -134,21 +138,21 @@ void start_server(struct Configuration *config) {
 
     if (!ctx) {
       write_log(LOG_ERR, "Cannot open SSL context, safely exiting...");
-      free_configuration(conf);
+      FREE_CONF_LOGS(conf);
       return;
     }
 
     if (SSL_CTX_use_certificate_file(ctx, conf->cert, SSL_FILETYPE_PEM) <= 0) {
       write_log(LOG_ERR, "Server certificate file cannot be used.");
       SSL_CTX_free(ctx);
-      free_configuration(conf);
+      FREE_CONF_LOGS(conf);
       return;
     }
 
     if (SSL_CTX_use_PrivateKey_file(ctx, conf->private_key, SSL_FILETYPE_PEM) <= 0 ) {
       write_log(LOG_ERR, "Server private key cannot be used.");
       SSL_CTX_free(ctx);
-      free_configuration(conf);
+      FREE_CONF_LOGS(conf);
       return;
     }
 
@@ -168,7 +172,7 @@ void start_server(struct Configuration *config) {
   if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
     FREE_CTX_THREAD_CMD(ctx);
     write_log(LOG_ERR, "Cannot open socket, safely exiting...");
-    free_configuration(conf);
+    FREE_CONF_LOGS(conf);
     return;
   }
 
@@ -179,28 +183,28 @@ void start_server(struct Configuration *config) {
   if ((bind(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr))) != 0) {
     FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
     write_log(LOG_ERR, "Cannot bind socket and address, safely exiting...");
-    free_configuration(conf);
+    FREE_CONF_LOGS(conf);
     return;
   }
 
   if (setnonblocking(sockfd) == -1) {
     FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
     write_log(LOG_ERR, "Cannot set non-blocking socket, safely exiting...");
-    free_configuration(conf);
+    FREE_CONF_LOGS(conf);
     return;
   }
 
   if (listen(sockfd, 10) != 0) { 
     FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
     write_log(LOG_ERR, "Cannot listen socket, safely exiting...");
-    free_configuration(conf);
+    FREE_CONF_LOGS(conf);
     return;
   }
 
   if (!create_constant_passwords()) {
     FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
     write_log(LOG_ERR, "Safely exiting...");
-    free_configuration(conf);
+    FREE_CONF_LOGS(conf);
     return;
   }
 
@@ -212,7 +216,7 @@ void start_server(struct Configuration *config) {
   } else {
     FREE_CTX_THREAD_CMD_SOCKET_KDF_PASS(ctx, sockfd);
     write_log(LOG_ERR, "Safely exiting...");
-    free_configuration(conf);
+    FREE_CONF_LOGS(conf);
     return;
   }
 
@@ -220,7 +224,7 @@ void start_server(struct Configuration *config) {
     FREE_CTX_THREAD_CMD_SOCKET_KDF_PASS(ctx, sockfd);
     free_cache();
     write_log(LOG_WARN, "Safely exiting...");
-    free_configuration(conf);
+    FREE_CONF_LOGS(conf);
     return;
   }
 

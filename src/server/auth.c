@@ -42,12 +42,11 @@ void free_kdf() {
 
 static bool password_derive(char *value, const size_t value_len, unsigned char *out) {
   params[3] = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_KEY, value, value_len);
+  if (EVP_KDF_derive(ctx, out, 48, params) > 0) return true;
 
-  if (EVP_KDF_derive(ctx, out, 48, params) <= 0) {
-    write_log(LOG_ERR, "Cannot derive the password.");
-    free_kdf();
-    return false;
-  } else return true;
+  write_log(LOG_ERR, "Cannot derive the password.");
+  free_kdf();
+  return false;
 }
 
 void remove_password_from_clients(struct Password *password) {
@@ -185,11 +184,10 @@ struct Password *get_password(char *value, const size_t value_len) {
 
 bool edit_password(char *value, const size_t value_len, const uint32_t permissions) {
   struct Password *password = get_password(value, value_len);
+  if (!password) return false;
 
-  if (password) {
-    password->permissions = permissions;
-    return true;
-  } else return false;
+  password->permissions = permissions;
+  return true;
 }
 
 void add_password(struct Client *client, const string_t data, const uint8_t permissions) {
@@ -232,33 +230,31 @@ void free_passwords() {
 
 bool remove_password(struct Client *executor, char *value, const size_t value_len) {
   if (password_count == 1) {
-    if (where_password(value, value_len) == 0) {
-      struct Password *password = passwords[0];
-      remove_password_from_clients(password);
+    if (where_password(value, value_len) != 0) return false;
 
-      executor->password = get_full_password();
-      password_count = 0;
+    struct Password *password = passwords[0];
+    remove_password_from_clients(password);
 
-      free_password(password);
-      free(passwords);
+    executor->password = get_full_password();
+    password_count = 0;
 
-      return true;
-    } else return false;
+    free_password(password);
+    free(passwords);
+
+    return true;
   } else {
     const int32_t at = where_password(value, value_len);
-
     if (at == -1) return false;
-    else {
-      struct Password *password = passwords[at];
-      remove_password_from_clients(password);
 
-      free_password(password);
-      password_count -= 1;
+    struct Password *password = passwords[at];
+    remove_password_from_clients(password);
 
-      memcpy(passwords + at, passwords + at + 1, (password_count - at) * sizeof(struct Password));
-      passwords = realloc(passwords, password_count * sizeof(struct Password));
+    free_password(password);
+    password_count -= 1;
 
-      return true;
-    }
+    memcpy(passwords + at, passwords + at + 1, (password_count - at) * sizeof(struct Password));
+    passwords = realloc(passwords, password_count * sizeof(struct Password));
+
+    return true;
   }
 }

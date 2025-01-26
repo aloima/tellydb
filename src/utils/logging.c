@@ -22,86 +22,80 @@ static int32_t log_lines = 0;
 
 bool initialize_logs(struct Configuration *config) {
   _conf = config;
+  if ((fd = open_file(_conf->log_file, 0)) == -1) return false;
 
-  if ((fd = open_file(_conf->log_file, 0)) != -1) {
-    struct stat sostat;
-    stat(_conf->log_file, &sostat);
+  struct stat sostat;
+  stat(_conf->log_file, &sostat);
 
-    const off64_t file_size = sostat.st_size;
-    block_size = sostat.st_blksize;
+  const off64_t file_size = sostat.st_size;
+  block_size = sostat.st_blksize;
 
-    if (_conf->max_log_lines != -1) {
-      const uint32_t max_log_size = (block_size + 1);
-      lines = malloc(_conf->max_log_lines * sizeof(char *));
+  if (_conf->max_log_lines != -1) {
+    const uint32_t max_log_size = (block_size + 1);
+    lines = malloc(_conf->max_log_lines * sizeof(char *));
 
-      for (int32_t i = 0; i < _conf->max_log_lines; ++i) {
-        lines[i] = malloc(max_log_size);
-      }
-
-      if (file_size != 0) {
-        char *block;
-
-        if (posix_memalign((void **) &block, block_size, block_size) == 0) {
-          uint16_t latest = 0;
-          uint16_t count = 0;
-          char **buf = &lines[0];
-
-          while ((count = read(fd, block, block_size))) {
-            uint32_t i = 0;
-
-            INSIDE_LOOP:
-            while (i < count) {
-              const char c = block[i];
-
-              if (c == '\n') {
-                memcpy(*buf, (block + latest), (i - latest + 1));
-                (*buf)[i - latest + 1] = '\0';
-                log_lines += 1;
-                buf = &lines[log_lines];
-                latest = i + 1;
-              }
-
-              i += 1;
-            }
-
-            if (count == latest) {
-              latest = 0;
-            } else {
-              memcpy(*buf, (block + latest), (count - latest));
-
-              const uint16_t old_count = count;
-              count = read(fd, block, block_size);
-              i = 0;
-
-              while (i < count) {
-                const char c = block[i];
-
-                if (c == '\n') {
-                  memcpy(*buf + (old_count - latest), block, (i + 1));
-                  (*buf)[old_count - latest + i + 1] = '\0';
-                  log_lines += 1;
-                  buf = &lines[log_lines];
-                  i += 1;
-                  latest = i;
-                  goto INSIDE_LOOP;
-                }
-
-                i += 1;
-              }
-            }
-          }
-
-          free(block);
-        } else {
-          return false;
-        }
-      }
+    for (int32_t i = 0; i < _conf->max_log_lines; ++i) {
+      lines[i] = malloc(max_log_size);
     }
 
-    return true;
-  } else {
-    return false;
+    if (file_size != 0) {
+      char *block;
+      if (posix_memalign((void **) &block, block_size, block_size) != 0) return false;
+
+      uint16_t latest = 0;
+      uint16_t count = 0;
+      char **buf = &lines[0];
+
+      while ((count = read(fd, block, block_size))) {
+        uint32_t i = 0;
+
+        INSIDE_LOOP:
+        while (i < count) {
+          const char c = block[i];
+
+          if (c == '\n') {
+            memcpy(*buf, (block + latest), (i - latest + 1));
+            (*buf)[i - latest + 1] = '\0';
+            log_lines += 1;
+            buf = &lines[log_lines];
+            latest = i + 1;
+          }
+
+          i += 1;
+        }
+
+        if (count == latest) {
+          latest = 0;
+        } else {
+          memcpy(*buf, (block + latest), (count - latest));
+
+          const uint16_t old_count = count;
+          count = read(fd, block, block_size);
+          i = 0;
+
+          while (i < count) {
+            const char c = block[i];
+
+            if (c == '\n') {
+              memcpy(*buf + (old_count - latest), block, (i + 1));
+              (*buf)[old_count - latest + i + 1] = '\0';
+              log_lines += 1;
+              buf = &lines[log_lines];
+              i += 1;
+              latest = i;
+              goto INSIDE_LOOP;
+            }
+
+            i += 1;
+          }
+        }
+      }
+
+      free(block);
+    }
   }
+
+  return true;
 }
 
 void write_log(enum LogLevel level, const char *fmt, ...) {
@@ -221,8 +215,8 @@ void save_and_close_logs() {
     }
 
     free(lines);
-  }
 
-  lockf(fd, F_ULOCK, 0);
-  close(fd);
+    lockf(fd, F_ULOCK, 0);
+    close(fd);
+  }
 }
