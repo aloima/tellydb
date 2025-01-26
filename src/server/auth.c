@@ -51,15 +51,13 @@ static bool password_derive(char *value, const size_t value_len, unsigned char *
 }
 
 void remove_password_from_clients(struct Password *password) {
-  struct Client **clients = get_clients();
-  const uint32_t client_count = get_client_count();
+  struct LinkedListNode *node = get_client_nodes();
 
-  for (uint32_t i = 0; i < client_count; ++i) {
-    struct Client *client = clients[i];
+  while (node) {
+    struct Client *client = node->data;
 
-    if (client->password == password) {
-      client->password = get_empty_password();
-    }
+    if (client->password == password) client->password = get_empty_password();
+    else node = node->next;
   }
 }
 

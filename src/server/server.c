@@ -76,15 +76,13 @@ void terminate_connection(const int connfd) {
 }
 
 static void close_server() {
-  struct Client **clients = get_clients();
-  const uint32_t client_count = get_client_count();
+  struct Client *client;
 
-  for (uint32_t i = 0; i < client_count; ++i) {
-    const struct Client *client = clients[0];
+  while ((client = get_first_client())) {
     write_log(LOG_INFO, "Client #%d is terminated.", client->id);
 
     close(client->connfd);
-    remove_client(client->connfd);
+    remove_first_client();
   }
 
   const uint64_t server_age = age + difftime(time(NULL), start_at);

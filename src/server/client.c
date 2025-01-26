@@ -1,4 +1,5 @@
 #include "../../headers/server.h"
+#include "../../headers/utils.h"
 
 #include <string.h>
 #include <stdbool.h>
@@ -6,7 +7,9 @@
 #include <stdlib.h>
 #include <time.h>
 
-struct Client **clients;
+struct LinkedListNode *nodes = NULL;
+struct LinkedListNode *last_node = NULL;
+
 uint32_t client_count = 0;
 uint32_t last_connection_client_id = 0;
 
@@ -44,29 +47,31 @@ struct Password *get_full_password() {
   return full_password;
 }
 
-struct Client **get_clients() {
-  return clients;
+struct LinkedListNode *get_client_nodes() {
+  return nodes;
 }
 
 struct Client *get_client(const int input) {
-  for (uint32_t i = 0; i < client_count; ++i) {
-    struct Client *client = clients[i];
+  struct LinkedListNode *node = nodes;
 
-    if (client->connfd == input) {
-      return client;
-    }
+  while (node) {
+    struct Client *client = node->data;
+
+    if (client->connfd == input) return client;
+    else node = node->next;
   }
 
   return NULL;
 }
 
 struct Client *get_client_from_id(const uint32_t id) {
-  for (uint32_t i = 0; i < client_count; ++i) {
-    struct Client *client = clients[i];
+  struct LinkedListNode *node = nodes;
 
-    if (client->id == id) {
-      return client;
-    }
+  while (node) {
+    struct Client *client = node->data;
+
+    if (client->id == id) return client;
+    else node = node->next;
   }
 
   return NULL;
@@ -85,13 +90,17 @@ struct Client *add_client(const int connfd) {
   last_connection_client_id += 1;
 
   if (client_count == 1) {
-    clients = malloc(sizeof(struct Client *));
+    nodes = malloc(sizeof(struct LinkedListNode));
+    last_node = nodes;
   } else {
-    clients = realloc(clients, client_count * sizeof(struct Client *));
+    last_node->next = malloc(sizeof(struct LinkedListNode));
+    last_node = last_node->next;
   }
 
-  if (posix_memalign((void **) &clients[client_count - 1], 64, sizeof(struct Client)) == 0) {
-    struct Client *client = clients[client_count - 1];
+  last_node->next = NULL;
+
+  if (posix_memalign((void **) &last_node->data, 64, sizeof(struct Client)) == 0) {
+    struct Client *client = last_node->data;
     client->id = last_connection_client_id;
     client->connfd = connfd;
     time(&client->connected_at);
@@ -116,8 +125,11 @@ struct Client *add_client(const int connfd) {
 }
 
 void remove_client(const int connfd) {
-  for (uint32_t i = 0; i < client_count; ++i) {
-    struct Client *client = clients[i];
+  struct LinkedListNode *prev = NULL;
+  struct LinkedListNode *node = nodes;
+
+  while (node) {
+    struct Client *client = node->data;
 
     if (client->connfd == connfd) {
       client_count -= 1;
@@ -128,13 +140,43 @@ void remove_client(const int connfd) {
       free(client);
 
       if (client_count == 0) {
-        free(clients);
+        free(nodes);
+        nodes = NULL;
       } else {
-        memcpy(clients + i, clients + i + 1, (client_count - i) * sizeof(struct Client *));
-        clients = realloc(clients, client_count * sizeof(struct Client));
+        if (prev) prev->next = node->next;
+        else nodes = node->next;
+
+        free(node);
       }
 
       break;
+    } else {
+      prev = node;
+      node = node->next;
     }
+  }
+}
+
+struct Client *get_first_client() {
+  return (nodes ? nodes->data : NULL);
+}
+
+void remove_first_client() {
+  struct Client *client = nodes->data;
+
+  client_count -= 1;
+
+  if (client->ssl) SSL_free(client->ssl);
+  if (client->lib_name) free(client->lib_name);
+  if (client->lib_ver) free(client->lib_ver);
+  free(client);
+
+  if (client_count == 0) {
+    free(nodes);
+    nodes = NULL;
+  } else {
+    struct LinkedListNode *prev = nodes;
+    nodes = nodes->next;
+    free(prev);
   }
 }

@@ -11,6 +11,11 @@
 
 void to_uppercase(char *in, char *out);
 
+struct LinkedListNode {
+  void *data;
+  void *next;
+};
+
 typedef struct String {
   char *value;
   uint32_t len;
