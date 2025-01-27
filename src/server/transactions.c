@@ -43,7 +43,6 @@ uint32_t get_transaction_count() {
   return transaction_count;
 }
 
-// TODO: infinite loop on socket bind error
 void deactive_transaction_thread() {
   thread_loop = false;
 
@@ -52,6 +51,7 @@ void deactive_transaction_thread() {
     pthread_cancel(thread);
     pthread_cond_destroy(&cond);
     pthread_mutex_destroy(&mutex);
+    return;
   }
 }
 
