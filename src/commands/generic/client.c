@@ -119,7 +119,8 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
           string_t value = command->args[2];
           const uint32_t value_size = value.len + 1;
 
-          client->lib_name = client->lib_name ? realloc(client->lib_name, value_size) : malloc(value_size);
+          if (client->lib_name) free(client->lib_name);
+          client->lib_name = malloc(value_size);
           memcpy(client->lib_name, value.value, value_size);
 
           WRITE_OK(client);
@@ -127,7 +128,8 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
           string_t value = command->args[2];
           const uint32_t value_size = value.len + 1;
 
-          client->lib_ver = client->lib_ver ? realloc(client->lib_ver, value_size) : malloc(value_size);
+          if (client->lib_ver) free(client->lib_ver);
+          client->lib_ver = malloc(value_size);
           memcpy(client->lib_ver, value.value, value_size);
 
           WRITE_OK(client);
