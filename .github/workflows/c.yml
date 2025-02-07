@@ -9,6 +9,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Dependencies
+      run: sudo apt-get install libhiredis1.1.0 libhiredis-dev
+
     - name: Build
       run: make
 
