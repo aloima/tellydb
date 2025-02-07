@@ -47,6 +47,7 @@ struct Transaction {
   struct Client *client;
   commanddata_t *command;
   struct Password *password;
+  struct Transaction *prev, *next;
 };
 
 void create_transaction_thread(struct Configuration *config);

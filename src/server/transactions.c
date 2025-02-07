@@ -10,7 +10,9 @@
 
 #include <pthread.h>
 
-struct Transaction **transactions;
+struct Transaction *start = NULL;
+struct Transaction *end = NULL;
+
 uint32_t transaction_count = 0;
 struct Configuration *conf;
 
@@ -30,7 +32,7 @@ void *transaction_thread() {
   while (thread_loop) {
     pthread_cond_wait(&cond, &mutex);
 
-    struct Transaction *transaction = transactions[0];
+    struct Transaction *transaction = end;
     execute_command(transaction);
     remove_transaction(transaction);
   }
@@ -68,17 +70,15 @@ void add_transaction(struct Client *client, commanddata_t *command) {
   pthread_mutex_lock(&mutex);
   transaction_count += 1;
 
-  if (transaction_count == 1) {
-    transactions = malloc(sizeof(struct Transaction *));
-  } else {
-    transactions = realloc(transactions, transaction_count * sizeof(struct Transaction *));
-  }
+  struct Transaction *transaction = malloc(sizeof(struct Transaction));
+  transaction->client = client;
+  transaction->command = command;
+  transaction->password = client->password;
 
-  const uint32_t id = transaction_count - 1;
-  transactions[id] = malloc(sizeof(struct Transaction));
-  transactions[id]->client = client;
-  transactions[id]->command = command;
-  transactions[id]->password = client->password;
+  transaction->prev = NULL;
+  transaction->next = start;
+  start = transaction;
+  if (end == NULL) end = transaction;
 
   pthread_cond_signal(&cond);
   pthread_mutex_unlock(&mutex);
@@ -86,30 +86,27 @@ void add_transaction(struct Client *client, commanddata_t *command) {
 
 // Run by thread, no need mutex
 void remove_transaction(struct Transaction *transaction) {
-  const uint64_t id = transaction - transactions[0];
+  if (end == transaction) end = transaction->prev;
 
-  free_command_data(transaction->command);
-  free(transaction);
+  if (transaction->prev) {
+    transaction->prev->next = transaction->next;
+  } else { // (start == transaction)
+    start = transaction->next;
+  }
 
   transaction_count -= 1;
-  memcpy(transactions + id, transactions + id + 1, sizeof(struct Transaction *) * transaction_count);
-
-  if (transaction_count == 0) {
-    free(transactions);
-  } else {
-    transactions = realloc(transactions, sizeof(struct Transaction *) * transaction_count);
-  }
+  free_command_data(transaction->command);
+  free(transaction);
 }
 
 void free_transactions() {
   if (transaction_count != 0) {
     for (uint32_t i = 0; i < transaction_count; ++i) {
-      struct Transaction *transaction = transactions[i];
+      struct Transaction *transaction = start;
+      start = start->next;
 
       free_command_data(transaction->command);
       free(transaction);
     }
-
-    free(transactions);
   }
 }
