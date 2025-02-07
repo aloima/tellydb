@@ -4,4 +4,5 @@ tls/
 /.tellylog
 /vgcore.*
 /compile_commands.json
+/benchmark/benchmark.o
 .cache/
