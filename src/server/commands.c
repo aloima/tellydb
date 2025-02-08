@@ -11,7 +11,7 @@
 static struct Command *commands = NULL;
 static uint32_t command_count = 33;
 
-void load_commands() {
+struct Command *load_commands() {
   const struct Command _commands[] = {
     // Data commands
     cmd_bgsave,
@@ -62,6 +62,8 @@ void load_commands() {
   } else {
     write_log(LOG_ERR, "Cannot create commands, out of memory.");
   }
+
+  return commands;
 }
 
 void free_commands() {

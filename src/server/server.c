@@ -47,6 +47,9 @@ static struct Configuration *conf;
 static time_t start_at;
 static uint64_t age;
 
+struct Command *commands;
+uint32_t command_count;
+
 struct Configuration *get_server_configuration() {
   return conf;
 }
@@ -159,7 +162,8 @@ void start_server(struct Configuration *config) {
     write_log(LOG_INFO, "Created SSL context.");
   }
 
-  load_commands();
+  commands = load_commands();
+  command_count = get_command_count();
   write_log(LOG_INFO, "Initialized commands.");
 
   create_transaction_thread(config);
@@ -292,9 +296,6 @@ void start_server(struct Configuration *config) {
             struct Client *client = get_client(fd.fd);
 
             if (!client->locked) {
-              struct Command *commands = get_commands();
-              const uint32_t command_count = get_command_count();
-
               char used[command->name.len + 1];
               to_uppercase(command->name.value, used);
 

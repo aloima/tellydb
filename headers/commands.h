@@ -26,7 +26,7 @@ struct Command {
 
 void execute_command(struct Transaction *transaction);
 
-void load_commands();
+struct Command *load_commands();
 struct Command *get_commands();
 uint32_t get_command_count();
 void free_commands();
