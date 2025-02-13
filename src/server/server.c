@@ -13,6 +13,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 
 #include <openssl/ssl.h>
 #include <openssl/crypto.h>
@@ -62,6 +63,12 @@ void get_server_time(time_t *server_start_at, uint64_t *server_age) {
 
 static int setnonblocking(int sockfd) {
   if (fcntl(sockfd, F_SETFL, fcntl(sockfd, F_GETFL, 0) | O_NONBLOCK) == -1) return -1;
+  return 0;
+}
+
+static int setnodelay(int sockfd) {
+  int flag = 1;
+  if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0) return -1;
   return 0;
 }
 
@@ -195,6 +202,13 @@ void start_server(struct Configuration *config) {
   if (setnonblocking(sockfd) == -1) {
     FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
     write_log(LOG_ERR, "Cannot set non-blocking socket, safely exiting...");
+    FREE_CONF_LOGS(conf);
+    return;
+  }
+
+  if (setnodelay(sockfd) == -1) {
+    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
+    write_log(LOG_ERR, "Cannot set no-delay socket, safely exiting...");
     FREE_CONF_LOGS(conf);
     return;
   }
