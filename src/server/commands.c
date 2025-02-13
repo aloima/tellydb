@@ -76,23 +76,14 @@ uint32_t get_command_count() {
 }
 
 void execute_command(struct Transaction *transaction) {
-  commanddata_t *data = transaction->command;
+  if (transaction->command) {
+    commanddata_t *data = transaction->data;
+    struct Command command = *transaction->command;
 
-  char input[data->name.len + 1];
-  to_uppercase(data->name.value, input);
-
-  for (uint32_t i = 0; i < command_count; ++i) {
-    const struct Command command = commands[i];
-
-    if (streq(input, command.name)) {
-      command.run(transaction->client, transaction->command, transaction->password);
-      return;
-    }
-  }
-
-  if (transaction->client) {
+    command.run(transaction->client, data, transaction->password);
+  } else if (transaction->client) {
     char buf[42];
-    const size_t nbytes = sprintf(buf, "-Unknown command '%s'\r\n", input);
+    const size_t nbytes = sprintf(buf, "-Unknown command '%s'\r\n", transaction->data->name.value);
 
     _write(transaction->client, buf, nbytes);
   }

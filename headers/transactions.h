@@ -12,7 +12,8 @@
 // TRANSACTIONS
 struct Transaction {
   struct Client *client;
-  commanddata_t *command;
+  commanddata_t *data;
+  struct Command *command;
   struct Password *password;
   struct Transaction *prev, *next;
 };
@@ -21,7 +22,7 @@ void create_transaction_thread(struct Configuration *config);
 void deactive_transaction_thread();
 
 uint32_t get_transaction_count();
-void add_transaction(struct Client *client, commanddata_t *command);
+void add_transaction(struct Client *client, struct Command *command, commanddata_t *data);
 void remove_transaction(struct Transaction *transaction);
 void free_transactions();
 
