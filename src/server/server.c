@@ -250,12 +250,16 @@ void start_server(struct Configuration *config) {
       for (uint32_t i = 0; i < nfds; ++i) {
         const struct pollfd fd = fds[i];
 
-        if (fd.fd == sockfd && fd.revents & POLLIN) {
-          if (conf->max_clients == get_client_count()) {
-            write_log(LOG_WARN, "A connection request is rejected, because connected client count of the server is maximum.");
-          } else if (UINT32_MAX == get_last_connection_client_id()) {
-            write_log(LOG_WARN, "A connection request is rejected, because client that has highest ID number is maximum, so cannot be increased it.");
-          } else {
+        if (fd.revents & POLLIN) {
+          if (fd.fd == sockfd) {
+            if (conf->max_clients == get_client_count()) {
+              write_log(LOG_WARN, "A connection is rejected, because connected client count of the server is maximum.");
+              continue;
+            } else if (UINT32_MAX == get_last_connection_client_id()) {
+              write_log(LOG_WARN, "A connection is rejected, because client that has highest ID number is maximum, so cannot be increased it.");
+              continue;
+            }
+
             struct sockaddr_in addr;
             socklen_t addr_len = sizeof(addr);
 
@@ -284,32 +288,32 @@ void start_server(struct Configuration *config) {
             }
 
             write_log(LOG_INFO, "Client #%d is connected.", client->id);
-          }
-        } else if (fd.revents & POLLIN) {
-          struct Client *client = get_client(fd.fd);
-          commanddata_t *command = get_command_data(client);
-
-          if (command->close) {
-            terminate_connection(fd.fd);
-            free(command);
           } else {
             struct Client *client = get_client(fd.fd);
+            commanddata_t *command = get_command_data(client);
 
-            if (!client->locked) {
-              char used[command->name.len + 1];
-              to_uppercase(command->name.value, used);
-
-              for (uint32_t i = 0; i < command_count; ++i) {
-                if (streq(commands[i].name, used)) {
-                  client->command = &commands[i];
-                  break;
-                }
-              }
-
-              add_transaction(client, command);
+            if (command->close) {
+              terminate_connection(fd.fd);
+              free(command);
             } else {
-              free_command_data(command);
-              _write(client, "-Your client is locked, you cannot use any commands until your client is unlocked\r\n", 83);
+              struct Client *client = get_client(fd.fd);
+
+              if (!client->locked) {
+                char used[command->name.len + 1];
+                to_uppercase(command->name.value, used);
+
+                for (uint32_t i = 0; i < command_count; ++i) {
+                  if (streq(commands[i].name, used)) {
+                    client->command = &commands[i];
+                    break;
+                  }
+                }
+
+                add_transaction(client, command);
+              } else {
+                free_command_data(command);
+                _write(client, "-Your client is locked, you cannot use any commands until your client is unlocked\r\n", 83);
+              }
             }
           }
         } else if (fd.revents & (POLLERR | POLLNVAL | POLLHUP)) {
