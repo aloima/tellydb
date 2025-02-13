@@ -1,8 +1,6 @@
-#include "../../../headers/server.h"
-#include "../../../headers/commands.h"
-#include "../../../headers/utils.h"
+#include "../../../headers/telly.h"
 
-#include <stddef.h>
+#include <stdio.h>
 #include <stdint.h>
 
 static uint8_t read_permissions_value(struct Client *client, char *permissions_value) {

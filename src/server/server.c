@@ -1,8 +1,6 @@
-#include "../../headers/server.h"
-#include "../../headers/database.h"
-#include "../../headers/commands.h"
-#include "../../headers/utils.h"
+#include "../../headers/telly.h"
 
+#include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -15,6 +13,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <netinet/in.h>
+
+#include <openssl/ssl.h>
+#include <openssl/crypto.h>
 
 #define FREE_CONF_LOGS(conf) {\
   save_and_close_logs();\

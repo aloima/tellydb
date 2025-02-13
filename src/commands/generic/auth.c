@@ -1,6 +1,4 @@
-#include "../../../headers/server.h"
-#include "../../../headers/commands.h"
-#include "../../../headers/utils.h"
+#include "../../../headers/telly.h"
 
 #include <stddef.h>
 

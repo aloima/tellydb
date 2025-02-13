@@ -1,7 +1,4 @@
-#include "../../headers/database.h"
-#include "../../headers/server.h"
-#include "../../headers/hashtable.h"
-#include "../../headers/utils.h"
+#include "../../headers/telly.h"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -14,6 +11,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <bits/pthreadtypes.h>
 
 static int fd = -1;
 static bool saving = false;

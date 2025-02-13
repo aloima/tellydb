@@ -1,5 +1,4 @@
-#include "../../headers/database.h"
-#include "../../headers/commands.h"
+#include "../../headers/telly.h"
 
 #include <string.h>
 #include <stdint.h>
@@ -8,6 +7,8 @@
 #include <errno.h>
 #include <signal.h>
 
+#include <bits/types/sigset_t.h>
+#include <bits/pthreadtypes.h>
 #include <pthread.h>
 
 struct Transaction *start = NULL;

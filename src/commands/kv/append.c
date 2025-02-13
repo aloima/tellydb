@@ -1,8 +1,8 @@
-#include "../../../headers/server.h"
-#include "../../../headers/database.h"
-#include "../../../headers/commands.h"
+#include "../../../headers/telly.h"
 
-#include <stddef.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 static void run(struct Client *client, commanddata_t *command, struct Password *password) {
   if (command->arg_count != 2) {

@@ -1,8 +1,6 @@
-#include "../../../headers/server.h"
-#include "../../../headers/database.h"
-#include "../../../headers/commands.h"
-#include "../../../headers/utils.h"
+#include "../../../headers/telly.h"
 
+#include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>

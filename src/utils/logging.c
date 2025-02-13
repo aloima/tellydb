@@ -1,7 +1,7 @@
-#include "../../headers/utils.h"
-#include "../../headers/config.h"
+#include "../../headers/telly.h"
 
 #include <stdio.h>
+#include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 
 static struct Configuration *_conf = NULL;
 static int fd = -1;

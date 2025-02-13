@@ -1,3 +1,5 @@
+// Includes hash table structure and its methods
+
 #pragma once
 
 #include "utils.h"

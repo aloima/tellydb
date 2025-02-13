@@ -1,5 +1,4 @@
-#include "../../headers/server.h"
-#include "../../headers/utils.h"
+#include "../../headers/telly.h"
 
 #include <stdbool.h>
 #include <stdint.h>

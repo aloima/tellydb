@@ -1,36 +1,8 @@
+// Includes specific command definitions
+
 #pragma once
 
-#include "server.h"
-#include "database.h"
-
-#include <stdint.h>
-
-#define WRONG_ARGUMENT_ERROR(client, name, len) (_write((client), "-Wrong argument count for '" name "' command\r\n", 38 + (len)))
-
-struct Subcommand {
-  char *name;
-  char *summary;
-  char *since;
-  char *complexity;
-};
-
-struct Command {
-  char *name;
-  char *summary;
-  char *since;
-  char *complexity;
-  void (*run)(struct Client *client, commanddata_t *command, struct Password *password);
-  struct Subcommand *subcommands;
-  uint32_t subcommand_count;
-};
-
-void execute_command(struct Transaction *transaction);
-
-struct Command *load_commands();
-struct Command *get_commands();
-uint32_t get_command_count();
-void free_commands();
-
+#include "transactions.h"
 
 /* DATABASE COMMANDS */
 extern const struct Command cmd_bgsave;

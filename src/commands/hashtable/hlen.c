@@ -1,11 +1,6 @@
-#include "../../../headers/server.h"
-#include "../../../headers/database.h"
-#include "../../../headers/commands.h"
-#include "../../../headers/hashtable.h"
-#include "../../../headers/utils.h"
+#include "../../../headers/telly.h"
 
 #include <stdio.h>
-#include <stddef.h>
 
 static void run(struct Client *client, commanddata_t *command, struct Password *password) {
   if (client) {

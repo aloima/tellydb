@@ -1,3 +1,5 @@
+// Includes some utilities
+
 #pragma once
 
 #include "config.h"

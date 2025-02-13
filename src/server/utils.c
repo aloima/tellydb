@@ -1,11 +1,11 @@
-#include "../../headers/server.h"
-#include "../../headers/utils.h"
+#include "../../headers/telly.h"
 
 #include <stdio.h>
 #include <stdint.h>
 
 #include <openssl/ssl.h>
 
+#include <sys/types.h>
 #include <unistd.h>
 
 ssize_t _read(struct Client *client, void *buf, const size_t nbytes) {

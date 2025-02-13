@@ -1,10 +1,11 @@
+// Includes database (file) methods and structures
+
 #pragma once
 
 #include "btree.h"
-#include "config.h"
-#include "server.h"
 #include "utils.h"
 
+#include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -36,28 +37,13 @@ void free_kv(struct KVPair *kv);
 /* /DATABASE */
 
 
+
 /* DATABASE FILE */
 bool open_database_fd(const char *filename, uint64_t *server_age);
 void close_database_fd();
 /* /DATABASE FILE */
 
 
-/* TRANSACTIONS */
-struct Transaction {
-  struct Client *client;
-  commanddata_t *command;
-  struct Password *password;
-  struct Transaction *prev, *next;
-};
-
-void create_transaction_thread(struct Configuration *config);
-void deactive_transaction_thread();
-
-uint32_t get_transaction_count();
-void add_transaction(struct Client *client, commanddata_t *command);
-void remove_transaction(struct Transaction *transaction);
-void free_transactions();
-/* /TRANSACTIONS */
 
 /* LISTS */
 struct ListNode {

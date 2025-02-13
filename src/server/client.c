@@ -1,11 +1,12 @@
-#include "../../headers/server.h"
-#include "../../headers/utils.h"
+#include "../../headers/telly.h"
 
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <time.h>
+
+#include <openssl/ssl.h>
 
 struct LinkedListNode *nodes = NULL;
 struct LinkedListNode *last_node = NULL;

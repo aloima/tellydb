@@ -1,11 +1,10 @@
-#include "../../../headers/server.h"
-#include "../../../headers/database.h"
-#include "../../../headers/commands.h"
+#include "../../../headers/telly.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <time.h>
 
 #include <unistd.h>
 

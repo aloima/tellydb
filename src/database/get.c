@@ -1,7 +1,4 @@
-#include "../../headers/database.h"
-#include "../../headers/btree.h"
-#include "../../headers/hashtable.h"
-#include "../../headers/utils.h"
+#include "../../headers/telly.h"
 
 #include <stdbool.h>
 #include <stdint.h>

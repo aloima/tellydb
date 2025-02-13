@@ -1,7 +1,6 @@
-#include "../../../headers/server.h"
-#include "../../../headers/database.h"
-#include "../../../headers/commands.h"
+#include "../../../headers/telly.h"
 
+#include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
 
