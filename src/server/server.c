@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <asm-generic/socket.h>
 
 #include <openssl/ssl.h>
 #include <openssl/crypto.h>
@@ -59,17 +60,6 @@ struct Configuration *get_server_configuration() {
 void get_server_time(time_t *server_start_at, uint64_t *server_age) {
   *server_start_at = start_at;
   *server_age = age;
-}
-
-static int setnonblocking(int sockfd) {
-  if (fcntl(sockfd, F_SETFL, fcntl(sockfd, F_GETFL, 0) | O_NONBLOCK) == -1) return -1;
-  return 0;
-}
-
-static int setnodelay(int sockfd) {
-  int flag = 1;
-  if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0) return -1;
-  return 0;
 }
 
 void terminate_connection(const int connfd) {
@@ -179,8 +169,6 @@ void start_server(struct Configuration *config) {
 
   signal(SIGINT, sigint_signal);
 
-  struct sockaddr_in servaddr;
-
   if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
     FREE_CTX_THREAD_CMD(ctx);
     write_log(LOG_ERR, "Cannot open socket, safely exiting...");
@@ -188,6 +176,30 @@ void start_server(struct Configuration *config) {
     return;
   }
 
+  if (fcntl(sockfd, F_SETFL, fcntl(sockfd, F_GETFL, 0) | O_NONBLOCK) == -1) {
+    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
+    write_log(LOG_ERR, "Cannot set non-blocking socket, safely exiting...");
+    FREE_CONF_LOGS(conf);
+    return;
+  }
+
+  const int flag = 1;
+
+  if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) == -1) {
+    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
+    write_log(LOG_ERR, "Cannot set no-delay socket, safely exiting...");
+    FREE_CONF_LOGS(conf);
+    return;
+  }
+
+  if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) == -1) {
+    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
+    write_log(LOG_ERR, "Cannot set reusable socket, safely exiting...");
+    FREE_CONF_LOGS(conf);
+    return;
+  }
+
+  struct sockaddr_in servaddr;
   servaddr.sin_family = AF_INET;
   servaddr.sin_port = htons(conf->port);
   servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -195,20 +207,6 @@ void start_server(struct Configuration *config) {
   if ((bind(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr))) != 0) {
     FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
     write_log(LOG_ERR, "Cannot bind socket and address, safely exiting...");
-    FREE_CONF_LOGS(conf);
-    return;
-  }
-
-  if (setnonblocking(sockfd) == -1) {
-    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
-    write_log(LOG_ERR, "Cannot set non-blocking socket, safely exiting...");
-    FREE_CONF_LOGS(conf);
-    return;
-  }
-
-  if (setnodelay(sockfd) == -1) {
-    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
-    write_log(LOG_ERR, "Cannot set no-delay socket, safely exiting...");
     FREE_CONF_LOGS(conf);
     return;
   }
