@@ -96,6 +96,7 @@ static void close_server() {
   while ((client = get_first_client())) {
     write_log(LOG_INFO, "Client #%d is terminated.", client->id);
 
+    if (conf->tls) SSL_shutdown(client->ssl);
     close(client->connfd);
     remove_first_client();
   }
