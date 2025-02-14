@@ -5,6 +5,8 @@
 #include "server.h"
 #include "utils.h"
 
+#include <stdint.h>
+
 #define RDT_SSTRING '+'
 #define RDT_BSTRING '$'
 #define RDT_ARRAY '*'

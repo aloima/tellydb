@@ -315,12 +315,10 @@ void start_server(struct Configuration *config) {
 
               if (!client->locked) {
                 struct Command *command = NULL;
-
-                char used[data->name.len + 1];
-                to_uppercase(data->name.value, used);
+                to_uppercase(data->name.value, data->name.value);
 
                 for (uint32_t i = 0; i < command_count; ++i) {
-                  if (streq(commands[i].name, used)) {
+                  if (streq(commands[i].name, data->name.value)) {
                     command = &commands[i];
                     client->command = &commands[i];
                     break;
