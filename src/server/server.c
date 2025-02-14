@@ -84,7 +84,6 @@ void terminate_connection(const int connfd) {
   }
 
   nfds -= 1;
-  fds = realloc(fds, nfds * sizeof(struct pollfd));
 
   if (conf->tls) SSL_shutdown(client->ssl);
   close(connfd);
@@ -250,10 +249,13 @@ void start_server(struct Configuration *config) {
   write_log(LOG_INFO, "tellydb server age: %ld seconds", age);
 
   nfds = 1;
-  fds = malloc(sizeof(struct pollfd));
-  fds[0].fd = sockfd;
-  fds[0].events = POLLIN;
-  fds[0].revents = 0;
+  fds = malloc((conf->max_clients + 1) * sizeof(struct pollfd));
+
+  fds[0] = (struct pollfd) {
+    .fd = sockfd,
+    .events = POLLIN,
+    .revents = 0
+  };
 
   start_at = time(NULL);
   write_log(LOG_INFO, "Server is listening on %d port for accepting connections...", conf->port);
@@ -282,12 +284,11 @@ void start_server(struct Configuration *config) {
             struct Client *client = add_client(connfd);
 
             nfds += 1;
-            fds = realloc(fds, nfds * sizeof(struct pollfd));
-
-            const uint32_t at = nfds - 1;
-            fds[at].fd = connfd;
-            fds[at].events = POLLIN;
-            fds[at].revents = 0;
+            fds[nfds - 1] = (struct pollfd) {
+              .fd = connfd,
+              .events = POLLIN,
+              .revents = 0
+            };
 
             if (conf->tls) {
               client->ssl = SSL_new(ctx);
