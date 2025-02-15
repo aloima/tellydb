@@ -281,6 +281,8 @@ void save_data(const uint64_t server_age) {
   if (posix_memalign((void **) &block, block_size, block_size) == 0) {
     memset(block, 0, block_size);
 
+    // length represents filled block size
+    // total represents total calculated file size
     uint32_t length, total = 0;
     generate_headers(block, server_age);
 
@@ -292,6 +294,8 @@ void save_data(const uint64_t server_age) {
 
       block[10] = password_count_byte_count;
       memcpy(block + 11, &password_count, password_count_byte_count);
+
+      if (password_count == 0) total += length;
 
       for (uint32_t i = 0; i < password_count; ++i) {
         struct Password *password = passwords[i];
@@ -305,12 +309,13 @@ void save_data(const uint64_t server_age) {
           const uint32_t remaining = (48 - allowed); // remaining byte count except permissions
           memcpy(block, password->data, remaining);
           block[remaining] = password->permissions;
-          total += block_size;
           length = (remaining + 1);
+          total += block_size + length;
         } else {
           memcpy(block + length, password->data, 48);
           block[length + 48] = password->permissions;
           length = new_length;
+          total += length;
         }
       }
     }
@@ -345,7 +350,7 @@ void save_data(const uint64_t server_age) {
           const uint16_t complete = (block_size - length);
 
           memcpy(block + length, data, complete);
-          write(fd, data, complete);
+          write(fd, block, block_size);
           remaining -= complete;
 
           if (remaining > block_size) {
@@ -354,18 +359,18 @@ void save_data(const uint64_t server_age) {
               write(fd, block, block_size);
               remaining -= block_size;
             } while (remaining > block_size);
-
-            length = (data_length - remaining);
-          } else {
-            length += (data_length - remaining);
           }
+
+          length = remaining;
+          memcpy(block, data + (data_length - remaining), length);
         } else {
           memcpy(block + length, data, data_length);
           length += data_length;
         }
+
+        total += data_length;
       }
 
-      total += length;
       if (values) free(values);
       free(data);
     }
