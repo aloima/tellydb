@@ -17,20 +17,21 @@ static void collect_bytes(const int fd, char *block, const uint16_t block_size, 
     read(fd, block, block_size);
     remaining -= available;
 
-    while ((*at + remaining) >= block_size) {
+    while (remaining >= block_size) {
       memcpy(data + (count - remaining), block, block_size);
       read(fd, block, block_size);
+      remaining -= block_size;
     }
 
-    memcpy(data, block, remaining);
+    memcpy(data + (count - remaining), block, remaining);
+    *at = remaining;
   } else {
     memcpy(data, block + *at, remaining);
+    *at += remaining;
   }
-
-  *at += remaining;
 }
 
-static void collect_string(string_t *string, const int fd, char *block, const uint16_t block_size, uint16_t *at) {
+static size_t collect_string(string_t *string, const int fd, char *block, const uint16_t block_size, uint16_t *at) {
   string->len = 0;
 
   uint8_t first;
@@ -42,22 +43,26 @@ static void collect_string(string_t *string, const int fd, char *block, const ui
   string->len = ((string->len << 6) | (first & 0b111111));
   string->value = malloc(string->len);
   collect_bytes(fd, block, block_size, at, string->len, string->value);
+
+  return (1 + byte_count + string->len);
 }
 
-static void collect_number(long *number, const int fd, char *block, const uint16_t block_size, uint16_t *at) {
+static size_t collect_number(long *number, const int fd, char *block, const uint16_t block_size, uint16_t *at) {
   *number = 0;
 
   uint8_t byte_count;
   collect_bytes(fd, block, block_size, at, 1, &byte_count);
   collect_bytes(fd, block, block_size, at, byte_count, number);
+
+  return (1 + byte_count);
 }
 
-static void collect_kv(struct KVPair *kv, const int fd, char *block, const uint16_t block_size, uint16_t *at) {
+static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uint16_t block_size, uint16_t *at) {
   string_t key;
   void *value = NULL;
   uint8_t type;
 
-  collect_string(&key, fd, block, block_size, at);
+  size_t collected_bytes = collect_string(&key, fd, block, block_size, at) + 1;
   collect_bytes(fd, block, block_size, at, 1, &type);
 
   switch (type) {
@@ -66,22 +71,24 @@ static void collect_kv(struct KVPair *kv, const int fd, char *block, const uint1
 
     case TELLY_NUM:
       value = malloc(sizeof(long));
-      collect_number(value, fd, block, block_size, at);
+      collected_bytes += collect_number(value, fd, block, block_size, at);
       break;
 
     case TELLY_STR:
       value = malloc(sizeof(string_t));
-      collect_string(value, fd, block, block_size, at);
+      collected_bytes += collect_string(value, fd, block, block_size, at);
       break;
 
     case TELLY_BOOL:
       value = malloc(sizeof(bool));
       collect_bytes(fd, block, block_size, at, 1, value);
+      collected_bytes += 1;
       break;
 
     case TELLY_HASHTABLE: {
       uint32_t size;
       collect_bytes(fd, block, block_size, at, 4, &size);
+      collected_bytes += (5 + size); // includes size bytes, type bytes of fvs and last (0x17) byte
 
       struct HashTable *table = (value = create_hashtable(size));
 
@@ -95,7 +102,7 @@ static void collect_kv(struct KVPair *kv, const int fd, char *block, const uint1
           void *fv_value = NULL;
 
           string_t name;
-          collect_string(&name, fd, block, block_size, at);
+          collected_bytes += collect_string(&name, fd, block, block_size, at);
 
           switch (byte) {
             case TELLY_NULL:
@@ -103,17 +110,18 @@ static void collect_kv(struct KVPair *kv, const int fd, char *block, const uint1
 
             case TELLY_NUM:
               fv_value = malloc(sizeof(long));
-              collect_number(fv_value, fd, block, block_size, at);
+              collected_bytes += collect_number(fv_value, fd, block, block_size, at);
               break;
 
             case TELLY_STR:
               fv_value = malloc(sizeof(string_t));
-              collect_string(fv_value, fd, block, block_size, at);
+              collected_bytes += collect_string(fv_value, fd, block, block_size, at);
               break;
 
             case TELLY_BOOL:
               fv_value = malloc(sizeof(bool));
               collect_bytes(fd, block, block_size, at, 1, fv_value);
+              collected_bytes += 1;
               break;
           }
 
@@ -128,6 +136,7 @@ static void collect_kv(struct KVPair *kv, const int fd, char *block, const uint1
     case TELLY_LIST: {
       uint32_t size;
       collect_bytes(fd, block, block_size, at, 4, &size);
+      collected_bytes += (4 + size); // includes size bytes and type bytes of listnodes
 
       struct List *list = (value = create_list());
       list->size = size;
@@ -143,17 +152,18 @@ static void collect_kv(struct KVPair *kv, const int fd, char *block, const uint1
 
           case TELLY_NUM:
             list_value = malloc(sizeof(long));
-            collect_number(list_value, fd, block, block_size, at);
+            collected_bytes += collect_number(list_value, fd, block, block_size, at);
             break;
 
           case TELLY_STR:
             list_value = malloc(sizeof(string_t));
-            collect_string(list_value, fd, block, block_size, at);
+            collected_bytes += collect_string(list_value, fd, block, block_size, at);
             break;
 
           case TELLY_BOOL:
             list_value = malloc(sizeof(bool));
             collect_bytes(fd, block, block_size, at, 1, list_value);
+            collected_bytes += 1;
             break;
         }
 
@@ -175,6 +185,8 @@ static void collect_kv(struct KVPair *kv, const int fd, char *block, const uint1
 
   set_kv(kv, key, value, type);
   free(key.value);
+
+  return collected_bytes;
 }
 
 void get_all_data_from_file(const int fd, off64_t file_size, char *block, const uint16_t block_size, const uint16_t filled_block_size) {
@@ -191,13 +203,12 @@ void get_all_data_from_file(const int fd, off64_t file_size, char *block, const 
         insert_value_to_btree(cache, index, kv);
       }
     } else {
-      off64_t collected_bytes = 0;
+      off64_t collected_bytes = at;
 
       do {
-        while (at <= block_size) {
+        while (at <= block_size && collected_bytes != file_size) {
           struct KVPair *kv = malloc(sizeof(struct KVPair));
-          collect_kv(kv, fd, block, block_size, &at);
-          collected_bytes += at;
+          collected_bytes += collect_kv(kv, fd, block, block_size, &at);
 
           const uint64_t index = hash(kv->key.value, kv->key.len);
           insert_value_to_btree(cache, index, kv);
