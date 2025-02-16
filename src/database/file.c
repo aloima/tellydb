@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <math.h>
 
 #include <fcntl.h>
@@ -30,6 +31,7 @@ bool open_database_fd(const char *filename, uint64_t *server_age) {
     char *block;
 
     if (posix_memalign((void **) &block, block_size, block_size) == 0) {
+      const clock_t start = clock();
       read(fd, block, block_size);
 
       if (block[0] != 0x18 || block[1] != 0x10) {
@@ -45,7 +47,7 @@ bool open_database_fd(const char *filename, uint64_t *server_age) {
       get_all_data_from_file(fd, file_size, block, block_size, filled_block_size);
 
       struct BTree *cache = get_cache();
-      write_log(LOG_INFO, "Read database file. Loaded password count: %d, loaded data count: %d", get_password_count(), cache->size);
+      write_log(LOG_INFO, "Read database file in %.3f seconds. Loaded password count: %d, loaded data count: %d", ((float) clock() - start) / CLOCKS_PER_SEC, get_password_count(), cache->size);
 
       free(block);
     }

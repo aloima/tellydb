@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  for (uint32_t i = 0; i < 100; ++i) {
+  for (uint32_t i = 0; i < 10000; ++i) {
     freeReplyObject(redisCommand(c, "SET %d %d-value", i, i));
   }
 
