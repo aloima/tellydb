@@ -4,9 +4,9 @@
 #include <stdint.h>
 #include <string.h>
 
-static void run(struct Client *client, commanddata_t *command, __attribute__((unused)) struct Password *password) {
-  if (command->arg_count != 0 && client) {
-    const string_t input = command->args[0];
+static void run(struct CommandEntry entry) {
+  if (entry.data->arg_count != 0 && entry.client) {
+    const string_t input = entry.data->args[0];
     char subcommand[input.len + 1];
     to_uppercase(input.value, subcommand);
 
@@ -17,7 +17,7 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
       char res[16384];
       uint32_t res_len;
 
-      switch (client->protover) {
+      switch (entry.client->protover) {
         case RESP2:
           res_len = sprintf(res, "*%d\r\n", command_count * 2);
 
@@ -82,7 +82,7 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
           res_len = 0;
       }
 
-      _write(client, res, res_len);
+      _write(entry.client, res, res_len);
     } else if (streq("LIST", subcommand)) {
       const struct Command *commands = get_commands();
       const uint32_t command_count = get_command_count();
@@ -96,11 +96,11 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
         strcat(res, buf);
       }
 
-      _write(client, res, res_len);
+      _write(entry.client, res, res_len);
     } else if (streq("COUNT", subcommand)) {
       char buf[14];
       const size_t nbytes = sprintf(buf, ":%d\r\n", get_command_count());
-      _write(client, buf, nbytes);
+      _write(entry.client, buf, nbytes);
     }
   }
 }

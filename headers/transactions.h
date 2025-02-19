@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "database.h"
 #include "server.h"
 #include "config.h"
 #include "resp.h"
@@ -15,6 +16,7 @@ struct Transaction {
   commanddata_t *data;
   struct Command *command;
   struct Password *password;
+  struct Database *database;
   struct Transaction *prev, *next;
 };
 
@@ -31,6 +33,13 @@ void free_transactions();
 // COMMANDS
 #define WRONG_ARGUMENT_ERROR(client, name, len) (_write((client), "-Wrong argument count for '" name "' command\r\n", 38 + (len)))
 
+struct CommandEntry {
+  struct Database *database;
+  struct Client *client;
+  struct Password *password;
+  commanddata_t *data;
+};
+
 struct Subcommand {
   char *name;
   char *summary;
@@ -43,7 +52,7 @@ struct Command {
   char *summary;
   char *since;
   char *complexity;
-  void (*run)(struct Client *client, commanddata_t *command, struct Password *password);
+  void (*run)(struct CommandEntry entry);
   struct Subcommand *subcommands;
   uint32_t subcommand_count;
 };

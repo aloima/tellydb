@@ -189,38 +189,58 @@ static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uin
   return collected_bytes;
 }
 
-void get_all_data_from_file(const int fd, off64_t file_size, char *block, const uint16_t block_size, const uint16_t filled_block_size) {
-  struct BTree *cache = get_cache();
+static size_t collect_database(struct Database **database, const int fd, char *block, const uint16_t block_size, uint16_t *at, uint32_t *count) {
+  collect_bytes(fd, block, block_size, at, 4, count);
+
+  string_t name;
+  size_t collected_bytes = collect_string(&name, fd, block, block_size, at) + 4;
+
+  *database = create_database(name);
+  struct BTree *cache = (*database)->cache;
+  free(name.value);
+
+  for (uint32_t i = 0; i < *count; ++i) {
+    struct KVPair *kv = malloc(sizeof(struct KVPair));
+    collected_bytes += collect_kv(kv, fd, block, block_size, at);
+
+    const uint64_t index = hash(kv->key.value, kv->key.len);
+    insert_value_to_btree(cache, index, kv);
+  }
+
+  return collected_bytes;
+}
+
+size_t get_all_data_from_file(struct Configuration *conf, const int fd, off64_t file_size, char *block, const uint16_t block_size, const uint16_t filled_block_size) {
+  size_t loaded_count = 0;
   uint16_t at = filled_block_size;
 
   if (at != file_size) {
-    if (file_size <= block_size) {
-      while (at != file_size) {
-        struct KVPair *kv = malloc(sizeof(struct KVPair));
-        collect_kv(kv, fd, block, block_size, &at);
+    const string_t database_name = {conf->database_name, strlen(conf->database_name)};
+    const uint64_t hashed = hash(database_name.value, database_name.len);
 
-        const uint64_t index = hash(kv->key.value, kv->key.len);
-        insert_value_to_btree(cache, index, kv);
-      }
-    } else {
-      off64_t collected_bytes = at;
+    off64_t collected_bytes = at;
+    uint32_t data_count = 0;
+    struct Database *database;
 
-      do {
-        while (at <= block_size && collected_bytes != file_size) {
-          struct KVPair *kv = malloc(sizeof(struct KVPair));
-          collected_bytes += collect_kv(kv, fd, block, block_size, &at);
+    do {
+      collected_bytes += collect_database(&database, fd, block, block_size, &at, &data_count);
+      loaded_count += data_count;
 
-          const uint64_t index = hash(kv->key.value, kv->key.len);
-          insert_value_to_btree(cache, index, kv);
-        }
+      if (database->id == hashed) set_main_database(database);
+    } while (collected_bytes != file_size);
 
-        if (collected_bytes != file_size) read(fd, block, block_size);
-        else break;
-      } while (true);
-    }
+    if (!get_main_database()) set_main_database(create_database(database_name));
+  } else {
+    set_main_database(create_database((string_t) {conf->database_name, strlen(conf->database_name)}));
   }
+
+  return loaded_count;
 }
 
-struct KVPair *get_data(const string_t key) {
-  return get_kv_from_cache(key);
+struct KVPair *get_data(struct Database *database, string_t key) {
+  const uint64_t index = hash(key.value, key.len);
+  struct BTreeValue *value = find_value_from_btree(database->cache, index, &key, (bool (*)(void *, void *)) check_correct_kv);
+
+  if (value) return value->data;
+  else return NULL;
 }

@@ -3,25 +3,25 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-static void run(struct Client *client, commanddata_t *command, struct Password *password) {
-  if (client) {
-    if (command->arg_count != 2) {
-      WRONG_ARGUMENT_ERROR(client, "LINDEX", 4);
+static void run(struct CommandEntry entry) {
+  if (entry.client) {
+    if (entry.data->arg_count != 2) {
+      WRONG_ARGUMENT_ERROR(entry.client, "LINDEX", 4);
       return;
     }
 
-    if (password->permissions & P_READ) {
-      const struct KVPair *kv = get_data(command->args[0]);
+    if (entry.password->permissions & P_READ) {
+      const struct KVPair *kv = get_data(entry.database, entry.data->args[0]);
 
       if (!kv || kv->type != TELLY_LIST) {
-        _write(client, "-Value stored at the key is not a list\r\n", 40);
+        _write(entry.client, "-Value stored at the key is not a list\r\n", 40);
         return;
       }
 
-      const char *index_str = command->args[1].value;
+      const char *index_str = entry.data->args[1].value;
 
       if (!is_integer(index_str)) {
-        _write(client, "-Second argument must be an integer\r\n", 37);
+        _write(entry.client, "-Second argument must be an integer\r\n", 37);
         return;
       }
 
@@ -33,7 +33,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
         node = list->begin;
 
         if ((index + 1) > list->size) {
-          WRITE_NULL_REPLY(client);
+          WRITE_NULL_REPLY(entry.client);
           return;
         }
 
@@ -45,7 +45,7 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
         node = list->end;
 
         if (index > list->size) {
-          WRITE_NULL_REPLY(client);
+          WRITE_NULL_REPLY(entry.client);
           return;
         }
 
@@ -56,9 +56,9 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
         }
       }
 
-      write_value(client, node->value, node->type);
+      write_value(entry.client, node->value, node->type);
     } else {
-      _write(client, "-Not allowed to use this command, need P_READ\r\n", 47);
+      _write(entry.client, "-Not allowed to use this command, need P_READ\r\n", 47);
     }
   }
 }

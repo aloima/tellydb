@@ -2,29 +2,29 @@
 
 #include <stddef.h>
 
-static void run(struct Client *client, commanddata_t *command, struct Password *password) {
-  if (client) {
-    if (command->arg_count != 2) {
-      WRONG_ARGUMENT_ERROR(client, "HGET", 4);
+static void run(struct CommandEntry entry) {
+  if (entry.client) {
+    if (entry.data->arg_count != 2) {
+      WRONG_ARGUMENT_ERROR(entry.client, "HGET", 4);
       return;
     }
 
-    if (password->permissions & P_READ) {
-      const struct KVPair *kv = get_data(command->args[0]);
+    if (entry.password->permissions & P_READ) {
+      const struct KVPair *kv = get_data(entry.database, entry.data->args[0]);
 
       if (kv) {
         if (kv->type == TELLY_HASHTABLE) {
-          const struct FVPair *field = get_fv_from_hashtable(kv->value, command->args[1]);
+          const struct FVPair *field = get_fv_from_hashtable(kv->value, entry.data->args[1]);
 
           if (field) {
-            write_value(client, field->value, field->type);
-          } else WRITE_NULL_REPLY(client);
+            write_value(entry.client, field->value, field->type);
+          } else WRITE_NULL_REPLY(entry.client);
         } else {
-          _write(client, "-Invalid type for 'HGET' command\r\n", 34);
+          _write(entry.client, "-Invalid type for 'HGET' command\r\n", 34);
         }
-      } else WRITE_NULL_REPLY(client);
+      } else WRITE_NULL_REPLY(entry.client);
     } else {
-      _write(client, "-Not allowed to use this command, need P_READ\r\n", 47);
+      _write(entry.client, "-Not allowed to use this command, need P_READ\r\n", 47);
     }
   }
 }

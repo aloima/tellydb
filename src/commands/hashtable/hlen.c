@@ -2,15 +2,15 @@
 
 #include <stdio.h>
 
-static void run(struct Client *client, commanddata_t *command, struct Password *password) {
-  if (client) {
-    if (command->arg_count != 1) {
-      WRONG_ARGUMENT_ERROR(client, "HLEN", 4);
+static void run(struct CommandEntry entry) {
+  if (entry.client) {
+    if (entry.data->arg_count != 1) {
+      WRONG_ARGUMENT_ERROR(entry.client, "HLEN", 4);
       return;
     }
 
-    if (password->permissions & P_READ) {
-      const struct KVPair *kv = get_data(command->args[0]);
+    if (entry.password->permissions & P_READ) {
+      const struct KVPair *kv = get_data(entry.database, entry.data->args[0]);
 
       if (kv) {
         if (kv->type == TELLY_HASHTABLE) {
@@ -24,13 +24,13 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
               "+All (includes next count): %d\r\n"
           ), table->size.allocated, table->size.filled, table->size.all);
 
-          _write(client, buf, nbytes);
+          _write(entry.client, buf, nbytes);
         } else {
-          _write(client, "-Invalid type for 'HLEN' command\r\n", 34);
+          _write(entry.client, "-Invalid type for 'HLEN' command\r\n", 34);
         }
-      } else WRITE_NULL_REPLY(client);
+      } else WRITE_NULL_REPLY(entry.client);
     } else {
-      _write(client, "-Not allowed to use this command, need P_READ\r\n", 47);
+      _write(entry.client, "-Not allowed to use this command, need P_READ\r\n", 47);
     }
   }
 }

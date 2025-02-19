@@ -18,31 +18,31 @@ static void lpush_to_list(struct List *list, void *value, enum TellyTypes type) 
   }
 }
 
-static void run(struct Client *client, commanddata_t *command, struct Password *password) {
-  if (command->arg_count < 2) {
-    if (client) WRONG_ARGUMENT_ERROR(client, "LPUSH", 5);
+static void run(struct CommandEntry entry) {
+  if (entry.data->arg_count < 2) {
+    if (entry.client) WRONG_ARGUMENT_ERROR(entry.client, "LPUSH", 5);
     return;
   }
 
-  if (password->permissions & P_WRITE) {
-    const string_t key = command->args[0];
-    struct KVPair *kv = get_data(key);
+  if (entry.password->permissions & P_WRITE) {
+    const string_t key = entry.data->args[0];
+    struct KVPair *kv = get_data(entry.database, key);
     struct List *list;
 
     if (kv) {
       if (kv->type != TELLY_LIST) {
-        if (client) _write(client, "-Not allowed to use this command, need P_READ\r\n", 47);
+        if (entry.client) _write(entry.client, "-Not allowed to use this command, need P_READ\r\n", 47);
         return;
       }
 
       list = kv->value;
     } else {
       list = create_list();
-      set_data(kv, key, list, TELLY_LIST);
+      set_data(entry.database, kv, key, list, TELLY_LIST);
     }
 
-    for (uint32_t i = 1; i < command->arg_count; ++i) {
-      string_t input = command->args[i];
+    for (uint32_t i = 1; i < entry.data->arg_count; ++i) {
+      string_t input = entry.data->args[i];
       char *input_value = input.value;
       bool is_true = streq(input_value, "true");
 
@@ -70,13 +70,13 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
       }
     }
 
-    if (client) {
+    if (entry.client) {
       char buf[14];
-      const size_t nbytes = sprintf(buf, ":%d\r\n", command->arg_count - 1);
-      _write(client, buf, nbytes);
+      const size_t nbytes = sprintf(buf, ":%d\r\n", entry.data->arg_count - 1);
+      _write(entry.client, buf, nbytes);
     }
-  } else if (client) {
-    _write(client, "-Not allowed to use this command, need P_WRITE\r\n", 48);
+  } else if (entry.client) {
+    _write(entry.client, "-Not allowed to use this command, need P_WRITE\r\n", 48);
   }
 }
 

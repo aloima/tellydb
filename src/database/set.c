@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-struct KVPair *set_data(struct KVPair *data, const string_t key, void *value, const enum TellyTypes type) {
+struct KVPair *set_data(struct Database *database, struct KVPair *data, const string_t key, void *value, const enum TellyTypes type) {
   if (data) {
     switch (data->type) {
       case TELLY_STR:
@@ -32,10 +32,9 @@ struct KVPair *set_data(struct KVPair *data, const string_t key, void *value, co
 
     return data;
   } else {
-    struct BTree *cache = get_cache();
     struct KVPair *kv = malloc(sizeof(struct KVPair));
     set_kv(kv, key, value, type);
 
-    return insert_value_to_btree(cache, hash(key.value, key.len), kv)->data;
+    return insert_value_to_btree(database->cache, hash(key.value, key.len), kv)->data;
   }
 }

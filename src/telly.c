@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
       } else if (streq(arg, "create-config")) {
         FILE *file = fopen(".tellyconf", "w");
         struct Configuration conf = get_default_configuration();
-        char buf[1024];
+        char buf[4096];
 
         const size_t n = get_configuration_string(buf, conf);
         fwrite(buf, sizeof(char), n, file);

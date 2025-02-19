@@ -3,17 +3,17 @@
 #include <stdio.h>
 #include <stdint.h>
 
-static void run(struct Client *client, __attribute__((unused)) commanddata_t *command, struct Password *password) {
-  if (client) {
-    if (password->permissions & P_READ) {
-      struct BTree *cache = get_cache();
+static void run(struct CommandEntry entry) {
+  if (entry.client) {
+    if (entry.password->permissions & P_READ) {
+      struct BTree *cache = entry.database->cache;
 
       char buf[14];
       const size_t nbytes = sprintf(buf, ":%d\r\n", cache->size);
 
-      _write(client, buf, nbytes);
+      _write(entry.client, buf, nbytes);
     } else {
-      _write(client, "-Not allowed to use this command, need P_READ\r\n", 47);
+      _write(entry.client, "-Not allowed to use this command, need P_READ\r\n", 47);
     }
   }
 }

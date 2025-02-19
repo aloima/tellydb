@@ -13,6 +13,7 @@ struct Configuration {
   int32_t max_log_lines;
   char data_file[49];
   char log_file[49];
+  char database_name[65];
 
   bool tls;
   char cert[49];

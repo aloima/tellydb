@@ -77,10 +77,14 @@ uint32_t get_command_count() {
 
 void execute_command(struct Transaction *transaction) {
   if (transaction->command) {
-    commanddata_t *data = transaction->data;
-    struct Command command = *transaction->command;
+    struct CommandEntry entry = {
+      .client = transaction->client,
+      .data = transaction->data,
+      .database = transaction->database,
+      .password = transaction->password
+    };
 
-    command.run(transaction->client, data, transaction->password);
+    transaction->command->run(entry);
   } else if (transaction->client) {
     char buf[42];
     const size_t nbytes = sprintf(buf, "-Unknown command '%s'\r\n", transaction->data->name.value);

@@ -76,6 +76,7 @@ void add_transaction(struct Client *client, struct Command *command, commanddata
   transaction->command = command;
   transaction->data = data;
   transaction->password = client->password;
+  transaction->database = client->database;
 
   transaction->prev = NULL;
   transaction->next = start;

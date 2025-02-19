@@ -6,34 +6,34 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-static void run(struct Client *client, commanddata_t *command, struct Password *password) {
-  if (password->permissions & P_WRITE) {
-    if (command->arg_count == 1 || (command->arg_count - 1) % 2 != 0) {
-      if (client) WRONG_ARGUMENT_ERROR(client, "HSET", 4);
+static void run(struct CommandEntry entry) {
+  if (entry.password->permissions & P_WRITE) {
+    if (entry.data->arg_count == 1 || (entry.data->arg_count - 1) % 2 != 0) {
+      if (entry.client) WRONG_ARGUMENT_ERROR(entry.client, "HSET", 4);
       return;
     }
 
-    const string_t key = command->args[0];
-    struct KVPair *kv = get_data(key);
+    const string_t key = entry.data->args[0];
+    struct KVPair *kv = get_data(entry.database, key);
     struct HashTable *table;
 
     if (kv) {
       if (kv->type == TELLY_HASHTABLE) {
         table = kv->value;
       } else {
-        if (client) _write(client, "-Invalid type for 'HSET' command\r\n", 34);
+        if (entry.client) _write(entry.client, "-Invalid type for 'HSET' command\r\n", 34);
         return;
       }
     } else {
       table = create_hashtable(16);
-      set_data(kv, key, table, TELLY_HASHTABLE);
+      set_data(entry.database, kv, key, table, TELLY_HASHTABLE);
     }
 
-    const uint32_t fv_count = (command->arg_count - 1) / 2;
+    const uint32_t fv_count = (entry.data->arg_count - 1) / 2;
 
     for (uint32_t i = 1; i <= fv_count; ++i) {
-      const string_t name = command->args[(i * 2) - 1];
-      const string_t input = command->args[i * 2];
+      const string_t name = entry.data->args[(i * 2) - 1];
+      const string_t input = entry.data->args[i * 2];
       char *input_value = input.value;
 
       bool is_true = streq(input_value, "true");
@@ -61,14 +61,14 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
       }
     }
 
-    if (client) {
+    if (entry.client) {
       char buf[14];
       const size_t buf_len = sprintf(buf, ":%d\r\n", fv_count);
 
-      _write(client, buf, buf_len);
+      _write(entry.client, buf, buf_len);
     }
-  } else if (client) {
-    _write(client, "-Not allowed to use this command, need P_WRITE\r\n", 48);
+  } else if (entry.client) {
+    _write(entry.client, "-Not allowed to use this command, need P_WRITE\r\n", 48);
   }
 }
 

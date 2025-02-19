@@ -3,17 +3,17 @@
 #include <stdint.h>
 #include <time.h>
 
-static void run(struct Client *client, __attribute__((unused)) commanddata_t *command, struct Password *password) {
-  if (password->permissions & P_SERVER) {
+static void run(struct CommandEntry entry) {
+  if (entry.password->permissions & P_SERVER) {
     uint64_t server_age;
     time_t start_at;
     get_server_time(&start_at, &server_age);
     server_age += difftime(time(NULL), start_at);
 
     save_data(server_age);
-    if (client) WRITE_OK(client);
-  } else if (client) {
-    _write(client, "-Not allowed to use this command, need P_SERVER\r\n", 49);
+    if (entry.client) WRITE_OK(entry.client);
+  } else if (entry.client) {
+    _write(entry.client, "-Not allowed to use this command, need P_SERVER\r\n", 49);
   }
 }
 

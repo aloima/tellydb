@@ -100,7 +100,7 @@ static void close_server() {
   FREE_CTX_THREAD_CMD_SOCKET_KDF_PASS(ctx, sockfd);
   free_passwords();
   free_transactions();
-  free_cache();
+  free_databases();
   free(fds);
   write_log(LOG_INFO, "Free'd all memory blocks and closed the server.");
 
@@ -228,18 +228,8 @@ void start_server(struct Configuration *config) {
   initialize_kdf();
   write_log(LOG_INFO, "Created constant passwords and key deriving algorithm.");
 
-  if (create_cache() != NULL) {
-    write_log(LOG_INFO, "Created cache.");
-  } else {
+  if (!open_database_fd(conf, &age)) {
     FREE_CTX_THREAD_CMD_SOCKET_KDF_PASS(ctx, sockfd);
-    write_log(LOG_ERR, "Safely exiting...");
-    FREE_CONF_LOGS(conf);
-    return;
-  }
-
-  if (!open_database_fd(conf->data_file, &age)) {
-    FREE_CTX_THREAD_CMD_SOCKET_KDF_PASS(ctx, sockfd);
-    free_cache();
     write_log(LOG_WARN, "Safely exiting...");
     FREE_CONF_LOGS(conf);
     return;

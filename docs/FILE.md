@@ -4,14 +4,14 @@ They can be changed from configuration file. Configuration file is changeable vi
 
 ## Database file | `.tellydb`
 It consists of file headers, authorization part and data lines.
-* `file headers + authorization part + data lines`
+* `file headers + authorization part + databases`
 
 File headers have 10 bytes size and is as follows:
-* `0x1810 + server age (8 byte)`
+* `0x1810 + server age (8-byte)`
 
 ### String length specifier
 In this file, a structure named string length specifier for strings is defined as follows:
-> A string length is maximum `2^30-1` and represented by 30 bit (6 bit + 3 byte).  
+> A string length is maximum `2^30-1` and represented by 30 bit (6-bit + 3-byte).  
 > A string length specifier is minimum 1 byte, maximum 4 byte. First two bits of first byte represents additional byte count.  
 > For example, construction of string length using `0b(10|100010) 0x07 0x09` data is as follows:
 >  
@@ -25,12 +25,16 @@ In this file, a structure named string length specifier for strings is defined a
 
 ### Authorization part
 Authorization part consists of passwords and their permissions and as follows:
-* `password count byte count (1 byte, n) + password count (n byte) + passwords`
+* `password count byte count (1-byte, n) + password count (n-byte) + passwords`
 
 A password is as follows:
-* `derived password (48 byte) + password permissions (1 byte)`
+* `derived password (48-byte) + password permissions (1-byte)`
 
 For permissions, look at [AUTH.md](./AUTH.md).
+
+### Databases
+It consists of database names and their data lines.
+* `key-value pair count (4-byte) + string length specifier + database name + data lines`
 
 ### Data lines
 A data line is as follows:
@@ -42,7 +46,7 @@ Data value scheme is defined as:
 > All content of data value that stores a number (list size, byte count, number etc.) is [little-endian](https://en.wikipedia.org/wiki/Endianness).
 
 * For `TELLY_NULL (0x00)` type, data value is nothing and the line consists of `data key + 0x1D + TELLY_NULL`.
-* For `TELLY_NUM (0x01)` type, data value is `byte count (1 byte) + number`. For example, data value is `0x02 + (0x00 + 0x01)` or `0x020001` to get 256.
+* For `TELLY_NUM (0x01)` type, data value is `byte count (1-byte) + number`. For example, data value is `0x02 + (0x00 + 0x01)` or `0x020001` to get 256.
 * For `TELLY_STR (0x02)` type, data value is `string length specifier + string data`.
 * For `TELLY_BOOL (0x03)` type, data value is `0x00` or `0x01`.
 

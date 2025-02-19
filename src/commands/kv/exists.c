@@ -4,10 +4,10 @@
 #include <string.h>
 #include <stdint.h>
 
-static void run(struct Client *client, commanddata_t *command, __attribute__((unused)) struct Password *password) {
-  if (client) {
-    if (command->arg_count == 0) {
-      WRONG_ARGUMENT_ERROR(client, "EXISTS", 6);
+static void run(struct CommandEntry entry) {
+  if (entry.client) {
+    if (entry.data->arg_count == 0) {
+      WRONG_ARGUMENT_ERROR(entry.client, "EXISTS", 6);
       return;
     }
 
@@ -16,10 +16,10 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
     char buf[8192];
     buf[0] = '\0';
 
-    for (uint32_t i = 0; i < command->arg_count; ++i) {
-      const string_t key = command->args[i];
+    for (uint32_t i = 0; i < entry.data->arg_count; ++i) {
+      const string_t key = entry.data->args[i];
 
-      if (get_data(key)) {
+      if (get_data(entry.database, key)) {
         existed += 1;
         strcat(buf, "+exists\r\n");
       } else {
@@ -34,9 +34,9 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
         "+existed key count is %d\r\n"
         "+not existed key count is %d\r\n"
         "%s"
-    ), command->arg_count + 2, existed, not_existed, buf);
+    ), entry.data->arg_count + 2, existed, not_existed, buf);
 
-    _write(client, res, nbytes);
+    _write(entry.client, res, nbytes);
   }
 }
 

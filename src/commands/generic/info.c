@@ -46,21 +46,21 @@ static bool get_section(char *section, const struct Configuration *conf, const c
   return true;
 }
 
-static void run(struct Client *client, commanddata_t *command, __attribute__((unused)) struct Password *password) {
-  if (client) {
+static void run(struct CommandEntry entry) {
+  if (entry.client) {
     const struct Configuration *conf = get_server_configuration();
 
     char buf[8192], section[2048];
     buf[0] = '\0';
 
-    if (command->arg_count != 0) {
-      const uint32_t n = command->arg_count - 1;
+    if (entry.data->arg_count != 0) {
+      const uint32_t n = entry.data->arg_count - 1;
 
       for (uint32_t i = 0; i < n; ++i) {
-        char *name = command->args[i].value;
+        char *name = entry.data->args[i].value;
 
         if (!get_section(section, conf, name)) {
-          _write(client, "-Invalid section name\r\n", 23);
+          _write(entry.client, "-Invalid section name\r\n", 23);
           return;
         }
 
@@ -68,10 +68,10 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
         strcat(buf, "\r\n");
       }
 
-      const char *name = command->args[n].value;
+      const char *name = entry.data->args[n].value;
 
       if (!get_section(section, conf, name)) {
-        _write(client, "-Invalid section name\r\n", 23);
+        _write(entry.client, "-Invalid section name\r\n", 23);
         return;
       }
 
@@ -84,7 +84,7 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
         const char *name = names[i];
 
         if (!get_section(section, conf, name)) {
-          _write(client, "-Invalid section name\r\n", 23);
+          _write(entry.client, "-Invalid section name\r\n", 23);
           return;
         }
 
@@ -95,7 +95,7 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
       const char *name = names[n];
 
       if (!get_section(section, conf, name)) {
-        _write(client, "-Invalid section name\r\n", 23);
+        _write(entry.client, "-Invalid section name\r\n", 23);
         return;
       }
 
@@ -106,7 +106,7 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
     char res[buf_len + 11];
 
     const size_t nbytes = sprintf(res, "$%hu\r\n%s\r\n", buf_len, buf);
-    _write(client, res, nbytes);
+    _write(entry.client, res, nbytes);
   }
 }
 

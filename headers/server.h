@@ -2,14 +2,18 @@
 
 #pragma once
 
+#include "database.h"
 #include "config.h"
 #include "utils.h"
 
+#include <openssl/crypto.h>
 #include <openssl/ssl.h>
 
 #include <stdint.h>
 #include <stdbool.h>
 #include <time.h>
+
+#include <sys/types.h>
 
 #define WRITE_NULL_REPLY(client) \
   switch ((client)->protover) {\
@@ -37,6 +41,7 @@ struct Client {
   int connfd;
   uint32_t id;
   time_t connected_at;
+  struct Database *database;
   struct Command *command;
   char *lib_name;
   char *lib_ver;

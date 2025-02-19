@@ -6,14 +6,14 @@
 #include <sys/time.h>
 #include <bits/types/struct_timeval.h>
 
-static void run(struct Client *client, __attribute__((unused)) commanddata_t *command, __attribute__((unused)) struct Password *password) {
-  if (client) {
+static void run(struct CommandEntry entry) {
+  if (entry.client) {
     struct timeval timestamp;
     gettimeofday(&timestamp, NULL);
 
     char buf[51];
     const size_t nbytes = sprintf(buf, "*2\r\n:%ld\r\n:%ld\r\n", timestamp.tv_sec, timestamp.tv_usec);
-    _write(client, buf, nbytes);
+    _write(entry.client, buf, nbytes);
   }
 }
 

@@ -4,48 +4,48 @@
 #include <string.h>
 #include <stdlib.h>
 
-static void run(struct Client *client, commanddata_t *command, struct Password *password) {
-  if (command->arg_count != 2) {
-    if (client) WRONG_ARGUMENT_ERROR(client, "APPEND", 6);
+static void run(struct CommandEntry entry) {
+  if (entry.data->arg_count != 2) {
+    if (entry.client) WRONG_ARGUMENT_ERROR(entry.client, "APPEND", 6);
     return;
   }
 
-  if (password->permissions & (P_READ | P_WRITE)) {
-    const string_t key = command->args[0];
-    const struct KVPair *kv = get_data(key);
+  if (entry.password->permissions & (P_READ | P_WRITE)) {
+    const string_t key = entry.data->args[0];
+    const struct KVPair *kv = get_data(entry.database, key);
 
     if (kv) {
       if (kv->type == TELLY_STR) {
-        const string_t arg = command->args[1];
+        const string_t arg = entry.data->args[1];
 
         string_t *string = kv->value;
         string->value = realloc(string->value, string->len + arg.len);
         memcpy(string->value + string->len, arg.value, arg.len);
         string->len += arg.len;
 
-        if (client) {
+        if (entry.client) {
           char buf[14];
           const size_t nbytes = sprintf(buf, ":%d\r\n", string->len);
-          _write(client, buf, nbytes);
+          _write(entry.client, buf, nbytes);
         }
-      } else if (client) _write(client, "-Invalid type for 'APPEND' command\r\n", 36);
+      } else if (entry.client) _write(entry.client, "-Invalid type for 'APPEND' command\r\n", 36);
     } else {
-      const string_t arg = command->args[1];
+      const string_t arg = entry.data->args[1];
 
       string_t *string = malloc(sizeof(string_t));
       string->len = arg.len;
       string->value = malloc(string->len);
       memcpy(string->value, arg.value, string->len);
-      set_data(NULL, key, string, TELLY_STR);
+      set_data(entry.database, NULL, key, string, TELLY_STR);
 
-      if (client) {
+      if (entry.client) {
         char buf[14];
         const size_t nbytes = sprintf(buf, ":%d\r\n", string->len);
-        _write(client, buf, nbytes);
+        _write(entry.client, buf, nbytes);
       }
     }
-  } else if (client) {
-    _write(client, "-Not allowed to use this command, need P_READ and P_WRITE\r\n", 59);
+  } else if (entry.client) {
+    _write(entry.client, "-Not allowed to use this command, need P_READ and P_WRITE\r\n", 59);
   }
 }
 

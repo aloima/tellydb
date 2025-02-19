@@ -105,6 +105,7 @@ struct Client *add_client(const int connfd) {
     client->id = last_connection_client_id;
     client->connfd = connfd;
     time(&client->connected_at);
+    client->database = get_main_database();
     client->command = NULL;
     client->lib_name = NULL;
     client->lib_ver = NULL;

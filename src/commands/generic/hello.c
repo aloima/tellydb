@@ -9,33 +9,33 @@ struct Value {
   char *data;
 };
 
-static void run(struct Client *client, commanddata_t *command, __attribute__((unused)) struct Password *password) {
-  if (client) {
-    const uint32_t arg_count = command->arg_count;
+static void run(struct CommandEntry entry) {
+  if (entry.client) {
+    const uint32_t arg_count = entry.data->arg_count;
 
     // arg_count != 0 && arg_count != 1 && arg_count != 3 && arg_count != 4 && arg_count != 6
     if (arg_count > 6 || arg_count == 2 || arg_count == 5) {
-      WRONG_ARGUMENT_ERROR(client, "HELLO", 5);
+      WRONG_ARGUMENT_ERROR(entry.client, "HELLO", 5);
       return;
     }
 
-    if (command->arg_count > 0) {
-      char *protover = command->args[0].value;
+    if (entry.data->arg_count > 0) {
+      char *protover = entry.data->args[0].value;
 
-      if (streq(protover, "2")) client->protover = RESP2;
-      else if (streq(protover, "3")) client->protover = RESP3;
+      if (streq(protover, "2")) entry.client->protover = RESP2;
+      else if (streq(protover, "3")) entry.client->protover = RESP3;
       else {
-        _write(client, "-Invalid protocol version\r\n", 27);
+        _write(entry.client, "-Invalid protocol version\r\n", 27);
         return;
       }
     }
 
     char client_id[11];
-    sprintf(client_id, "%d", client->id);
+    sprintf(client_id, "%d", entry.client->id);
 
     char *protocol;
 
-    switch (client->protover) {
+    switch (entry.client->protover) {
       case RESP2:
         protocol = "RESP2";
         break;
@@ -55,7 +55,7 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
       {{9, "client id"}, {strlen(client_id), client_id}}
     };
 
-    switch (client->protover) {
+    switch (entry.client->protover) {
       case RESP2: {
         char buf[1024];
         memcpy(buf, "*8\r\n", 5);
@@ -66,7 +66,7 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
           strcat(buf, element);
         }
 
-        _write(client, buf, strlen(buf));
+        _write(entry.client, buf, strlen(buf));
         break;
       }
 
@@ -80,7 +80,7 @@ static void run(struct Client *client, commanddata_t *command, __attribute__((un
           strcat(buf, element);
         }
 
-        _write(client, buf, strlen(buf));
+        _write(entry.client, buf, strlen(buf));
         break;
       }
     }

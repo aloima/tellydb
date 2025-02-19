@@ -5,38 +5,38 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-static void run(struct Client *client, commanddata_t *command, struct Password *password) {
-  if (command->arg_count != 1) {
-    if (client) WRONG_ARGUMENT_ERROR(client, "DECR", 4);
+static void run(struct CommandEntry entry) {
+  if (entry.data->arg_count != 1) {
+    if (entry.client) WRONG_ARGUMENT_ERROR(entry.client, "DECR", 4);
     return;
   }
 
-  if (password->permissions & (P_READ | P_WRITE)) {
-    string_t key = command->args[0];
-    struct KVPair *result = get_data(key);
+  if (entry.password->permissions & (P_READ | P_WRITE)) {
+    string_t key = entry.data->args[0];
+    struct KVPair *result = get_data(entry.database, key);
 
     if (!result) {
       long *number = calloc(1, sizeof(long));
-      const bool success = set_data(NULL, key, number, TELLY_NUM);
+      const bool success = set_data(entry.database, NULL, key, number, TELLY_NUM);
 
-      if (client) {
-        if (success) _write(client, ":0\r\n", 4);
-        else WRITE_ERROR(client);
+      if (entry.client) {
+        if (success) _write(entry.client, ":0\r\n", 4);
+        else WRITE_ERROR(entry.client);
       }
     } else if (result->type == TELLY_NUM) {
       long *number = result->value;
       *number -= 1;
 
-      if (client) {
+      if (entry.client) {
         char buf[24];
         const size_t nbytes = sprintf(buf, ":%ld\r\n", *number);
-        _write(client, buf, nbytes);
+        _write(entry.client, buf, nbytes);
       }
-    } else if (client) {
-      _write(client, "-Invalid type for 'DECR' command\r\n", 34);
+    } else if (entry.client) {
+      _write(entry.client, "-Invalid type for 'DECR' command\r\n", 34);
     }
   } else {
-    _write(client, "-Not allowed to use this command, need P_READ and P_WRITE\r\n", 59);
+    _write(entry.client, "-Not allowed to use this command, need P_READ and P_WRITE\r\n", 59);
   }
 }
 

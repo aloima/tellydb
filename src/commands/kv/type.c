@@ -2,45 +2,45 @@
 
 #include <stddef.h>
 
-static void run(struct Client *client, commanddata_t *command, __attribute__((unused)) struct Password *password) {
-  if (client) {
-    if (command->arg_count != 1) {
-      WRONG_ARGUMENT_ERROR(client, "TYPE", 4);
+static void run(struct CommandEntry entry) {
+  if (entry.client) {
+    if (entry.data->arg_count != 1) {
+      WRONG_ARGUMENT_ERROR(entry.client, "TYPE", 4);
       return;
     }
 
-    struct KVPair *res = get_data(command->args[0]);
+    struct KVPair *res = get_data(entry.database, entry.data->args[0]);
 
     if (res) {
       switch (res->type) {
         case TELLY_NULL:
-          _write(client, "+null\r\n", 7);
+          _write(entry.client, "+null\r\n", 7);
           break;
 
         case TELLY_NUM:
-          _write(client, "+number\r\n", 9);
+          _write(entry.client, "+number\r\n", 9);
           break;
 
         case TELLY_STR:
-          _write(client, "+string\r\n", 9);
+          _write(entry.client, "+string\r\n", 9);
           break;
 
         case TELLY_HASHTABLE:
-          _write(client, "+hash table\r\n", 13);
+          _write(entry.client, "+hash table\r\n", 13);
           break;
 
         case TELLY_LIST:
-          _write(client, "+list\r\n", 7);
+          _write(entry.client, "+list\r\n", 7);
           break;
 
         case TELLY_BOOL:
-          _write(client, "+boolean\r\n", 10);
+          _write(entry.client, "+boolean\r\n", 10);
           break;
 
         default:
           break;
       }
-    } else WRITE_NULL_REPLY(client);
+    } else WRITE_NULL_REPLY(entry.client);
   }
 }
 

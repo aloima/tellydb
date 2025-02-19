@@ -48,76 +48,76 @@ static uint8_t read_permissions_value(struct Client *client, char *permissions_v
   return permissions;
 }
 
-static void run(struct Client *client, commanddata_t *command, struct Password *password) {
-  if (command->arg_count == 0) {
-    WRONG_ARGUMENT_ERROR(client, "PWD", 3);
+static void run(struct CommandEntry entry) {
+  if (entry.data->arg_count == 0) {
+    WRONG_ARGUMENT_ERROR(entry.client, "PWD", 3);
     return;
   }
 
-  if (password->permissions & P_AUTH) {
-    const string_t subcommand_string = command->args[0];
+  if (entry.password->permissions & P_AUTH) {
+    const string_t subcommand_string = entry.data->args[0];
     char subcommand[subcommand_string.len + 1];
     to_uppercase(subcommand_string.value, subcommand);
 
     if (streq(subcommand, "ADD")) {
-      if (command->arg_count != 3) {
-        WRONG_ARGUMENT_ERROR(client, "PWD ADD", 7);
+      if (entry.data->arg_count != 3) {
+        WRONG_ARGUMENT_ERROR(entry.client, "PWD ADD", 7);
         return;
       }
 
       const uint8_t all = get_full_password()->permissions;
-      const string_t data = command->args[1];
-      char *permissions_value = command->args[2].value;
-      const uint8_t permissions = (streq(permissions_value, "all") ? all : read_permissions_value(client, permissions_value));
-      const uint8_t not_has = ~password->permissions & permissions;
+      const string_t data = entry.data->args[1];
+      char *permissions_value = entry.data->args[2].value;
+      const uint8_t permissions = (streq(permissions_value, "all") ? all : read_permissions_value(entry.client, permissions_value));
+      const uint8_t not_has = ~entry.password->permissions & permissions;
 
       if (not_has) {
-        _write(client, "-Tried to give permissions your password do not have\r\n", 54);
+        _write(entry.client, "-Tried to give permissions your password do not have\r\n", 54);
         return;
       }
 
       if (where_password(data.value, data.len) == -1) {
-        add_password(client, data, permissions);
-        WRITE_OK(client);
+        add_password(entry.client, data, permissions);
+        WRITE_OK(entry.client);
       } else {
-        _write(client, "-This password already exists\r\n", 31);
+        _write(entry.client, "-This password already exists\r\n", 31);
       }
     } if (streq(subcommand, "EDIT")) {
-      if (command->arg_count != 3) {
-        WRONG_ARGUMENT_ERROR(client, "PWD EDIT", 8);
+      if (entry.data->arg_count != 3) {
+        WRONG_ARGUMENT_ERROR(entry.client, "PWD EDIT", 8);
         return;
       }
 
-      const string_t input = command->args[1];
-      char *permissions_value = command->args[2].value;
+      const string_t input = entry.data->args[1];
+      char *permissions_value = entry.data->args[2].value;
 
       struct Password *target = get_password(input.value, input.len);
 
       if (target) {
-        const uint8_t permissions = read_permissions_value(client, permissions_value);
-        const uint8_t not_has = ~password->permissions & permissions;
+        const uint8_t permissions = read_permissions_value(entry.client, permissions_value);
+        const uint8_t not_has = ~entry.password->permissions & permissions;
 
         if (not_has) {
-          _write(client, "-Tried to give permissions your password do not have\r\n", 54);
+          _write(entry.client, "-Tried to give permissions your password do not have\r\n", 54);
           return;
         }
 
         target->permissions = permissions;
-        WRITE_OK(client);
+        WRITE_OK(entry.client);
       } else {
-        _write(client, "-This password does not exist\r\n", 31);
+        _write(entry.client, "-This password does not exist\r\n", 31);
       }
     } else if (streq(subcommand, "REMOVE")) {
-      if (command->arg_count != 2) {
-        WRONG_ARGUMENT_ERROR(client, "PWD REMOVE", 10);
+      if (entry.data->arg_count != 2) {
+        WRONG_ARGUMENT_ERROR(entry.client, "PWD REMOVE", 10);
         return;
       }
 
-      const string_t input = command->args[1];
+      const string_t input = entry.data->args[1];
 
-      if (remove_password(client, input.value, input.len)) WRITE_OK(client);
+      if (remove_password(entry.client, input.value, input.len)) WRITE_OK(entry.client);
       else {
-        _write(client, "-This password cannot be found\r\n", 32);
+        _write(entry.client, "-This password cannot be found\r\n", 32);
       }
     } else if (streq(subcommand, "GENERATE")) {
       char value[33];
@@ -126,10 +126,10 @@ static void run(struct Client *client, commanddata_t *command, struct Password *
       char buf[41];
       sprintf(buf, "$32\r\n%s\r\n", value);
 
-      _write(client, buf, 39);
+      _write(entry.client, buf, 39);
     }
   } else {
-    _write(client, "-Not allowed to use this command, need P_AUTH\r\n", 47);
+    _write(entry.client, "-Not allowed to use this command, need P_AUTH\r\n", 47);
   }
 }
 
