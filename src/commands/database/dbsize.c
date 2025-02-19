@@ -8,6 +8,16 @@ static void run(struct CommandEntry entry) {
     if (entry.password->permissions & P_READ) {
       struct BTree *cache = entry.database->cache;
 
+      if (entry.data->arg_count == 1) {
+        struct BTree *found = get_cache_of_database(entry.data->args[0]);
+
+        if (found) cache = found;
+        else {
+          _write(entry.client, "-Database cannot be found\r\n", 27);
+          return;
+        }
+      }
+
       char buf[14];
       const size_t nbytes = sprintf(buf, ":%d\r\n", cache->size);
 

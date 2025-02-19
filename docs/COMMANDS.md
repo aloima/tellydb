@@ -35,12 +35,14 @@ The list of unwritten behavior to commands.
 ---
 
 ### DBSIZE
-**Syntax**: `DBSIZE`  
+**Syntax**: `DBSIZE [database]`  
 **Description**: Returns key count in the database.  
 **Since**: `0.1.6`  
 **Time complexity**: `O(1)`  
 **Permissions**: `P_READ`  
 **Returns**: Integer
+**Arguments**:
+- **database**: The name of the database to be retrieve key count. If not specified, it will be current database of the client
 
 ---
 
