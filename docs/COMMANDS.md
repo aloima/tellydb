@@ -24,7 +24,7 @@ The list of unwritten behavior to commands.
 **Syntax**: `BGSAVE`  
 **Description**: Saves all data to database file in background using a thread.  
 **Since**: `0.1.6`  
-**Time complexity**: `O(N) where N is cached key-value pairs`  
+**Time complexity**: `O(N) where N is cached key-value pair count`  
 **Permissions**: `P_SERVER`  
 **Returns**: `OK`  
 **Behavior**:
@@ -41,6 +41,9 @@ The list of unwritten behavior to commands.
 **Time complexity**: `O(1)`  
 **Permissions**: `P_READ`  
 **Returns**: Integer
+**Behavior**:
+* If database cannot be found, throws an error.
+
 **Arguments**:
 - **database**: The name of the database to be retrieve key count. If not specified, it will be current database of the client
 
@@ -60,11 +63,24 @@ The list of unwritten behavior to commands.
 **Syntax**: `SAVE`  
 **Description**: Saves all data to database file.  
 **Since**: `0.1.6`  
-**Time complexity**: `O(N) where N is cached key-value pairs`  
+**Time complexity**: `O(N) where N is cached key-value pair count`  
 **Permissions**: `P_SERVER`  
 **Returns**: `OK`  
 **Behavior**:
 * Waits until saving all data to database file, so **it blocks all client commands.**
+
+### SELECT
+**Syntax**: `SELECT database`  
+**Description**: Selects database which will be used by client.  
+**Since**: `0.1.9`  
+**Time complexity**: `O(N) where N is total database count`  
+**Permissions**: None  
+**Returns**: `OK`  
+**Behavior**:
+* If database cannot be found, throws an error.
+
+**Arguments**:
+- **database**: The name of the database to be used by client.
 
 ---
 

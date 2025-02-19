@@ -6,7 +6,7 @@
 #include <stdlib.h>
 
 static struct Command *commands = NULL;
-static uint32_t command_count = 33;
+static uint32_t command_count = 34;
 
 struct Command *load_commands() {
   const struct Command _commands[] = {
@@ -15,6 +15,7 @@ struct Command *load_commands() {
     cmd_dbsize,
     cmd_lastsave,
     cmd_save,
+    cmd_select,
 
     // Generic commands
     cmd_age,

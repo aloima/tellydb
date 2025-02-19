@@ -9,6 +9,7 @@ extern const struct Command cmd_bgsave;
 extern const struct Command cmd_dbsize;
 extern const struct Command cmd_lastsave;
 extern const struct Command cmd_save;
+extern const struct Command cmd_select;
 /* /DATABASE COMMANDS */
 
 /* GENERIC COMMANDS */
