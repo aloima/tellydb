@@ -10,80 +10,81 @@ struct Value {
 };
 
 static void run(struct CommandEntry entry) {
-  if (entry.client) {
-    const uint32_t arg_count = entry.data->arg_count;
+  if (!entry.client) return;
+  const uint32_t arg_count = entry.data->arg_count;
 
-    // arg_count != 0 && arg_count != 1 && arg_count != 3 && arg_count != 4 && arg_count != 6
-    if (arg_count > 6 || arg_count == 2 || arg_count == 5) {
-      WRONG_ARGUMENT_ERROR(entry.client, "HELLO", 5);
+  // arg_count != 0 && arg_count != 1 && arg_count != 3 && arg_count != 4 && arg_count != 6
+  if (arg_count > 6 || arg_count == 2 || arg_count == 5) {
+    WRONG_ARGUMENT_ERROR(entry.client, "HELLO", 5);
+    return;
+  }
+
+  if (arg_count > 0) {
+    const char *protover = entry.data->args[0].value;
+
+    if (streq(protover, "2")) entry.client->protover = RESP2;
+    else if (streq(protover, "3")) entry.client->protover = RESP3;
+    else {
+      _write(entry.client, "-Invalid protocol version\r\n", 27);
       return;
     }
+  }
 
-    if (entry.data->arg_count > 0) {
-      char *protover = entry.data->args[0].value;
+  char client_id[11];
+  uint32_t client_id_len = sprintf(client_id, "%d", entry.client->id);
 
-      if (streq(protover, "2")) entry.client->protover = RESP2;
-      else if (streq(protover, "3")) entry.client->protover = RESP3;
-      else {
-        _write(entry.client, "-Invalid protocol version\r\n", 27);
-        return;
-      }
-    }
+  char *protocol;
+  uint32_t protocol_len;
 
-    char client_id[11];
-    sprintf(client_id, "%d", entry.client->id);
+  switch (entry.client->protover) {
+    case RESP2:
+      protocol = "RESP2";
+      protocol_len = 5;
+      break;
 
-    char *protocol;
+    case RESP3:
+      protocol = "RESP3";
+      protocol_len = 5;
+      break;
 
-    switch (entry.client->protover) {
-      case RESP2:
-        protocol = "RESP2";
-        break;
+    default:
+      protocol = "";
+      protocol_len = 0;
+  }
 
-      case RESP3:
-        protocol = "RESP3";
-        break;
+  struct Value values[4][2] = {
+    {{6, "server"}, {5, "telly"}},
+    {{7, "version"}, {sizeof(VERSION) - 1, VERSION}},
+    {{8, "protocol"}, {protocol_len, protocol}},
+    {{9, "client id"}, {client_id_len, client_id}}
+  };
 
-      default:
-        protocol = "";
-    }
+  char buf[1024];
 
-    struct Value values[4][2] = {
-      {{6, "server"}, {5, "telly"}},
-      {{7, "version"}, {strlen(VERSION), VERSION}},
-      {{8, "protocol"}, {strlen(protocol), protocol}},
-      {{9, "client id"}, {strlen(client_id), client_id}}
-    };
+  switch (entry.client->protover) {
+    case RESP2:
+      memcpy(buf, "*8\r\n", 5);
 
-    switch (entry.client->protover) {
-      case RESP2: {
-        char buf[1024];
-        memcpy(buf, "*8\r\n", 5);
-
-        for (uint32_t i = 0; i < 4; ++i) {
-          char element[128];
-          sprintf(element, "$%d\r\n%s\r\n$%d\r\n%s\r\n", values[i][0].length, values[i][0].data, values[i][1].length, values[i][1].data);
-          strcat(buf, element);
-        }
-
-        _write(entry.client, buf, strlen(buf));
-        break;
+      for (uint32_t i = 0; i < 4; ++i) {
+        char element[128];
+        sprintf(element, "$%d\r\n%s\r\n$%d\r\n%s\r\n", values[i][0].length, values[i][0].data, values[i][1].length, values[i][1].data);
+        strcat(buf, element);
       }
 
-      case RESP3: {
-        char buf[1024];
-        memcpy(buf, "%4\r\n", 5);
+      _write(entry.client, buf, strlen(buf));
+      break;
 
-        for (uint32_t i = 0; i < 4; ++i) {
-          char element[128];
-          sprintf(element, "$%d\r\n%s\r\n$%d\r\n%s\r\n", values[i][0].length, values[i][0].data, values[i][1].length, values[i][1].data);
-          strcat(buf, element);
-        }
+    case RESP3:
+      memcpy(buf, "%4\r\n", 5);
 
-        _write(entry.client, buf, strlen(buf));
-        break;
+      for (uint32_t i = 0; i < 4; ++i) {
+        char element[128];
+        sprintf(element, "$%d\r\n%s\r\n$%d\r\n%s\r\n", values[i][0].length, values[i][0].data, values[i][1].length, values[i][1].data);
+        strcat(buf, element);
       }
-    }
+
+      _write(entry.client, buf, strlen(buf));
+      break;
   }
 }
 
@@ -92,6 +93,7 @@ const struct Command cmd_hello = {
   .summary = "Handshakes with the tellydb server.",
   .since = "0.1.6",
   .complexity = "O(1)",
+  .permissions = P_NONE,
   .subcommands = NULL,
   .subcommand_count = 0,
   .run = run

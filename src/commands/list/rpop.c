@@ -8,33 +8,32 @@ static void run(struct CommandEntry entry) {
     return;
   }
 
-  if (entry.password->permissions & (P_READ & P_WRITE)) {
-    const string_t key = entry.data->args[0];
-    struct KVPair *kv = get_data(entry.database, key);
+  const string_t key = entry.data->args[0];
+  const struct KVPair *kv = get_data(entry.database, key);
 
-    if (kv) {
-      if (kv->type != TELLY_LIST) {
-        if (entry.client) _write(entry.client, "-Value stored at the key is not a list\r\n", 40);
-        return;
-      }
+  if (!kv) {
+    if (entry.client) WRITE_NULL_REPLY(entry.client);
+    return;
+  }
 
-      struct List *list = kv->value;
-      struct ListNode *node = list->end;
+  if (kv->type != TELLY_LIST) {
+    if (entry.client) _write(entry.client, "-Value stored at the key is not a list\r\n", 40);
+    return;
+  }
 
-      if (entry.client) write_value(entry.client, list->end->value, list->end->type);
+  struct List *list = kv->value;
+  struct ListNode *node = list->end;
 
-      if (list->size == 1) {
-        delete_data(entry.database, key);
-      } else {
-        list->end = list->end->prev;
-        list->end->next = NULL;
+  if (entry.client) write_value(entry.client, list->end->value, list->end->type);
 
-        list->size -= 1;
-        free_listnode(node);
-      }
-    } else if (entry.client) WRITE_NULL_REPLY(entry.client);
-  } else if (entry.client) {
-    _write(entry.client, "-Not allowed to use this command, need P_READ and P_WRITE\r\n", 59);
+  if (list->size == 1) {
+    delete_data(entry.database, key);
+  } else {
+    list->end = list->end->prev;
+    list->end->next = NULL;
+
+    list->size -= 1;
+    free_listnode(node);
   }
 }
 
@@ -43,6 +42,7 @@ const struct Command cmd_rpop = {
   .summary = "Removes and returns last element of the list.",
   .since = "0.1.3",
   .complexity = "O(1)",
+  .permissions = (P_READ | P_WRITE),
   .subcommands = NULL,
   .subcommand_count = 0,
   .run = run

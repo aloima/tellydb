@@ -10,6 +10,7 @@
 #include <stdbool.h>
 
 enum Permissions {
+  P_NONE   = 0b00000000,
   P_READ   = 0b00000001,
   P_WRITE  = 0b00000010,
   P_CLIENT = 0b00000100,

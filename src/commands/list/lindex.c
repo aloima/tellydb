@@ -4,63 +4,58 @@
 #include <stdint.h>
 
 static void run(struct CommandEntry entry) {
-  if (entry.client) {
-    if (entry.data->arg_count != 2) {
-      WRONG_ARGUMENT_ERROR(entry.client, "LINDEX", 4);
+  if (!entry.client) return;
+  if (entry.data->arg_count != 2) {
+    WRONG_ARGUMENT_ERROR(entry.client, "LINDEX", 4);
+    return;
+  }
+
+  const struct KVPair *kv = get_data(entry.database, entry.data->args[0]);
+
+  if (!kv || kv->type != TELLY_LIST) {
+    _write(entry.client, "-Value stored at the key is not a list\r\n", 40);
+    return;
+  }
+
+  const char *index_str = entry.data->args[1].value;
+
+  if (!is_integer(index_str)) {
+    _write(entry.client, "-Second argument must be an integer\r\n", 37);
+    return;
+  }
+
+  const struct List *list = kv->value;
+  struct ListNode *node;
+
+  if (index_str[0] != '-') {
+    const uint32_t index = atoi(index_str);
+    node = list->begin;
+
+    if ((index + 1) > list->size) {
+      WRITE_NULL_REPLY(entry.client);
       return;
     }
 
-    if (entry.password->permissions & P_READ) {
-      const struct KVPair *kv = get_data(entry.database, entry.data->args[0]);
+    for (uint32_t i = 0; i < index; ++i) {
+      node = node->next;
+    }
+  } else {
+    const uint64_t index = atoi(index_str + 1);
+    node = list->end;
 
-      if (!kv || kv->type != TELLY_LIST) {
-        _write(entry.client, "-Value stored at the key is not a list\r\n", 40);
-        return;
-      }
+    if (index > list->size) {
+      WRITE_NULL_REPLY(entry.client);
+      return;
+    }
 
-      const char *index_str = entry.data->args[1].value;
+    const uint32_t bound = index - 1;
 
-      if (!is_integer(index_str)) {
-        _write(entry.client, "-Second argument must be an integer\r\n", 37);
-        return;
-      }
-
-      const struct List *list = kv->value;
-      struct ListNode *node;
-
-      if (index_str[0] != '-') {
-        const uint32_t index = atoi(index_str);
-        node = list->begin;
-
-        if ((index + 1) > list->size) {
-          WRITE_NULL_REPLY(entry.client);
-          return;
-        }
-
-        for (uint32_t i = 0; i < index; ++i) {
-          node = node->next;
-        }
-      } else {
-        const uint64_t index = atoi(index_str + 1);
-        node = list->end;
-
-        if (index > list->size) {
-          WRITE_NULL_REPLY(entry.client);
-          return;
-        }
-
-        const uint32_t bound = index - 1;
-
-        for (uint32_t i = 0; i < bound; ++i) {
-          node = node->prev;
-        }
-      }
-
-      write_value(entry.client, node->value, node->type);
-    } else {
-      _write(entry.client, "-Not allowed to use this command, need P_READ\r\n", 47);
+    for (uint32_t i = 0; i < bound; ++i) {
+      node = node->prev;
     }
   }
+
+  write_value(entry.client, node->value, node->type);
 }
 
 const struct Command cmd_lindex = {
@@ -68,6 +63,7 @@ const struct Command cmd_lindex = {
   .summary = "Returns element at the index in the list.",
   .since = "0.1.4",
   .complexity = "O(N) where N is index number",
+  .permissions = P_READ,
   .subcommands = NULL,
   .subcommand_count = 0,
   .run = run

@@ -5,8 +5,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-static struct Command *commands = NULL;
-static uint32_t command_count = 34;
+static struct Command *commands;
+static uint32_t command_count;
 
 struct Command *load_commands() {
   const struct Command _commands[] = {
@@ -55,6 +55,8 @@ struct Command *load_commands() {
     cmd_rpush
   };
 
+  command_count = (sizeof(_commands) / sizeof(struct Command));
+
   if (posix_memalign((void **) &commands, 8, sizeof(_commands)) == 0) {
     memcpy(commands, _commands, sizeof(_commands));
   } else {
@@ -77,19 +79,29 @@ uint32_t get_command_count() {
 }
 
 void execute_command(struct Transaction *transaction) {
-  if (transaction->command) {
+  struct Command *command = transaction->command;
+  struct Client *client = transaction->client;
+
+  if (command) {
+    struct Password *password = transaction->password;
+
     struct CommandEntry entry = {
-      .client = transaction->client,
+      .client = client,
       .data = transaction->data,
       .database = transaction->database,
-      .password = transaction->password
+      .password = password
     };
 
-    transaction->command->run(entry);
-  } else if (transaction->client) {
+    if ((password->permissions & command->permissions) != command->permissions) {
+      _write(client, "-No permissions to execute this command\r\n", 41);
+      return;
+    }
+
+    command->run(entry);
+  } else if (client) {
     char buf[42];
     const size_t nbytes = sprintf(buf, "-Unknown command '%s'\r\n", transaction->data->name.value);
 
-    _write(transaction->client, buf, nbytes);
+    _write(client, buf, nbytes);
   }
 }
