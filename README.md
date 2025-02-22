@@ -28,5 +28,16 @@ An in-memory key-value database project for educational purposes.
 
 To get information about cli commands, use `telly help`.
 
+## Benchmark Results
+Tested on Intel Core i7-7500U x 4 using [benchmark/benchmark.c](./benchmark/benchmark.c)
+```
+Benchmark results (100000 operations per server):
+telly master test: SET=7526.57 ms, GET=5610.98 ms
+valkey 8.0.2 test: SET=4463.70 ms, GET=4294.38 ms
+
+telly master loaded database file in 0.064 seconds
+valkey 8.0.2 loaded database file in 0.065 seconds
+```
+
 ## License
 Licensed under [BSD-3 Clause Clear License](./LICENSE).
