@@ -5,7 +5,12 @@
 #include <string.h>
 
 static void run(struct CommandEntry entry) {
-  if (entry.data->arg_count == 0 || !entry.client) return;
+  if (!entry.client) return;
+  if (entry.data->arg_count == 0) {
+    MISSING_SUBCOMMAND_ERROR(entry.client, "COMMAND", 7);
+    return;
+  }
+
   const string_t input = entry.data->args[0];
   char subcommand[input.len + 1];
   to_uppercase(input.value, subcommand);
@@ -101,6 +106,8 @@ static void run(struct CommandEntry entry) {
     char buf[14];
     const size_t nbytes = sprintf(buf, ":%d\r\n", get_command_count());
     _write(entry.client, buf, nbytes);
+  } else {
+    INVALID_SUBCOMMAND_ERROR(entry.client, "COMMAND", 7);
   }
 }
 

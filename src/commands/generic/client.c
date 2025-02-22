@@ -8,7 +8,7 @@
 
 static void run(struct CommandEntry entry) {
   if (entry.data->arg_count == 0) {
-    if (entry.client) WRONG_ARGUMENT_ERROR(entry.client, "CLIENT", 6);
+    if (entry.client) MISSING_SUBCOMMAND_ERROR(entry.client, "CLIENT", 6);
     return;
   }
 
@@ -202,6 +202,8 @@ static void run(struct CommandEntry entry) {
     } else if (entry.client) {
       _write(entry.client, "-Not allowed to use this command, need P_CLIENT\r\n", 49);
     }
+  } else if (entry.client) {
+    INVALID_SUBCOMMAND_ERROR(entry.client, "CLIENT", 6);
   }
 }
 

@@ -116,7 +116,7 @@ static void remove_pwd(struct CommandEntry entry) {
 
 static void run(struct CommandEntry entry) {
   if (entry.data->arg_count == 0) {
-    if (entry.client) WRONG_ARGUMENT_ERROR(entry.client, "PWD", 3);
+    if (entry.client) MISSING_SUBCOMMAND_ERROR(entry.client, "PWD", 3);
     return;
   }
 
@@ -140,6 +140,8 @@ static void run(struct CommandEntry entry) {
     sprintf(buf, "$32\r\n%s\r\n", value);
 
     _write(entry.client, buf, 39);
+  } else if (entry.client) {
+    INVALID_SUBCOMMAND_ERROR(entry.client, "PWD", 3);
   }
 }
 
