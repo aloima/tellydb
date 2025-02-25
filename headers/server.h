@@ -13,7 +13,11 @@
 #include <stdbool.h>
 #include <time.h>
 
+#include <unistd.h>
 #include <sys/types.h>
+
+#define _read(client, buf, nbytes) ((client)->ssl ? SSL_read((client)->ssl, (buf), (nbytes)) : read((client)->connfd, (buf), (nbytes)))
+#define _write(client, buf, nbytes) ((client)->ssl ? SSL_write((client)->ssl, (buf), (nbytes)) : write((client)->connfd, (buf), (nbytes)))
 
 #define WRITE_NULL_REPLY(client) \
   switch ((client)->protover) {\
@@ -74,7 +78,5 @@ void get_server_time(time_t *server_start_at, uint64_t *server_age);
 void start_server(struct Configuration *config);
 struct Configuration *get_server_configuration();
 
-ssize_t _read(struct Client *client, void *buf, const size_t nbytes);
-ssize_t _write(struct Client *client, void *buf, const size_t nbytes);
 void write_value(struct Client *client, void *value, enum TellyTypes type);
 /* /SERVER */
