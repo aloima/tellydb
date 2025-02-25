@@ -211,7 +211,7 @@ void start_server(struct Configuration *config) {
     return;
   }
 
-  if (listen(sockfd, 10) != 0) { 
+  if (listen(sockfd, conf->max_clients) != 0) {
     FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
     write_log(LOG_ERR, "Cannot listen socket, safely exiting...");
     FREE_CONF_LOGS(conf);
