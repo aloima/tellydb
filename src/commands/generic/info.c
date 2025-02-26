@@ -25,7 +25,7 @@ static bool get_section(char *section, const struct Configuration *conf, const c
       "Version: " VERSION "\r\n"
       "Process ID: %d\r\n"
       "Git hash: " GIT_HASH "\r\n"
-      "Multiplexing API: poll\r\n"
+      "Multiplexing API: epoll\r\n"
       "GCC version: %s\r\n"
       "TLS server: %s\r\n"
       "Age: %ld seconds\r\n"

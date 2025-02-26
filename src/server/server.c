@@ -8,7 +8,7 @@
 #include <time.h>
 
 #include <fcntl.h>
-#include <sys/poll.h>
+#include <sys/epoll.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -42,10 +42,9 @@
   free_constant_passwords();\
 }
 
+static int epfd;
 static int sockfd;
 static SSL_CTX *ctx = NULL;
-static struct pollfd *fds;
-static uint32_t nfds;
 static struct Configuration *conf;
 static time_t start_at;
 static uint64_t age;
@@ -64,17 +63,14 @@ void get_server_time(time_t *server_start_at, uint64_t *server_age) {
 
 void terminate_connection(const int connfd) {
   const struct Client *client = get_client(connfd);
-  write_log(LOG_INFO, "Client #%d is disconnected.", client->id);
 
-  for (uint32_t i = 1; i < nfds; ++i) {
-    if (fds[i].fd == connfd) {
-      memcpy(fds + i, fds + i + 1, (nfds - i - 1) * sizeof(struct pollfd));
-      break;
-    }
+  if (epoll_ctl(epfd, EPOLL_CTL_DEL, connfd, NULL) == -1) {
+    write_log(LOG_ERR, "Cannot remove Client #%d from multiplexing.", client->id);
+    perror("x");
+    return;
   }
 
-  nfds -= 1;
-
+  write_log(LOG_INFO, "Client #%d is disconnected.", client->id);
   if (conf->tls) SSL_shutdown(client->ssl);
   close(connfd);
   remove_client(connfd);
@@ -98,10 +94,10 @@ static void close_server() {
   write_log(LOG_INFO, "Saved data and closed database file in %.3f seconds.", ((float) clock() - start) / CLOCKS_PER_SEC);
 
   FREE_CTX_THREAD_CMD_SOCKET_KDF_PASS(ctx, sockfd);
+  close(epfd);
   free_passwords();
   free_transactions();
   free_databases();
-  free(fds);
   write_log(LOG_INFO, "Free'd all memory blocks and closed the server.");
 
   write_log(LOG_INFO, "Closing log file, free'ing configuration and exiting the process...");
@@ -237,93 +233,93 @@ void start_server(struct Configuration *config) {
 
   write_log(LOG_INFO, "tellydb server age: %ld seconds", age);
 
-  nfds = 1;
-  fds = malloc((conf->max_clients + 1) * sizeof(struct pollfd));
+  if ((epfd = epoll_create1(0)) == -1) {
+    FREE_CTX_THREAD_CMD_SOCKET_KDF_PASS(ctx, sockfd);
+		write_log(LOG_ERR, "Cannot create epoll instance.");
+    FREE_CONF_LOGS(conf);
+    return;
+  }
 
-  fds[0] = (struct pollfd) {
-    .fd = sockfd,
-    .events = POLLIN,
-    .revents = 0
-  };
+  struct epoll_event event, events[32];
+  event.events = EPOLLIN;
+  event.data.fd = sockfd;
+
+  if (epoll_ctl(epfd, EPOLL_CTL_ADD, sockfd, &event) == -1) {
+    FREE_CTX_THREAD_CMD_SOCKET_KDF_PASS(ctx, sockfd);
+    close(epfd);
+		write_log(LOG_ERR, "Cannot add server to epoll instance.");
+    FREE_CONF_LOGS(conf);
+    return;
+	}
 
   start_at = time(NULL);
   write_log(LOG_INFO, "Server is listening on %d port for accepting connections...", conf->port);
 
   while (true) {
-    const int ret = poll(fds, nfds, -1);
+    const int nfds = epoll_wait(epfd, events, 32, -1);
 
-    if (ret != -1) {
-      for (uint32_t i = 0; i < nfds; ++i) {
-        const struct pollfd fd = fds[i];
+    for (int i = 0; i < nfds; ++i) {
+      const int fd = events[i].data.fd;
 
-        if (fd.revents & POLLIN) {
-          if (fd.fd == sockfd) {
-            if (conf->max_clients == get_client_count()) {
-              write_log(LOG_WARN, "A connection is rejected, because connected client count of the server is maximum.");
-              continue;
-            } else if (UINT32_MAX == get_last_connection_client_id()) {
-              write_log(LOG_WARN, "A connection is rejected, because client that has highest ID number is maximum, so cannot be increased it.");
-              continue;
-            }
+      if (fd == sockfd) {
+        if (UINT32_MAX == get_last_connection_client_id()) {
+          write_log(LOG_WARN, "A connection is rejected, because client that has highest ID number is maximum, so cannot be increased it.");
+          continue;
+        }
 
-            struct sockaddr_in addr;
-            socklen_t addr_len = sizeof(addr);
+        struct sockaddr_in addr;
+        socklen_t addr_len = sizeof(addr);
 
-            const int connfd = accept(sockfd, (struct sockaddr *) &addr, &addr_len);
-            struct Client *client = add_client(connfd);
+        const int connfd = accept(sockfd, (struct sockaddr *) &addr, &addr_len);
+        struct Client *client = add_client(connfd);
 
-            nfds += 1;
-            fds[nfds - 1] = (struct pollfd) {
-              .fd = connfd,
-              .events = POLLIN,
-              .revents = 0
-            };
+        fcntl(connfd, F_SETFL, fcntl(connfd, F_GETFL, 0) | O_NONBLOCK);
 
-            if (conf->tls) {
-              client->ssl = SSL_new(ctx);
-              SSL_set_fd(client->ssl, client->connfd);
+        event.events = (EPOLLIN | EPOLLET);
+        event.data.fd = connfd;
+        epoll_ctl(epfd, EPOLL_CTL_ADD, connfd, &event);
 
-              if (SSL_accept(client->ssl) <= 0) {
-                write_log(LOG_WARN, ("Client #%d cannot be accepted as a SSL client. "
-                  "It may try connecting without client authority file, so it is terminating..."), client->id);
+        if (conf->tls) {
+          client->ssl = SSL_new(ctx);
+          SSL_set_fd(client->ssl, client->connfd);
 
-                terminate_connection(client->connfd);
-                continue;
-              }
-            }
+          if (SSL_accept(client->ssl) <= 0) {
+            write_log(LOG_WARN, ("Client #%d cannot be accepted as a SSL client. "
+              "It may try connecting without client authority file, so it is terminating..."), client->id);
 
-            write_log(LOG_INFO, "Client #%d is connected.", client->id);
-          } else {
-            struct Client *client = get_client(fd.fd);
-            commanddata_t *data = get_command_data(client);
-
-            if (data->close) {
-              terminate_connection(fd.fd);
-              free(data);
-            } else {
-              struct Client *client = get_client(fd.fd);
-
-              if (!client->locked) {
-                struct Command *command = NULL;
-                to_uppercase(data->name.value, data->name.value);
-
-                for (uint32_t i = 0; i < command_count; ++i) {
-                  if (streq(commands[i].name, data->name.value)) {
-                    command = &commands[i];
-                    client->command = &commands[i];
-                    break;
-                  }
-                }
-
-                add_transaction(client, command, data);
-              } else {
-                free_command_data(data);
-                _write(client, "-Your client is locked, you cannot use any commands until your client is unlocked\r\n", 83);
-              }
-            }
+            terminate_connection(client->connfd);
+            continue;
           }
-        } else if (fd.revents & (POLLERR | POLLNVAL | POLLHUP)) {
-          terminate_connection(fd.fd);
+        }
+
+        write_log(LOG_INFO, "Client #%d is connected.", client->id);
+      } else {
+        struct Client *client = get_client(fd);
+        commanddata_t *data = get_command_data(client);
+
+        if (data->close) {
+          terminate_connection(fd);
+          free(data);
+        } else {
+          struct Client *client = get_client(fd);
+
+          if (!client->locked) {
+            struct Command *command = NULL;
+            to_uppercase(data->name.value, data->name.value);
+
+            for (uint32_t i = 0; i < command_count; ++i) {
+              if (streq(commands[i].name, data->name.value)) {
+                command = &commands[i];
+                client->command = &commands[i];
+                break;
+              }
+            }
+
+            add_transaction(client, command, data);
+          } else {
+            free_command_data(data);
+            _write(client, "-Your client is locked, you cannot use any commands until your client is unlocked\r\n", 83);
+          }
         }
       }
     }
