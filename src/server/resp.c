@@ -111,12 +111,15 @@ static commanddata_t *parse_resp_command(struct Client *client) {
 
 commanddata_t *get_command_data(struct Client *client) {
   uint8_t type;
+  int64_t n;
 
-  if (_read(client, &type, 1) == 0) {
+  if ((n = _read(client, &type, 1)) == 0) {
     commanddata_t *command = malloc(sizeof(commanddata_t));
     command->close = true;
 
     return command;
+  } else if (n == -1) {
+    return NULL;
   } else if (type == RDT_ARRAY) {
     commanddata_t *command = parse_resp_command(client);
     command->close = false;

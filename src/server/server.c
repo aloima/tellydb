@@ -295,30 +295,35 @@ void start_server(struct Configuration *config) {
         write_log(LOG_INFO, "Client #%d is connected.", client->id);
       } else {
         struct Client *client = get_client(fd);
-        commanddata_t *data = get_command_data(client);
 
-        if (data->close) {
-          terminate_connection(fd);
-          free(data);
-        } else {
-          struct Client *client = get_client(fd);
+        while (true) {
+          commanddata_t *data = get_command_data(client);
+          if (!data) break;
 
-          if (!client->locked) {
-            struct Command *command = NULL;
-            to_uppercase(data->name.value, data->name.value);
-
-            for (uint32_t i = 0; i < command_count; ++i) {
-              if (streq(commands[i].name, data->name.value)) {
-                command = &commands[i];
-                client->command = &commands[i];
-                break;
-              }
-            }
-
-            add_transaction(client, command, data);
+          if (data->close) {
+            terminate_connection(fd);
+            free(data);
+            break;
           } else {
-            free_command_data(data);
-            _write(client, "-Your client is locked, you cannot use any commands until your client is unlocked\r\n", 83);
+            struct Client *client = get_client(fd);
+
+            if (!client->locked) {
+              struct Command *command = NULL;
+              to_uppercase(data->name.value, data->name.value);
+
+              for (uint32_t i = 0; i < command_count; ++i) {
+                if (streq(commands[i].name, data->name.value)) {
+                  command = &commands[i];
+                  client->command = &commands[i];
+                  break;
+                }
+              }
+
+              add_transaction(client, command, data);
+            } else {
+              free_command_data(data);
+              _write(client, "-Your client is locked, you cannot use any commands until your client is unlocked\r\n", 83);
+            }
           }
         }
       }

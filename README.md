@@ -11,6 +11,7 @@ An in-memory key-value database project for educational purposes.
 + Provides saving to the database file using a background thread
 + Provides authorization system with permissions using passwords
 + Uses Direct I/O for logging and database files
++ Uses pipelining for combine multiple commands sent by same clients
 
 > Look at:  
 > [docs/SPECS.md](./docs/SPECS.md) for more technical information,  
@@ -32,8 +33,8 @@ To get information about cli commands, use `telly help`.
 Tested on Intel Core i7-7500U x 4 using [benchmark/benchmark.c](./benchmark/benchmark.c)
 ```
 Benchmark results (100000 operations per server):
-telly master test: SET=10035.37 ms, GET=8244.21 ms, PING=5351.67 ms
-valkey 8.0.2 test: SET=6460.79 ms, GET=5098.99 ms, PING=4982.16 ms
+telly master test: SET=7284.35 ms, GET=6229.22 ms, PING=4258.39 ms
+valkey 8.0.2 test: SET=4344.11 ms, GET=4138.99 ms, PING=4128.33 ms
 ```
 
 ## License
