@@ -32,11 +32,8 @@ To get information about cli commands, use `telly help`.
 Tested on Intel Core i7-7500U x 4 using [benchmark/benchmark.c](./benchmark/benchmark.c)
 ```
 Benchmark results (100000 operations per server):
-telly master test: SET=7526.57 ms, GET=5610.98 ms
-valkey 8.0.2 test: SET=4463.70 ms, GET=4294.38 ms
-
-telly master loaded database file in 0.064 seconds
-valkey 8.0.2 loaded database file in 0.065 seconds
+telly master test: SET=10035.37 ms, GET=8244.21 ms, PING=5351.67 ms
+valkey 8.0.2 test: SET=6460.79 ms, GET=5098.99 ms, PING=4982.16 ms
 ```
 
 ## License

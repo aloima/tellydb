@@ -10,7 +10,7 @@
 
 #include <hiredis/hiredis.h>
 
-#define NUM_REQUESTS 100000  // Number of SET/GET requests per server
+#define NUM_REQUESTS 100000  // Number of SET/GET/PING requests per server
 #define LOCALHOST "127.0.0.1"
 
 typedef struct {
@@ -18,6 +18,7 @@ typedef struct {
   int port;
   double set_time;
   double get_time;
+  double ping_time;
 } BenchmarkResult;
 
 double get_time_ms() {
@@ -59,6 +60,15 @@ void *benchmark(void *arg) {
 
   result->get_time = get_time_ms() - start;
 
+  start = get_time_ms();
+
+  for (int i = 0; i < NUM_REQUESTS; i++) {
+    reply = redisCommand(ctx, "PING", key);
+    if (reply) freeReplyObject(reply);
+  }
+
+  result->ping_time = get_time_ms() - start;
+
   redisFree(ctx);
   return NULL;
 }
@@ -83,7 +93,7 @@ int main() {
   printf("Benchmark results (%d operations per server):\n", NUM_REQUESTS);
 
   for (int i = 0; i < count; ++i) {
-    printf("%s:%d test: SET=%.2f ms, GET=%.2f ms\n", results[i].host, results[i].port, results[i].set_time, results[i].get_time);
+    printf("%s:%d test: SET=%.2f ms, GET=%.2f ms, PING=%.2f ms\n", results[i].host, results[i].port, results[i].set_time, results[i].get_time, results[i].ping_time);
   }
 
   return 0;
