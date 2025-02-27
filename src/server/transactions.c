@@ -20,7 +20,6 @@ struct Configuration *conf;
 pthread_t thread;
 pthread_cond_t cond;
 pthread_mutex_t mutex;
-bool thread_loop = true;
 
 void *transaction_thread() {
   sigset_t set;
@@ -28,17 +27,17 @@ void *transaction_thread() {
   sigaddset(&set, SIGINT);
   pthread_sigmask(SIG_BLOCK, &set, NULL);
 
-  pthread_mutex_lock(&mutex);
-
-  while (thread_loop) {
-    pthread_cond_wait(&cond, &mutex);
+  while (true) {
+    pthread_mutex_lock(&mutex);
+    while (transaction_count == 0) pthread_cond_wait(&cond, &mutex);
 
     struct Transaction *transaction = end;
     execute_command(transaction);
     remove_transaction(transaction);
+
+    pthread_mutex_unlock(&mutex);
   }
 
-  pthread_mutex_unlock(&mutex);
   return NULL;
 }
 
@@ -47,8 +46,6 @@ uint32_t get_transaction_count() {
 }
 
 void deactive_transaction_thread() {
-  thread_loop = false;
-
   while (pthread_mutex_trylock(&mutex) != EBUSY) {
     pthread_mutex_unlock(&mutex);
     pthread_cancel(thread);
@@ -89,7 +86,11 @@ void add_transaction(struct Client *client, struct Command *command, commanddata
 
 // Run by thread, no need mutex
 void remove_transaction(struct Transaction *transaction) {
-  if (end == transaction) end = transaction->prev;
+  if (end == transaction) {
+    end = transaction->prev;
+    end->next = transaction->next;
+    return;
+  }
 
   if (transaction->prev) {
     transaction->prev->next = transaction->next;

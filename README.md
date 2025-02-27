@@ -33,8 +33,8 @@ To get information about cli commands, use `telly help`.
 Tested on Intel Core i7-7500U x 4 using [benchmark/benchmark.c](./benchmark/benchmark.c)
 ```
 Benchmark results (100000 operations per server):
-telly master test: SET=7284.35 ms, GET=6229.22 ms, PING=4258.39 ms
-valkey 8.0.2 test: SET=4344.11 ms, GET=4138.99 ms, PING=4128.33 ms
+telly master test: SET=7680.48 ms, GET=6447.74 ms, PING=4444.82 ms
+valkey 8.0.2 test: SET=4461.48 ms, GET=4281.64 ms, PING=4173.11 ms
 ```
 
 ## License
