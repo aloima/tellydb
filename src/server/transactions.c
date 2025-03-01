@@ -75,6 +75,7 @@ void add_transaction(struct Client *client, struct Command *command, commanddata
   transaction->password = client->password;
   transaction->database = client->database;
 
+  if (start) start->prev = transaction;
   transaction->prev = NULL;
   transaction->next = start;
   start = transaction;
@@ -88,8 +89,6 @@ void add_transaction(struct Client *client, struct Command *command, commanddata
 void remove_transaction(struct Transaction *transaction) {
   if (end == transaction) {
     end = transaction->prev;
-    end->next = transaction->next;
-    return;
   }
 
   if (transaction->prev) {
