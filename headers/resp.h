@@ -14,12 +14,14 @@
 #define RDT_ERR '-'
 #define RDT_CLOSE 0
 
+#define RESP_BUF_SIZE 4096
+
 typedef struct CommandData {
   string_t name;
+
   string_t *args;
   uint32_t arg_count;
-  bool close;
 } commanddata_t;
 
-commanddata_t *get_command_data(struct Client *client);
+commanddata_t *get_command_data(struct Client *client, char *buf, uint32_t *at, int32_t *size);
 void free_command_data(commanddata_t *data);

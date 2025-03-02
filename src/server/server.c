@@ -66,7 +66,6 @@ void terminate_connection(const int connfd) {
 
   if (epoll_ctl(epfd, EPOLL_CTL_DEL, connfd, NULL) == -1) {
     write_log(LOG_ERR, "Cannot remove Client #%d from multiplexing.", client->id);
-    perror("x");
     return;
   }
 
@@ -295,35 +294,41 @@ void start_server(struct Configuration *config) {
         write_log(LOG_INFO, "Client #%d is connected.", client->id);
       } else {
         struct Client *client = get_client(fd);
+        char buf[RESP_BUF_SIZE];
+        uint32_t at = 0;
+        int32_t size = _read(client, buf, RESP_BUF_SIZE);
+
+        if (size == 0) {
+          terminate_connection(fd);
+          continue;
+        }
 
         while (true) {
-          commanddata_t *data = get_command_data(client);
-          if (!data) break;
+          commanddata_t *data = get_command_data(client, buf, &at, &size);
+          struct Client *client = get_client(fd);
 
-          if (data->close) {
-            terminate_connection(fd);
-            free(data);
-            break;
-          } else {
-            struct Client *client = get_client(fd);
+          if (!client->locked) {
+            struct Command *command = NULL;
+            to_uppercase(data->name.value, data->name.value);
 
-            if (!client->locked) {
-              struct Command *command = NULL;
-              to_uppercase(data->name.value, data->name.value);
-
-              for (uint32_t i = 0; i < command_count; ++i) {
-                if (streq(commands[i].name, data->name.value)) {
-                  command = &commands[i];
-                  client->command = &commands[i];
-                  break;
-                }
+            for (uint32_t i = 0; i < command_count; ++i) {
+              if (streq(commands[i].name, data->name.value)) {
+                command = &commands[i];
+                client->command = &commands[i];
+                break;
               }
-
-              add_transaction(client, command, data);
-            } else {
-              free_command_data(data);
-              _write(client, "-Your client is locked, you cannot use any commands until your client is unlocked\r\n", 83);
             }
+
+            add_transaction(client, command, data);
+          } else {
+            free_command_data(data);
+            _write(client, "-Your client is locked, you cannot use any commands until your client is unlocked\r\n", 83);
+          }
+
+          if (size == (int32_t) at) {
+            size = _read(client, buf, RESP_BUF_SIZE);
+            at = 0;
+            if (size == -1) break;
           }
         }
       }
