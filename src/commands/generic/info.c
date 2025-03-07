@@ -17,6 +17,8 @@ static bool get_section(char *section, const struct Configuration *conf, const c
     time_t start_at;
     get_server_time(&start_at, &age);
 
+    age += difftime(time(NULL), start_at);
+
     char str_start_at[21];
     generate_date_string(str_start_at, start_at);
 
