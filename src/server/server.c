@@ -36,10 +36,14 @@
   close(sockfd);\
 }
 
-#define FREE_CTX_THREAD_CMD_SOCKET_KDF_PASS(ctx, sockfd) {\
+#define FREE_CTX_THREAD_CMD_SOCKET_PASS(ctx, sockfd) {\
   FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);\
-  free_kdf();\
   free_constant_passwords();\
+}
+
+#define FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd) {\
+  FREE_CTX_THREAD_CMD_SOCKET_PASS(ctx, sockfd);\
+  free_kdf();\
 }
 
 static int epfd;
@@ -92,7 +96,7 @@ static void close_server() {
   close_database_fd();
   write_log(LOG_INFO, "Saved data and closed database file in %.3f seconds.", ((float) clock() - start) / CLOCKS_PER_SEC);
 
-  FREE_CTX_THREAD_CMD_SOCKET_KDF_PASS(ctx, sockfd);
+  FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);
   close(epfd);
   free_passwords();
   free_transactions();
@@ -201,31 +205,34 @@ void start_server(struct Configuration *config) {
 
   if ((bind(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr))) != 0) {
     FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
-    write_log(LOG_ERR, "Cannot bind socket and address, safely exiting...");
+    write_log(LOG_ERR, "Cannot bind socket and address.");
     FREE_CONF_LOGS(conf);
     return;
   }
 
   if (listen(sockfd, conf->max_clients) != 0) {
     FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
-    write_log(LOG_ERR, "Cannot listen socket, safely exiting...");
+    write_log(LOG_ERR, "Cannot listen socket.");
     FREE_CONF_LOGS(conf);
     return;
   }
 
   if (!create_constant_passwords()) {
     FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
-    write_log(LOG_ERR, "Safely exiting...");
     FREE_CONF_LOGS(conf);
     return;
   }
 
-  initialize_kdf();
+  if (!initialize_kdf()) {
+    FREE_CTX_THREAD_CMD_SOCKET_PASS(ctx, sockfd);
+    FREE_CONF_LOGS(conf);
+    return;
+  }
+
   write_log(LOG_INFO, "Created constant passwords and key deriving algorithm.");
 
   if (!open_database_fd(conf, &age)) {
-    FREE_CTX_THREAD_CMD_SOCKET_KDF_PASS(ctx, sockfd);
-    write_log(LOG_WARN, "Safely exiting...");
+    FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);
     FREE_CONF_LOGS(conf);
     return;
   }
@@ -233,7 +240,8 @@ void start_server(struct Configuration *config) {
   write_log(LOG_INFO, "tellydb server age: %ld seconds", age);
 
   if ((epfd = epoll_create1(0)) == -1) {
-    FREE_CTX_THREAD_CMD_SOCKET_KDF_PASS(ctx, sockfd);
+    FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);
+    close_database_fd();
 		write_log(LOG_ERR, "Cannot create epoll instance.");
     FREE_CONF_LOGS(conf);
     return;
@@ -244,7 +252,8 @@ void start_server(struct Configuration *config) {
   event.data.fd = sockfd;
 
   if (epoll_ctl(epfd, EPOLL_CTL_ADD, sockfd, &event) == -1) {
-    FREE_CTX_THREAD_CMD_SOCKET_KDF_PASS(ctx, sockfd);
+    FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);
+    close_database_fd();
     close(epfd);
 		write_log(LOG_ERR, "Cannot add server to epoll instance.");
     FREE_CONF_LOGS(conf);
