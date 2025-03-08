@@ -103,13 +103,12 @@ void remove_transaction(struct Transaction *transaction) {
 }
 
 void free_transactions() {
-  if (transaction_count != 0) {
-    for (uint32_t i = 0; i < transaction_count; ++i) {
-      struct Transaction *transaction = start;
-      start = start->next;
+  struct Transaction *transaction;
 
-      free_command_data(transaction->data);
-      free(transaction);
-    }
+  while ((transaction = start)) {
+    start = start->next;
+
+    free_command_data(transaction->data);
+    free(transaction);
   }
 }
