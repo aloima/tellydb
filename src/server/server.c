@@ -314,21 +314,17 @@ void start_server(struct Configuration *config) {
 
         while (true) {
           commanddata_t *data = get_command_data(client, buf, &at, &size);
-          struct Client *client = get_client(fd);
 
           if (!client->locked) {
-            struct Command *command = NULL;
             to_uppercase(data->name.value, data->name.value);
 
             for (uint32_t i = 0; i < command_count; ++i) {
               if (streq(commands[i].name, data->name.value)) {
-                command = &commands[i];
                 client->command = &commands[i];
+                add_transaction(client, &commands[i], data);
                 break;
               }
             }
-
-            add_transaction(client, command, data);
           } else {
             free_command_data(data);
             _write(client, "-Your client is locked, you cannot use any commands until your client is unlocked\r\n", 83);
