@@ -584,7 +584,7 @@ APPEND user_name " Black"
 DECR user_age
 ```
 
-#### DEL
+### DEL
 **Syntax**: `DEL key [key ...]`  
 **Description**: Deletes the specified keys.  
 **Since**: `0.1.7`  

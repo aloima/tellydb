@@ -12,30 +12,28 @@ An in-memory key-value database project for educational purposes.
 + Provides authorization system with permissions using passwords
 + Uses Direct I/O for logging and database files
 + Uses pipelining for combine multiple commands sent by same clients
++ Supports multiple databases
++ Data persists on one-file
 
 > Look at:  
 > [docs/SPECS.md](./docs/SPECS.md) for more technical information,  
 > [docs/FILE.md](./docs/FILE.md) for information about provided files by tellydb,  
 > [docs/COMMANDS.md](./docs/COMMANDS.md) for information about commands,  
-> [docs/AUTH.md](./docs/AUTH.md) for information about authorization
+> [docs/AUTH.md](./docs/AUTH.md) for information about authorization.
 
 ## Quick Start
 * Install a client that allows to connect tellydb or redis server
+* Install `OpenSSL` library and its development headers
+* Install `pkg-config` for compilation flags of libraries
 * Compile using `make`
 * Look at default configuration file using `telly default-config`
 * If you want to change configuration values, create a configuration file using `telly create-config`
 * Start the server using `telly`
-* Start using some commands
 
 To get information about cli commands, use `telly help`.
 
 ## Benchmark Results
-Tested on Intel Core i7-7500U x 4 using [benchmark/benchmark.c](./benchmark/benchmark.c)
-```
-Benchmark results (100000 operations per server):
-telly master test: SET=5274.90 ms, GET=5000.67 ms, PING=4251.82 ms
-valkey 8.0.2 test: SET=4562.70 ms, GET=4322.40 ms, PING=4151.10 ms
-```
+Look at [utils/README.md](./utils/README.md).
 
 ## License
 Licensed under [BSD-3 Clause Clear License](./LICENSE).

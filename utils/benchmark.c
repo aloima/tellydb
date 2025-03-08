@@ -75,24 +75,24 @@ void *benchmark(void *arg) {
 
 int main() {
   BenchmarkResult results[] = {
-    {LOCALHOST, 6379, 0, 0},
-    {LOCALHOST, 6380, 0, 0}
+    {LOCALHOST, 6379, 0, 0, 0},
+    {LOCALHOST, 6380, 0, 0, 0}
   };
 
   const uint32_t count = (sizeof(results) / sizeof(BenchmarkResult));
   pthread_t threads[count];
 
-  for (int i = 0; i < count; ++i) {
+  for (uint32_t i = 0; i < count; ++i) {
     pthread_create(&threads[i], NULL, benchmark, &results[i]);
   }
 
-  for (int i = 0; i < count; ++i) {
+  for (uint32_t i = 0; i < count; ++i) {
     pthread_join(threads[i], NULL);
   }
 
   printf("Benchmark results (%d operations per server):\n", NUM_REQUESTS);
 
-  for (int i = 0; i < count; ++i) {
+  for (uint32_t i = 0; i < count; ++i) {
     printf("%s:%d test: SET=%.2f ms, GET=%.2f ms, PING=%.2f ms\n", results[i].host, results[i].port, results[i].set_time, results[i].get_time, results[i].ping_time);
   }
 
