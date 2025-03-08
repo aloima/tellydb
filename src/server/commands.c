@@ -1,6 +1,5 @@
 #include "../../headers/telly.h"
 
-#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
@@ -81,27 +80,19 @@ uint32_t get_command_count() {
 void execute_command(struct Transaction *transaction) {
   struct Command *command = transaction->command;
   struct Client *client = transaction->client;
+  struct Password *password = transaction->password;
 
-  if (command) {
-    struct Password *password = transaction->password;
+  struct CommandEntry entry = {
+    .client = client,
+    .data = transaction->data,
+    .database = transaction->database,
+    .password = password
+  };
 
-    struct CommandEntry entry = {
-      .client = client,
-      .data = transaction->data,
-      .database = transaction->database,
-      .password = password
-    };
-
-    if ((password->permissions & command->permissions) != command->permissions) {
-      _write(client, "-No permissions to execute this command\r\n", 41);
-      return;
-    }
-
-    command->run(entry);
-  } else if (client) {
-    char buf[42];
-    const size_t nbytes = sprintf(buf, "-Unknown command '%s'\r\n", transaction->data->name.value);
-
-    _write(client, buf, nbytes);
+  if ((password->permissions & command->permissions) != command->permissions) {
+    _write(client, "-No permissions to execute this command\r\n", 41);
+    return;
   }
+
+  command->run(entry);
 }

@@ -1,5 +1,6 @@
 #include "../../headers/telly.h"
 
+#include <stdio.h>
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -322,18 +323,25 @@ void start_server(struct Configuration *config) {
               if (streq(commands[i].name, data->name.value)) {
                 client->command = &commands[i];
                 add_transaction(client, &commands[i], data);
-                break;
+                goto BUF_CHECK;
               }
             }
+
+            char buf[42];
+            const size_t nbytes = sprintf(buf, "-Unknown command '%s'\r\n", data->name.value);
+
+            _write(client, buf, nbytes);
           } else {
             free_command_data(data);
             _write(client, "-Your client is locked, you cannot use any commands until your client is unlocked\r\n", 83);
           }
 
-          if (size == (int32_t) at) {
-            size = _read(client, buf, RESP_BUF_SIZE);
-            at = 0;
-            if (size == -1) break;
+          BUF_CHECK: {
+            if (size == (int32_t) at) {
+              size = _read(client, buf, RESP_BUF_SIZE);
+              at = 0;
+              if (size == -1) break;
+            }
           }
         }
       }
