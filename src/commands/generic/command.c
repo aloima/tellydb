@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdlib.h>
 
 static void run(struct CommandEntry entry) {
   if (!entry.client) return;
@@ -12,7 +13,7 @@ static void run(struct CommandEntry entry) {
   }
 
   const string_t input = entry.data->args[0];
-  char subcommand[input.len + 1];
+  char *subcommand = malloc(input.len + 1);
   to_uppercase(input.value, subcommand);
 
   if (streq("DOCS", subcommand)) {
@@ -109,6 +110,8 @@ static void run(struct CommandEntry entry) {
   } else {
     INVALID_SUBCOMMAND_ERROR(entry.client, "COMMAND", 7);
   }
+
+  free(subcommand);
 }
 
 static struct Subcommand subcommands[] = {

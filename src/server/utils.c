@@ -1,6 +1,7 @@
 #include "../../headers/telly.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 
 #include <openssl/ssl.h>
@@ -24,9 +25,10 @@ void write_value(struct Client *client, void *value, enum TellyTypes type) {
     case TELLY_STR: {
       const string_t *string = value;
 
-      char buf[26 + string->len];
+      char *buf = malloc(26 + string->len);
       const size_t nbytes = sprintf(buf, "$%d\r\n%.*s\r\n", string->len, string->len, string->value);
       _write(client, buf, nbytes);
+      free(buf);
       break;
     }
 

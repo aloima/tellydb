@@ -13,7 +13,7 @@ static void run(struct CommandEntry entry) {
   }
 
   const string_t subcommand_string = entry.data->args[0];
-  char subcommand[subcommand_string.len + 1];
+  char *subcommand = malloc(subcommand_string.len + 1);
   to_uppercase(subcommand_string.value, subcommand);
 
   if (streq("ID", subcommand) && entry.client) {
@@ -205,6 +205,8 @@ static void run(struct CommandEntry entry) {
   } else if (entry.client) {
     INVALID_SUBCOMMAND_ERROR(entry.client, "CLIENT", 6);
   }
+
+  free(subcommand);
 }
 
 static struct Subcommand subcommands[] = {

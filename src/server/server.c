@@ -327,10 +327,11 @@ void start_server(struct Configuration *config) {
               }
             }
 
-            char buf[42];
+            char *buf = malloc(data->name.len + 22);
             const size_t nbytes = sprintf(buf, "-Unknown command '%s'\r\n", data->name.value);
 
             _write(client, buf, nbytes);
+            free(buf);
           } else {
             free_command_data(data);
             _write(client, "-Your client is locked, you cannot use any commands until your client is unlocked\r\n", 83);

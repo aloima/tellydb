@@ -17,7 +17,7 @@ static void run(struct CommandEntry entry) {
 
   for (uint32_t i = 2; i < entry.data->arg_count; ++i) {
     string_t input = entry.data->args[i];
-    char arg[input.len + 1];
+    char *arg = malloc(input.len + 1);
     to_uppercase(input.value, arg);
 
     if (streq(arg, "GET")) get = true;
@@ -25,8 +25,11 @@ static void run(struct CommandEntry entry) {
     else if (streq(arg, "XX")) xx = true;
     else {
       if (entry.client) _write(entry.client, "-Invalid argument(s) for 'SET' command\r\n", 40);
+      free(arg);
       return;
     }
+
+    free(arg);
   }
 
   if (nx && xx) {

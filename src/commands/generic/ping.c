@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 static void run(struct CommandEntry entry) {
   if (!entry.client) return;
@@ -13,9 +14,10 @@ static void run(struct CommandEntry entry) {
     case 1: {
       const string_t arg = entry.data->args[0];
 
-      char buf[26 + arg.len];
+      char *buf = malloc(26 + arg.len);
       const size_t nbytes = sprintf(buf, "$%d\r\n%s\r\n", arg.len, arg.value);
       _write(entry.client, buf, nbytes);
+      free(buf);
 
       break;
     }

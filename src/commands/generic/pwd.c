@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 static uint8_t read_permissions_value(struct Client *client, const char *value) {
   uint8_t permissions = 0;
@@ -121,7 +122,7 @@ static void run(struct CommandEntry entry) {
   }
 
   const string_t subcommand_string = entry.data->args[0];
-  char subcommand[subcommand_string.len + 1];
+  char *subcommand = malloc(subcommand_string.len + 1);
   to_uppercase(subcommand_string.value, subcommand);
 
   if (streq(subcommand, "ADD")) {
@@ -143,6 +144,8 @@ static void run(struct CommandEntry entry) {
   } else if (entry.client) {
     INVALID_SUBCOMMAND_ERROR(entry.client, "PWD", 3);
   }
+
+  free(subcommand);
 }
 
 static struct Subcommand subcommands[] = {
