@@ -4,7 +4,7 @@
 #include <time.h>
 
 static void run(struct CommandEntry entry) {
-  uint64_t server_age;
+  uint32_t server_age;
   time_t start_at;
   get_server_time(&start_at, &server_age);
   server_age += difftime(time(NULL), start_at);

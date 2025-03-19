@@ -18,7 +18,7 @@ static int fd = -1;
 static bool saving = false;
 static uint16_t block_size;
 
-bool open_database_fd(struct Configuration *conf, uint64_t *server_age) {
+bool open_database_fd(struct Configuration *conf, uint32_t *server_age) {
   if ((fd = open_file(conf->data_file, O_LARGEFILE)) == -1) return false;
 
   struct stat sostat;
@@ -267,13 +267,13 @@ static off64_t generate_value(char **data, struct KVPair *kv) {
   return len;
 }
 
-static void generate_headers(char *headers, const uint64_t server_age) {
+static void generate_headers(char *headers, const uint32_t server_age) {
   headers[0] = 0x18;
   headers[1] = 0x10;
-  memcpy(headers + 2, &server_age, sizeof(uint64_t));
+  memcpy(headers + 2, &server_age, sizeof(uint32_t));
 }
 
-void save_data(const uint64_t server_age) {
+void save_data(const uint32_t server_age) {
   if (saving) return;
   saving = true;
 
@@ -406,11 +406,11 @@ void *save_thread(void *arg) {
   pthread_exit(NULL);
 }
 
-bool bg_save(uint64_t server_age) {
+bool bg_save(const uint32_t server_age) {
   if (saving) return false;
 
   pthread_t thread;
-  pthread_create(&thread, NULL, save_thread, &server_age);
+  pthread_create(&thread, NULL, save_thread, (uint32_t *) &server_age);
   pthread_detach(thread);
 
   return true;

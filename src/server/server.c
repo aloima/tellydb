@@ -52,16 +52,16 @@ static int sockfd;
 static SSL_CTX *ctx = NULL;
 static struct Configuration *conf;
 static time_t start_at;
-static uint64_t age;
+static uint32_t age;
 
-struct Command *commands;
-uint32_t command_count;
+static struct Command *commands;
+static uint32_t command_count;
 
 struct Configuration *get_server_configuration() {
   return conf;
 }
 
-void get_server_time(time_t *server_start_at, uint64_t *server_age) {
+void get_server_time(time_t *server_start_at, uint32_t *server_age) {
   *server_start_at = start_at;
   *server_age = age;
 }
@@ -91,7 +91,7 @@ static void close_server() {
     remove_first_client();
   }
 
-  const uint64_t server_age = age + difftime(time(NULL), start_at);
+  const uint32_t server_age = age + difftime(time(NULL), start_at);
   const clock_t start = clock();
   save_data(server_age);
   close_database_fd();
@@ -115,6 +115,129 @@ static void sigint_signal(__attribute__((unused)) int arg) {
   close_server();
 }
 
+static int read_client(struct Client *client, char *buf, int32_t *size, int32_t *at) {
+  *size = _read(client, buf, RESP_BUF_SIZE);
+  *at = 0;
+  if (*size == -1) return -1;
+
+  return 0;
+}
+
+static int accept_client(struct epoll_event event) {
+  struct sockaddr_in addr;
+  socklen_t addr_len = sizeof(addr);
+
+  const int connfd = accept(sockfd, (struct sockaddr *) &addr, &addr_len);
+  struct Client *client = add_client(connfd);
+
+  fcntl(connfd, F_SETFL, fcntl(connfd, F_GETFL, 0) | O_NONBLOCK);
+
+  event.events = (EPOLLIN | EPOLLET);
+  event.data.fd = connfd;
+  epoll_ctl(epfd, EPOLL_CTL_ADD, connfd, &event);
+
+  if (conf->tls) {
+    client->ssl = SSL_new(ctx);
+    SSL_set_fd(client->ssl, client->connfd);
+
+    if (SSL_accept(client->ssl) <= 0) {
+      write_log(LOG_WARN, "Cannot accept Client #%d because of SSL. Please check client authority file.", client->id);
+      terminate_connection(client->connfd);
+      return -1;
+    }
+  }
+
+  write_log(LOG_INFO, "Client #%d is connected.", client->id);
+  return 0;
+}
+
+static void unknown_command(struct Client *client, string_t command_name) {
+  char *buf = malloc(command_name.len + 22);
+  const size_t nbytes = sprintf(buf, "-Unknown command '%s'\r\n", command_name.value);
+
+  _write(client, buf, nbytes);
+  free(buf);
+}
+
+static void initialize_server_ssl() {
+  ctx = SSL_CTX_new(TLS_server_method());
+
+  if (!ctx) {
+    write_log(LOG_ERR, "Cannot open SSL context, safely exiting...");
+    FREE_CONF_LOGS(conf);
+    return;
+  }
+
+  if (SSL_CTX_use_certificate_file(ctx, conf->cert, SSL_FILETYPE_PEM) <= 0) {
+    write_log(LOG_ERR, "Server certificate file cannot be used.");
+    SSL_CTX_free(ctx);
+    FREE_CONF_LOGS(conf);
+    return;
+  }
+
+  if (SSL_CTX_use_PrivateKey_file(ctx, conf->private_key, SSL_FILETYPE_PEM) <= 0 ) {
+    write_log(LOG_ERR, "Server private key cannot be used.");
+    SSL_CTX_free(ctx);
+    FREE_CONF_LOGS(conf);
+    return;
+  }
+
+  write_log(LOG_INFO, "Created SSL context.");
+}
+
+static int initialize_socket() {
+  if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+    FREE_CTX_THREAD_CMD(ctx);
+    write_log(LOG_ERR, "Cannot open socket, safely exiting...");
+    FREE_CONF_LOGS(conf);
+    return -1;
+  }
+
+  if (fcntl(sockfd, F_SETFL, fcntl(sockfd, F_GETFL, 0) | O_NONBLOCK) == -1) {
+    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
+    write_log(LOG_ERR, "Cannot set non-blocking socket, safely exiting...");
+    FREE_CONF_LOGS(conf);
+    return -1;
+  }
+
+  const int flag = 1;
+
+  if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) == -1) {
+    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
+    write_log(LOG_ERR, "Cannot set no-delay socket, safely exiting...");
+    FREE_CONF_LOGS(conf);
+    return -1;
+  }
+
+  if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) == -1) {
+    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
+    write_log(LOG_ERR, "Cannot set reusable socket, safely exiting...");
+    FREE_CONF_LOGS(conf);
+    return -1;
+  }
+
+  struct sockaddr_in servaddr;
+  servaddr.sin_family = AF_INET;
+  servaddr.sin_port = htons(conf->port);
+  servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+  if ((bind(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr))) != 0) {
+    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
+    write_log(LOG_ERR, "Cannot bind socket and address.");
+    FREE_CONF_LOGS(conf);
+    return -1;
+  }
+
+  if (listen(sockfd, conf->max_clients) != 0) {
+    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
+    write_log(LOG_ERR, "Cannot listen socket.");
+    FREE_CONF_LOGS(conf);
+    return -1;
+  }
+
+  return 0;
+}
+
 void start_server(struct Configuration *config) {
   conf = config;
 
@@ -134,31 +257,7 @@ void start_server(struct Configuration *config) {
     ));
   }
 
-  if (conf->tls) {
-    ctx = SSL_CTX_new(TLS_server_method());
-
-    if (!ctx) {
-      write_log(LOG_ERR, "Cannot open SSL context, safely exiting...");
-      FREE_CONF_LOGS(conf);
-      return;
-    }
-
-    if (SSL_CTX_use_certificate_file(ctx, conf->cert, SSL_FILETYPE_PEM) <= 0) {
-      write_log(LOG_ERR, "Server certificate file cannot be used.");
-      SSL_CTX_free(ctx);
-      FREE_CONF_LOGS(conf);
-      return;
-    }
-
-    if (SSL_CTX_use_PrivateKey_file(ctx, conf->private_key, SSL_FILETYPE_PEM) <= 0 ) {
-      write_log(LOG_ERR, "Server private key cannot be used.");
-      SSL_CTX_free(ctx);
-      FREE_CONF_LOGS(conf);
-      return;
-    }
-
-    write_log(LOG_INFO, "Created SSL context.");
-  }
+  if (conf->tls) initialize_server_ssl();
 
   commands = load_commands();
   command_count = get_command_count();
@@ -168,55 +267,7 @@ void start_server(struct Configuration *config) {
   write_log(LOG_INFO, "Created transaction thread.");
 
   signal(SIGINT, sigint_signal);
-
-  if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-    FREE_CTX_THREAD_CMD(ctx);
-    write_log(LOG_ERR, "Cannot open socket, safely exiting...");
-    FREE_CONF_LOGS(conf);
-    return;
-  }
-
-  if (fcntl(sockfd, F_SETFL, fcntl(sockfd, F_GETFL, 0) | O_NONBLOCK) == -1) {
-    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
-    write_log(LOG_ERR, "Cannot set non-blocking socket, safely exiting...");
-    FREE_CONF_LOGS(conf);
-    return;
-  }
-
-  const int flag = 1;
-
-  if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) == -1) {
-    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
-    write_log(LOG_ERR, "Cannot set no-delay socket, safely exiting...");
-    FREE_CONF_LOGS(conf);
-    return;
-  }
-
-  if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) == -1) {
-    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
-    write_log(LOG_ERR, "Cannot set reusable socket, safely exiting...");
-    FREE_CONF_LOGS(conf);
-    return;
-  }
-
-  struct sockaddr_in servaddr;
-  servaddr.sin_family = AF_INET;
-  servaddr.sin_port = htons(conf->port);
-  servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-
-  if ((bind(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr))) != 0) {
-    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
-    write_log(LOG_ERR, "Cannot bind socket and address.");
-    FREE_CONF_LOGS(conf);
-    return;
-  }
-
-  if (listen(sockfd, conf->max_clients) != 0) {
-    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
-    write_log(LOG_ERR, "Cannot listen socket.");
-    FREE_CONF_LOGS(conf);
-    return;
-  }
+  if (initialize_socket() == -1) return;
 
   if (!create_constant_passwords()) {
     FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
@@ -276,36 +327,11 @@ void start_server(struct Configuration *config) {
           continue;
         }
 
-        struct sockaddr_in addr;
-        socklen_t addr_len = sizeof(addr);
-
-        const int connfd = accept(sockfd, (struct sockaddr *) &addr, &addr_len);
-        struct Client *client = add_client(connfd);
-
-        fcntl(connfd, F_SETFL, fcntl(connfd, F_GETFL, 0) | O_NONBLOCK);
-
-        event.events = (EPOLLIN | EPOLLET);
-        event.data.fd = connfd;
-        epoll_ctl(epfd, EPOLL_CTL_ADD, connfd, &event);
-
-        if (conf->tls) {
-          client->ssl = SSL_new(ctx);
-          SSL_set_fd(client->ssl, client->connfd);
-
-          if (SSL_accept(client->ssl) <= 0) {
-            write_log(LOG_WARN, ("Client #%d cannot be accepted as a SSL client. "
-              "It may try connecting without client authority file, so it is terminating..."), client->id);
-
-            terminate_connection(client->connfd);
-            continue;
-          }
-        }
-
-        write_log(LOG_INFO, "Client #%d is connected.", client->id);
+        if (accept_client(event) == -1) continue;
       } else {
         struct Client *client = get_client(fd);
         char buf[RESP_BUF_SIZE];
-        uint32_t at = 0;
+        int32_t at = 0;
         int32_t size = _read(client, buf, RESP_BUF_SIZE);
 
         if (size == 0) {
@@ -313,37 +339,30 @@ void start_server(struct Configuration *config) {
           continue;
         }
 
-        while (true) {
+        while (size != -1) {
           commanddata_t *data = get_command_data(client, buf, &at, &size);
+          if (size == at) read_client(client, buf, &size, &at);
 
-          if (!client->locked) {
-            to_uppercase(data->name.value, data->name.value);
-
-            for (uint32_t i = 0; i < command_count; ++i) {
-              if (streq(commands[i].name, data->name.value)) {
-                client->command = &commands[i];
-                add_transaction(client, &commands[i], data);
-                goto BUF_CHECK;
-              }
-            }
-
-            char *buf = malloc(data->name.len + 22);
-            const size_t nbytes = sprintf(buf, "-Unknown command '%s'\r\n", data->name.value);
-
-            _write(client, buf, nbytes);
-            free(buf);
-          } else {
+          if (client->locked) {
             free_command_data(data);
             _write(client, "-Your client is locked, you cannot use any commands until your client is unlocked\r\n", 83);
+            continue;
           }
 
-          BUF_CHECK: {
-            if (size == (int32_t) at) {
-              size = _read(client, buf, RESP_BUF_SIZE);
-              at = 0;
-              if (size == -1) break;
+          bool found = false;
+          to_uppercase(data->name.value, data->name.value);
+
+          for (uint32_t i = 0; i < command_count; ++i) {
+            if (streq(commands[i].name, data->name.value)) {
+              client->command = &commands[i];
+              add_transaction(client, &commands[i], data);
+
+              found = true;
+              break;
             }
           }
+
+          if (!found) unknown_command(client, data->name);
         }
       }
     }

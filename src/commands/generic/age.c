@@ -7,13 +7,13 @@
 static void run(struct CommandEntry entry) {
   if (!entry.client) return;
 
-  uint64_t age;
+  uint32_t age;
   time_t start_at;
   get_server_time(&start_at, &age);
   age += difftime(time(NULL), start_at);
 
   char buf[24];
-  const size_t nbytes = sprintf(buf, ":%ld\r\n", age);
+  const size_t nbytes = sprintf(buf, ":%d\r\n", age);
   _write(entry.client, buf, nbytes);
 }
 

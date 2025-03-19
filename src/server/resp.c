@@ -8,7 +8,7 @@
 
 #define DATA_ERR(client) write_log(LOG_ERR, "Received data from Client #%d cannot be validated as a RESP data, so it cannot be created as a command.", (client)->id);
 
-static int take_n_bytes(struct Client *client, char *buf, uint32_t *at, void *data, const uint32_t n, int32_t *size) {
+static int take_n_bytes(struct Client *client, char *buf, int32_t *at, void *data, const uint32_t n, int32_t *size) {
   uint64_t count = 0;
 
   if ((*at + n) >= RESP_BUF_SIZE) {
@@ -27,7 +27,7 @@ static int take_n_bytes(struct Client *client, char *buf, uint32_t *at, void *da
   return count;
 }
 
-static string_t parse_resp_bstring(struct Client *client, char *buf, uint32_t *at, int32_t *size) {
+static string_t parse_resp_bstring(struct Client *client, char *buf, int32_t *at, int32_t *size) {
   string_t data = {
     .len = 0,
     .value = NULL
@@ -78,7 +78,7 @@ static string_t parse_resp_bstring(struct Client *client, char *buf, uint32_t *a
   return data;
 }
 
-static commanddata_t *parse_resp_command(struct Client *client, char *buf, uint32_t *at, int32_t *size) {
+static commanddata_t *parse_resp_command(struct Client *client, char *buf, int32_t *at, int32_t *size) {
   commanddata_t *command = malloc(sizeof(commanddata_t));
   command->arg_count = 0;
   command->args = NULL;
@@ -125,7 +125,7 @@ static commanddata_t *parse_resp_command(struct Client *client, char *buf, uint3
   }
 }
 
-commanddata_t *get_command_data(struct Client *client, char *buf, uint32_t *at, int32_t *size) {
+commanddata_t *get_command_data(struct Client *client, char *buf, int32_t *at, int32_t *size) {
   uint8_t type;
   take_n_bytes(client, buf, at, &type, 1, size);
 

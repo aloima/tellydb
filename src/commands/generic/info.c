@@ -13,7 +13,7 @@ static bool get_section(char *section, const struct Configuration *conf, const c
     char gcc_version[16];
     sprintf(gcc_version, "%d.%d.%d", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 
-    uint64_t age;
+    uint32_t age;
     time_t start_at;
     get_server_time(&start_at, &age);
 
@@ -30,7 +30,7 @@ static bool get_section(char *section, const struct Configuration *conf, const c
       "Multiplexing API: epoll\r\n"
       "GCC version: %s\r\n"
       "TLS server: %s\r\n"
-      "Age: %ld seconds\r\n"
+      "Age: %d seconds\r\n"
       "Started at: %.20s\r\n"
     ), getpid(), gcc_version, (conf->tls ? "yes" : "no"), age, str_start_at);
   } else if (streq(name, "clients")) {

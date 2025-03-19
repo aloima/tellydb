@@ -23,5 +23,5 @@ typedef struct CommandData {
   uint32_t arg_count;
 } commanddata_t;
 
-commanddata_t *get_command_data(struct Client *client, char *buf, uint32_t *at, int32_t *size);
+commanddata_t *get_command_data(struct Client *client, char *buf, int32_t *at, int32_t *size);
 void free_command_data(commanddata_t *data);
