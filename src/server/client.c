@@ -8,28 +8,29 @@
 
 #include <openssl/ssl.h>
 
-struct LinkedListNode *nodes = NULL;
-struct LinkedListNode *last_node = NULL;
+struct LinkedListNode *head = NULL;
+struct LinkedListNode *tail = NULL;
 
 uint32_t client_count = 0;
 uint32_t last_connection_client_id = 0;
 
 struct Password *default_password = NULL, *empty_password = NULL, *full_password = NULL;
 
-#define alloc_constant_password(password) if (posix_memalign(password, 64, sizeof(struct Password)) != 0) {\
-  write_log(LOG_ERR, "Cannot create constant passwords, out of memory.");\
-  return false;\
+static bool create_constant_password(struct Password **password, uint64_t permissions) {
+  if (posix_memalign((void **) password, 64, sizeof(struct Password)) != 0) {
+    write_log(LOG_ERR, "Cannot create constant passwords, out of memory.");
+    return false;
+  }
+
+  (*password)->permissions = permissions;
+  return true;
 }
 
 bool create_constant_passwords() {
-  alloc_constant_password((void **) &default_password);
-  default_password->permissions = (P_READ | P_WRITE | P_CLIENT | P_CONFIG | P_AUTH | P_SERVER);
-
-  alloc_constant_password((void **) &empty_password);
-  empty_password->permissions = 0;
-
-  alloc_constant_password((void **) &full_password);
-  full_password->permissions = (P_READ | P_WRITE | P_CLIENT | P_CONFIG | P_AUTH | P_SERVER);
+  const uint64_t permissions = (P_READ | P_WRITE | P_CLIENT | P_CONFIG | P_AUTH | P_SERVER);
+  if (!create_constant_password(&default_password, permissions)) return false;
+  if (!create_constant_password(&empty_password, 0)) return false;
+  if (!create_constant_password(&full_password, permissions)) return false;
 
   return true;
 }
@@ -48,12 +49,8 @@ struct Password *get_full_password() {
   return full_password;
 }
 
-struct LinkedListNode *get_client_nodes() {
-  return nodes;
-}
-
 struct Client *get_client(const int input) {
-  struct LinkedListNode *node = nodes;
+  struct LinkedListNode *node = head;
 
   while (node) {
     struct Client *client = node->data;
@@ -66,7 +63,7 @@ struct Client *get_client(const int input) {
 }
 
 struct Client *get_client_from_id(const uint32_t id) {
-  struct LinkedListNode *node = nodes;
+  struct LinkedListNode *node = head;
 
   while (node) {
     struct Client *client = node->data;
@@ -91,17 +88,17 @@ struct Client *add_client(const int connfd) {
   last_connection_client_id += 1;
 
   if (client_count == 1) {
-    nodes = malloc(sizeof(struct LinkedListNode));
-    last_node = nodes;
+    head = malloc(sizeof(struct LinkedListNode));
+    tail = head;
   } else {
-    last_node->next = malloc(sizeof(struct LinkedListNode));
-    last_node = last_node->next;
+    tail->next = malloc(sizeof(struct LinkedListNode));
+    tail = tail->next;
   }
 
-  last_node->next = NULL;
+  tail->next = NULL;
 
-  if (posix_memalign((void **) &last_node->data, 64, sizeof(struct Client)) == 0) {
-    struct Client *client = last_node->data;
+  if (posix_memalign((void **) &tail->data, 64, sizeof(struct Client)) == 0) {
+    struct Client *client = tail->data;
     client->id = last_connection_client_id;
     client->connfd = connfd;
     time(&client->connected_at);
@@ -128,7 +125,7 @@ struct Client *add_client(const int connfd) {
 
 void remove_client(const int connfd) {
   struct LinkedListNode *prev = NULL;
-  struct LinkedListNode *node = nodes;
+  struct LinkedListNode *node = head;
 
   while (node) {
     struct Client *client = node->data;
@@ -142,11 +139,11 @@ void remove_client(const int connfd) {
       free(client);
 
       if (client_count == 0) {
-        free(nodes);
-        nodes = NULL;
+        free(head);
+        head = NULL;
       } else {
         if (prev) prev->next = node->next;
-        else nodes = node->next;
+        else head = node->next;
 
         free(node);
       }
@@ -159,12 +156,12 @@ void remove_client(const int connfd) {
   }
 }
 
-struct Client *get_first_client() {
-  return (nodes ? nodes->data : NULL);
+struct LinkedListNode *get_head_client() {
+  return head;
 }
 
-void remove_first_client() {
-  struct Client *client = nodes->data;
+void remove_head_client() {
+  struct Client *client = head->data;
 
   client_count -= 1;
 
@@ -174,11 +171,11 @@ void remove_first_client() {
   free(client);
 
   if (client_count == 0) {
-    free(nodes);
-    nodes = NULL;
+    free(head);
+    head = NULL;
   } else {
-    struct LinkedListNode *prev = nodes;
-    nodes = nodes->next;
+    struct LinkedListNode *prev = head;
+    head = head->next;
     free(prev);
   }
 }

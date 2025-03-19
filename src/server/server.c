@@ -81,14 +81,15 @@ void terminate_connection(const int connfd) {
 }
 
 static void close_server() {
-  struct Client *client;
+  struct LinkedListNode *client_node;
 
-  while ((client = get_first_client())) {
+  while ((client_node = get_head_client())) {
+    struct Client *client = client_node->data;
     write_log(LOG_INFO, "Client #%d is terminated.", client->id);
 
     if (conf->tls) SSL_shutdown(client->ssl);
     close(client->connfd);
-    remove_first_client();
+    remove_head_client();
   }
 
   const uint32_t server_age = age + difftime(time(NULL), start_at);
@@ -159,30 +160,31 @@ static void unknown_command(struct Client *client, string_t command_name) {
   free(buf);
 }
 
-static void initialize_server_ssl() {
+static int initialize_server_ssl() {
   ctx = SSL_CTX_new(TLS_server_method());
 
   if (!ctx) {
     write_log(LOG_ERR, "Cannot open SSL context, safely exiting...");
     FREE_CONF_LOGS(conf);
-    return;
+    return -1;
   }
 
   if (SSL_CTX_use_certificate_file(ctx, conf->cert, SSL_FILETYPE_PEM) <= 0) {
     write_log(LOG_ERR, "Server certificate file cannot be used.");
     SSL_CTX_free(ctx);
     FREE_CONF_LOGS(conf);
-    return;
+    return -1;
   }
 
   if (SSL_CTX_use_PrivateKey_file(ctx, conf->private_key, SSL_FILETYPE_PEM) <= 0 ) {
     write_log(LOG_ERR, "Server private key cannot be used.");
     SSL_CTX_free(ctx);
     FREE_CONF_LOGS(conf);
-    return;
+    return -1;
   }
 
   write_log(LOG_INFO, "Created SSL context.");
+  return 0;
 }
 
 static int initialize_socket() {
@@ -238,6 +240,23 @@ static int initialize_socket() {
   return 0;
 }
 
+static int initialize_authorization() {
+  if (!create_constant_passwords()) {
+    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
+    FREE_CONF_LOGS(conf);
+    return -1;
+  }
+
+  if (!initialize_kdf()) {
+    FREE_CTX_THREAD_CMD_SOCKET_PASS(ctx, sockfd);
+    FREE_CONF_LOGS(conf);
+    return -1;
+  }
+
+  write_log(LOG_INFO, "Created constant passwords and key deriving algorithm.");
+  return 0;
+}
+
 void start_server(struct Configuration *config) {
   conf = config;
 
@@ -251,13 +270,12 @@ void start_server(struct Configuration *config) {
   write_log(LOG_INFO, "version=" VERSION ", commit hash=" GIT_HASH);
 
   if (conf->default_conf) {
-    write_log(LOG_WARN, (
-      "There is no configuration file, using default configuration. "
-      "To specify, create .tellyconf file or use `telly config /path/to/file`."
-    ));
+    write_log(LOG_WARN, "No configuration file. To specify, create .tellyconf or use `telly config /path/to/file`.");
   }
 
-  if (conf->tls) initialize_server_ssl();
+  if (conf->tls) {
+    if (initialize_server_ssl() == -1) return;
+  }
 
   commands = load_commands();
   command_count = get_command_count();
@@ -268,20 +286,7 @@ void start_server(struct Configuration *config) {
 
   signal(SIGINT, sigint_signal);
   if (initialize_socket() == -1) return;
-
-  if (!create_constant_passwords()) {
-    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
-    FREE_CONF_LOGS(conf);
-    return;
-  }
-
-  if (!initialize_kdf()) {
-    FREE_CTX_THREAD_CMD_SOCKET_PASS(ctx, sockfd);
-    FREE_CONF_LOGS(conf);
-    return;
-  }
-
-  write_log(LOG_INFO, "Created constant passwords and key deriving algorithm.");
+  if (initialize_authorization() == -1) return;
 
   if (!open_database_fd(conf, &age)) {
     FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);

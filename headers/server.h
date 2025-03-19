@@ -56,9 +56,8 @@ struct Client {
   bool locked;
 };
 
-struct LinkedListNode *get_client_nodes();
 struct Client *get_client(const int input);
-struct Client *get_first_client();
+struct LinkedListNode *get_head_client();
 struct Client *get_client_from_id(const uint32_t id);
 
 uint32_t get_last_connection_client_id();
@@ -66,7 +65,7 @@ uint32_t get_client_count();
 
 struct Client *add_client(const int connfd);
 void remove_client(const int connfd);
-void remove_first_client();
+void remove_head_client();
 /* /CLIENT */
 
 
