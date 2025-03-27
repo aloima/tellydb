@@ -25,6 +25,8 @@ void *transaction_thread() {
   sigset_t set;
   sigemptyset(&set);
   sigaddset(&set, SIGINT);
+  sigaddset(&set, SIGTERM);
+  sigaddset(&set, SIGKILL);
   pthread_sigmask(SIG_BLOCK, &set, NULL);
 
   while (true) {

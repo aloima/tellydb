@@ -111,8 +111,21 @@ static void close_server() {
   exit(EXIT_SUCCESS);
 }
 
-static void sigint_signal(__attribute__((unused)) int arg) {
-  write_log(LOG_WARN, "Received SIGINT signal, closing the server...", LOG_WARN);
+static void close_signal(int arg) {
+  switch (arg) {
+    case SIGINT:
+      write_log(LOG_WARN, "Received SIGINT signal, closing the server...");
+      break;
+
+    case SIGTERM:
+      write_log(LOG_WARN, "Received SIGTERM signal, closing the server...");
+      break;
+
+    case SIGKILL:
+      write_log(LOG_WARN, "Received SIGKILL signal, closing the server...");
+      break;
+  }
+
   close_server();
 }
 
@@ -284,7 +297,9 @@ void start_server(struct Configuration *config) {
   create_transaction_thread(config);
   write_log(LOG_INFO, "Created transaction thread.");
 
-  signal(SIGINT, sigint_signal);
+  signal(SIGTERM, close_signal);
+  signal(SIGKILL, close_signal);
+  signal(SIGINT, close_signal);
   if (initialize_socket() == -1) return;
   if (initialize_authorization() == -1) return;
 
