@@ -21,14 +21,28 @@ An in-memory key-value database project for educational purposes.
 > [docs/COMMANDS.md](./docs/COMMANDS.md) for information about commands,  
 > [docs/AUTH.md](./docs/AUTH.md) for information about authorization.
 
-## Quick Start
-* Install a client that allows to connect tellydb or redis server
+## Installation
+### Install from GitHub Releases
+* Download the [latest release file](https://github.com/aloima/tellydb/releases/latest/download/telly)
+* Start the server using `./telly`
+
+### Compile on Local Machine
+* Clone the repository
 * Install `OpenSSL` library and its development headers
 * Install `pkg-config` for compilation flags of libraries
 * Compile using `make`
-* Look at default configuration file using `telly default-config`
-* If you want to change configuration values, create a configuration file using `telly create-config`
-* Start the server using `telly`
+* Start the server using `./telly`
+
+### on Docker
+Install docker image:
+```sh
+docker pull aloima/tellydb
+```
+
+Run docker container to start the server:
+```sh
+docker run -d -p 6379:6379 --name telly aloima/tellydb
+```
 
 To get information about cli commands, use `telly help`.
 
