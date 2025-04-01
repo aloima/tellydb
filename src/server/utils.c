@@ -4,11 +4,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include <openssl/ssl.h>
-
-#include <sys/types.h>
-#include <unistd.h>
-
 void write_value(struct Client *client, void *value, enum TellyTypes type) {
   switch (type) {
     case TELLY_NULL:
