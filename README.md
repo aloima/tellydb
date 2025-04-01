@@ -22,19 +22,19 @@ An in-memory key-value database project for educational purposes.
 > [docs/AUTH.md](./docs/AUTH.md) for information about authorization.
 
 ## Installation
-### Install from GitHub Releases
+### Install from GitHub Releases:
 * Download the [latest release file](https://github.com/aloima/tellydb/releases/latest/download/telly)
 * Start the server using `./telly`
 
-### Compile on Local Machine
+### Compile on Local Machine:
 * Clone the repository
 * Install `OpenSSL` library and its development headers
 * Install `pkg-config` for compilation flags of libraries
 * Compile using `make`
 * Start the server using `./telly`
 
-### on Docker
-Install docker image:
+### Install via Docker:
+Pull docker image:
 ```sh
 docker pull aloima/tellydb
 ```
@@ -44,7 +44,7 @@ Run docker container to start the server:
 docker run -d -p 6379:6379 --name telly aloima/tellydb
 ```
 
-To get information about cli commands, use `telly help`.
+To get information about cli commands, use `./telly help`.
 
 ## Benchmark Results
 Look at [utils/README.md](./utils/README.md).
