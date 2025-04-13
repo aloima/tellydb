@@ -1,7 +1,7 @@
-#include <hiredis/read.h>
 #include <stdio.h>
 #include <string.h>
 
+#include <hiredis/read.h>
 #include <hiredis/hiredis.h>
 
 #define HOST "127.0.0.1"
