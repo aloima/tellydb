@@ -7,8 +7,6 @@
 #include <errno.h>
 #include <signal.h>
 
-#include <bits/types/sigset_t.h>
-#include <bits/pthreadtypes.h>
 #include <pthread.h>
 
 struct Transaction *start = NULL;

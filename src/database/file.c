@@ -12,7 +12,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <pthread.h>
-#include <bits/pthreadtypes.h>
 
 static int fd = -1;
 static bool saving = false;

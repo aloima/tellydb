@@ -4,7 +4,6 @@
 #include <stdint.h>
 
 #include <sys/time.h>
-#include <bits/types/struct_timeval.h>
 
 static void run(struct CommandEntry entry) {
   if (!entry.client) return;

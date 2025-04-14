@@ -5,8 +5,6 @@
 #include <time.h>
 
 #include <pthread.h>
-#include <bits/pthreadtypes.h>
-#include <bits/time.h>
 
 #include <hiredis/hiredis.h>
 

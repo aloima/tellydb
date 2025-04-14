@@ -15,7 +15,6 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-#include <asm-generic/socket.h>
 
 #include <openssl/ssl.h>
 #include <openssl/crypto.h>
