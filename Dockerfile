@@ -2,10 +2,12 @@
 
 FROM alpine AS build
 WORKDIR /tellydb
+ARG GIT_HASH
+ARG GIT_VERSION
 
-COPY --parents .git src headers Makefile ./
+RUN apk add --no-cache openssl openssl-dev musl-dev gcc make pkgconfig
 
-RUN apk add --no-cache openssl openssl-dev musl-dev gcc make git pkgconfig
+COPY --parents src headers Makefile ./
 RUN make telly
 
 FROM alpine
