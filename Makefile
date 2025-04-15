@@ -11,7 +11,7 @@ utils/benchmark: utils/benchmark.c
 	@echo Benchmark file is compiled.
 
 utils/tests: utils/tests.c
-	@$(CC) $< -o $@ -lhiredis
+	@$(CC) $< -o $@ -lhiredis -lpthread
 	@echo Tests file is compiled.
 
 telly: ./src/*.c ./src/**/*.c ./src/**/**/*.c
