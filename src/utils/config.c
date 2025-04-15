@@ -8,6 +8,7 @@
 static struct Configuration default_conf = {
   .port = 6379,
   .max_clients = 128,
+  .max_transactions = 262144,
   .allowed_log_levels = LOG_INFO | LOG_ERR | LOG_WARN,
   .max_log_lines = 128,
   .data_file = ".tellydb",
@@ -59,6 +60,10 @@ struct Configuration parse_configuration(FILE *file) {
           buf[0] = '\0';
           parse_value(file, buf);
           conf.max_clients = atoi(buf);
+        } else if (streq(buf, "MAX_TRANSACTIONS")) {
+          buf[0] = '\0';
+          parse_value(file, buf);
+          conf.max_transactions = atoi(buf);
         } else if (streq(buf, "ALLOWED_LOG_LEVELS")) {
           buf[0] = '\0';
           parse_value(file, buf);
@@ -149,26 +154,36 @@ size_t get_configuration_string(char *buf, struct Configuration conf) {
   return sprintf(buf, (
     "# TCP server port\n"
     "PORT=%hu\n\n"
+
     "# Specifies max connectable client count, higher values may cause higher resource usage\n"
     "MAX_CLIENTS=%hu\n\n"
+
+    "# Specifies max storable transaction count, higher values may cause higher resource usage\n"
+    "MAX_TRANSACTIONS=%d\n\n"
+
     "# Allowed log levels:\n"
     "# w = warning\n"
     "# i = information\n"
     "# e = error\n\n"
     "# Order of keys does not matter\n"
     "ALLOWED_LOG_LEVELS=%s\n\n"
+
     "# Specifies maximum line count of logs will be saved to log file, to make undetermined, change it to -1.\n"
     "# If the log file contains more log lines than this value, will not be deleted old logs and will not be saved new logs.\n"
     "# MAX_LOG_LINES * (FILE BLOCK SIZE [512, 4096 or a power of 2] + 1) bytes will be allocated, so be careful\n"
     "MAX_LOG_LINES=%d\n\n"
+
     "# Specifies database file where data will be saved\n"
     "DATA_FILE=%s\n\n"
+
     "# Specifies log file where logs will be saved\n"
     "LOG_FILE=%s\n\n"
+
     "# Specifies default database name, it will be created on first startup of server and deletion of all databases\n"
     "# On a client connection to the server, the client will be paired with this database\n"
     "# This length must be less than or equal to 64\n"
     "DATABASE_NAME=%s\n\n"
+
     "# Enables/disables creating TLS server\n"
     "# If it is enabled, CERT specifies certificate file path of TLS server and PRIVATE_KEY specifies private key file path of TLS server\n"
     "# TLS value must be true or false\n"
@@ -176,7 +191,7 @@ size_t get_configuration_string(char *buf, struct Configuration conf) {
     "TLS=%s\n"
     "CERT=%s\n"
     "PRIVATE_KEY=%s\n"
-  ), conf.port, conf.max_clients, allowed_log_levels, conf.max_log_lines, conf.data_file, conf.log_file, conf.database_name,
+  ), conf.port, conf.max_clients, conf.max_transactions, allowed_log_levels, conf.max_log_lines, conf.data_file, conf.log_file, conf.database_name,
      conf.tls ? "true" : "false", conf.cert, conf.private_key
   );
 }

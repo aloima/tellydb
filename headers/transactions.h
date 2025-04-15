@@ -8,6 +8,7 @@
 #include "resp.h"
 #include "auth.h"
 
+#include <stdbool.h>
 #include <stdint.h>
 
 // TRANSACTIONS
@@ -17,14 +18,14 @@ struct Transaction {
   struct Command *command;
   struct Password *password;
   struct Database *database;
-  struct Transaction *prev, *next;
 };
 
 void create_transaction_thread(struct Configuration *config);
 void deactive_transaction_thread();
 
+uint64_t get_processed_transaction_count();
 uint32_t get_transaction_count();
-void add_transaction(struct Client *client, struct Command *command, commanddata_t *data);
+bool add_transaction(struct Client *client, struct Command *command, commanddata_t *data);
 void remove_transaction(struct Transaction *transaction);
 void free_transactions();
 

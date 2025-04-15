@@ -38,9 +38,11 @@ static bool get_section(char *section, const struct Configuration *conf, const c
       "# Clients\r\n"
       "Connected clients: %d\r\n"
       "Max clients: %d\r\n"
-      "Transaction count: %d\r\n"
+      "Transactions: %d\r\n"
+      "Max transactions: %d\r\n"
+      "Total processed transactions: %ld\r\n"
       "Total received connections: %d\r\n"
-    ), get_client_count(), conf->max_clients, get_transaction_count(), get_last_connection_client_id());
+    ), get_client_count(), conf->max_clients, get_transaction_count(), conf->max_transactions, get_processed_transaction_count(), get_last_connection_client_id());
   } else {
     return false;
   }

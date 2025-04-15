@@ -11,7 +11,7 @@
 
 #define HOST "127.0.0.1"
 #define PORT 6379
-#define LOADTESTS_CLIENT_COUNT 32
+#define LOADTESTS_CLIENT_COUNT 128
 
 void expect_str(const char *name, const char *value, const char *expected) {
   if (strcmp(value, expected) == 0) {
