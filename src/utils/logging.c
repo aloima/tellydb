@@ -139,6 +139,7 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
       stream = NULL;
   }
 
+  if (message_len == 0) return;
   fputs(message, stream);
 
   if (fd != -1) {
