@@ -64,15 +64,15 @@ struct LinkedListNode *get_database_node() {
   return start;
 }
 
-bool rename_database(const string_t old, const string_t new) {
-  const uint64_t target = hash(old.value, old.len);
+bool rename_database(const string_t old_name, const string_t new_name) {
+  const uint64_t target = hash(old_name.value, old_name.len);
   struct LinkedListNode *node = start;
 
   while (node) {
     struct Database *database = node->data;
 
     if (database->id == target) {
-      database->id = hash(new.value, new.len);
+      database->id = hash(new_name.value, new_name.len);
       return true;
     }
 

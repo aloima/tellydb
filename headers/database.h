@@ -25,7 +25,7 @@ struct LinkedListNode *get_database_node();
 void set_main_database(struct Database *database);
 struct Database *get_main_database();
 struct BTree *get_cache_of_database(const string_t name);
-bool rename_database(const string_t old, const string_t new);
+bool rename_database(const string_t old_name, const string_t new_name);
 void free_databases();
 
 struct KVPair {
