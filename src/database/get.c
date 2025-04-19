@@ -88,7 +88,7 @@ static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uin
     case TELLY_HASHTABLE: {
       uint32_t size;
       collect_bytes(fd, block, block_size, at, 4, &size);
-      collected_bytes += (5 + size); // includes size bytes, type bytes of fvs and last (0x17) byte
+      collected_bytes += 5; // includes size bytes and last (0x17) byte
 
       struct HashTable *table = (value = create_hashtable(size));
 
@@ -100,6 +100,7 @@ static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uin
           break;
         } else {
           void *fv_value = NULL;
+          collected_bytes += 1; // type byte
 
           string_t name;
           collected_bytes += collect_string(&name, fd, block, block_size, at);
