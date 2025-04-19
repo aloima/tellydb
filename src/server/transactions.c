@@ -64,7 +64,7 @@ void deactive_transaction_thread() {
 
 void create_transaction_thread(struct Configuration *config) {
   conf = config;
-  transactions = malloc(conf->max_transactions * sizeof(struct Transaction));
+  transactions = calloc(conf->max_transactions, sizeof(struct Transaction));
 
   pthread_mutex_init(&mutex, NULL);
   pthread_cond_init(&cond, NULL);
