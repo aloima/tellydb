@@ -27,6 +27,7 @@ extern const struct Command cmd_time;
 /* HASHTABLE COMMANDS */
 extern const struct Command cmd_hdel;
 extern const struct Command cmd_hget;
+extern const struct Command cmd_hgetall;
 extern const struct Command cmd_hlen;
 extern const struct Command cmd_hset;
 extern const struct Command cmd_htype;

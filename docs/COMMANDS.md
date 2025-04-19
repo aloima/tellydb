@@ -492,6 +492,25 @@ HGET user_profile age
 
 ---
 
+### HGETALL
+**Syntax**: `HGETALL key`  
+**Description**: Gets all fields and their values from the hash table.  
+**Since**: `0.1.9`  
+**Time complexity**: `O(n)`  
+**Permissions**: `P_READ`  
+**Returns**: A map/array  
+**Behavior**:
+* If the key is holding a value that is not a hash table, throws an error.
+* If the key is not holding a value, returns an empty array/map reply.
+* Returns an array for RESP2 protocol, a map for RESP3 protocol.
+
+**Example**:
+```shell
+HGETALL user_profile
+```
+
+---
+
 ### HLEN
 **Syntax**: `HLEN key`  
 **Description**: Returns field count information of the hash table.  

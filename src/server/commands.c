@@ -30,6 +30,7 @@ struct Command *load_commands() {
     // Hashtable commands
     cmd_hdel,
     cmd_hget,
+    cmd_hgetall,
     cmd_hlen,
     cmd_hset,
     cmd_htype,
