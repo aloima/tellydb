@@ -119,10 +119,6 @@ static void close_signal(int arg) {
     case SIGTERM:
       write_log(LOG_WARN, "Received SIGTERM signal, closing the server...");
       break;
-
-    case SIGKILL:
-      write_log(LOG_WARN, "Received SIGKILL signal, closing the server...");
-      break;
   }
 
   close_server();
@@ -297,7 +293,6 @@ void start_server(struct Configuration *config) {
   write_log(LOG_INFO, "Created transaction thread.");
 
   signal(SIGTERM, close_signal);
-  signal(SIGKILL, close_signal);
   signal(SIGINT, close_signal);
   if (initialize_socket() == -1) return;
   if (initialize_authorization() == -1) return;
