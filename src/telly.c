@@ -1,8 +1,6 @@
 #include "../headers/telly.h"
 
 #include <stdio.h>
-#include <stddef.h>
-#include <stdint.h>
 #include <stdlib.h>
 
 int main(int argc, char *argv[]) {
