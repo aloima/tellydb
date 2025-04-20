@@ -563,7 +563,7 @@ HSET user_profile name "Alice" age 30
 
 **Example**:
 ```shell
-HSET user_profile name "Alice" age 30
+HTYPE user_profile name
 ```
 
 ---
