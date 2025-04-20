@@ -146,11 +146,6 @@ static void generate_boolean_value(char **data, off64_t *len, const bool *boolea
   *len += 1;
 }
 
-static void generate_null_value(char **data, off64_t *len) {
-  (*data)[*len] = TELLY_NULL;
-  *len += 1;
-}
-
 static off64_t generate_value(char **data, struct KVPair *kv) {
   off64_t len = 0;
 
@@ -160,7 +155,6 @@ static off64_t generate_value(char **data, struct KVPair *kv) {
 
   switch (kv->type) {
     case TELLY_NULL:
-      generate_null_value(data, &len);
       break;
 
     case TELLY_NUM:
@@ -191,7 +185,6 @@ static off64_t generate_value(char **data, struct KVPair *kv) {
 
           switch (fv->type) {
             case TELLY_NULL:
-              generate_null_value(data, &len);
               break;
 
             case TELLY_NUM:
@@ -233,7 +226,6 @@ static off64_t generate_value(char **data, struct KVPair *kv) {
 
         switch (node->type) {
           case TELLY_NULL:
-            generate_null_value(data, &len);
             break;
 
           case TELLY_NUM:
