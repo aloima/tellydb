@@ -144,7 +144,7 @@ static void run(struct CommandEntry entry) {
 
           switch (fv->type) {
             case TELLY_NULL:
-              strcpy(line, "null\r\n");
+              strcpy(line, "+null\r\n");
               break;
 
             case TELLY_NUM:
