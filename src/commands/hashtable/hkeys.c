@@ -75,7 +75,7 @@ static void run(struct CommandEntry entry) {
 
 const struct Command cmd_hkeys = {
   .name = "HKEYS",
-  .summary = "Gets all fields names from the hash table.",
+  .summary = "Gets all field names from the hash table.",
   .since = "0.1.9",
   .complexity = "O(N) where N is hash table size",
   .permissions = P_READ,

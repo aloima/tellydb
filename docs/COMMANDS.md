@@ -511,6 +511,24 @@ HGETALL user_profile
 
 ---
 
+### HKEYS
+**Syntax**: `HKEYS key`  
+**Description**: Gets all field names from the hash table.  
+**Since**: `0.1.9`  
+**Time complexity**: `O(N) where N is written field name-value pair count`  
+**Permissions**: `P_READ`  
+**Returns**: An array  
+**Behavior**:
+* If the key is holding a value that is not a hash table, throws an error.
+* If the key is not holding a value, returns an empty array
+
+**Example**:
+```shell
+HKEYS user_profile
+```
+
+---
+
 ### HLEN
 **Syntax**: `HLEN key`  
 **Description**: Returns field count information of the hash table.  
@@ -533,7 +551,7 @@ HLEN user_profile
 ---
 
 ### HSET
-**Syntax**: `HSET key [(field value) ...]`  
+**Syntax**: `HSET key [(field name) (field value) ...]`  
 **Description**: Sets field(s) of the hash table.  
 **Since**: `0.1.3`  
 **Time complexity**: `O(N) where N is written field name-value pair count`  
@@ -564,6 +582,24 @@ HSET user_profile name "Alice" age 30
 **Example**:
 ```shell
 HTYPE user_profile name
+```
+
+---
+
+### HVALS
+**Syntax**: `HVALS key`  
+**Description**: Gets all field values from the hash table.  
+**Since**: `0.1.9`  
+**Time complexity**: `O(N) where N is written field name-value pair count`  
+**Permissions**: `P_READ`  
+**Returns**: An array  
+**Behavior**:
+* If the key is holding a value that is not a hash table, throws an error.
+* If the key is not holding a value, returns an empty array
+
+**Example**:
+```shell
+HVALS user_profile
 ```
 
 ---
