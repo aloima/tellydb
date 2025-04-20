@@ -31,9 +31,11 @@ struct Command *load_commands() {
     cmd_hdel,
     cmd_hget,
     cmd_hgetall,
+    cmd_hkeys,
     cmd_hlen,
     cmd_hset,
     cmd_htype,
+    cmd_hvals,
 
     // KV commands
     cmd_append,
