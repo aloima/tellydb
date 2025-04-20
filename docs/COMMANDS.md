@@ -496,7 +496,7 @@ HGET user_profile age
 **Syntax**: `HGETALL key`  
 **Description**: Gets all fields and their values from the hash table.  
 **Since**: `0.1.9`  
-**Time complexity**: `O(n)`  
+**Time complexity**: `O(N) where N is hash table size`  
 **Permissions**: `P_READ`  
 **Returns**: A map/array  
 **Behavior**:
