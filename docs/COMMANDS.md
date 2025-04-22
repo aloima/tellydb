@@ -725,7 +725,7 @@ RENAME name user_name
 ---
 
 ### SET
-**Syntax**: `SET key value [NX|XX] [GET]`  
+**Syntax**: `SET key value [NX|XX] [GET] [AS type]`  
 **Description**: Sets value.  
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
@@ -733,17 +733,25 @@ RENAME name user_name
 **Returns**: `OK` or a value or `ERROR`  
 **Behavior**:
 * If the key is exist, new value will be overwritten.
+* If value type is not specified using `AS type` argument, type will be determined by value itself. For example, `boolean` type for `true` value.
+* If value type is specified using `AS type` and value does not match the type, throws an error.
 
 **Arguments**:
 - **NX**: Only set if the key does not exist.
 - **XX**: Only set if the key exists.
 - **GET**: Returns the old value if it existed.
+- **AS type**: Determines value type, allowed values are:
+  * `str` or `string`
+  * `number` or `num` or `integer` or `int`
+  * `bool` or `boolean`
+  * `null`
 
 **Examples**:
 ```shell
 SET user_name "Alice"
 SET user_age 25 NX
 SET session_token "abc123" XX GET
+SET user_id 369 AS str
 ```
 
 ---
