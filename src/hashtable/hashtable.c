@@ -6,7 +6,7 @@
 
 struct HashTable *create_hashtable(const uint32_t default_size) {
   struct HashTable *table = malloc(sizeof(struct HashTable));
-  table->fvs = calloc(default_size, sizeof(struct FVPair *));
+  table->fields = calloc(default_size, sizeof(struct HashTableField *));
   table->size.allocated = default_size;
   table->size.all = 0;
   table->size.filled = 0;
@@ -15,54 +15,54 @@ struct HashTable *create_hashtable(const uint32_t default_size) {
 }
 
 void resize_hashtable(struct HashTable *table, const uint32_t size) {
-  struct FVPair **fvs = calloc(size, sizeof(struct FVPair *));
+  struct HashTableField **data = calloc(size, sizeof(struct HashTableField *));
   table->size.filled = 0;
 
   for (uint32_t i = 0; i < table->size.allocated; ++i) {
-    struct FVPair *fv = table->fvs[i];
+    struct HashTableField *field = table->fields[i];
 
-    while (fv) {
-      const uint32_t index = fv->hash % size;
-      struct FVPair *next = fv->next;
+    while (field) {
+      const uint32_t index = field->hash % size;
+      struct HashTableField *next = field->next;
 
-      if (!fvs[index]) {
+      if (!data[index]) {
         table->size.filled += 1;
-        fv->next = NULL;
+        field->next = NULL;
       } else {
-        fv->next = fvs[index];
+        field->next = data[index];
       }
 
-      fvs[index] = fv;
-      fv = next;
+      data[index] = field;
+      field = next;
     }
   }
 
-  free(table->fvs);
+  free(table->fields);
   table->size.allocated = size;
-  table->fvs = fvs;
+  table->fields = data;
 }
 
-struct FVPair *get_fv_from_hashtable(struct HashTable *table, const string_t name) {
+struct HashTableField *get_field_from_hashtable(struct HashTable *table, const string_t name) {
   const uint32_t index = hash(name.value, name.len) % table->size.allocated;
-  struct FVPair *fv = table->fvs[index];
+  struct HashTableField *field = table->fields[index];
 
-  while (fv && ((name.len != fv->name.len) || (memcmp(fv->name.value, name.value, name.len) != 0))) fv = fv->next;
-  return fv;
+  while (field && ((name.len != field->name.len) || (memcmp(field->name.value, name.value, name.len) != 0))) field = field->next;
+  return field;
 }
 
 void free_hashtable(struct HashTable *table) {
   const uint32_t allocated_size = table->size.allocated;
 
   for (uint32_t i = 0; i < allocated_size; ++i) {
-    struct FVPair *fv = table->fvs[i];
+    struct HashTableField *field = table->fields[i];
 
-    while (fv) {
-      struct FVPair *next = fv->next;
-      free_fv(fv);
-      fv = next;
+    while (field) {
+      struct HashTableField *next = field->next;
+      free_htfield(field);
+      field = next;
     }
   }
 
-  free(table->fvs);
+  free(table->fields);
   free(table);
 }

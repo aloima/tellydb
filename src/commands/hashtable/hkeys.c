@@ -17,14 +17,14 @@ static struct Length calculate_length(const struct HashTable *table) {
   };
 
   for (uint32_t i = 0; i < table->size.allocated; ++i) {
-    const struct FVPair *fv = table->fvs[i];
+    const struct HashTableField *field = table->fields[i];
 
-    while (fv) {
-      const uint64_t line_length = (5 + (1 + log10(fv->name.len)) + fv->name.len); // name part
+    while (field) {
+      const uint64_t line_length = (5 + (1 + log10(field->name.len)) + field->name.len); // name part
 
       length.maximum_line = fmax(line_length, length.maximum_line);
       length.response += line_length;
-      fv = fv->next;
+      field = field->next;
     }
   }
 
@@ -59,13 +59,13 @@ static void run(struct CommandEntry entry) {
   sprintf(response, "*%d\r\n", table->size.all);
 
   for (uint32_t i = 0; i < table->size.allocated; ++i) {
-    struct FVPair *fv = table->fvs[i];
+    struct HashTableField *field = table->fields[i];
 
-    while (fv) {
-      sprintf(line, "$%d\r\n%.*s\r\n", fv->name.len, fv->name.len, fv->name.value);
+    while (field) {
+      sprintf(line, "$%d\r\n%.*s\r\n", field->name.len, field->name.len, field->name.value);
       strcat(response, line);
 
-      fv = fv->next;
+      field = field->next;
     }
   }
 

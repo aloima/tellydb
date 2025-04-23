@@ -19,28 +19,28 @@ static struct Length calculate_length(const enum ProtocolVersion protover, const
   switch(protover) {
     case RESP2: {
       for (uint32_t i = 0; i < table->size.allocated; ++i) {
-        const struct FVPair *fv = table->fvs[i];
+        const struct HashTableField *field = table->fields[i];
     
-        while (fv) {
+        while (field) {
           uint64_t line_length;
     
-          switch (fv->type) {
+          switch (field->type) {
             case TELLY_NULL:
               line_length = 7;
               break;
     
             case TELLY_NUM:
-              line_length = (3 + (1 + log10(*((long *) fv->value))));
+              line_length = (3 + (1 + log10(*((long *) field->value))));
               break;
     
             case TELLY_STR: {
-              const string_t *string = fv->value;
+              const string_t *string = field->value;
               line_length = (5 + (1 + log10(string->len)) + string->len);;
               break;
             }
     
             case TELLY_BOOL:
-              if (*((bool *) fv->value)) line_length = 7;
+              if (*((bool *) field->value)) line_length = 7;
               else line_length = 8;
               break;
     
@@ -51,7 +51,7 @@ static struct Length calculate_length(const enum ProtocolVersion protover, const
     
           length.maximum_line = fmax(line_length, length.maximum_line);
           length.response += line_length;
-          fv = fv->next;
+          field = field->next;
         }
       }
 
@@ -60,22 +60,22 @@ static struct Length calculate_length(const enum ProtocolVersion protover, const
 
     case RESP3: {
       for (uint32_t i = 0; i < table->size.allocated; ++i) {
-        const struct FVPair *fv = table->fvs[i];
+        const struct HashTableField *field = table->fields[i];
     
-        while (fv) {
+        while (field) {
           uint64_t line_length;
     
-          switch (fv->type) {
+          switch (field->type) {
             case TELLY_NULL:
               line_length = 7;
               break;
     
             case TELLY_NUM:
-              line_length = (3 + (1 + log10(*((long *) fv->value))));
+              line_length = (3 + (1 + log10(*((long *) field->value))));
               break;
     
             case TELLY_STR: {
-              const string_t *string = fv->value;
+              const string_t *string = field->value;
               line_length = (5 + (1 + log10(string->len)) + string->len);;
               break;
             }
@@ -91,7 +91,7 @@ static struct Length calculate_length(const enum ProtocolVersion protover, const
     
           length.maximum_line = fmax(line_length, length.maximum_line);
           length.response += line_length;
-          fv = fv->next;
+          field = field->next;
         }
       }
 
@@ -132,26 +132,26 @@ static void run(struct CommandEntry entry) {
   switch (entry.client->protover) {
     case RESP2: {
       for (uint32_t i = 0; i < table->size.allocated; ++i) {
-        struct FVPair *fv = table->fvs[i];
+        struct HashTableField *field = table->fields[i];
 
-        while (fv) {
-          switch (fv->type) {
+        while (field) {
+          switch (field->type) {
             case TELLY_NULL:
               strcpy(line, "+null\r\n");
               break;
 
             case TELLY_NUM:
-              sprintf(line, ":%ld\r\n", *((long *) fv->value));
+              sprintf(line, ":%ld\r\n", *((long *) field->value));
               break;
 
             case TELLY_STR: {
-              const string_t *string = fv->value;
+              const string_t *string = field->value;
               sprintf(line, "$%d\r\n%.*s\r\n", string->len, string->len, string->value);
               break;
             }
 
             case TELLY_BOOL: {
-              if (*((bool *) fv->value)) {
+              if (*((bool *) field->value)) {
                 strcpy(line, "+true\r\n");
               } else {
                 strcpy(line, "+false\r\n");
@@ -163,7 +163,7 @@ static void run(struct CommandEntry entry) {
           }
 
           strcat(response, line);
-          fv = fv->next;
+          field = field->next;
         }
       }
 
@@ -172,26 +172,26 @@ static void run(struct CommandEntry entry) {
 
     case RESP3: {
       for (uint32_t i = 0; i < table->size.allocated; ++i) {
-        struct FVPair *fv = table->fvs[i];
+        struct HashTableField *field = table->fields[i];
 
-        while (fv) {
-          switch (fv->type) {
+        while (field) {
+          switch (field->type) {
             case TELLY_NULL:
               strcpy(line, "+null\r\n");
               break;
 
             case TELLY_NUM:
-              sprintf(line, ":%ld\r\n", *((long *) fv->value));
+              sprintf(line, ":%ld\r\n", *((long *) field->value));
               break;
 
             case TELLY_STR: {
-              const string_t *string = fv->value;
+              const string_t *string = field->value;
               sprintf(line, "$%d\r\n%.*s\r\n", string->len, string->len, string->value);
               break;
             }
 
             case TELLY_BOOL: {
-              if (*((bool *) fv->value)) {
+              if (*((bool *) field->value)) {
                 strcpy(line, "#t\r\n");
               } else {
                 strcpy(line, "#f\r\n");
@@ -203,7 +203,7 @@ static void run(struct CommandEntry entry) {
           }
 
           strcat(response, line);
-          fv = fv->next;
+          field = field->next;
         }
       }
 

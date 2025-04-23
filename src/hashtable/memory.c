@@ -5,21 +5,21 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-void add_fv_to_hashtable(struct HashTable *table, const string_t name, void *value, const enum TellyTypes type) {
+void add_field_to_hashtable(struct HashTable *table, const string_t name, void *value, const enum TellyTypes type) {
   const uint64_t hashed = hash(name.value, name.len);
   uint32_t index = hashed % table->size.allocated;
 
-  struct FVPair *fv;
+  struct HashTableField *field;
   bool found = false;
 
-  if ((fv = table->fvs[index])) {
+  if ((field = table->fields[index])) {
     do {
-      if ((name.len == fv->name.len) && (memcmp(fv->name.value, name.value, name.len) == 0)) {
+      if ((name.len == field->name.len) && (memcmp(field->name.value, name.value, name.len) == 0)) {
         found = true;
         break;
-      } else if (fv->next) fv = fv->next;
+      } else if (field->next) field = field->next;
       else break;
-    } while (fv);
+    } while (field);
   } else {
     table->size.filled += 1;
   }
@@ -28,68 +28,68 @@ void add_fv_to_hashtable(struct HashTable *table, const string_t name, void *val
     resize_hashtable(table, (table->size.allocated * HASHTABLE_GROW_FACTOR));
     index = hashed % table->size.allocated;
 
-    if (!table->fvs[index]) table->size.filled += 1;
+    if (!table->fields[index]) table->size.filled += 1;
   }
 
-  if (fv) {
+  if (field) {
     if (found) {
-      if (fv->type == TELLY_STR) {
-        string_t *string = fv->value;
+      if (field->type == TELLY_STR) {
+        string_t *string = field->value;
         free(string->value);
       }
 
-      if (fv->type != TELLY_NULL) free(fv->value);
+      if (field->type != TELLY_NULL) free(field->value);
 
-      fv->type = type;
-      fv->value = value;
+      field->type = type;
+      field->value = value;
     } else {
       table->size.all += 1;
 
-      fv->next = malloc(sizeof(struct FVPair));
-      fv = fv->next;
+      field->next = malloc(sizeof(struct HashTableField));
+      field = field->next;
 
-      fv->type = type;
-      fv->value = value;
-      fv->hash = hashed;
-      fv->next = NULL;
+      field->type = type;
+      field->value = value;
+      field->hash = hashed;
+      field->next = NULL;
 
-      fv->name.len = name.len;
-      fv->name.value = malloc(name.len);
-      memcpy(fv->name.value, name.value, name.len);
+      field->name.len = name.len;
+      field->name.value = malloc(name.len);
+      memcpy(field->name.value, name.value, name.len);
     }
   } else {
     table->size.all += 1;
 
-    fv = malloc(sizeof(struct FVPair));
-    fv->type = type;
-    fv->value = value;
-    fv->hash = hashed;
-    fv->next = NULL;
+    field = malloc(sizeof(struct HashTableField));
+    field->type = type;
+    field->value = value;
+    field->hash = hashed;
+    field->next = NULL;
 
-    fv->name.len = name.len;
-    fv->name.value = malloc(name.len);
-    memcpy(fv->name.value, name.value, name.len);
+    field->name.len = name.len;
+    field->name.value = malloc(name.len);
+    memcpy(field->name.value, name.value, name.len);
 
-    table->fvs[index] = fv;
+    table->fields[index] = field;
   }
 }
 
-bool del_fv_to_hashtable(struct HashTable *table, const string_t name) {
+bool del_field_to_hashtable(struct HashTable *table, const string_t name) {
   const uint64_t hashed = hash(name.value, name.len);
   uint32_t index = hashed % table->size.allocated;
 
-  struct FVPair *fv;
-  struct FVPair *prev = NULL;
+  struct HashTableField *field;
+  struct HashTableField *prev = NULL;
 
-  if ((fv = table->fvs[index])) {
+  if ((field = table->fields[index])) {
     do {
-      if ((name.len == fv->name.len) && (memcmp(fv->name.value, name.value, name.len) == 0)) {
+      if ((name.len == field->name.len) && (memcmp(field->name.value, name.value, name.len) == 0)) {
         // b is element will be deleted
         if (prev) { // a b a or a a b
-          prev->next = fv->next;
-        } else if (!fv->next) { // b
+          prev->next = field->next;
+        } else if (!field->next) { // b
           table->size.filled -= 1;
-          table->fvs[index] = NULL;
+          table->fields[index] = NULL;
 
           const uint32_t size = (table->size.allocated * HASHTABLE_SHRINK_FACTOR);
 
@@ -97,19 +97,19 @@ bool del_fv_to_hashtable(struct HashTable *table, const string_t name) {
             resize_hashtable(table, size);
           }
         } else { // b a a
-          table->fvs[index] = fv->next;
+          table->fields[index] = field->next;
         }
 
         table->size.all -= 1;
-        free_fv(fv);
+        free_htfield(field);
         return true;
-      } else if (fv->next) {
-        prev = fv;
-        fv = fv->next;
+      } else if (field->next) {
+        prev = field;
+        field = field->next;
       } else {
         return false;
       }
-    } while (fv);
+    } while (field);
   }
 
   return false;

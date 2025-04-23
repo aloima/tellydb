@@ -21,9 +21,9 @@ static void run(struct CommandEntry entry) {
     return;
   }
 
-  struct FVPair *fv = get_fv_from_hashtable(kv->value, entry.data->args[1]);
+  const struct HashTableField *field = get_field_from_hashtable(kv->value, entry.data->args[1]);
 
-  switch (fv->type) {
+  switch (field->type) {
     case TELLY_NULL:
       _write(entry.client, "+null\r\n", 7);
       break;

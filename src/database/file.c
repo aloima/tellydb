@@ -89,11 +89,11 @@ static off64_t get_value_size(const enum TellyTypes type, void *value) {
       off64_t length = 5;
 
       for (uint32_t i = 0; i < table->size.allocated; ++i) {
-        struct FVPair *fv = table->fvs[i];
+        struct HashTableField *field = table->fields[i];
 
-        while (fv) {
-          length += (1 + get_value_size(TELLY_STR, &fv->name) + get_value_size(fv->type, fv->value));
-          fv = fv->next;
+        while (field) {
+          length += (1 + get_value_size(TELLY_STR, &field->name) + get_value_size(field->type, field->value));
+          field = field->next;
         }
       }
 
@@ -175,35 +175,35 @@ static off64_t generate_value(char **data, struct KVPair *kv) {
       len += 4;
 
       for (uint32_t i = 0; i < table->size.allocated; ++i) {
-        struct FVPair *fv = table->fvs[i];
+        struct HashTableField *field = table->fields[i];
 
-        while (fv) {
-          (*data)[len] = fv->type;
+        while (field) {
+          (*data)[len] = field->type;
           len += 1;
 
-          generate_string_value(data, &len, &fv->name);
+          generate_string_value(data, &len, &field->name);
 
-          switch (fv->type) {
+          switch (field->type) {
             case TELLY_NULL:
               break;
 
             case TELLY_NUM:
-              generate_number_value(data, &len, fv->value);
+              generate_number_value(data, &len, field->value);
               break;
 
             case TELLY_STR:
-              generate_string_value(data, &len, fv->value);
+              generate_string_value(data, &len, field->value);
               break;
 
             case TELLY_BOOL:
-              generate_boolean_value(data, &len, fv->value);
+              generate_boolean_value(data, &len, field->value);
               break;
 
             default:
               break;
           }
 
-          fv = fv->next;
+          field = field->next;
         }
       }
 

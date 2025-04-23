@@ -9,11 +9,11 @@
 #define HASHTABLE_GROW_FACTOR 1.5
 #define HASHTABLE_SHRINK_FACTOR 0.75
 
-struct FVPair {
+struct HashTableField {
   string_t name;
   void *value;
   enum TellyTypes type;
-  struct FVPair *next;
+  struct HashTableField *next;
   uint64_t hash;
 };
 
@@ -24,16 +24,16 @@ struct HashTableSize {
 };
 
 struct HashTable {
-  struct FVPair **fvs;
+  struct HashTableField **fields;
   struct HashTableSize size;
 };
 
 struct HashTable *create_hashtable(uint32_t default_size);
 void resize_hashtable(struct HashTable *table, const uint32_t size);
-struct FVPair *get_fv_from_hashtable(struct HashTable *table, const string_t name);
+struct HashTableField *get_field_from_hashtable(struct HashTable *table, const string_t name);
 void free_hashtable(struct HashTable *table);
 
-void free_fv(struct FVPair *fv);
+void free_htfield(struct HashTableField *field);
 
-void add_fv_to_hashtable(struct HashTable *table, const string_t name, void *value, const enum TellyTypes type);
-bool del_fv_to_hashtable(struct HashTable *table, const string_t name);
+void add_field_to_hashtable(struct HashTable *table, const string_t name, void *value, const enum TellyTypes type);
+bool del_field_to_hashtable(struct HashTable *table, const string_t name);

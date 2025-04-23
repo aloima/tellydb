@@ -42,21 +42,21 @@ static void run(struct CommandEntry entry) {
       long *value = malloc(sizeof(long));
       *value = number;
 
-      add_fv_to_hashtable(table, name, value, TELLY_NUM);
+      add_field_to_hashtable(table, name, value, TELLY_NUM);
     } else if (is_true || streq(input_value, "false")) {
       bool *value = malloc(sizeof(bool));
       *value = is_true;
 
-      add_fv_to_hashtable(table, name, value, TELLY_BOOL);
+      add_field_to_hashtable(table, name, value, TELLY_BOOL);
     } else if (streq(input_value, "null")) {
-      add_fv_to_hashtable(table, name, NULL, TELLY_NULL);
+      add_field_to_hashtable(table, name, NULL, TELLY_NULL);
     } else {
       string_t *value = malloc(sizeof(string_t));
       value->len = input.len;
       value->value = malloc(value->len);
       memcpy(value->value, input_value, value->len);
 
-      add_fv_to_hashtable(table, name, value, TELLY_STR);
+      add_field_to_hashtable(table, name, value, TELLY_STR);
     }
   }
 

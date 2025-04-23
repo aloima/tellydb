@@ -126,7 +126,7 @@ static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uin
               break;
           }
 
-          add_fv_to_hashtable(table, name, fv_value, byte);
+          add_field_to_hashtable(table, name, fv_value, byte);
           free(name.value);
         }
       }

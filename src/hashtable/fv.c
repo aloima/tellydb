@@ -2,13 +2,13 @@
 
 #include <stdlib.h>
 
-void free_fv(struct FVPair *fv) {
-  if (fv->type == TELLY_STR) {
-    string_t *string = fv->value;
+void free_htfield(struct HashTableField *field) {
+  if (field->type == TELLY_STR) {
+    string_t *string = field->value;
     free(string->value);
   }
 
-  if (fv->type != TELLY_NULL) free(fv->value);
-  free(fv->name.value);
-  free(fv);
+  if (field->type != TELLY_NULL) free(field->value);
+  free(field->name.value);
+  free(field);
 }

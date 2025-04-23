@@ -34,7 +34,7 @@ static void run(struct CommandEntry entry) {
     const uint32_t old_size = table->size.all;
 
     for (uint32_t i = 1; i < entry.data->arg_count; ++i) {
-      del_fv_to_hashtable(table, entry.data->args[i]);
+      del_field_to_hashtable(table, entry.data->args[i]);
     }
 
     if (table->size.all == 0) delete_data(entry.database, key);
@@ -44,7 +44,7 @@ static void run(struct CommandEntry entry) {
     _write(entry.client, buf, nbytes);
   } else {
     for (uint32_t i = 1; i < entry.data->arg_count; ++i) {
-      del_fv_to_hashtable(table, entry.data->args[i]);
+      del_field_to_hashtable(table, entry.data->args[i]);
     }
 
     if (table->size.all == 0) delete_data(entry.database, key);

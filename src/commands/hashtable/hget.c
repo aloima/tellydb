@@ -21,7 +21,7 @@ static void run(struct CommandEntry entry) {
     return;
   }
 
-  const struct FVPair *field = get_fv_from_hashtable(kv->value, entry.data->args[1]);
+  const struct HashTableField *field = get_field_from_hashtable(kv->value, entry.data->args[1]);
   if (field) write_value(entry.client, field->value, field->type);
   else WRITE_NULL_REPLY(entry.client);
 }
