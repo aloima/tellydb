@@ -92,7 +92,7 @@ static off64_t get_value_size(const enum TellyTypes type, void *value) {
         struct FVPair *fv = table->fvs[i];
 
         while (fv) {
-          length += (1 + get_value_size(TELLY_STR, &fv->name) + get_value_size(fv->type, value));
+          length += (1 + get_value_size(TELLY_STR, &fv->name) + get_value_size(fv->type, fv->value));
           fv = fv->next;
         }
       }
