@@ -29,6 +29,44 @@ void expect_int(const char *name, const int value, const int expected) {
   }
 }
 
+union ExpectedValue {
+  int number;
+  char *string;
+};
+
+void command_test(redisContext *ctx, const char *command, const int expected_type, union ExpectedValue expected_value) {
+  const int command_len = strlen(command);
+
+  char type_msg[28 + command_len], response_msg[29 + command_len];
+  sprintf(type_msg, "Response type of '%s' command", command);
+  sprintf(response_msg, "Response value of '%s' command", command);
+
+  redisReply *reply = redisCommand(ctx, command);
+  expect_int(type_msg, reply->type, expected_type);
+
+  switch (expected_type) {
+    case REDIS_REPLY_INTEGER:
+      expect_int(response_msg, reply->integer, expected_value.number);
+      break;
+
+    case REDIS_REPLY_STATUS:
+      expect_str(response_msg, reply->str, expected_value.string);
+      break;
+
+    case REDIS_REPLY_STRING:
+      expect_str(response_msg, reply->str, expected_value.string);
+      break;
+
+    case REDIS_REPLY_NIL:
+      break;
+
+    default:
+      break;
+  }
+
+  freeReplyObject(reply);
+}
+
 void command_tests() {
   redisContext *ctx = redisConnect(HOST, PORT);
 
@@ -37,17 +75,11 @@ void command_tests() {
     return;
   }
 
-  redisReply *reply;
-
-  reply = redisCommand(ctx, "SET key value");
-  expect_int("Type of SET command without arguments", reply->type, REDIS_REPLY_STATUS);
-  expect_str("Value of SET command without arguments", reply->str, "OK");
-  freeReplyObject(reply);
-
-  reply = redisCommand(ctx, "GET key");
-  expect_int("Type of GET command for existed key", reply->type, REDIS_REPLY_STRING);
-  expect_str("Value of GET command for existed key", reply->str, "value");
-  freeReplyObject(reply);
+  command_test(ctx, "GET key", REDIS_REPLY_NIL, (union ExpectedValue) {.number = 0});
+  command_test(ctx, "SET key value", REDIS_REPLY_STATUS, (union ExpectedValue) {.string = "OK"});
+  command_test(ctx, "GET key", REDIS_REPLY_STRING, (union ExpectedValue) {.string = "value"});
+  command_test(ctx, "DEL key", REDIS_REPLY_INTEGER, (union ExpectedValue) {.number = 1});
+  command_test(ctx, "GET key", REDIS_REPLY_NIL, (union ExpectedValue) {.number = 0});
 
   redisFree(ctx);
 }
