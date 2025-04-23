@@ -28,7 +28,7 @@ bool initialize_logs(struct Configuration *config) {
   struct stat sostat;
   stat(_conf->log_file, &sostat);
 
-  const off64_t file_size = sostat.st_size;
+  const off_t file_size = sostat.st_size;
   block_size = sostat.st_blksize;
 
   if (_conf->max_log_lines != -1) {
@@ -175,7 +175,7 @@ void save_and_close_logs() {
     if (posix_memalign((void **) &buf, block_size, block_size) == 0) {
       memset(buf, 0, block_size);
 
-      off64_t length = 0;
+      off_t length = 0;
       uint16_t at = 0;
       lseek(fd, 0, SEEK_SET);
 
@@ -197,9 +197,9 @@ void save_and_close_logs() {
 
       if (at != 0) {
         write(fd, buf, block_size);
-        ftruncate64(fd, length + at);
+        ftruncate(fd, length + at);
       } else {
-        ftruncate64(fd, length);
+        ftruncate(fd, length);
       }
 
       free(buf);

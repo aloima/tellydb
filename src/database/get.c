@@ -211,7 +211,7 @@ static size_t collect_database(struct Database **database, const int fd, char *b
   return collected_bytes;
 }
 
-size_t get_all_data_from_file(struct Configuration *conf, const int fd, off64_t file_size, char *block, const uint16_t block_size, const uint16_t filled_block_size) {
+size_t get_all_data_from_file(struct Configuration *conf, const int fd, off_t file_size, char *block, const uint16_t block_size, const uint16_t filled_block_size) {
   size_t loaded_count = 0;
   uint16_t at = filled_block_size;
 
@@ -219,7 +219,7 @@ size_t get_all_data_from_file(struct Configuration *conf, const int fd, off64_t 
     const string_t database_name = {conf->database_name, strlen(conf->database_name)};
     const uint64_t hashed = hash(database_name.value, database_name.len);
 
-    off64_t collected_bytes = at;
+    off_t collected_bytes = at;
     uint32_t data_count = 0;
     struct Database *database;
 

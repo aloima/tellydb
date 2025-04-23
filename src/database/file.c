@@ -23,7 +23,7 @@ bool open_database_fd(struct Configuration *conf, uint32_t *server_age) {
   struct stat sostat;
   stat(conf->data_file, &sostat);
 
-  const off64_t file_size = sostat.st_size;;
+  const off_t file_size = sostat.st_size;;
   block_size = sostat.st_blksize;
 
   if (file_size != 0) {
@@ -63,7 +63,7 @@ void close_database_fd() {
   close(fd);
 }
 
-static off64_t get_value_size(const enum TellyTypes type, void *value) {
+static off_t get_value_size(const enum TellyTypes type, void *value) {
   switch (type) {
     case TELLY_NULL:
       return 0;
@@ -86,7 +86,7 @@ static off64_t get_value_size(const enum TellyTypes type, void *value) {
 
     case TELLY_HASHTABLE: {
       const struct HashTable *table = value;
-      off64_t length = 5;
+      off_t length = 5;
 
       for (uint32_t i = 0; i < table->size.allocated; ++i) {
         struct HashTableField *field = table->fields[i];
@@ -103,7 +103,7 @@ static off64_t get_value_size(const enum TellyTypes type, void *value) {
     case TELLY_LIST: {
       const struct List *list = value;
       struct ListNode *node = list->begin;
-      off64_t length = 4;
+      off_t length = 4;
 
       while (node) {
         length += (1 + get_value_size(node->type, node->value));
@@ -118,7 +118,7 @@ static off64_t get_value_size(const enum TellyTypes type, void *value) {
   }
 }
 
-static void generate_number_value(char **data, off64_t *len, const long *number) {
+static void generate_number_value(char **data, off_t *len, const long *number) {
   const uint32_t bit_count = log2(*number) + 1;
   const uint32_t byte_count = (bit_count / 8) + 1;
 
@@ -127,7 +127,7 @@ static void generate_number_value(char **data, off64_t *len, const long *number)
   *len += byte_count;
 }
 
-static uint32_t generate_string_value(char **data, off64_t *len, const string_t *string) {
+static uint32_t generate_string_value(char **data, off_t *len, const string_t *string) {
   const uint8_t bit_count = log2(string->len) + 1;
   const uint8_t byte_count = ceil((float) (bit_count - 6) / 8);
   const uint8_t first = (byte_count << 6) | (string->len & 0b111111);
@@ -141,13 +141,13 @@ static uint32_t generate_string_value(char **data, off64_t *len, const string_t 
   return (1 + byte_count + string->len);
 }
 
-static void generate_boolean_value(char **data, off64_t *len, const bool *boolean) {
+static void generate_boolean_value(char **data, off_t *len, const bool *boolean) {
   (*data)[*len] = *boolean;
   *len += 1;
 }
 
-static off64_t generate_value(char **data, struct KVPair *kv) {
-  off64_t len = 0;
+static off_t generate_value(char **data, struct KVPair *kv) {
+  off_t len = 0;
 
   generate_string_value(data, &len, &kv->key);
   (*data)[len] = kv->type;
@@ -277,7 +277,7 @@ void save_data(const uint32_t server_age) {
 
     // length represents filled block size
     // total represents total calculated file size
-    off64_t length, total = 0;
+    off_t length, total = 0;
     generate_headers(block, server_age);
 
     {
@@ -345,12 +345,12 @@ void save_data(const uint32_t server_age) {
 
         for (uint32_t i = 0; i < size; ++i) {
           struct KVPair *kv = values[i]->data;
-          const off64_t kv_size = generate_value(&data, kv);
+          const off_t kv_size = generate_value(&data, kv);
   
           const uint32_t block_count = ((length + kv_size + block_size - 1) / block_size);
   
           if (block_count != 1) {
-            off64_t remaining = kv_size;
+            off_t remaining = kv_size;
             const uint16_t complete = (block_size - length);
   
             memcpy(block + length, data, complete);

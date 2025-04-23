@@ -34,7 +34,7 @@ struct KVPair {
   enum TellyTypes type;
 };
 
-size_t get_all_data_from_file(struct Configuration *conf, const int fd, const off64_t file_size, char *block, const uint16_t block_size, const uint16_t filled_block_size);
+size_t get_all_data_from_file(struct Configuration *conf, const int fd, const off_t file_size, char *block, const uint16_t block_size, const uint16_t filled_block_size);
 struct KVPair *get_data(struct Database *database, const string_t key);
 struct KVPair *set_data(struct Database *database, struct KVPair *data, const string_t key, void *value, const enum TellyTypes type);
 bool delete_data(struct Database *database, const string_t key);
