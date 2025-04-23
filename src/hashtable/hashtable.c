@@ -22,15 +22,17 @@ void resize_hashtable(struct HashTable *table, const uint32_t size) {
     struct FVPair *fv = table->fvs[i];
 
     while (fv) {
-      struct FVPair *next = fv->next;
-      fv->next = NULL;
       const uint32_t index = fv->hash % size;
-      struct FVPair **area = &fvs[index];
+      struct FVPair *next = fv->next;
 
-      if (!*area) table->size.filled += 1;
-      while (*area) area = &(*area)->next;
+      if (!fvs[index]) {
+        table->size.filled += 1;
+        fv->next = NULL;
+      } else {
+        fv->next = fvs[index];
+      }
 
-      *area = fv;
+      fvs[index] = fv;
       fv = next;
     }
   }
