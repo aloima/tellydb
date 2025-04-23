@@ -43,6 +43,7 @@ static void run(struct CommandEntry entry) {
 
   if (!kv) {
     _write(entry.client, "*0\r\n", 4);
+    return;
   }
 
   if (kv->type != TELLY_HASHTABLE) {
