@@ -7,3 +7,4 @@ tls/
 /utils/benchmark
 /utils/tests
 .cache/
+.vscode/
