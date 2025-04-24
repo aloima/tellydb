@@ -354,7 +354,9 @@ void start_server(struct Configuration *config) {
         }
 
         while (size != -1) {
-          commanddata_t *data = get_command_data(client, buf, &at, &size);
+          commanddata_t data;
+
+          if (!get_command_data(client, buf, &at, &size, &data)) continue;
           if (size == at) read_client(client, buf, &size, &at);
 
           if (client->locked) {
@@ -364,19 +366,24 @@ void start_server(struct Configuration *config) {
           }
 
           bool found = false;
-          to_uppercase(data->name.value, data->name.value);
+          to_uppercase(data.name.value, data.name.value);
 
           for (uint32_t i = 0; i < command_count; ++i) {
-            if (streq(commands[i].name, data->name.value)) {
+            if (streq(commands[i].name, data.name.value)) {
               client->command = &commands[i];
-              add_transaction(client, &commands[i], data);
-
               found = true;
+
+              if (!add_transaction(client, &commands[i], data)) {
+                free_command_data(data);
+                _write(client, "-Transaction cannot be enqueued because of server settings\r\n", 60);
+                write_log(LOG_WARN, "Transaction count reached their limit, so next transactions cannot be added.");
+              }
+
               break;
             }
           }
 
-          if (!found) unknown_command(client, data->name);
+          if (!found) unknown_command(client, data.name);
         }
       }
     }

@@ -87,7 +87,7 @@ void execute_command(struct Transaction *transaction) {
 
   struct CommandEntry entry = {
     .client = client,
-    .data = transaction->data,
+    .data = &transaction->data,
     .database = transaction->database,
     .password = password
   };

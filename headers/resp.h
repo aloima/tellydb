@@ -5,6 +5,7 @@
 #include "server.h"
 #include "utils.h"
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #define RDT_SSTRING '+'
@@ -23,5 +24,5 @@ typedef struct CommandData {
   uint32_t arg_count;
 } commanddata_t;
 
-commanddata_t *get_command_data(struct Client *client, char *buf, int32_t *at, int32_t *size);
-void free_command_data(commanddata_t *data);
+bool get_command_data(struct Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command);
+void free_command_data(commanddata_t data);

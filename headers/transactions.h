@@ -14,7 +14,7 @@
 // TRANSACTIONS
 struct Transaction {
   struct Client *client;
-  commanddata_t *data;
+  commanddata_t data;
   struct Command *command;
   struct Password *password;
   struct Database *database;
@@ -25,7 +25,7 @@ void deactive_transaction_thread();
 
 uint64_t get_processed_transaction_count();
 uint32_t get_transaction_count();
-bool add_transaction(struct Client *client, struct Command *command, commanddata_t *data);
+bool add_transaction(struct Client *client, struct Command *command, commanddata_t data);
 void remove_transaction(struct Transaction *transaction);
 void free_transactions();
 

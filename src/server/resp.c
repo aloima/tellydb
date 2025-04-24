@@ -77,8 +77,7 @@ static string_t parse_resp_bstring(struct Client *client, char *buf, int32_t *at
   return data;
 }
 
-static commanddata_t *parse_resp_command(struct Client *client, char *buf, int32_t *at, int32_t *size) {
-  commanddata_t *command = malloc(sizeof(commanddata_t));
+static bool parse_resp_command(struct Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command) {
   command->arg_count = 0;
   command->args = NULL;
 
@@ -93,14 +92,12 @@ static commanddata_t *parse_resp_command(struct Client *client, char *buf, int32
 
       if (c != '\n') {
         DATA_ERR(client);
-        free(command);
-        return NULL;
+        return false;
       }
 
       if (command->arg_count == 0) {
         write_log(LOG_ERR, "Received data from Client #%d is empty RESP data, so it cannot be created as a command.", client->id);
-        free(command);
-        return NULL;
+        return false;
       }
 
       command->name = parse_resp_bstring(client, buf, at, size);
@@ -114,29 +111,32 @@ static commanddata_t *parse_resp_command(struct Client *client, char *buf, int32
         }
       }
 
-      return command;
+      return true;
     } else {
       DATA_ERR(client);
-      free(command);
-      return NULL;
+      return false;
     }
   }
 }
 
-commanddata_t *get_command_data(struct Client *client, char *buf, int32_t *at, int32_t *size) {
+bool get_command_data(struct Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command) {
   uint8_t type;
   take_n_bytes(client, buf, at, &type, 1, size);
 
-  if (VERY_LIKELY(type == RDT_ARRAY)) return parse_resp_command(client, buf, at, size);
-  return NULL;
+  if (VERY_LIKELY(type == RDT_ARRAY)) {
+    if (parse_resp_command(client, buf, at, size, command)) return true;
+    else return false;
+  } else {
+    write_log(LOG_ERR, "Received data from Client #%d is not RESP array, so it cannot be read as a command.", client->id);
+    return false;
+  }
 }
 
-void free_command_data(commanddata_t *command) {
-  if (command->arg_count != 0) {
-    for (uint32_t i = 0; i < command->arg_count; ++i) free(command->args[i].value);
-    free(command->args);
+void free_command_data(commanddata_t command) {
+  if (command.arg_count != 0) {
+    for (uint32_t i = 0; i < command.arg_count; ++i) free(command.args[i].value);
+    free(command.args);
   }
 
-  free(command->name.value);
-  free(command);
+  free(command.name.value);
 }

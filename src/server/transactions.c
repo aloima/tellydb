@@ -71,7 +71,7 @@ void create_transaction_thread(struct Configuration *config) {
   pthread_detach(thread);
 }
 
-bool add_transaction(struct Client *client, struct Command *command, commanddata_t *data) {
+bool add_transaction(struct Client *client, struct Command *command, commanddata_t data) {
   if (transaction_count == conf->max_transactions) return false;
 
   pthread_mutex_lock(&mutex);
@@ -97,14 +97,14 @@ void remove_transaction(struct Transaction *transaction) {
   transaction_count -= 1;
   processed_transaction_count += 1;
   free_command_data(transaction->data);
-  transaction->data = NULL;
+  transaction->command = NULL;
 }
 
 void free_transactions() {
   for (uint32_t i = 0; i < conf->max_transactions; ++i) {
     struct Transaction transaction = transactions[i];
 
-    if (transaction.data) {
+    if (transaction.command) {
       free_command_data(transaction.data);
     }
   }
