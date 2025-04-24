@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <inttypes.h>
 
 #include <sys/stat.h>
 
@@ -17,7 +18,7 @@ static void run(struct CommandEntry entry) {
 
   const uint64_t last_save = res.st_mtime;
   char buf[24];
-  const size_t nbytes = sprintf(buf, ":%ld\r\n", last_save);
+  const size_t nbytes = sprintf(buf, ":%" PRIu64 "\r\n", last_save);
 
   _write(entry.client, buf, nbytes);
 }

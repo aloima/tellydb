@@ -13,7 +13,7 @@ static void run(struct CommandEntry entry) {
   age += difftime(time(NULL), start_at);
 
   char buf[24];
-  const size_t nbytes = sprintf(buf, ":%d\r\n", age);
+  const size_t nbytes = sprintf(buf, ":%u\r\n", age);
   _write(entry.client, buf, nbytes);
 }
 

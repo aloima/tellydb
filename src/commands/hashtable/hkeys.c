@@ -56,13 +56,13 @@ static void run(struct CommandEntry entry) {
   char *response = malloc(length.response + 1);
   char *line = malloc(length.maximum_line + 1);
 
-  sprintf(response, "*%d\r\n", table->size.all);
+  sprintf(response, "*%u\r\n", table->size.all);
 
   for (uint32_t i = 0; i < table->size.allocated; ++i) {
     struct HashTableField *field = table->fields[i];
 
     while (field) {
-      sprintf(line, "$%d\r\n%.*s\r\n", field->name.len, field->name.len, field->name.value);
+      sprintf(line, "$%u\r\n%.*s\r\n", field->name.len, field->name.len, field->name.value);
       strcat(response, line);
 
       field = field->next;

@@ -159,7 +159,7 @@ size_t get_configuration_string(char *buf, struct Configuration conf) {
     "MAX_CLIENTS=%hu\n\n"
 
     "# Specifies max storable transaction count, higher values may cause higher resource usage\n"
-    "MAX_TRANSACTIONS=%d\n\n"
+    "MAX_TRANSACTIONS=%u\n\n"
 
     "# Allowed log levels:\n"
     "# w = warning\n"
@@ -171,7 +171,7 @@ size_t get_configuration_string(char *buf, struct Configuration conf) {
     "# Specifies maximum line count of logs will be saved to log file, to make undetermined, change it to -1.\n"
     "# If the log file contains more log lines than this value, will not be deleted old logs and will not be saved new logs.\n"
     "# MAX_LOG_LINES * (FILE BLOCK SIZE [512, 4096 or a power of 2] + 1) bytes will be allocated, so be careful\n"
-    "MAX_LOG_LINES=%d\n\n"
+    "MAX_LOG_LINES=%u\n\n"
 
     "# Specifies database file where data will be saved\n"
     "DATA_FILE=%s\n\n"

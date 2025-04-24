@@ -71,7 +71,7 @@ static void run(struct CommandEntry entry) {
 
   if (entry.client) {
     char buf[14];
-    const size_t nbytes = sprintf(buf, ":%d\r\n", entry.data->arg_count - 1);
+    const size_t nbytes = sprintf(buf, ":%u\r\n", entry.data->arg_count - 1);
     _write(entry.client, buf, nbytes);
   }
 }

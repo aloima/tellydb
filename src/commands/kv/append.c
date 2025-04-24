@@ -28,7 +28,7 @@ static void run(struct CommandEntry entry) {
 
     if (entry.client) {
       char buf[14];
-      const size_t nbytes = sprintf(buf, ":%d\r\n", string->len);
+      const size_t nbytes = sprintf(buf, ":%u\r\n", string->len);
       _write(entry.client, buf, nbytes);
     }
   } else {
@@ -42,7 +42,7 @@ static void run(struct CommandEntry entry) {
 
     if (entry.client) {
       char buf[14];
-      const size_t nbytes = sprintf(buf, ":%d\r\n", string->len);
+      const size_t nbytes = sprintf(buf, ":%u\r\n", string->len);
       _write(entry.client, buf, nbytes);
     }
   }

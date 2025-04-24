@@ -21,7 +21,7 @@ static void run(struct CommandEntry entry) {
   }
 
   char buf[14];
-  const size_t nbytes = sprintf(buf, ":%d\r\n", ((struct List *) kv->value)->size);
+  const size_t nbytes = sprintf(buf, ":%u\r\n", ((struct List *) kv->value)->size);
   _write(entry.client, buf, nbytes);
 }
 

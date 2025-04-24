@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <inttypes.h>
 #include <time.h>
 
 #include <unistd.h>
@@ -30,18 +31,18 @@ static bool get_section(char *section, const struct Configuration *conf, const c
       "Multiplexing API: epoll\r\n"
       "GCC version: %s\r\n"
       "TLS server: %s\r\n"
-      "Age: %d seconds\r\n"
+      "Age: %u seconds\r\n"
       "Started at: %.20s\r\n"
     ), getpid(), gcc_version, (conf->tls ? "yes" : "no"), age, str_start_at);
   } else if (streq(name, "clients")) {
     sprintf(section, (
       "# Clients\r\n"
-      "Connected clients: %d\r\n"
-      "Max clients: %d\r\n"
-      "Transactions: %d\r\n"
-      "Max transactions: %d\r\n"
-      "Total processed transactions: %ld\r\n"
-      "Total received connections: %d\r\n"
+      "Connected clients: %u\r\n"
+      "Max clients: %u\r\n"
+      "Transactions: %u\r\n"
+      "Max transactions: %u\r\n"
+      "Total processed transactions: %" PRIu64 "\r\n"
+      "Total received connections: %u\r\n"
     ), get_client_count(), conf->max_clients, get_transaction_count(), conf->max_transactions, get_processed_transaction_count(), get_last_connection_client_id());
   } else {
     return false;

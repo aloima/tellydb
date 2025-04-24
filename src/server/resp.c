@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#define DATA_ERR(client) write_log(LOG_ERR, "Received data from Client #%d cannot be validated as a RESP data, so it cannot be created as a command.", (client)->id);
+#define DATA_ERR(client) write_log(LOG_ERR, "Received data from Client #%u cannot be validated as a RESP data, so it cannot be created as a command.", (client)->id);
 
 static int take_n_bytes(struct Client *client, char *buf, int32_t *at, void *data, const uint32_t n, int32_t *size) {
   uint64_t count = 0;
@@ -96,7 +96,7 @@ static bool parse_resp_command(struct Client *client, char *buf, int32_t *at, in
       }
 
       if (command->arg_count == 0) {
-        write_log(LOG_ERR, "Received data from Client #%d is empty RESP data, so it cannot be created as a command.", client->id);
+        write_log(LOG_ERR, "Received data from Client #%u is empty RESP data, so it cannot be created as a command.", client->id);
         return false;
       }
 
@@ -127,7 +127,7 @@ bool get_command_data(struct Client *client, char *buf, int32_t *at, int32_t *si
     if (parse_resp_command(client, buf, at, size, command)) return true;
     else return false;
   } else {
-    write_log(LOG_ERR, "Received data from Client #%d is not RESP array, so it cannot be read as a command.", client->id);
+    write_log(LOG_ERR, "Received data from Client #%u is not RESP array, so it cannot be read as a command.", client->id);
     return false;
   }
 }

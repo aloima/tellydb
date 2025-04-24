@@ -17,7 +17,7 @@ static void run(struct CommandEntry entry) {
 
   if (entry.client) {
     char res[13];
-    const size_t res_len = sprintf(res, ":%d\r\n", deleted);
+    const size_t res_len = sprintf(res, ":%u\r\n", deleted);
 
     _write(entry.client, res, res_len);
   }

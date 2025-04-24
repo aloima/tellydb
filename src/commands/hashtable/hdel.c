@@ -40,7 +40,7 @@ static void run(struct CommandEntry entry) {
     if (table->size.all == 0) delete_data(entry.database, key);
 
     char buf[14];
-    const size_t nbytes = sprintf(buf, ":%d\r\n", old_size - table->size.all);
+    const size_t nbytes = sprintf(buf, ":%u\r\n", old_size - table->size.all);
     _write(entry.client, buf, nbytes);
   } else {
     for (uint32_t i = 1; i < entry.data->arg_count; ++i) {

@@ -25,23 +25,23 @@ static void run(struct CommandEntry entry) {
 
     switch (entry.client->protover) {
       case RESP2:
-        res_len = sprintf(res, "*%d\r\n", command_count * 2);
+        res_len = sprintf(res, "*%u\r\n", command_count * 2);
 
         for (uint32_t i = 0; i < command_count; ++i) {
           struct Command command = commands[i];
 
           char buf[4096];
           res_len += sprintf(buf, (
-            "$%ld\r\n%s\r\n"
+            "$%zu\r\n%s\r\n"
             "*6\r\n"
               "$7\r\nsummary\r\n"
-              "$%ld\r\n%s\r\n"
+              "$%zu\r\n%s\r\n"
 
               "$5\r\nsince\r\n"
-              "$%ld\r\n%s\r\n"
+              "$%zu\r\n%s\r\n"
 
               "$10\r\ncomplexity\r\n"
-              "$%ld\r\n%s\r\n"
+              "$%zu\r\n%s\r\n"
           ),
             strlen(command.name), command.name,
             strlen(command.summary), command.summary,
@@ -55,23 +55,23 @@ static void run(struct CommandEntry entry) {
         break;
 
       case RESP3:
-        res_len = sprintf(res, "%%%d\r\n", command_count);
+        res_len = sprintf(res, "%%%u\r\n", command_count);
 
         for (uint32_t i = 0; i < command_count; ++i) {
           struct Command command = commands[i];
 
           char buf[4096];
           res_len += sprintf(buf, (
-            "$%ld\r\n%s\r\n"
+            "$%zu\r\n%s\r\n"
             "%%3\r\n"
               "$7\r\nsummary\r\n"
-              "$%ld\r\n%s\r\n"
+              "$%zu\r\n%s\r\n"
 
               "$5\r\nsince\r\n"
-              "$%ld\r\n%s\r\n"
+              "$%zu\r\n%s\r\n"
 
               "$10\r\ncomplexity\r\n"
-              "$%ld\r\n%s\r\n"
+              "$%zu\r\n%s\r\n"
           ),
             strlen(command.name), command.name,
             strlen(command.summary), command.summary,
@@ -94,7 +94,7 @@ static void run(struct CommandEntry entry) {
     const uint32_t command_count = get_command_count();
 
     char res[16384];
-    uint32_t res_len = sprintf(res, "*%d\r\n", command_count);
+    uint32_t res_len = sprintf(res, "*%u\r\n", command_count);
 
     for (uint32_t i = 0; i < command_count; ++i) {
       char buf[128];
@@ -105,7 +105,7 @@ static void run(struct CommandEntry entry) {
     _write(entry.client, res, res_len);
   } else if (streq("COUNT", subcommand)) {
     char buf[14];
-    const size_t nbytes = sprintf(buf, ":%d\r\n", get_command_count());
+    const size_t nbytes = sprintf(buf, ":%u\r\n", get_command_count());
     _write(entry.client, buf, nbytes);
   } else {
     INVALID_SUBCOMMAND_ERROR(entry.client, "COMMAND", 7);

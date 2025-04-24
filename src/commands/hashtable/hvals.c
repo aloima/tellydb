@@ -127,7 +127,7 @@ static void run(struct CommandEntry entry) {
   char *response = malloc(length.response + 1);
   char *line = malloc(length.maximum_line + 1);
 
-  sprintf(response, "*%d\r\n", table->size.all);
+  sprintf(response, "*%u\r\n", table->size.all);
 
   switch (entry.client->protover) {
     case RESP2: {
@@ -146,7 +146,7 @@ static void run(struct CommandEntry entry) {
 
             case TELLY_STR: {
               const string_t *string = field->value;
-              sprintf(line, "$%d\r\n%.*s\r\n", string->len, string->len, string->value);
+              sprintf(line, "$%u\r\n%.*s\r\n", string->len, string->len, string->value);
               break;
             }
 
@@ -186,7 +186,7 @@ static void run(struct CommandEntry entry) {
 
             case TELLY_STR: {
               const string_t *string = field->value;
-              sprintf(line, "$%d\r\n%.*s\r\n", string->len, string->len, string->value);
+              sprintf(line, "$%u\r\n%.*s\r\n", string->len, string->len, string->value);
               break;
             }
 

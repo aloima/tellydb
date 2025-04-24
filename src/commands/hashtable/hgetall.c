@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <math.h>
 
 struct Length {
@@ -134,13 +135,13 @@ static void run(struct CommandEntry entry) {
 
   switch (entry.client->protover) {
     case RESP2: {
-      sprintf(response, "*%ld\r\n", ((uint64_t) table->size.all * 2));
+      sprintf(response, "*%" PRIu64 "\r\n", ((uint64_t) table->size.all * 2));
 
       for (uint32_t i = 0; i < table->size.allocated; ++i) {
         struct HashTableField *field = table->fields[i];
 
         while (field) {
-          sprintf(line, "$%d\r\n%.*s\r\n", field->name.len, field->name.len, field->name.value);
+          sprintf(line, "$%u\r\n%.*s\r\n", field->name.len, field->name.len, field->name.value);
           strcat(response, line);
 
           switch (field->type) {
@@ -154,7 +155,7 @@ static void run(struct CommandEntry entry) {
 
             case TELLY_STR: {
               const string_t *string = field->value;
-              sprintf(line, "$%d\r\n%.*s\r\n", string->len, string->len, string->value);
+              sprintf(line, "$%u\r\n%.*s\r\n", string->len, string->len, string->value);
               break;
             }
 
@@ -179,13 +180,13 @@ static void run(struct CommandEntry entry) {
     }
 
     case RESP3: {
-      sprintf(response, "%%%d\r\n", table->size.all);
+      sprintf(response, "%%%u\r\n", table->size.all);
 
       for (uint32_t i = 0; i < table->size.allocated; ++i) {
         struct HashTableField *field = table->fields[i];
 
         while (field) {
-          sprintf(line, "$%d\r\n%.*s\r\n", field->name.len, field->name.len, field->name.value);
+          sprintf(line, "$%u\r\n%.*s\r\n", field->name.len, field->name.len, field->name.value);
           strcat(response, line);
 
           switch (field->type) {
@@ -199,7 +200,7 @@ static void run(struct CommandEntry entry) {
 
             case TELLY_STR: {
               const string_t *string = field->value;
-              sprintf(line, "$%d\r\n%.*s\r\n", string->len, string->len, string->value);
+              sprintf(line, "$%u\r\n%.*s\r\n", string->len, string->len, string->value);
               break;
             }
 

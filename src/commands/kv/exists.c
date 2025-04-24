@@ -30,9 +30,9 @@ static void run(struct CommandEntry entry) {
 
   char res[85 + (existed * 9) + (not_existed * 12)];
   const size_t nbytes = sprintf(res, (
-    "*%d\r\n"
-      "+existed key count is %d\r\n"
-      "+not existed key count is %d\r\n"
+    "*%u\r\n"
+      "+existed key count is %u\r\n"
+      "+not existed key count is %u\r\n"
       "%s"
   ), entry.data->arg_count + 2, existed, not_existed, buf);
 

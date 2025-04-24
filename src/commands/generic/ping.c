@@ -15,7 +15,7 @@ static void run(struct CommandEntry entry) {
       const string_t arg = entry.data->args[0];
 
       char *buf = malloc(26 + arg.len);
-      const size_t nbytes = sprintf(buf, "$%d\r\n%s\r\n", arg.len, arg.value);
+      const size_t nbytes = sprintf(buf, "$%u\r\n%s\r\n", arg.len, arg.value);
       _write(entry.client, buf, nbytes);
       free(buf);
 

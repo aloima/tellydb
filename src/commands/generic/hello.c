@@ -67,7 +67,7 @@ static void run(struct CommandEntry entry) {
 
       for (uint32_t i = 0; i < 4; ++i) {
         char element[128];
-        sprintf(element, "$%d\r\n%s\r\n$%d\r\n%s\r\n", values[i][0].length, values[i][0].data, values[i][1].length, values[i][1].data);
+        sprintf(element, "$%u\r\n%s\r\n$%u\r\n%s\r\n", values[i][0].length, values[i][0].data, values[i][1].length, values[i][1].data);
         strcat(buf, element);
       }
 
@@ -79,7 +79,7 @@ static void run(struct CommandEntry entry) {
 
       for (uint32_t i = 0; i < 4; ++i) {
         char element[128];
-        sprintf(element, "$%d\r\n%s\r\n$%d\r\n%s\r\n", values[i][0].length, values[i][0].data, values[i][1].length, values[i][1].data);
+        sprintf(element, "$%u\r\n%s\r\n$%u\r\n%s\r\n", values[i][0].length, values[i][0].data, values[i][1].length, values[i][1].data);
         strcat(buf, element);
       }
 

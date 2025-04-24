@@ -62,7 +62,7 @@ static void run(struct CommandEntry entry) {
 
   if (entry.client) {
     char buf[14];
-    const size_t buf_len = sprintf(buf, ":%d\r\n", fv_count);
+    const size_t buf_len = sprintf(buf, ":%u\r\n", fv_count);
 
     _write(entry.client, buf, buf_len);
   }
