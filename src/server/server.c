@@ -454,7 +454,6 @@ void start_server(struct Configuration *config) {
           }
 
           if (!found) unknown_command(client, data.name);
-          if (!found) unknown_command(client, data.name);
         }
       }
     }
