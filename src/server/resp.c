@@ -98,7 +98,7 @@ static commanddata_t *parse_resp_command(struct Client *client, char *buf, int32
       }
 
       if (command->arg_count == 0) {
-        _write(client, "Received data from Client #%d is empty RESP data, so it cannot be created as a command.", client->id);
+        write_log(LOG_ERR, "Received data from Client #%d is empty RESP data, so it cannot be created as a command.", client->id);
         free(command);
         return NULL;
       }
