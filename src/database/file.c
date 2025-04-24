@@ -18,7 +18,7 @@ static bool saving = false;
 static uint16_t block_size;
 
 bool open_database_fd(struct Configuration *conf, uint32_t *server_age) {
-  if ((fd = open_file(conf->data_file, O_LARGEFILE)) == -1) return false;
+  if ((fd = open_file(conf->data_file, 0)) == -1) return false;
 
   struct stat sostat;
   stat(conf->data_file, &sostat);

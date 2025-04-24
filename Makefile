@@ -10,11 +10,11 @@ CFLAGS ?= -O3 -Wall -Wextra $(FEATURE_FLAGS) -DGIT_HASH=\"$(GIT_HASH)\" -DVERSIO
 compile: utils/benchmark utils/tests telly
 
 utils/benchmark: utils/benchmark.c
-	@$(CC) $< -o $@ -lhiredis
+	@$(CC) $< -o $@ $(shell pkg-config --cflags --libs hiredis)
 	@echo Benchmark file is compiled.
 
 utils/tests: utils/tests.c
-	@$(CC) $< -o $@ -lhiredis -lpthread
+	@$(CC) $< -o $@ $(shell pkg-config --cflags --libs hiredis) -lpthread
 	@echo Tests file is compiled.
 
 telly: ./src/*.c ./src/**/*.c ./src/**/**/*.c

@@ -9,7 +9,12 @@
 #include <time.h>
 
 #include <fcntl.h>
+#ifdef __linux__
 #include <sys/epoll.h>
+#elif __APPLE__
+#include <sys/event.h>
+#include <sys/time.h>
+#endif
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -46,7 +51,11 @@
   free_kdf();\
 }
 
+#ifdef __linux__
 static int epfd;
+#elif __APPLE__
+static int kq;
+#endif
 static int sockfd;
 static SSL_CTX *ctx = NULL;
 static struct Configuration *conf;
@@ -68,10 +77,19 @@ void get_server_time(time_t *server_start_at, uint32_t *server_age) {
 void terminate_connection(const int connfd) {
   const struct Client *client = get_client(connfd);
 
+#ifdef __linux__
   if (epoll_ctl(epfd, EPOLL_CTL_DEL, connfd, NULL) == -1) {
     write_log(LOG_ERR, "Cannot remove Client #%d from multiplexing.", client->id);
     return;
   }
+#elif __APPLE__
+  struct kevent ev;
+  EV_SET(&ev, connfd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+  if (kevent(kq, &ev, 1, NULL, 0, NULL) == -1) {
+    write_log(LOG_ERR, "Cannot remove Client #%d from multiplexing.", client->id);
+    return;
+  }
+#endif
 
   write_log(LOG_INFO, "Client #%d is disconnected.", client->id);
   if (conf->tls) SSL_shutdown(client->ssl);
@@ -98,7 +116,11 @@ static void close_server() {
   write_log(LOG_INFO, "Saved data and closed database file in %.3f seconds.", ((float) clock() - start) / CLOCKS_PER_SEC);
 
   FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);
+#ifdef __linux__
   close(epfd);
+#elif __APPLE__
+  close(kq);
+#endif
   free_passwords();
   free_transactions();
   free_databases();
@@ -132,7 +154,11 @@ static int read_client(struct Client *client, char *buf, int32_t *size, int32_t 
   return 0;
 }
 
+#ifdef __linux__
 static int accept_client(struct epoll_event event) {
+#elif __APPLE__
+static int accept_client() {
+#endif
   struct sockaddr_in addr;
   socklen_t addr_len = sizeof(addr);
 
@@ -141,9 +167,15 @@ static int accept_client(struct epoll_event event) {
 
   fcntl(connfd, F_SETFL, fcntl(connfd, F_GETFL, 0) | O_NONBLOCK);
 
+#ifdef __linux__
   event.events = (EPOLLIN | EPOLLET);
   event.data.fd = connfd;
   epoll_ctl(epfd, EPOLL_CTL_ADD, connfd, &event);
+#elif __APPLE__
+  struct kevent ev;
+  EV_SET(&ev, connfd, EVFILT_READ, EV_ADD, 0, 0, NULL);
+  kevent(kq, &ev, 1, NULL, 0, NULL);
+#endif
 
   if (conf->tls) {
     client->ssl = SSL_new(ctx);
@@ -305,6 +337,7 @@ void start_server(struct Configuration *config) {
 
   write_log(LOG_INFO, "tellydb server age: %ld seconds", age);
 
+#ifdef __linux__
   if ((epfd = epoll_create1(0)) == -1) {
     FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);
     close_database_fd();
@@ -325,11 +358,33 @@ void start_server(struct Configuration *config) {
     FREE_CONF_LOGS(conf);
     return;
 	}
+#elif __APPLE__
+  if ((kq = kqueue()) == -1) {
+    FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);
+    close_database_fd();
+    write_log(LOG_ERR, "Cannot create kqueue instance.");
+    FREE_CONF_LOGS(conf);
+    return;
+  }
+
+  struct kevent ev;
+  EV_SET(&ev, sockfd, EVFILT_READ, EV_ADD, 0, 0, NULL);
+  
+  if (kevent(kq, &ev, 1, NULL, 0, NULL) == -1) {
+    FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);
+    close_database_fd();
+    close(kq);
+    write_log(LOG_ERR, "Cannot add server to kqueue instance.");
+    FREE_CONF_LOGS(conf);
+    return;
+  }
+#endif
 
   start_at = time(NULL);
   write_log(LOG_INFO, "Server is listening on %d port for accepting connections...", conf->port);
 
   while (true) {
+#ifdef __linux__
     const int nfds = epoll_wait(epfd, events, 32, -1);
 
     for (int i = 0; i < nfds; ++i) {
@@ -342,6 +397,21 @@ void start_server(struct Configuration *config) {
         }
 
         if (accept_client(event) == -1) continue;
+#elif __APPLE__
+    struct kevent events[32];
+    const int nfds = kevent(kq, NULL, 0, events, 32, NULL);
+
+    for (int i = 0; i < nfds; ++i) {
+      const int fd = events[i].ident;
+
+      if (fd == sockfd) {
+        if (UINT32_MAX == get_last_connection_client_id()) {
+          write_log(LOG_WARN, "A connection is rejected, because client that has highest ID number is maximum, so cannot be increased it.");
+          continue;
+        }
+
+        if (accept_client() == -1) continue;
+#endif
       } else {
         struct Client *client = get_client(fd);
         char buf[RESP_BUF_SIZE];
@@ -384,10 +454,10 @@ void start_server(struct Configuration *config) {
           }
 
           if (!found) unknown_command(client, data.name);
+          if (!found) unknown_command(client, data.name);
         }
       }
     }
   }
-
   close_server();
 }

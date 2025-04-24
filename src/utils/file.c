@@ -50,7 +50,7 @@ int open_file(const char *file, int flags) {
         write_log(LOG_ERR, "File descriptor cannot be set for no kernel caching mode.");
     }
 
-    close(file);
+    close(fd);
     return -1;
   }
 #endif
