@@ -5,14 +5,14 @@
 #include <string.h>
 #include <stdbool.h>
 
+#include <sys/types.h>
+#include <unistd.h>
+
 #include <openssl/crypto.h>
 #include <openssl/kdf.h>
 #include <openssl/provider.h>
 #include <openssl/params.h>
 #include <openssl/core_names.h>
-
-#include <sys/types.h>
-#include <unistd.h>
 
 static OSSL_LIB_CTX *libctx;
 static OSSL_PROVIDER *prov; 

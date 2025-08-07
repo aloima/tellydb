@@ -1,10 +1,10 @@
 #include "../../headers/telly.h"
 
-#include <string.h>
+// For EBUSY enum
+#include <errno.h> // IWYU pragma: keep
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <errno.h>
 #include <signal.h>
 
 #include <pthread.h>
@@ -72,7 +72,9 @@ void create_transaction_thread(struct Configuration *config) {
 }
 
 bool add_transaction(struct Client *client, struct Command *command, commanddata_t data) {
-  if (transaction_count == conf->max_transactions) return false;
+  if (transaction_count == conf->max_transactions) {
+    return false;
+  }
 
   pthread_mutex_lock(&mutex);
 
