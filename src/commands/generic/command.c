@@ -8,7 +8,7 @@
 static void run(struct CommandEntry entry) {
   if (!entry.client) return;
   if (entry.data->arg_count == 0) {
-    MISSING_SUBCOMMAND_ERROR(entry.client, "COMMAND", 7);
+    MISSING_SUBCOMMAND_ERROR(entry.client, "COMMAND");
     return;
   }
 
@@ -108,7 +108,7 @@ static void run(struct CommandEntry entry) {
     const size_t nbytes = sprintf(buf, ":%u\r\n", get_command_count());
     _write(entry.client, buf, nbytes);
   } else {
-    INVALID_SUBCOMMAND_ERROR(entry.client, "COMMAND", 7);
+    INVALID_SUBCOMMAND_ERROR(entry.client, "COMMAND");
   }
 
   free(subcommand);

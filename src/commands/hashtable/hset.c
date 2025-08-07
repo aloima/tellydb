@@ -8,7 +8,10 @@
 
 static void run(struct CommandEntry entry) {
   if (entry.data->arg_count == 1 || (entry.data->arg_count - 1) % 2 != 0) {
-    if (entry.client) WRONG_ARGUMENT_ERROR(entry.client, "HSET", 4);
+    if (entry.client) {
+      WRONG_ARGUMENT_ERROR(entry.client, "HSET");
+    }
+
     return;
   }
 
@@ -20,7 +23,10 @@ static void run(struct CommandEntry entry) {
     if (kv->type == TELLY_HASHTABLE) {
       table = kv->value;
     } else {
-      if (entry.client) _write(entry.client, "-Invalid type for 'HSET' command\r\n", 34);
+      if (entry.client) {
+        INVALID_TYPE_ERROR(entry.client, "HSET");
+      }
+
       return;
     }
   } else {

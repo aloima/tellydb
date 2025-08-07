@@ -5,7 +5,7 @@
 static void run(struct CommandEntry entry) {
   if (!entry.client) return;
   if (entry.data->arg_count != 1 && entry.data->arg_count != 2) {
-    WRONG_ARGUMENT_ERROR(entry.client, "AUTH", 4);
+    WRONG_ARGUMENT_ERROR(entry.client, "AUTH");
     return;
   }
 
@@ -13,7 +13,7 @@ static void run(struct CommandEntry entry) {
   struct Password *found = get_password(input.value, input.len);
 
   if (!found) {
-    _write(entry.client, "-This password does not exist\r\n", 31);
+    WRITE_ERROR_MESSAGE(entry.client, "This password does not exist");
     return;
   }
 

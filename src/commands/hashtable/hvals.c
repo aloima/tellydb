@@ -106,7 +106,7 @@ static struct Length calculate_length(const enum ProtocolVersion protover, const
 static void run(struct CommandEntry entry) {
   if (!entry.client) return;
   if (entry.data->arg_count != 1) {
-    WRONG_ARGUMENT_ERROR(entry.client, "HVALS", 5);
+    WRONG_ARGUMENT_ERROR(entry.client, "HVALS");
     return;
   }
 
@@ -118,7 +118,7 @@ static void run(struct CommandEntry entry) {
   }
 
   if (kv->type != TELLY_HASHTABLE) {
-    _write(entry.client, "-Invalid type for 'HVALS' command\r\n", 35);
+    INVALID_TYPE_ERROR(entry.client, "HVALS");
     return;
   }
 

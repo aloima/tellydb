@@ -6,7 +6,7 @@
 static void run(struct CommandEntry entry) {
   if (!entry.client) return;
   if (entry.data->arg_count != 1) {
-    WRONG_ARGUMENT_ERROR(entry.client, "LLEN", 4);
+    WRONG_ARGUMENT_ERROR(entry.client, "LLEN");
     return;
   }
 
@@ -16,7 +16,7 @@ static void run(struct CommandEntry entry) {
     _write(entry.client, ":0\r\n", 4);
     return;
   } else if (kv->type != TELLY_LIST) {
-    _write(entry.client, "-Value stored at the key is not a list\r\n", 40);
+    INVALID_TYPE_ERROR(entry.client, "LLEN");
     return;
   }
 

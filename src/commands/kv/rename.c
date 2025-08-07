@@ -6,7 +6,10 @@
 
 static void run(struct CommandEntry entry) {
   if (entry.data->arg_count != 2) {
-    if (entry.client) WRONG_ARGUMENT_ERROR(entry.client, "RENAME", 6);
+    if (entry.client) {
+      WRONG_ARGUMENT_ERROR(entry.client, "RENAME");
+    }
+
     return;
   }
 
@@ -23,7 +26,7 @@ static void run(struct CommandEntry entry) {
       const string_t new = entry.data->args[1];
 
       if (get_data(entry.database, new)) {
-        _write(entry.client, "-The new key already exists\r\n", 26);
+        WRITE_ERROR_MESSAGE(entry.client, "The new key already exists");
         return;
       }
 
@@ -32,12 +35,17 @@ static void run(struct CommandEntry entry) {
       old->value = realloc(old->value, new.len);
       memcpy(old->value, new.value, new.len);
 
-      if (entry.client) WRITE_OK(entry.client);
+      if (entry.client) {
+        WRITE_OK(entry.client);
+      }
+
       return;
     }
   }
 
-  if (entry.client) WRITE_NULL_REPLY(entry.client);
+  if (entry.client) {
+    WRITE_NULL_REPLY(entry.client);
+  }
 }
 
 const struct Command cmd_rename = {

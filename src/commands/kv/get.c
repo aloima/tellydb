@@ -5,7 +5,7 @@
 static void run(struct CommandEntry entry) {
   if (!entry.client) return;
   if (entry.data->arg_count != 1) {
-    WRONG_ARGUMENT_ERROR(entry.client, "GET", 3);
+    WRONG_ARGUMENT_ERROR(entry.client, "GET");
     return;
   }
 

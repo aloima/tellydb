@@ -8,7 +8,7 @@
 
 static void run(struct CommandEntry entry) {
   if (entry.data->arg_count == 0) {
-    if (entry.client) MISSING_SUBCOMMAND_ERROR(entry.client, "CLIENT", 6);
+    if (entry.client) MISSING_SUBCOMMAND_ERROR(entry.client, "CLIENT");
     return;
   }
 
@@ -84,7 +84,9 @@ static void run(struct CommandEntry entry) {
       const long id = atol(entry.data->args[1].value);
 
       if ((id > UINT32_MAX) || (id < 0)) {
-        if (entry.client) _write(entry.client, "-Specified ID is out of bounds for uint32_t\r\n", 45);
+        if (entry.client) {
+          WRITE_ERROR_MESSAGE(entry.client, "Specified ID is out of bounds for uint32_t");
+        }
       } else {
         struct Client *target = get_client_from_id(id);
 
@@ -112,7 +114,7 @@ static void run(struct CommandEntry entry) {
         }
       }
     } else if (entry.client) {
-      _write(entry.client, "-Not allowed to use this command, need P_CLIENT\r\n", 49);
+      WRITE_ERROR_MESSAGE(entry.client, "Not allowed to use this command, need P_CLIENT");
     }
   } else if (streq("SETINFO", subcommand) && entry.client) {
     if (entry.data->arg_count == 3) {
@@ -139,17 +141,19 @@ static void run(struct CommandEntry entry) {
 
         WRITE_OK(entry.client);
       } else {
-        _write(entry.client, "-Unknown property\r\n", 19);
+        WRITE_ERROR_MESSAGE(entry.client, "Unknown property");
       }
     } else {
-      WRONG_ARGUMENT_ERROR(entry.client, "CLIENT SETINFO", 14);
+      WRONG_ARGUMENT_ERROR(entry.client, "CLIENT SETINFO");
     }
   } else if (streq("KILL", subcommand)) {
     if (entry.password->permissions & P_CLIENT) {
       const long id = atol(entry.data->args[1].value);
 
       if ((id > UINT32_MAX) || (id < 0)) {
-        if (entry.client) _write(entry.client, "-Specified ID is out of bounds for uint32_t\r\n", 45);
+        if (entry.client) {
+          WRITE_ERROR_MESSAGE(entry.client, "Specified ID is out of bounds for uint32_t");
+        }
       } else {
         struct Client *target = get_client_from_id(id);
 
@@ -171,14 +175,16 @@ static void run(struct CommandEntry entry) {
         }
       }
     } else if (entry.client) {
-      _write(entry.client, "-Not allowed to use this command, need P_CLIENT\r\n", 49);
+      WRITE_ERROR_MESSAGE(entry.client, "Not allowed to use this command, need P_CLIENT");
     }
   } else if (streq("UNLOCK", subcommand)) {
     if (entry.password->permissions & P_CLIENT) {
       const long id = atol(entry.data->args[1].value);
 
       if ((id > UINT32_MAX) || (id < 0)) {
-        if (entry.client) _write(entry.client, "-Specified ID is out of bounds for uint32_t\r\n", 45);
+        if (entry.client) {
+          WRITE_ERROR_MESSAGE(entry.client, "Specified ID is out of bounds for uint32_t");
+        }
       } else {
         struct Client *target = get_client_from_id(id);
 
@@ -200,10 +206,10 @@ static void run(struct CommandEntry entry) {
         }
       }
     } else if (entry.client) {
-      _write(entry.client, "-Not allowed to use this command, need P_CLIENT\r\n", 49);
+      WRITE_ERROR_MESSAGE(entry.client, "Not allowed to use this command, need P_CLIENT");
     }
   } else if (entry.client) {
-    INVALID_SUBCOMMAND_ERROR(entry.client, "CLIENT", 6);
+    INVALID_SUBCOMMAND_ERROR(entry.client, "CLIENT");
   }
 
   free(subcommand);

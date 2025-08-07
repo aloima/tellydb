@@ -431,7 +431,7 @@ void start_server(struct Configuration *config) {
 
           if (client->locked) {
             free_command_data(data);
-            _write(client, "-Your client is locked, you cannot use any commands until your client is unlocked\r\n", 83);
+            WRITE_ERROR_MESSAGE(client, "Your client is locked, you cannot use any commands until your client is unlocked");
             continue;
           }
 
@@ -445,7 +445,7 @@ void start_server(struct Configuration *config) {
 
               if (!add_transaction(client, &commands[i], data)) {
                 free_command_data(data);
-                _write(client, "-Transaction cannot be enqueued because of server settings\r\n", 60);
+                WRITE_ERROR_MESSAGE(client, "Transaction cannot be enqueued because of server settings");
                 write_log(LOG_WARN, "Transaction count reached their limit, so next transactions cannot be added.");
               }
 

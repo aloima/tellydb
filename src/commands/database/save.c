@@ -10,7 +10,10 @@ static void run(struct CommandEntry entry) {
   server_age += difftime(time(NULL), start_at);
 
   save_data(server_age);
-  if (entry.client) WRITE_OK(entry.client);
+
+  if (entry.client) {
+    WRITE_OK(entry.client);
+  }
 }
 
 const struct Command cmd_save = {

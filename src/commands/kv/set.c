@@ -14,7 +14,10 @@ static void take_as_string(void **value, const string_t data) {
 
 static void run(struct CommandEntry entry) {
   if (entry.data->arg_count < 2) {
-    if (entry.client) WRONG_ARGUMENT_ERROR(entry.client, "SET", 3);
+    if (entry.client) {
+      WRONG_ARGUMENT_ERROR(entry.client, "SET");
+    }
+
     return;
   }
 
@@ -42,12 +45,19 @@ static void run(struct CommandEntry entry) {
         char *type_name = malloc(input.len + 1);
         to_uppercase(input.value, type_name);
 
-        if (streq(type_name, "STRING") || streq(type_name, "STR")) type = TELLY_STR;
-        else if (streq(type_name, "BOOLEAN") || streq(type_name, "BOOL")) type = TELLY_BOOL;
-        else if (streq(type_name, "NUMBER") || streq(type_name, "NUM") || streq(type_name, "INTEGER") || streq(type_name, "INT")) type = TELLY_NUM;
-        else if (streq(type_name, "NULL")) type = TELLY_NULL;
-        else {
-          if (entry.client) _write(entry.client, "-'AS' argument must be followed by a valid type name for 'SET' command\r\n", 72);
+        if (streq(type_name, "STRING") || streq(type_name, "STR")) {
+          type = TELLY_STR;
+        } else if (streq(type_name, "BOOLEAN") || streq(type_name, "BOOL")) {
+          type = TELLY_BOOL;
+        } else if (streq(type_name, "NUMBER") || streq(type_name, "NUM") || streq(type_name, "INTEGER") || streq(type_name, "INT")) {
+          type = TELLY_NUM;
+        } else if (streq(type_name, "NULL")) {
+          type = TELLY_NULL;
+        } else {
+          if (entry.client) {
+            WRITE_ERROR_MESSAGE(entry.client, "'AS' argument must be followed by a valid type name for 'SET' command");
+          }
+
           free(arg);
           free(type_name);
           return;
@@ -56,7 +66,10 @@ static void run(struct CommandEntry entry) {
         free(type_name);
       }
     } else {
-      if (entry.client) _write(entry.client, "-Invalid argument(s) for 'SET' command\r\n", 40);
+      if (entry.client) {
+        WRITE_ERROR_MESSAGE(entry.client, "Invalid argument(s) for 'SET' command");
+      }
+
       free(arg);
       return;
     }
@@ -65,7 +78,10 @@ static void run(struct CommandEntry entry) {
   }
 
   if (nx && xx) {
-    if (entry.client) _write(entry.client, "-XX and NX arguments cannot be specified simultaneously for 'SET' command\r\n", 75);
+    if (entry.client) {
+      WRITE_ERROR_MESSAGE(entry.client, "XX and NX arguments cannot be specified simultaneously for 'SET' command");
+    }
+
     return;
   }
 
@@ -88,7 +104,10 @@ static void run(struct CommandEntry entry) {
   if (is_integer(value_in)) {
     if (!as) type = TELLY_NUM;
     else if (type != TELLY_NUM && type != TELLY_STR) {
-      if (entry.client) _write(entry.client, "-The type must be string or integer for this value\r\n", 52);
+      if (entry.client) {
+        WRITE_ERROR_MESSAGE(entry.client, "The type must be string or integer for this value");
+      }
+
       return;
     }
 
@@ -111,7 +130,10 @@ static void run(struct CommandEntry entry) {
   } else if (is_true || streq(value_in, "false")) {
     if (!as) type = TELLY_BOOL;
     else if (type != TELLY_BOOL && type != TELLY_STR) {
-      if (entry.client) _write(entry.client, "-The type must be string or boolean for this value\r\n", 52);
+      if (entry.client) {
+        WRITE_ERROR_MESSAGE(entry.client, "The type must be string or boolean for this value");
+      }
+
       return;
     }
 
@@ -133,7 +155,10 @@ static void run(struct CommandEntry entry) {
   } else if (streq(value_in, "null")) {
     if (!as) type = TELLY_NULL;
     else if (type != TELLY_NULL && type != TELLY_STR) {
-      if (entry.client) _write(entry.client, "-The type must be string or null for this value\r\n", 49);
+      if (entry.client) {
+        WRITE_ERROR_MESSAGE(entry.client, "The type must be string or null for this value");
+      }
+
       return;
     }
 
@@ -154,7 +179,10 @@ static void run(struct CommandEntry entry) {
   } else {
     if (!as) type = TELLY_STR;
     else if (type != TELLY_STR) {
-      if (entry.client) _write(entry.client, "-The type must be string for this value\r\n", 41);
+      if (entry.client) {
+        WRITE_ERROR_MESSAGE(entry.client, "The type must be string fot this value");
+      }
+
       return;
     }
 
@@ -169,7 +197,7 @@ static void run(struct CommandEntry entry) {
 
       set_data(entry.database, res, key, value, type);
     } else {
-      _write(entry.client, "-Not allowed to use this command, need P_READ\r\n", 47);
+      WRITE_ERROR_MESSAGE(entry.client, "Not allowed to use this command, need P_READ");
     }
   } else {
     const bool success = set_data(entry.database, res, key, value, type);

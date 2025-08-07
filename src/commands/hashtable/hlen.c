@@ -5,7 +5,7 @@
 static void run(struct CommandEntry entry) {
   if (!entry.client) return;
   if (entry.data->arg_count != 1) {
-    WRONG_ARGUMENT_ERROR(entry.client, "HLEN", 4);
+    WRONG_ARGUMENT_ERROR(entry.client, "HLEN");
     return;
   }
 
@@ -17,7 +17,7 @@ static void run(struct CommandEntry entry) {
   }
 
   if (kv->type != TELLY_HASHTABLE) {
-    _write(entry.client, "-Invalid type for 'HLEN' command\r\n", 34);
+    INVALID_TYPE_ERROR(entry.client, "HLEN");
     return;
   }
 

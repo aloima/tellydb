@@ -32,9 +32,17 @@ void free_transactions();
 
 
 // COMMANDS
-#define WRONG_ARGUMENT_ERROR(client, name, len) (_write((client), "-Wrong argument count for '" name "' command\r\n", 38 + (len)))
-#define MISSING_SUBCOMMAND_ERROR(client, name, len) (_write((client), "-Missing subcommand for '" name "' command\r\n", 36 + (len)))
-#define INVALID_SUBCOMMAND_ERROR(client, name, len) (_write((client), "-Invalid subcommand for '" name "' command\r\n", 36 + (len)))
+#define WRONG_ARGUMENT_ERROR(client, name) \
+  WRITE_ERROR_MESSAGE((client), "Wrong argument count for '" name "' command")
+
+#define INVALID_TYPE_ERROR(client, name) \
+  WRITE_ERROR_MESSAGE((client), "Invalid type for '" name "' command")
+
+#define MISSING_SUBCOMMAND_ERROR(client, name) \
+  WRITE_ERROR_MESSAGE((client), "Missing subcommand for '" name "' command")
+
+#define INVALID_SUBCOMMAND_ERROR(client, name) \
+  WRITE_ERROR_MESSAGE((client), "Invalid subcommand for '" name "' command")
 
 struct CommandEntry {
   struct Database *database;

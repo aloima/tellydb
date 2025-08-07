@@ -6,21 +6,21 @@
 static void run(struct CommandEntry entry) {
   if (!entry.client) return;
   if (entry.data->arg_count != 2) {
-    WRONG_ARGUMENT_ERROR(entry.client, "LINDEX", 4);
+    WRONG_ARGUMENT_ERROR(entry.client, "LINDEX");
     return;
   }
 
   const struct KVPair *kv = get_data(entry.database, entry.data->args[0]);
 
   if (!kv || kv->type != TELLY_LIST) {
-    _write(entry.client, "-Value stored at the key is not a list\r\n", 40);
+    INVALID_TYPE_ERROR(entry.client, "LINDEX");
     return;
   }
 
   const char *index_str = entry.data->args[1].value;
 
   if (!is_integer(index_str)) {
-    _write(entry.client, "-Second argument must be an integer\r\n", 37);
+    WRITE_ERROR_MESSAGE(entry.client, "Second argument must be an integer");
     return;
   }
 

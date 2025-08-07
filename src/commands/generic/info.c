@@ -66,6 +66,7 @@ static void run(struct CommandEntry entry) {
 
       if (!get_section(section, conf, name)) {
         _write(entry.client, "-Invalid section name\r\n", 23);
+        WRITE_ERROR_MESSAGE(entry.client, "Invalid section name");
         return;
       }
 
@@ -76,7 +77,7 @@ static void run(struct CommandEntry entry) {
     const char *name = entry.data->args[n].value;
 
     if (!get_section(section, conf, name)) {
-      _write(entry.client, "-Invalid section name\r\n", 23);
+      WRITE_ERROR_MESSAGE(entry.client, "Invalid section name");
       return;
     }
 
@@ -89,7 +90,7 @@ static void run(struct CommandEntry entry) {
       const char *name = names[i];
 
       if (!get_section(section, conf, name)) {
-        _write(entry.client, "-Invalid section name\r\n", 23);
+        WRITE_ERROR_MESSAGE(entry.client, "Invalid section name");
         return;
       }
 
@@ -100,7 +101,7 @@ static void run(struct CommandEntry entry) {
     const char *name = names[n];
 
     if (!get_section(section, conf, name)) {
-      _write(entry.client, "-Invalid section name\r\n", 23);
+      WRITE_ERROR_MESSAGE(entry.client, "Invalid section name");
       return;
     }
 

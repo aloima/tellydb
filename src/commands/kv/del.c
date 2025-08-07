@@ -5,7 +5,10 @@
 
 static void run(struct CommandEntry entry) {
   if (entry.data->arg_count == 0) {
-    if (entry.client) WRONG_ARGUMENT_ERROR(entry.client, "DEL", 3);
+    if (entry.client) {
+      WRONG_ARGUMENT_ERROR(entry.client, "DEL");
+    }
+
     return;
   }
 

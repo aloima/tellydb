@@ -23,7 +23,7 @@ static void run(struct CommandEntry entry) {
     }
 
     default:
-      WRONG_ARGUMENT_ERROR(entry.client, "PING", 4);
+      WRONG_ARGUMENT_ERROR(entry.client, "PING");
   }
 }
 

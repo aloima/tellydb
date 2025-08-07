@@ -15,17 +15,19 @@ static void run(struct CommandEntry entry) {
 
   // arg_count != 0 && arg_count != 1 && arg_count != 3 && arg_count != 4 && arg_count != 6
   if (arg_count > 6 || arg_count == 2 || arg_count == 5) {
-    WRONG_ARGUMENT_ERROR(entry.client, "HELLO", 5);
+    WRONG_ARGUMENT_ERROR(entry.client, "HELLO");
     return;
   }
 
   if (arg_count > 0) {
     const char *protover = entry.data->args[0].value;
 
-    if (streq(protover, "2")) entry.client->protover = RESP2;
-    else if (streq(protover, "3")) entry.client->protover = RESP3;
-    else {
-      _write(entry.client, "-Invalid protocol version\r\n", 27);
+    if (streq(protover, "2")) {
+      entry.client->protover = RESP2;
+    } else if (streq(protover, "3")) {
+      entry.client->protover = RESP3;
+    } else {
+      WRITE_ERROR_MESSAGE(entry.client, "Invalid protocol version");
       return;
     }
   }

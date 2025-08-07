@@ -6,7 +6,10 @@
 
 static void run(struct CommandEntry entry) {
   if (entry.data->arg_count != 2) {
-    if (entry.client) WRONG_ARGUMENT_ERROR(entry.client, "APPEND", 6);
+    if (entry.client) {
+      WRONG_ARGUMENT_ERROR(entry.client, "APPEND");
+    }
+
     return;
   }
 
@@ -15,7 +18,10 @@ static void run(struct CommandEntry entry) {
 
   if (kv) {
     if (kv->type != TELLY_STR) {
-      if (entry.client) _write(entry.client, "-Invalid type for 'APPEND' command\r\n", 36);
+      if (entry.client) {
+        INVALID_TYPE_ERROR(entry.client, "APPEND");
+      }
+
       return;
     }
 

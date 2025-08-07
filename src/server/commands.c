@@ -93,7 +93,7 @@ void execute_command(struct Transaction *transaction) {
   };
 
   if ((password->permissions & command->permissions) != command->permissions) {
-    _write(client, "-No permissions to execute this command\r\n", 41);
+    WRITE_ERROR_MESSAGE(client, "No permissions to execute this command");
     return;
   }
 

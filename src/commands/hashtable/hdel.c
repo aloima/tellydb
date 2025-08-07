@@ -5,7 +5,10 @@
 
 static void run(struct CommandEntry entry) {
   if (entry.data->arg_count < 2) {
-    if (entry.client) WRONG_ARGUMENT_ERROR(entry.client, "HDEL", 4);
+    if (entry.client) {
+      WRONG_ARGUMENT_ERROR(entry.client, "HDEL");
+    }
+
     return;
   }
 
@@ -17,7 +20,10 @@ static void run(struct CommandEntry entry) {
     if (kv->type == TELLY_HASHTABLE) {
       table = kv->value;
     } else {
-      if (entry.client) _write(entry.client, "-Invalid type for 'HDEL' command\r\n", 34);
+      if (entry.client) {
+        INVALID_TYPE_ERROR(entry.client, "HDEL");
+      }
+
       return;
     }
   } else {
@@ -27,7 +33,7 @@ static void run(struct CommandEntry entry) {
 
   if (entry.client) {
     if (!(entry.password->permissions & P_READ)) {
-      _write(entry.client, "-Not allowed to use this command, need P_READ\r\n", 47);
+      WRITE_ERROR_MESSAGE(entry.client, "Not allowed to use this command, need P_READ");
       return;
     }
 
@@ -47,7 +53,9 @@ static void run(struct CommandEntry entry) {
       del_field_to_hashtable(table, entry.data->args[i]);
     }
 
-    if (table->size.all == 0) delete_data(entry.database, key);
+    if (table->size.all == 0) {
+      delete_data(entry.database, key);
+    }
   }
 }
 

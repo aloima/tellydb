@@ -20,7 +20,10 @@ static void rpush_to_list(struct List *list, void *value, enum TellyTypes type) 
 
 static void run(struct CommandEntry entry) {
   if (entry.data->arg_count < 2) {
-    if (entry.client) WRONG_ARGUMENT_ERROR(entry.client, "RPUSH", 5);
+    if (entry.client) {
+      WRONG_ARGUMENT_ERROR(entry.client, "RPUSH");
+    }
+
     return;
   }
 
@@ -30,7 +33,10 @@ static void run(struct CommandEntry entry) {
 
   if (kv) {
     if (kv->type != TELLY_LIST) {
-      if (entry.client) _write(entry.client, "-Not allowed to use this command, need P_READ\r\n", 47);
+      if (entry.client) {
+        INVALID_TYPE_ERROR(entry.client, "RPUSH");
+      }
+
       return;
     }
 

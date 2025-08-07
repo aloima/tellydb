@@ -6,7 +6,7 @@
 static void run(struct CommandEntry entry) {
   if (!entry.client) return;
   if (entry.data->arg_count != 1) {
-    _write(entry.client, "-Invalid command usage\r\n", 24);
+    WRITE_ERROR_MESSAGE(entry.client, "Invalid command usage");
     return;
   }
 
@@ -25,7 +25,7 @@ static void run(struct CommandEntry entry) {
     node = node->next;
   }
 
-  _write(entry.client, "-This database cannot be found\r\n", 32);
+  WRITE_ERROR_MESSAGE(entry.client, "This database cannot be found");
 }
 
 const struct Command cmd_select = {

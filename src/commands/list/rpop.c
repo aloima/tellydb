@@ -4,7 +4,10 @@
 
 static void run(struct CommandEntry entry) {
   if (entry.data->arg_count != 1) {
-    if (entry.client) WRONG_ARGUMENT_ERROR(entry.client, "RPOP", 4);
+    if (entry.client) {
+      WRONG_ARGUMENT_ERROR(entry.client, "RPOP");
+    }
+
     return;
   }
 
@@ -17,14 +20,19 @@ static void run(struct CommandEntry entry) {
   }
 
   if (kv->type != TELLY_LIST) {
-    if (entry.client) _write(entry.client, "-Value stored at the key is not a list\r\n", 40);
+    if (entry.client) {
+      INVALID_TYPE_ERROR(entry.client, "RPOP");
+    }
+
     return;
   }
 
   struct List *list = kv->value;
   struct ListNode *node = list->end;
 
-  if (entry.client) write_value(entry.client, list->end->value, list->end->type);
+  if (entry.client) {
+    write_value(entry.client, list->end->value, list->end->type);
+  }
 
   if (list->size == 1) {
     delete_data(entry.database, key);

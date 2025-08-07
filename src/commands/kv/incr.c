@@ -6,7 +6,10 @@
 
 static void run(struct CommandEntry entry) {
   if (entry.data->arg_count != 1) {
-    if (entry.client) WRONG_ARGUMENT_ERROR(entry.client, "INCR", 4);
+    if (entry.client) {
+      WRONG_ARGUMENT_ERROR(entry.client, "INCR");
+    }
+
     return;
   }
 
@@ -31,7 +34,7 @@ static void run(struct CommandEntry entry) {
       _write(entry.client, buf, nbytes);
     }
   } else if (entry.client) {
-    _write(entry.client, "-Invalid type for 'INCR' command\r\n", 34);
+    INVALID_TYPE_ERROR(entry.client, "INCR");
   }
 }
 

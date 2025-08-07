@@ -52,7 +52,10 @@ static uint8_t read_permissions_value(struct Client *client, const char *value) 
 
 static void add_pwd(struct CommandEntry entry) {
   if (entry.data->arg_count != 3) {
-    if (entry.client) WRONG_ARGUMENT_ERROR(entry.client, "PWD ADD", 7);
+    if (entry.client) {
+      WRONG_ARGUMENT_ERROR(entry.client, "PWD ADD");
+    }
+
     return;
   }
 
@@ -63,7 +66,10 @@ static void add_pwd(struct CommandEntry entry) {
   const uint8_t not_have = ~entry.password->permissions & permissions;
 
   if (not_have) {
-    if (entry.client) _write(entry.client, "-Tried to give permissions your password do not have\r\n", 54);
+    if (entry.client) {
+      WRITE_ERROR_MESSAGE(entry.client, "Tried to give permissions your password do not have");
+    }
+
     return;
   }
 
@@ -73,12 +79,15 @@ static void add_pwd(struct CommandEntry entry) {
     return;
   }
 
-  _write(entry.client, "-This password already exists\r\n", 31);
+  WRITE_ERROR_MESSAGE(entry.client, "This password already exists");
 }
 
 static void edit_pwd(struct CommandEntry entry) {
   if (entry.data->arg_count != 3) {
-    if (entry.client) WRONG_ARGUMENT_ERROR(entry.client, "PWD EDIT", 8);
+    if (entry.client) {
+      WRONG_ARGUMENT_ERROR(entry.client, "PWD EDIT");
+    }
+
     return;
   }
 
@@ -87,7 +96,10 @@ static void edit_pwd(struct CommandEntry entry) {
 
   struct Password *target = get_password(input.value, input.len);
   if (!target) {
-    if (entry.client) _write(entry.client, "-This password does not exist\r\n", 31);
+    if (entry.client) {
+      WRITE_ERROR_MESSAGE(entry.client, "This password does not exist");
+    }
+
     return;
   }
 
@@ -95,7 +107,10 @@ static void edit_pwd(struct CommandEntry entry) {
   const uint8_t not_have = ~entry.password->permissions & permissions;
 
   if (not_have) {
-    if (entry.client) _write(entry.client, "-Tried to give permissions your password do not have\r\n", 54);
+    if (entry.client) {
+      WRITE_ERROR_MESSAGE(entry.client, "Tried to give permissions your password do not have");
+    }
+
     return;
   }
 
@@ -105,19 +120,28 @@ static void edit_pwd(struct CommandEntry entry) {
 
 static void remove_pwd(struct CommandEntry entry) {
   if (entry.data->arg_count != 2) {
-    if (entry.client) WRONG_ARGUMENT_ERROR(entry.client, "PWD REMOVE", 10);
+    if (entry.client) {
+      WRONG_ARGUMENT_ERROR(entry.client, "PWD REMOVE");
+    }
+
     return;
   }
 
   const string_t input = entry.data->args[1];
 
-  if (remove_password(entry.client, input.value, input.len) && entry.client) WRITE_OK(entry.client);
-  else if (entry.client) _write(entry.client, "-This password cannot be found\r\n", 32);
+  if (remove_password(entry.client, input.value, input.len) && entry.client) {
+    WRITE_OK(entry.client);
+  } else if (entry.client) {
+    WRITE_ERROR_MESSAGE(entry.client, "This password cannot be found");
+  }
 }
 
 static void run(struct CommandEntry entry) {
   if (entry.data->arg_count == 0) {
-    if (entry.client) MISSING_SUBCOMMAND_ERROR(entry.client, "PWD", 3);
+    if (entry.client) {
+      MISSING_SUBCOMMAND_ERROR(entry.client, "PWD");
+    }
+
     return;
   }
 
@@ -142,7 +166,7 @@ static void run(struct CommandEntry entry) {
 
     _write(entry.client, buf, 39);
   } else if (entry.client) {
-    INVALID_SUBCOMMAND_ERROR(entry.client, "PWD", 3);
+    INVALID_SUBCOMMAND_ERROR(entry.client, "PWD");
   }
 
   free(subcommand);

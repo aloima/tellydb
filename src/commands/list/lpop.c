@@ -4,7 +4,10 @@
 
 static void run(struct CommandEntry entry) {
   if (entry.data->arg_count != 1) {
-    if (entry.client) WRONG_ARGUMENT_ERROR(entry.client, "LPOP", 4);
+    if (entry.client) {
+      WRONG_ARGUMENT_ERROR(entry.client, "LPOP");
+    }
+
     return;
   }
 
@@ -12,19 +15,27 @@ static void run(struct CommandEntry entry) {
   const struct KVPair *kv = get_data(entry.database, key);
 
   if (!kv) {
-    if (entry.client) WRITE_NULL_REPLY(entry.client);
+    if (entry.client) {
+      WRITE_NULL_REPLY(entry.client);
+    }
+
     return;
   }
 
   if (kv->type != TELLY_LIST) {
-    if (entry.client) _write(entry.client, "-Value stored at the key is not a list\r\n", 40);
+    if (entry.client) {
+      INVALID_TYPE_ERROR(entry.client, "LPOP");
+    }
+
     return;
   }
 
   struct List *list = kv->value;
   struct ListNode *node = list->begin;
 
-  if (entry.client) write_value(entry.client, node->value, node->type);
+  if (entry.client) {
+    write_value(entry.client, node->value, node->type);
+  }
 
   if (list->size == 1) {
     delete_data(entry.database, key);

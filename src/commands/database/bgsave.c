@@ -9,8 +9,11 @@ static void run(struct CommandEntry entry) {
   get_server_time(&start_at, &server_age);
   server_age += difftime(time(NULL), start_at);
 
-  if (bg_save(server_age) && entry.client) WRITE_OK(entry.client);
-  else if (entry.client) _write(entry.client, "-Saving process is already active in background or not\r\n", 56);
+  if (bg_save(server_age) && entry.client) {
+    WRITE_OK(entry.client);
+  } else if (entry.client) {
+    WRITE_ERROR_MESSAGE(entry.client, "Saving process is already active in background or not");
+  }
 }
 
 const struct Command cmd_bgsave = {
