@@ -1,10 +1,8 @@
-tls/
-/telly
-/.tellydb
-/.tellylog
-/vgcore.*
-/compile_commands.json
-/utils/benchmark
-/utils/tests
+# clangd cache
 .cache/
+
+# IDE directories
 .vscode/
+
+# Build directory
+build/

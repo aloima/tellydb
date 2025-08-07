@@ -1,4 +1,4 @@
-#include "../../headers/telly.h"
+#include <telly.h>
 
 // For EBUSY enum
 #include <errno.h> // IWYU pragma: keep
@@ -21,7 +21,7 @@ pthread_t thread;
 pthread_cond_t cond;
 pthread_mutex_t mutex;
 
-void *transaction_thread() {
+void *transaction_thread(void *arg) {
   sigset_t set;
   sigemptyset(&set);
   sigaddset(&set, SIGINT);

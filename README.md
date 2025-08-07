@@ -27,13 +27,16 @@ An in-memory key-value database project for educational purposes.
 * Start the server using `./telly`
 
 ### Compile on Local Machine:
-* Clone the repository
-* Install `OpenSSL` library and its development headers
-* Install `pkg-config` for compilation flags of libraries
-* Compile using `make`
-* Start the server using `./telly`
++ Clone the repository
++ Install `OpenSSL` library and its development headers
++ Install `pkg-config` for compilation flags of libraries
++ Install `cmake` to generate compile files
++ Create build directory using `mkdir build` and enter `cd build`
++ Generate compilation files using `cmake ..`
+  - Compile inside the directory using `make telly`, then start the server using `./telly`
+  - Install your local machine using `sudo make install`, then start the server using `telly`
 
-### Install via Docker:
+### Install via Docker (WIP):
 Pull docker image:
 ```sh
 docker pull aloima/tellydb
