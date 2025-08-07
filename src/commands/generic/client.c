@@ -8,7 +8,10 @@
 
 static void run(struct CommandEntry entry) {
   if (entry.data->arg_count == 0) {
-    if (entry.client) MISSING_SUBCOMMAND_ERROR(entry.client, "CLIENT");
+    if (entry.client) {
+      MISSING_SUBCOMMAND_ERROR(entry.client, "CLIENT");
+    }
+
     return;
   }
 

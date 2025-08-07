@@ -65,7 +65,6 @@ static void run(struct CommandEntry entry) {
       char *name = entry.data->args[i].value;
 
       if (!get_section(section, conf, name)) {
-        _write(entry.client, "-Invalid section name\r\n", 23);
         WRITE_ERROR_MESSAGE(entry.client, "Invalid section name");
         return;
       }

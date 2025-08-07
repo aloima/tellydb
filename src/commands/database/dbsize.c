@@ -12,7 +12,7 @@ static void run(struct CommandEntry entry) {
 
     if (found) cache = found;
     else {
-      WRITE_ERROR_MESSAGE(entry.client, "-Database cannot be found");
+      WRITE_ERROR_MESSAGE(entry.client, "Database cannot be found");
       return;
     }
   }
