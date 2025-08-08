@@ -15,24 +15,25 @@
     return return_value; \
   }
 
-static int take_n_bytes(struct Client *client, char *buf, int32_t *at, void *data, const uint32_t n, int32_t *size) {
-  if (VERY_LIKELY((*at + n) < RESP_BUF_SIZE)) {
+static inline int take_n_bytes(struct Client *client, char *buf, int32_t *at, void *data, const uint32_t n, int32_t *size) {
+  const uint32_t remaining = (RESP_BUF_SIZE - *at);
+
+  if (VERY_LIKELY(*at < remaining)) {
     memcpy(data, buf + *at, n);
     *at += n;
 
     return n;
-  } else {
-    const uint32_t remaining = (RESP_BUF_SIZE - *at);
-    memcpy(data, buf + *at, remaining);
-
-    if (_read(client, data + remaining, n - remaining) <= 0) {
-      return remaining;
-    }
-
-    *at = 0;
-    *size = 0;
-    return n;
   }
+
+  memcpy(data, buf + *at, remaining);
+
+  if (_read(client, data + remaining, n - remaining) <= 0) {
+    return remaining;
+  }
+
+  *at = 0;
+  *size = 0;
+  return n;
 }
 
 static string_t parse_resp_bstring(struct Client *client, char *buf, int32_t *at, int32_t *size) {
