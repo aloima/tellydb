@@ -367,7 +367,7 @@ void start_server(struct Configuration *config) {
     return;
   }
 
-  struct kevent ev;
+  struct kevent event, events[32];
   EV_SET(&ev, sockfd, EVFILT_READ, EV_ADD, 0, 0, NULL);
   
   if (kevent(kq, &ev, 1, NULL, 0, NULL) == -1) {
@@ -398,7 +398,6 @@ void start_server(struct Configuration *config) {
 
         if (accept_client(event) == -1) continue;
 #elif __APPLE__
-    struct kevent events[32];
     const int nfds = kevent(kq, NULL, 0, events, 32, NULL);
 
     for (int i = 0; i < nfds; ++i) {
@@ -453,10 +452,13 @@ void start_server(struct Configuration *config) {
             }
           }
 
-          if (!found) unknown_command(client, data.name);
+          if (!found) {
+            unknown_command(client, data.name);
+          }
         }
       }
     }
   }
+
   close_server();
 }
