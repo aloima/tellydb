@@ -55,20 +55,20 @@ void number_pad(char *res, const uint32_t value) {
   res[2] = '\0';
 }
 
-int ltoa(const int64_t value, char *dst) {
+const int ltoa(const int64_t value, char *dst) {
   const bool neg = (value < 0);
   uint64_t uval = (neg ? -value : value);
 
   int len = 1;
-  len += (uval >= pow10_table[1]);
-  len += (uval >= pow10_table[2]);
-  len += (uval >= pow10_table[3]);
-  len += (uval >= pow10_table[4]);
-  len += (uval >= pow10_table[5]);
-  len += (uval >= pow10_table[6]);
-  len += (uval >= pow10_table[7]);
-  len += (uval >= pow10_table[8]);
-  len += (uval >= pow10_table[9]);
+  len += (uval >= pow10_table[ 1]);
+  len += (uval >= pow10_table[ 2]);
+  len += (uval >= pow10_table[ 3]);
+  len += (uval >= pow10_table[ 4]);
+  len += (uval >= pow10_table[ 5]);
+  len += (uval >= pow10_table[ 6]);
+  len += (uval >= pow10_table[ 7]);
+  len += (uval >= pow10_table[ 8]);
+  len += (uval >= pow10_table[ 9]);
   len += (uval >= pow10_table[10]);
   len += (uval >= pow10_table[11]);
   len += (uval >= pow10_table[12]);
@@ -98,4 +98,27 @@ int ltoa(const int64_t value, char *dst) {
   }
 
   return total_len;
+}
+
+const int get_digit_count(const uint64_t value) {
+  if (value >= pow10_table[19]) return 20;
+  if (value >= pow10_table[18]) return 19;
+  if (value >= pow10_table[17]) return 18;
+  if (value >= pow10_table[16]) return 17;
+  if (value >= pow10_table[15]) return 16;
+  if (value >= pow10_table[14]) return 15;
+  if (value >= pow10_table[13]) return 14;
+  if (value >= pow10_table[12]) return 13;
+  if (value >= pow10_table[11]) return 12;
+  if (value >= pow10_table[10]) return 11;
+  if (value >= pow10_table[9])  return 10;
+  if (value >= pow10_table[8])  return  9;
+  if (value >= pow10_table[7])  return  8;
+  if (value >= pow10_table[6])  return  7;
+  if (value >= pow10_table[5])  return  6;
+  if (value >= pow10_table[4])  return  5;
+  if (value >= pow10_table[3])  return  4;
+  if (value >= pow10_table[2])  return  3;
+  if (value >= pow10_table[1])  return  2;
+  return 1;
 }
