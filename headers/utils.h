@@ -42,6 +42,8 @@ bool initialize_logs(struct Configuration *config);
 void write_log(enum LogLevel level, const char *fmt, ...);
 void save_and_close_logs();
 
+void memcpy_aligned(void *restrict dest, const void *restrict src, size_t n);
+
 bool is_integer(const char *value);
 void number_pad(char *res, const uint32_t value);
 

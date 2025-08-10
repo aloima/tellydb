@@ -1,7 +1,6 @@
 #include <telly.h>
 
 #include <stdint.h>
-#include <string.h>
 #include <stdlib.h>
 
 static struct Command *commands;
@@ -59,8 +58,8 @@ struct Command *load_commands() {
 
   command_count = (sizeof(_commands) / sizeof(struct Command));
 
-  if (posix_memalign((void **) &commands, 8, sizeof(_commands)) == 0) {
-    memcpy(commands, _commands, sizeof(_commands));
+  if (posix_memalign((void **) &commands, 32, sizeof(_commands)) == 0) {
+    memcpy_aligned(commands, _commands, sizeof(_commands));
   } else {
     write_log(LOG_ERR, "Cannot create commands, out of memory.");
   }

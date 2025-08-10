@@ -1,6 +1,5 @@
 #include <telly.h>
 
-#include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -19,13 +18,13 @@ static inline int take_n_bytes(struct Client *client, char *buf, int32_t *at, vo
   const uint32_t remaining = (RESP_BUF_SIZE - *at);
 
   if (VERY_LIKELY(*at < remaining)) {
-    memcpy(data, buf + *at, n);
+    memcpy_aligned(data, buf + *at, n);
     *at += n;
 
     return n;
   }
 
-  memcpy(data, buf + *at, remaining);
+  memcpy_aligned(data, buf + *at, remaining);
 
   if (_read(client, data + remaining, n - remaining) <= 0) {
     return remaining;
