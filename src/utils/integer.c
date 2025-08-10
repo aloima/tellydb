@@ -1,8 +1,31 @@
 #include <telly.h>
 
 #include <stdbool.h>
-#include <ctype.h>
 #include <stdint.h>
+#include <ctype.h>
+
+static const uint64_t pow10_table[] = {
+  1UL,
+  10UL,
+  100UL,
+  1000UL,
+  10000UL,
+  100000UL,
+  1000000UL,
+  10000000UL,
+  100000000UL,
+  1000000000UL,
+  10000000000UL,
+  100000000000UL,
+  1000000000000UL,
+  10000000000000UL,
+  100000000000000UL,
+  1000000000000000UL,
+  10000000000000000UL,
+  100000000000000000UL,
+  1000000000000000000UL,
+  10000000000000000000UL
+};
 
 bool is_integer(const char *value) {
   char *_value = (char *) value;
@@ -30,4 +53,49 @@ void number_pad(char *res, const uint32_t value) {
   }
 
   res[2] = '\0';
+}
+
+int ltoa(const int64_t value, char *dst) {
+  const bool neg = (value < 0);
+  uint64_t uval = (neg ? -value : value);
+
+  int len = 1;
+  len += (uval >= pow10_table[1]);
+  len += (uval >= pow10_table[2]);
+  len += (uval >= pow10_table[3]);
+  len += (uval >= pow10_table[4]);
+  len += (uval >= pow10_table[5]);
+  len += (uval >= pow10_table[6]);
+  len += (uval >= pow10_table[7]);
+  len += (uval >= pow10_table[8]);
+  len += (uval >= pow10_table[9]);
+  len += (uval >= pow10_table[10]);
+  len += (uval >= pow10_table[11]);
+  len += (uval >= pow10_table[12]);
+  len += (uval >= pow10_table[13]);
+  len += (uval >= pow10_table[14]);
+  len += (uval >= pow10_table[15]);
+  len += (uval >= pow10_table[16]);
+  len += (uval >= pow10_table[17]);
+  len += (uval >= pow10_table[18]);
+  len += (uval >= pow10_table[19]);
+
+  const int total_len = (len + neg);
+  dst[total_len] = '\0';
+
+  int pos = (total_len - 1);
+
+  while (uval >= 10) {
+    uint64_t q = (uval / 10);
+    dst[pos--] = ('0' + (uval - q * 10));
+    uval = q;
+  }
+
+  dst[pos] = ('0' + uval);
+
+  if (neg) {
+    dst[0] = '-';
+  }
+
+  return total_len;
 }

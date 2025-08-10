@@ -46,6 +46,7 @@ void memcpy_aligned(void *restrict dest, const void *restrict src, size_t n);
 
 bool is_integer(const char *value);
 void number_pad(char *res, const uint32_t value);
+int ltoa(const int64_t value, char *dst);
 
 void generate_random_string(char *dest, size_t length);
 void generate_date_string(char *text, const time_t value);
