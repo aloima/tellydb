@@ -1,29 +1,19 @@
 #include <telly.h>
 
-#include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <math.h>
 
-struct Length {
-  uint64_t response;
-  uint64_t maximum_line;
-};
-
-static struct Length calculate_length(const struct HashTable *table) {
-  struct Length length = {
-    .response = (3 + (1 + log10(table->size.all))), // array part
-    .maximum_line = 0
-  };
+static const uint64_t calculate_length(const struct HashTable *table) {
+  uint64_t length = 0;
 
   for (uint32_t i = 0; i < table->size.allocated; ++i) {
     const struct HashTableField *field = table->fields[i];
 
     while (field) {
-      const uint64_t line_length = (5 + (1 + log10(field->name.len)) + field->name.len); // name part
+      const uint64_t line_length = (5 + get_digit_count(field->name.len) + field->name.len); // $number\r\nstring\r\n
+      length += line_length;
 
-      length.maximum_line = fmax(line_length, length.maximum_line);
-      length.response += line_length;
       field = field->next;
     }
   }
@@ -52,26 +42,34 @@ static void run(struct CommandEntry entry) {
   }
 
   const struct HashTable *table = kv->value;
-  const struct Length length = calculate_length(table);
-  char *response = malloc(length.response + 1);
-  char *line = malloc(length.maximum_line + 1);
+  const uint64_t length = calculate_length(table);
+  char *response = malloc(length);
 
-  sprintf(response, "*%u\r\n", table->size.all);
+  response[0] = '*';
+  uint64_t at = ltoa(table->size.all, response + 1) + 1;
+  response[at++] = '\r';
+  response[at++] = '\n';
 
   for (uint32_t i = 0; i < table->size.allocated; ++i) {
     struct HashTableField *field = table->fields[i];
 
     while (field) {
-      sprintf(line, "$%u\r\n%.*s\r\n", field->name.len, field->name.len, field->name.value);
-      strcat(response, line);
+      response[at++] = '$';
+      at += ltoa(field->name.len, response + at);
+      response[at++] = '\r';
+      response[at++] = '\n';
+
+      memcpy(response + at, field->name.value, field->name.len);
+      at += field->name.len;
+      response[at++] = '\r';
+      response[at++] = '\n';
 
       field = field->next;
     }
   }
 
-  _write(entry.client, response, length.response);
+  _write(entry.client, response, length);
   free(response);
-  free(line);
 }
 
 const struct Command cmd_hkeys = {
