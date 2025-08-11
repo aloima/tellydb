@@ -63,7 +63,7 @@ static const uint64_t calculate_length(const enum ProtocolVersion protover, cons
 
           switch (field->type) {
             case TELLY_NULL:
-              length += 7;
+              length += 3;
               break;
 
             case TELLY_NUM:
@@ -188,8 +188,8 @@ static void run(struct CommandEntry entry) {
 
           switch (field->type) {
             case TELLY_NULL:
-              memcpy(response + at, "+null\r\n", 7);
-              at += 7;
+              memcpy(response + at, "_\r\n", 3);
+              at += 3;
               break;
 
             case TELLY_NUM:
