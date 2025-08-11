@@ -46,7 +46,10 @@ struct HashTableField *get_field_from_hashtable(struct HashTable *table, const s
   const uint32_t index = hash(name.value, name.len) % table->size.allocated;
   struct HashTableField *field = table->fields[index];
 
-  while (field && ((name.len != field->name.len) || (memcmp(field->name.value, name.value, name.len) != 0))) field = field->next;
+  while (field && ((name.len != field->name.len) || (memcmp(field->name.value, name.value, name.len) != 0))) {
+    field = field->next;
+  }
+
   return field;
 }
 
