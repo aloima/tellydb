@@ -128,16 +128,13 @@ static void run(struct CommandEntry entry) {
               at += 7;
               break;
 
-            case TELLY_NUM: {
-              long number = *((long *) field->value);
-              at += create_resp_integer(response + at, number);
+            case TELLY_NUM:
+              at += create_resp_integer(response + at, *((long *) field->value));
               break;
-            }
 
-            case TELLY_STR: {
+            case TELLY_STR:
               at += create_resp_string(response + at, *((string_t *) field->value));
               break;
-            }
 
             case TELLY_BOOL: {
               if (*((bool *) field->value)) {
