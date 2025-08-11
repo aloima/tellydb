@@ -19,22 +19,22 @@
 
 static inline int create_resp_integer(char *buf, uint64_t value) {
   *(buf) = ':';
-  const uint64_t __nbytes = ltoa(value, buf + 1);
-  *(buf + __nbytes + 1) = '\r';
-  *(buf + __nbytes + 2) = '\n';
-  return (__nbytes + 3);
+  const uint64_t nbytes = ltoa(value, buf + 1);
+  *(buf + nbytes + 1) = '\r';
+  *(buf + nbytes + 2) = '\n';
+  return (nbytes + 3);
 }
 
 static inline uint64_t create_resp_string(char *buf, string_t string) {
   *(buf) = '$';
-  const uint64_t __nbytes = ltoa(string.len, buf + 1);
-  *(buf + __nbytes + 1) = '\r';
-  *(buf + __nbytes + 2) = '\n';
+  const uint64_t nbytes = ltoa(string.len, buf + 1);
+  *(buf + nbytes + 1) = '\r';
+  *(buf + nbytes + 2) = '\n';
 
-  memcpy(buf + __nbytes + 2, string.value, string.len);
-  *(buf + __nbytes + string.len + 2) = '\r';
-  *(buf + __nbytes + string.len + 3) = '\n';
-  return (__nbytes + string.len + 4);
+  memcpy(buf + nbytes + 3, string.value, string.len);
+  *(buf + nbytes + string.len + 3) = '\r';
+  *(buf + nbytes + string.len + 4) = '\n';
+  return (nbytes + string.len + 5);
 }
 
 typedef struct CommandData {
