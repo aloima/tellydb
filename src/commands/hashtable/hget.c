@@ -22,8 +22,12 @@ static void run(struct CommandEntry entry) {
   }
 
   const struct HashTableField *field = get_field_from_hashtable(kv->value, entry.data->args[1]);
-  if (field) write_value(entry.client, field->value, field->type);
-  else WRITE_NULL_REPLY(entry.client);
+
+  if (field) {
+    write_value(entry.client, field->value, field->type);
+  } else {
+    WRITE_NULL_REPLY(entry.client);
+  }
 }
 
 const struct Command cmd_hget = {
