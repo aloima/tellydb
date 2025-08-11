@@ -1,56 +1,50 @@
 #include <telly.h>
 
-#include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <inttypes.h>
-#include <math.h>
 
-struct Length {
-  uint64_t response;
-  uint64_t maximum_line;
-};
-
-static struct Length calculate_length(const enum ProtocolVersion protover, const struct HashTable *table) {
-  struct Length length = {
-    .response = (3 + (1 + log10(table->size.all * 2))), // array/map part
-    .maximum_line = 0
-  };
+static const uint64_t calculate_length(const enum ProtocolVersion protover, const struct HashTable *table) {
+  uint64_t length;
 
   switch (protover) {
     case RESP2: {
+      length = (3 + get_digit_count(table->size.all * 2)); // *number\r\n
+
       for (uint32_t i = 0; i < table->size.allocated; ++i) {
         const struct HashTableField *field = table->fields[i];
 
         while (field) {
-          uint64_t line_length = 0;
-          line_length += (5 + (1 + log10(field->name.len)) + field->name.len); // name part
+          length += (5 + get_digit_count(field->name.len) + field->name.len); // $length\r\nstring\r\n for name
 
           switch (field->type) {
             case TELLY_NULL:
-              line_length += 7;
+              length += 7; // +null\r\n
               break;
 
             case TELLY_NUM:
-              line_length += (3 + (1 + log10(*((long *) field->value))));
+              length += (3 + get_digit_count(*((long *) field->value))); // :number\r\n
               break;
 
             case TELLY_STR: {
               const string_t *string = field->value;
-              line_length += (5 + (1 + log10(string->len)) + string->len);;
+              length += (5 + get_digit_count(string->len) + string->len); // $length\r\nstring\r\n
               break;
             }
 
             case TELLY_BOOL:
-              if (*((bool *) field->value)) line_length += 7;
-              else line_length += 8;
+              if (*((bool *) field->value)) {
+                length += 7; // +true\r\n
+              } else {
+                length += 8; // +false\r\n
+              }
+
               break;
 
-            default: break;
+            default:
+              break;
           }
 
-          length.maximum_line = fmax(line_length, length.maximum_line);
-          length.response += line_length;
           field = field->next;
         }
       }
@@ -59,37 +53,37 @@ static struct Length calculate_length(const enum ProtocolVersion protover, const
     }
 
     case RESP3: {
+      length = (3 + get_digit_count(table->size.all)); // %number\r\n
+
       for (uint32_t i = 0; i < table->size.allocated; ++i) {
         const struct HashTableField *field = table->fields[i];
 
         while (field) {
-          uint64_t line_length = 0;
-          line_length += (5 + (1 + log10(field->name.len)) + field->name.len); // name part
+          length += (5 + get_digit_count(field->name.len) + field->name.len); // $length\r\nstring\r\n for name
 
           switch (field->type) {
             case TELLY_NULL:
-              line_length += 7;
+              length += 7;
               break;
 
             case TELLY_NUM:
-              line_length += (3 + (1 + log10(*((long *) field->value))));
+              length += (3 + get_digit_count(*((long *) field->value))); // :number\r\n
               break;
 
             case TELLY_STR: {
               const string_t *string = field->value;
-              line_length += (5 + (1 + log10(string->len)) + string->len);;
+              length += (5 + get_digit_count(string->len) + string->len); // $length\r\nstring\r\n
               break;
             }
 
             case TELLY_BOOL:
-              line_length += 4;
+              length += 4; // #t\r\n or #f\r\n
               break;
 
-            default: break;
+            default:
+              break;
           }
 
-          length.maximum_line = fmax(line_length, length.maximum_line);
-          length.response += line_length;
           field = field->next;
         }
       }
@@ -129,41 +123,43 @@ static void run(struct CommandEntry entry) {
   }
 
   const struct HashTable *table = kv->value;
-  const struct Length length = calculate_length(entry.client->protover, table);
-  char *response = malloc(length.response + 1);
-  char *line = malloc(length.maximum_line + 1);
+  const uint64_t length = calculate_length(entry.client->protover, table);
+  char *response = malloc(length);
 
   switch (entry.client->protover) {
     case RESP2: {
-      sprintf(response, "*%" PRIu64 "\r\n", ((uint64_t) table->size.all * 2));
+      response[0] = '*';
+      uint64_t at = ltoa(table->size.all * 2, response + 1) + 1;
+      response[at++] = '\r';
+      response[at++] = '\n';
 
       for (uint32_t i = 0; i < table->size.allocated; ++i) {
         struct HashTableField *field = table->fields[i];
 
         while (field) {
-          sprintf(line, "$%u\r\n%.*s\r\n", field->name.len, field->name.len, field->name.value);
-          strcat(response, line);
+          at += create_resp_string(response + at, field->name);
 
           switch (field->type) {
             case TELLY_NULL:
-              strcpy(line, "+null\r\n");
+              memcpy(response + at, "+null\r\n", 7);
+              at += 7;
               break;
 
             case TELLY_NUM:
-              sprintf(line, ":%ld\r\n", *((long *) field->value));
+              at += create_resp_integer(response + at, *((long *) field->value));
               break;
 
-            case TELLY_STR: {
-              const string_t *string = field->value;
-              sprintf(line, "$%u\r\n%.*s\r\n", string->len, string->len, string->value);
+            case TELLY_STR:
+              at += create_resp_string(response + at, *((string_t *) field->value));
               break;
-            }
 
             case TELLY_BOOL: {
               if (*((bool *) field->value)) {
-                strcpy(line, "+true\r\n");
+                memcpy(response + at, "+true\r\n", 7);
+                at += 7;
               } else {
-                strcpy(line, "+false\r\n");
+                memcpy(response + at, "+false\r\n", 8);
+                at += 8;
               }
             }
 
@@ -171,7 +167,6 @@ static void run(struct CommandEntry entry) {
               break;
           }
 
-          strcat(response, line);
           field = field->next;
         }
       }
@@ -180,43 +175,46 @@ static void run(struct CommandEntry entry) {
     }
 
     case RESP3: {
-      sprintf(response, "%%%u\r\n", table->size.all);
+      response[0] = '%';
+      uint64_t at = ltoa(table->size.all, response + 1) + 1;
+      response[at++] = '\r';
+      response[at++] = '\n';
 
       for (uint32_t i = 0; i < table->size.allocated; ++i) {
         struct HashTableField *field = table->fields[i];
 
         while (field) {
-          sprintf(line, "$%u\r\n%.*s\r\n", field->name.len, field->name.len, field->name.value);
-          strcat(response, line);
+          at += create_resp_string(response + at, field->name);
 
           switch (field->type) {
             case TELLY_NULL:
-              strcpy(line, "+null\r\n");
+              memcpy(response + at, "+null\r\n", 7);
+              at += 7;
               break;
 
             case TELLY_NUM:
-              sprintf(line, ":%ld\r\n", *((long *) field->value));
+              at += create_resp_integer(response + at, *((long *) field->value));
               break;
 
             case TELLY_STR: {
-              const string_t *string = field->value;
-              sprintf(line, "$%u\r\n%.*s\r\n", string->len, string->len, string->value);
+              at += create_resp_string(response + at, *((string_t *) field->value));
               break;
             }
 
             case TELLY_BOOL: {
               if (*((bool *) field->value)) {
-                strcpy(line, "#t\r\n");
+                memcpy(response + at, "#t\r\n", 4);
               } else {
-                strcpy(line, "#f\r\n");
+                memcpy(response + at, "#f\r\n", 4);
               }
+
+              at += 4;
             }
 
             default:
               break;
           }
 
-          strcat(response, line);
           field = field->next;
         }
       }
@@ -225,9 +223,8 @@ static void run(struct CommandEntry entry) {
     }
   }
 
-  _write(entry.client, response, length.response);
+  _write(entry.client, response, length);
   free(response);
-  free(line);
 }
 
 const struct Command cmd_hgetall = {
