@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 static const uint64_t calculate_length(const struct HashTable *table) {
-  uint64_t length = 0;
+  uint64_t length = (3 + get_digit_count(table->size.all)); // *number\r\n
 
   for (uint32_t i = 0; i < table->size.allocated; ++i) {
     const struct HashTableField *field = table->fields[i];
