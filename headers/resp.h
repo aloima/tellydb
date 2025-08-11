@@ -17,17 +17,25 @@
 
 #define RESP_BUF_SIZE 4096
 
-#define CREATE_RESP_INTEGER_VARIABLED(buf, value, nbytes) \
-  *buf = ':'; \
-  nbytes = ltoa(value, buf + 1); \
-  *(buf + nbytes + 1) = '\r'; \
-  *(buf + nbytes + 2) = '\n';
-
-#define CREATE_RESP_INTEGER(buf, value) \
-  *buf = ':'; \
-  const int __nbytes = ltoa(value, buf + 1); \
-  *(buf + __nbytes + 1) = '\r'; \
+static inline int create_resp_integer(char *buf, uint64_t value) {
+  *(buf) = ':';
+  const uint64_t __nbytes = ltoa(value, buf + 1);
+  *(buf + __nbytes + 1) = '\r';
   *(buf + __nbytes + 2) = '\n';
+  return (__nbytes + 3);
+}
+
+static inline uint64_t create_resp_string(char *buf, string_t string) {
+  *(buf) = '$';
+  const uint64_t __nbytes = ltoa(string.len, buf + 1);
+  *(buf + __nbytes + 1) = '\r';
+  *(buf + __nbytes + 2) = '\n';
+
+  memcpy(buf + __nbytes + 2, string.value, string.len);
+  *(buf + __nbytes + string.len + 2) = '\r';
+  *(buf + __nbytes + string.len + 3) = '\n';
+  return (__nbytes + string.len + 4);
+}
 
 typedef struct CommandData {
   string_t name;
