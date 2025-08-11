@@ -17,8 +17,11 @@ void add_field_to_hashtable(struct HashTable *table, const string_t name, void *
       if ((name.len == field->name.len) && (memcmp(field->name.value, name.value, name.len) == 0)) {
         found = true;
         break;
-      } else if (field->next) field = field->next;
-      else break;
+      } else if (field->next) {
+        field = field->next;
+      } else {
+        break;
+      }
     } while (field);
   } else {
     table->size.filled += 1;
@@ -28,7 +31,9 @@ void add_field_to_hashtable(struct HashTable *table, const string_t name, void *
     resize_hashtable(table, (table->size.allocated * HASHTABLE_GROW_FACTOR));
     index = hashed % table->size.allocated;
 
-    if (!table->fields[index]) table->size.filled += 1;
+    if (!table->fields[index]) {
+      table->size.filled += 1;
+    }
   }
 
   if (field) {
@@ -38,7 +43,9 @@ void add_field_to_hashtable(struct HashTable *table, const string_t name, void *
         free(string->value);
       }
 
-      if (field->type != TELLY_NULL) free(field->value);
+      if (field->type != TELLY_NULL) {
+        free(field->value);
+      }
 
       field->type = type;
       field->value = value;

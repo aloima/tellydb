@@ -8,7 +8,10 @@ void free_htfield(struct HashTableField *field) {
     free(string->value);
   }
 
-  if (field->type != TELLY_NULL) free(field->value);
+  if (field->type != TELLY_NULL) {
+    free(field->value);
+  }
+
   free(field->name.value);
   free(field);
 }
