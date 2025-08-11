@@ -27,7 +27,10 @@ static void run(struct CommandEntry entry) {
       return;
     }
   } else {
-    if (entry.client) _write(entry.client, ":0\r\n", 4);
+    if (entry.client) {
+      _write(entry.client, ":0\r\n", 4);
+    }
+
     return;
   }
 
@@ -43,7 +46,9 @@ static void run(struct CommandEntry entry) {
       del_field_to_hashtable(table, entry.data->args[i]);
     }
 
-    if (table->size.all == 0) delete_data(entry.database, key);
+    if (table->size.all == 0) {
+      delete_data(entry.database, key);
+    }
 
     char buf[14];
     const size_t nbytes = sprintf(buf, ":%u\r\n", old_size - table->size.all);
