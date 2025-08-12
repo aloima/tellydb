@@ -46,14 +46,15 @@ static void run(struct CommandEntry entry) {
       del_field_to_hashtable(table, entry.data->args[i]);
     }
 
+    const uint32_t current_size = table->size.used;
+
     if (table->size.used == 0) {
       delete_data(entry.database, key);
     }
 
     char buf[14];
 
-    // TODO: table may be deleted, but it tries to getting used size
-    const size_t nbytes = sprintf(buf, ":%u\r\n", old_size - table->size.used);
+    const size_t nbytes = sprintf(buf, ":%u\r\n", old_size - current_size);
     _write(entry.client, buf, nbytes);
   } else {
     for (uint32_t i = 1; i < entry.data->arg_count; ++i) {
