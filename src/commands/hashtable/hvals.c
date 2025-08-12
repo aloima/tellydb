@@ -5,14 +5,14 @@
 #include <stdint.h>
 
 static const uint64_t calculate_length(const enum ProtocolVersion protover, const struct HashTable *table) {
-  uint64_t length = (3 + get_digit_count(table->size.all)); // *number\r\n
+  uint64_t length = (3 + get_digit_count(table->size.used)); // *number\r\n
 
   switch(protover) {
     case RESP2: {
-      for (uint32_t i = 0; i < table->size.allocated; ++i) {
+      for (uint32_t i = 0; i < table->size.capacity; ++i) {
         const struct HashTableField *field = table->fields[i];
     
-        while (field) {
+        if (field) {
           switch (field->type) {
             case TELLY_NULL:
               length += 7; // +null\r\n
@@ -40,8 +40,6 @@ static const uint64_t calculate_length(const enum ProtocolVersion protover, cons
             default:
               break;
           }
-    
-          field = field->next;
         }
       }
 
@@ -49,10 +47,10 @@ static const uint64_t calculate_length(const enum ProtocolVersion protover, cons
     }
 
     case RESP3: {
-      for (uint32_t i = 0; i < table->size.allocated; ++i) {
+      for (uint32_t i = 0; i < table->size.capacity; ++i) {
         const struct HashTableField *field = table->fields[i];
     
-        while (field) {
+        if (field) {
           switch (field->type) {
             case TELLY_NULL:
               length += 3; // _\r\n
@@ -75,8 +73,6 @@ static const uint64_t calculate_length(const enum ProtocolVersion protover, cons
             default:
               break;
           }
-    
-          field = field->next;
         }
       }
 
@@ -112,16 +108,16 @@ static void run(struct CommandEntry entry) {
   char *response = malloc(length);
 
   response[0] = '*';
-  uint64_t at = ltoa(table->size.all, response + 1) + 1;
+  uint64_t at = ltoa(table->size.used, response + 1) + 1;
   response[at++] = '\r';
   response[at++] = '\n';
 
   switch (entry.client->protover) {
     case RESP2: {
-      for (uint32_t i = 0; i < table->size.allocated; ++i) {
+      for (uint32_t i = 0; i < table->size.capacity; ++i) {
         struct HashTableField *field = table->fields[i];
 
-        while (field) {
+        if (field) {
           switch (field->type) {
             case TELLY_NULL:
               memcpy(response + at, "+null\r\n", 7);
@@ -149,8 +145,6 @@ static void run(struct CommandEntry entry) {
             default:
               break;
           }
-
-          field = field->next;
         }
       }
 
@@ -158,10 +152,10 @@ static void run(struct CommandEntry entry) {
     }
 
     case RESP3: {
-      for (uint32_t i = 0; i < table->size.allocated; ++i) {
+      for (uint32_t i = 0; i < table->size.capacity; ++i) {
         struct HashTableField *field = table->fields[i];
 
-        while (field) {
+        if (field) {
           switch (field->type) {
             case TELLY_NULL:
               memcpy(response + at, "_\r\n", 3);
@@ -190,8 +184,6 @@ static void run(struct CommandEntry entry) {
             default:
               break;
           }
-
-          field = field->next;
         }
       }
 
