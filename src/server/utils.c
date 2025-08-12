@@ -12,7 +12,7 @@ void write_value(struct Client *client, void *value, enum TellyTypes type) {
 
     case TELLY_NUM: {
       char buf[24];
-      const size_t nbytes = sprintf(buf, ":%ld\r\n", *((long *) value));
+      const size_t nbytes = create_resp_integer(buf, (*(long *) value));
       _write(client, buf, nbytes);
       break;
     }
@@ -21,7 +21,7 @@ void write_value(struct Client *client, void *value, enum TellyTypes type) {
       const string_t *string = value;
 
       char *buf = malloc(26 + string->len);
-      const size_t nbytes = sprintf(buf, "$%d\r\n%.*s\r\n", string->len, string->len, string->value);
+      const size_t nbytes = create_resp_string(buf, *string);
       _write(client, buf, nbytes);
       free(buf);
       break;
@@ -29,11 +29,17 @@ void write_value(struct Client *client, void *value, enum TellyTypes type) {
 
     case TELLY_BOOL:
       if (*((bool *) value)) {
-        if(client->protover == RESP3) _write(client, "#t\r\n", 4);
-        else _write(client, "+true\r\n", 7);
+        if (client->protover == RESP3) {
+          _write(client, "#t\r\n", 4);
+        } else {
+          _write(client, "+true\r\n", 7);
+        }
       } else {
-        if(client->protover == RESP3) _write(client, "#f\r\n", 4);
-        else _write(client, "+false\r\n", 8);
+        if (client->protover == RESP3) {
+          _write(client, "#f\r\n", 4);
+        } else {
+          _write(client, "+false\r\n", 8);
+        }
       }
 
       break;
