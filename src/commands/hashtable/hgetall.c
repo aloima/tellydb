@@ -9,12 +9,12 @@ static const uint64_t calculate_length(const enum ProtocolVersion protover, cons
 
   switch (protover) {
     case RESP2: {
-      length = (3 + get_digit_count(table->size.all * 2)); // *number\r\n
+      length = (3 + get_digit_count(table->size.used * 2)); // *number\r\n
 
-      for (uint32_t i = 0; i < table->size.allocated; ++i) {
+      for (uint32_t i = 0; i < table->size.capacity; ++i) {
         const struct HashTableField *field = table->fields[i];
 
-        while (field) {
+        if (field) {
           length += (5 + get_digit_count(field->name.len) + field->name.len); // $length\r\nstring\r\n for name
 
           switch (field->type) {
@@ -44,8 +44,6 @@ static const uint64_t calculate_length(const enum ProtocolVersion protover, cons
             default:
               break;
           }
-
-          field = field->next;
         }
       }
 
@@ -53,12 +51,12 @@ static const uint64_t calculate_length(const enum ProtocolVersion protover, cons
     }
 
     case RESP3: {
-      length = (3 + get_digit_count(table->size.all)); // %number\r\n
+      length = (3 + get_digit_count(table->size.used)); // %number\r\n
 
-      for (uint32_t i = 0; i < table->size.allocated; ++i) {
+      for (uint32_t i = 0; i < table->size.capacity; ++i) {
         const struct HashTableField *field = table->fields[i];
 
-        while (field) {
+        if (field) {
           length += (5 + get_digit_count(field->name.len) + field->name.len); // $length\r\nstring\r\n for name
 
           switch (field->type) {
@@ -83,8 +81,6 @@ static const uint64_t calculate_length(const enum ProtocolVersion protover, cons
             default:
               break;
           }
-
-          field = field->next;
         }
       }
 
@@ -129,14 +125,14 @@ static void run(struct CommandEntry entry) {
   switch (entry.client->protover) {
     case RESP2: {
       response[0] = '*';
-      uint64_t at = ltoa(table->size.all * 2, response + 1) + 1;
+      uint64_t at = ltoa(table->size.used * 2, response + 1) + 1;
       response[at++] = '\r';
       response[at++] = '\n';
 
-      for (uint32_t i = 0; i < table->size.allocated; ++i) {
+      for (uint32_t i = 0; i < table->size.capacity; ++i) {
         struct HashTableField *field = table->fields[i];
 
-        while (field) {
+        if (field) {
           at += create_resp_string(response + at, field->name);
 
           switch (field->type) {
@@ -166,8 +162,6 @@ static void run(struct CommandEntry entry) {
             default:
               break;
           }
-
-          field = field->next;
         }
       }
 
@@ -176,14 +170,14 @@ static void run(struct CommandEntry entry) {
 
     case RESP3: {
       response[0] = '%';
-      uint64_t at = ltoa(table->size.all, response + 1) + 1;
+      uint64_t at = ltoa(table->size.used, response + 1) + 1;
       response[at++] = '\r';
       response[at++] = '\n';
 
-      for (uint32_t i = 0; i < table->size.allocated; ++i) {
+      for (uint32_t i = 0; i < table->size.capacity; ++i) {
         struct HashTableField *field = table->fields[i];
 
-        while (field) {
+        if (field) {
           at += create_resp_string(response + at, field->name);
 
           switch (field->type) {
@@ -214,8 +208,6 @@ static void run(struct CommandEntry entry) {
             default:
               break;
           }
-
-          field = field->next;
         }
       }
 

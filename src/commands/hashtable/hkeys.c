@@ -5,16 +5,14 @@
 #include <stdint.h>
 
 static const uint64_t calculate_length(const struct HashTable *table) {
-  uint64_t length = (3 + get_digit_count(table->size.all)); // *number\r\n
+  uint64_t length = (3 + get_digit_count(table->size.used)); // *number\r\n
 
-  for (uint32_t i = 0; i < table->size.allocated; ++i) {
+  for (uint32_t i = 0; i < table->size.capacity; ++i) {
     const struct HashTableField *field = table->fields[i];
 
-    while (field) {
+    if (field) {
       const uint64_t line_length = (5 + get_digit_count(field->name.len) + field->name.len); // $number\r\nstring\r\n
       length += line_length;
-
-      field = field->next;
     }
   }
 
@@ -46,14 +44,14 @@ static void run(struct CommandEntry entry) {
   char *response = malloc(length);
 
   response[0] = '*';
-  uint64_t at = ltoa(table->size.all, response + 1) + 1;
+  uint64_t at = ltoa(table->size.used, response + 1) + 1;
   response[at++] = '\r';
   response[at++] = '\n';
 
-  for (uint32_t i = 0; i < table->size.allocated; ++i) {
+  for (uint32_t i = 0; i < table->size.capacity; ++i) {
     struct HashTableField *field = table->fields[i];
 
-    while (field) {
+    if (field) {
       response[at++] = '$';
       at += ltoa(field->name.len, response + at);
       response[at++] = '\r';
@@ -63,8 +61,6 @@ static void run(struct CommandEntry entry) {
       at += field->name.len;
       response[at++] = '\r';
       response[at++] = '\n';
-
-      field = field->next;
     }
   }
 

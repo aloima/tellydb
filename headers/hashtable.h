@@ -13,14 +13,12 @@ struct HashTableField {
   string_t name;
   void *value;
   enum TellyTypes type;
-  struct HashTableField *next;
   uint64_t hash;
 };
 
 struct HashTableSize {
-  uint32_t allocated; // total allocated size
-  uint32_t filled; // filled allocated block count
-  uint32_t all; // contains next values
+  uint32_t capacity; // total allocated size
+  uint32_t used; // filled allocated block count
 };
 
 struct HashTable {

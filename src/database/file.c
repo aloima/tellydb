@@ -88,12 +88,11 @@ static off_t get_value_size(const enum TellyTypes type, void *value) {
       const struct HashTable *table = value;
       off_t length = 5;
 
-      for (uint32_t i = 0; i < table->size.allocated; ++i) {
+      for (uint32_t i = 0; i < table->size.capacity; ++i) {
         struct HashTableField *field = table->fields[i];
 
-        while (field) {
+        if (field) {
           length += (1 + get_value_size(TELLY_STR, &field->name) + get_value_size(field->type, field->value));
-          field = field->next;
         }
       }
 
@@ -171,13 +170,13 @@ static off_t generate_value(char **data, struct KVPair *kv) {
 
     case TELLY_HASHTABLE: {
       struct HashTable *table = kv->value;
-      memcpy(*data + len, &table->size.allocated, 4);
+      memcpy(*data + len, &table->size.capacity, 4);
       len += 4;
 
-      for (uint32_t i = 0; i < table->size.allocated; ++i) {
+      for (uint32_t i = 0; i < table->size.capacity; ++i) {
         struct HashTableField *field = table->fields[i];
 
-        while (field) {
+        if (field) {
           (*data)[len] = field->type;
           len += 1;
 
@@ -202,8 +201,6 @@ static off_t generate_value(char **data, struct KVPair *kv) {
             default:
               break;
           }
-
-          field = field->next;
         }
       }
 

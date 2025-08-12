@@ -26,10 +26,9 @@ static void run(struct CommandEntry entry) {
   char buf[90];
   const size_t nbytes = sprintf(buf, (
     "*3\r\n"
-      "+Allocated: %u\r\n"
-      "+Filled: %u\r\n"
-      "+All (includes next count): %u\r\n"
-  ), table->size.allocated, table->size.filled, table->size.all);
+      "+Capacity: %u\r\n"
+      "+Used: %u\r\n"
+  ), table->size.capacity, table->size.used);
 
   _write(entry.client, buf, nbytes);
 }
