@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-void add_field_to_hashtable(struct HashTable *table, const string_t name, void *value, const enum TellyTypes type) {
+void set_field_of_hashtable(struct HashTable *table, const string_t name, void *value, const enum TellyTypes type) {
   if (table->size.used == table->size.capacity) {
     resize_hashtable(table, (table->size.capacity * HASHTABLE_GROW_FACTOR));
   }
@@ -15,25 +15,42 @@ void add_field_to_hashtable(struct HashTable *table, const string_t name, void *
 
   struct HashTableField *field;
 
-  while (field && index != table->size.capacity) {
-    if ((name.len != field->name.len) || (memcmp(field->name.value, name.value, name.len) != 0)) {
+
+  do {
+    field = table->fields[index];
+
+    if (field) {
+      if ((name.len == field->name.len) && (memcmp(field->name.value, name.value, name.len) == 0)) {
+        if (field->type == TELLY_STR) {
+          string_t *string = field->value;
+          free(string->value);
+        }
+
+        if (field->type != TELLY_NULL) {
+          free(field->value);
+        }
+
+        break;
+      }
+
       index += 1;
-      field = table->fields[index];
     }
+  } while (field && index != table->size.capacity);
+
+  if (field == NULL) {
+    table->size.used += 1;
+    field = malloc(sizeof(struct HashTableField));
+
+    field->name.len = name.len;
+    field->name.value = malloc(name.len);
+    memcpy(field->name.value, name.value, name.len);
+
+    table->fields[index] = field;
   }
 
-  table->size.used += 1;
-
-  field = malloc(sizeof(struct HashTableField));
   field->type = type;
   field->value = value;
   field->hash = hashed;
-
-  field->name.len = name.len;
-  field->name.value = malloc(name.len);
-  memcpy(field->name.value, name.value, name.len);
-
-  table->fields[index] = field;
 }
 
 bool del_field_to_hashtable(struct HashTable *table, const string_t name) {
