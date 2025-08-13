@@ -53,7 +53,10 @@ void free_hashtable(struct HashTable *table) {
 
   for (uint32_t i = 0; i < capacity; ++i) {
     struct HashTableField *field = table->fields[i];
-    free_htfield(field);
+
+    if (field) {
+      free_htfield(field);
+    }
   }
 
   free(table->fields);
