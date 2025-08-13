@@ -69,8 +69,8 @@ static off_t get_value_size(const enum TellyTypes type, void *value) {
       return 0;
 
     case TELLY_NUM: {
-      const uint32_t bit_count = log2(*((long *) value)) + 1;
-      return ((bit_count / 8) + 1);
+      const double bit_count = log2(*((long *) value)) + 1;
+      return (ceil(bit_count / 8) + 1);
     }
 
     case TELLY_STR: {
