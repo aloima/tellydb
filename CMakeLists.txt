@@ -57,12 +57,14 @@ target_compile_definitions(telly
 
 install(TARGETS telly)
 
+# For testing
 add_executable(tests utils/tests.c)
 target_link_libraries(tests
   Threads::Threads
   hiredis
 )
 
+# For benchmarking
 add_executable(benchmark utils/benchmark.c)
 target_link_libraries(benchmark
   Threads::Threads

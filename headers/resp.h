@@ -1,8 +1,6 @@
-// Includes Redis serializations protocol definitions and its methods
-
 #pragma once
 
-#include "server.h"
+#include "server/server.h"
 #include "utils.h"
 
 #include <stdbool.h>

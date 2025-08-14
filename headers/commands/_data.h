@@ -1,8 +1,6 @@
-// Includes specific command definitions
-
 #pragma once
 
-#include "transactions.h"
+#include "_commands.h"
 
 /* DATABASE COMMANDS */
 extern const struct Command cmd_bgsave;

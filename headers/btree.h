@@ -1,8 +1,4 @@
-// Includes B-Tree structure and its methods
-
 #pragma once
-
-#include "database.h"
 
 #include <stdint.h>
 #include <stdbool.h>

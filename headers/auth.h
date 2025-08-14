@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "server.h"
+#include "./server/server.h"
 #include "utils.h"
 
 #include <stddef.h>

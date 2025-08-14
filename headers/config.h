@@ -1,5 +1,3 @@
-// Includes configuration structure and its methods
-
 #pragma once
 
 #include <stdint.h>
