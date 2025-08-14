@@ -34,7 +34,7 @@ execute_process(
 execute_process(
   COMMAND git describe --abbrev=0 --tags
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-  OUTPUT_VARIABLE GIT_HASH
+  OUTPUT_VARIABLE GIT_VERSION
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
