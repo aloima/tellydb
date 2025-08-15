@@ -9,10 +9,12 @@ static void run(struct CommandEntry entry) {
   get_server_time(&start_at, &server_age);
   server_age += difftime(time(NULL), start_at);
 
-  if (bg_save(server_age) && entry.client) {
-    WRITE_OK(entry.client);
-  } else if (entry.client) {
-    WRITE_ERROR_MESSAGE(entry.client, "Saving process is already active in background or not");
+  if (entry.client) {
+    if (bg_save(server_age)) {
+      WRITE_OK(entry.client);
+    } else {
+      WRITE_ERROR_MESSAGE(entry.client, "Saving process is already active in background");
+    }
   }
 }
 
