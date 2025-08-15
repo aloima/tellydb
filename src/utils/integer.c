@@ -33,7 +33,9 @@ bool is_integer(const char *value) {
   if (*value == '-') {
     _value += 1;
 
-    if (*_value == '0' || *_value == '\0') return false;
+    if (*_value == '0' || *_value == '\0') {
+      return false;
+    }
   }
 
   while (isdigit(*_value)) {
