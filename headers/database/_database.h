@@ -29,5 +29,3 @@ size_t get_all_data_from_file(struct Configuration *conf, const int fd, const of
 struct KVPair *get_data(struct Database *database, const string_t key);
 struct KVPair *set_data(struct Database *database, struct KVPair *data, const string_t key, void *value, const enum TellyTypes type);
 bool delete_data(struct Database *database, const string_t key);
-void save_data(const uint32_t server_age);
-bool bg_save(const uint32_t server_age);

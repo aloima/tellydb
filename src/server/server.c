@@ -92,7 +92,11 @@ void terminate_connection(const int connfd) {
 #endif
 
   write_log(LOG_INFO, "Client #%u is disconnected.", client->id);
-  if (conf->tls) SSL_shutdown(client->ssl);
+
+  if (conf->tls) {
+    SSL_shutdown(client->ssl);
+  }
+
   close(connfd);
   remove_client(connfd);
 }
@@ -104,16 +108,28 @@ static void close_server() {
     struct Client *client = client_node->data;
     write_log(LOG_INFO, "Client #%u is terminated.", client->id);
 
-    if (conf->tls) SSL_shutdown(client->ssl);
+    if (conf->tls) {
+      SSL_shutdown(client->ssl);
+    }
+
     close(client->connfd);
     remove_head_client();
   }
 
   const uint32_t server_age = age + difftime(time(NULL), start_at);
   const clock_t start = clock();
-  save_data(server_age);
-  close_database_fd();
-  write_log(LOG_INFO, "Saved data and closed database file in %.3f seconds.", ((float) clock() - start) / CLOCKS_PER_SEC);
+
+  if (save_data(server_age)) {
+    write_log(LOG_INFO, "Saved data in %.3f seconds.", ((float) clock() - start) / CLOCKS_PER_SEC);
+  } else {
+    write_log(LOG_ERR, "Database cannot be saved to database file, data may be corrupted. Inspect logs for detailed information.");
+  }
+
+  if (close_database_fd()) {
+    write_log(LOG_INFO, "Closed database file.");
+  } else {
+    write_log(LOG_ERR, "Database file cannot be closed.");
+  }
 
   FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);
 #ifdef __linux__

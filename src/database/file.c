@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <time.h>
 #include <math.h>
 
@@ -17,8 +18,10 @@ static int fd = -1;
 static bool saving = false;
 static uint16_t block_size;
 
-bool open_database_fd(struct Configuration *conf, uint32_t *server_age) {
-  if ((fd = open_file(conf->data_file, 0)) == -1) return false;
+const bool open_database_fd(struct Configuration *conf, uint32_t *server_age) {
+  if ((fd = open_file(conf->data_file, 0)) == -1) {
+    return false;
+  }
 
   struct stat sostat;
   stat(conf->data_file, &sostat);
@@ -44,7 +47,10 @@ bool open_database_fd(struct Configuration *conf, uint32_t *server_age) {
 
       const uint16_t filled_block_size = get_authorization_from_file(fd, block, block_size);
       const size_t data_count = get_all_data_from_file(conf, fd, file_size, block, block_size, filled_block_size);
-      write_log(LOG_INFO, "Read database file in %.3f seconds. Loaded password count: %u, loaded data count: %d", ((float) clock() - start) / CLOCKS_PER_SEC, get_password_count(), data_count);
+      write_log(LOG_INFO,
+        "Read database file in %.3f seconds. Loaded password count: %u, loaded data count: %d",
+        ((float) clock() - start) / CLOCKS_PER_SEC, get_password_count(), data_count
+      );
 
       free(block);
     }
@@ -57,10 +63,13 @@ bool open_database_fd(struct Configuration *conf, uint32_t *server_age) {
   return true;
 }
 
-void close_database_fd() {
-  while (saving) usleep(100);
+const bool close_database_fd() {
+  while (saving) {
+    usleep(100);
+  }
+
   lockf(fd, F_ULOCK, 0);
-  close(fd);
+  return (close(fd) == 0);
 }
 
 static off_t get_value_size(const enum TellyTypes type, void *value) {
@@ -183,9 +192,6 @@ static off_t generate_value(char **data, struct KVPair *kv) {
           generate_string_value(data, &len, &field->name);
 
           switch (field->type) {
-            case TELLY_NULL:
-              break;
-
             case TELLY_NUM:
               generate_number_value(data, &len, field->value);
               break;
@@ -222,9 +228,6 @@ static off_t generate_value(char **data, struct KVPair *kv) {
         len += 1;
 
         switch (node->type) {
-          case TELLY_NULL:
-            break;
-
           case TELLY_NUM:
             generate_number_value(data, &len, node->value);
             break;
@@ -261,130 +264,138 @@ static void generate_headers(char *headers, const uint32_t server_age) {
   memcpy(headers + 2, &server_age, sizeof(uint32_t));
 }
 
-void save_data(const uint32_t server_age) {
-  if (saving) return;
-  saving = true;
+const bool save_data(const uint32_t server_age) {
+  if (saving) {
+    return false;
+  }
 
+  saving = true;
   lseek(fd, 0, SEEK_SET);
 
   char *block;
   
-  if (posix_memalign((void **) &block, block_size, block_size) == 0) {
-    memset(block, 0, block_size);
-
-    // length represents filled block size
-    // total represents total calculated file size
-    off_t length, total = 0;
-    generate_headers(block, server_age);
-
-    {
-      struct Password **passwords = get_passwords();
-      const uint32_t password_count = get_password_count();
-      const uint8_t password_count_byte_count = (password_count != 0) ? (log2(password_count) + 1) : 0;
-      length = 11 + password_count_byte_count;
-
-      block[10] = password_count_byte_count;
-      memcpy(block + 11, &password_count, password_count_byte_count);
-
-      if (password_count == 0) total += length;
-
-      for (uint32_t i = 0; i < password_count; ++i) {
-        struct Password *password = passwords[i];
-        const uint32_t new_length = (length + 49);
-
-        if (new_length > block_size) {
-          const uint32_t allowed = (new_length - block_size);
-          memcpy(block + length, password->data, allowed);
-          write(fd, block, block_size);
-
-          const uint32_t remaining = (48 - allowed); // remaining byte count except permissions
-          memcpy(block, password->data, remaining);
-          block[remaining] = password->permissions;
-          length = (remaining + 1);
-          total += block_size + length;
-        } else {
-          memcpy(block + length, password->data, 48);
-          block[length + 48] = password->permissions;
-          length = new_length;
-          total += length;
-        }
-      }
-    }
-
-    {
-      struct LinkedListNode *node = get_database_node();
-
-      while (node) {
-        struct Database *database = node->data;
-        uint32_t size = 0;
-        struct BTreeValue **values = get_values_from_btree(database->cache, &size);
-
-        if (values == NULL && database->cache->size != 0) {
-          write_log(LOG_ERR, "Cannot collect data to save to database file, out of memory.");
-          free(block);
-          break;
-        }
-
-        memcpy(block + length, &size, 4);
-        length += 4;
-        total += generate_string_value(&block, &length, &database->name);
-        total += 4;
-
-        uint64_t data_size = 0;
-
-        for (uint32_t i = 0; i < size; ++i) {
-          struct KVPair *kv = values[i]->data;
-          uint64_t kv_size = (1 + get_value_size(TELLY_STR, &kv->key) + get_value_size(kv->type, kv->value));
-          data_size = fmax(data_size, kv_size);
-        }
-
-        char *data = malloc(data_size);
-
-        for (uint32_t i = 0; i < size; ++i) {
-          struct KVPair *kv = values[i]->data;
-          const off_t kv_size = generate_value(&data, kv);
-  
-          const uint32_t block_count = ((length + kv_size + block_size - 1) / block_size);
-  
-          if (block_count != 1) {
-            off_t remaining = kv_size;
-            const uint16_t complete = (block_size - length);
-  
-            memcpy(block + length, data, complete);
-            write(fd, block, block_size);
-            remaining -= complete;
-  
-            if (remaining > block_size) {
-              do {
-                memcpy(block, data + (kv_size - remaining), block_size);
-                write(fd, block, block_size);
-                remaining -= block_size;
-              } while (remaining > block_size);
-            }
-  
-            length = remaining;
-            memcpy(block, data + (kv_size - remaining), length);
-          } else {
-            memcpy(block + length, data, kv_size);
-            length += kv_size;
-          }
-  
-          total += kv_size;
-        }
-  
-        if (values) free(values);
-        free(data);
-
-        node = node->next;
-      }
-    }
-
-    if (length != block_size) write(fd, block, block_size);
-    ftruncate(fd, total);
-    free(block);
+  if (posix_memalign((void **) &block, block_size, block_size) != 0) {
+    return false;
   }
 
+  memset(block, 0, block_size);
+
+  // length represents filled block size
+  // total represents total calculated file size
+  off_t length, total = 0;
+  generate_headers(block, server_age);
+
+  {
+    struct Password **passwords = get_passwords();
+    const uint32_t password_count = get_password_count();
+    const uint8_t password_count_byte_count = (password_count != 0) ? (log2(password_count) + 1) : 0;
+    length = 11 + password_count_byte_count;
+
+    block[10] = password_count_byte_count;
+    memcpy(block + 11, &password_count, password_count_byte_count);
+
+    if (password_count == 0) {
+      total += length;
+    }
+
+    for (uint32_t i = 0; i < password_count; ++i) {
+      struct Password *password = passwords[i];
+      const uint32_t new_length = (length + 49);
+
+      if (new_length > block_size) {
+        const uint32_t allowed = (new_length - block_size);
+        memcpy(block + length, password->data, allowed);
+        write(fd, block, block_size);
+
+        const uint32_t remaining = (48 - allowed); // remaining byte count except permissions
+        memcpy(block, password->data, remaining);
+        block[remaining] = password->permissions;
+        length = (remaining + 1);
+        total += block_size + length;
+      } else {
+        memcpy(block + length, password->data, 48);
+        block[length + 48] = password->permissions;
+        length = new_length;
+        total += length;
+      }
+    }
+  }
+
+  {
+    struct LinkedListNode *node = get_database_node();
+
+    while (node) {
+      struct Database *database = node->data;
+      uint32_t size = 0;
+      struct BTreeValue **values = get_values_from_btree(database->cache, &size);
+
+      if (values == NULL && database->cache->size != 0) {
+        write_log(LOG_ERR, "Cannot collect data to save to database file, out of memory.");
+        free(block);
+        return false;
+      }
+
+      memcpy(block + length, &size, 4);
+      length += 4;
+      total += generate_string_value(&block, &length, &database->name) + 4;
+
+      uint64_t data_size = 0;
+
+      for (uint32_t i = 0; i < size; ++i) {
+        struct KVPair *kv = values[i]->data;
+        uint64_t kv_size = (1 + get_value_size(TELLY_STR, &kv->key) + get_value_size(kv->type, kv->value));
+        data_size = fmax(data_size, kv_size);
+      }
+
+      char *data = malloc(data_size);
+
+      for (uint32_t i = 0; i < size; ++i) {
+        struct KVPair *kv = values[i]->data;
+        const off_t kv_size = generate_value(&data, kv);
+
+        const uint32_t block_count = ((length + kv_size + block_size - 1) / block_size);
+
+        if (block_count != 1) {
+          off_t remaining = kv_size;
+          const uint16_t complete = (block_size - length);
+
+          memcpy(block + length, data, complete);
+          write(fd, block, block_size);
+          remaining -= complete;
+
+          if (remaining > block_size) {
+            do {
+              memcpy(block, data + (kv_size - remaining), block_size);
+              write(fd, block, block_size);
+              remaining -= block_size;
+            } while (remaining > block_size);
+          }
+
+          length = remaining;
+          memcpy(block, data + (kv_size - remaining), length);
+        } else {
+          memcpy(block + length, data, kv_size);
+          length += kv_size;
+        }
+
+        total += kv_size;
+      }
+
+      if (values) {
+        free(values);
+      }
+
+      free(data);
+      node = node->next;
+    }
+  }
+
+  if (length != block_size) write(fd, block, block_size);
+  ftruncate(fd, total);
+  free(block);
+
   saving = false;
+  return true;
 }
 
 void *save_thread(void *arg) {
@@ -394,8 +405,10 @@ void *save_thread(void *arg) {
   pthread_exit(NULL);
 }
 
-bool bg_save(const uint32_t server_age) {
-  if (saving) return false;
+const bool bg_save(const uint32_t server_age) {
+  if (saving) {
+    return false;
+  }
 
   pthread_t thread;
   pthread_create(&thread, NULL, save_thread, (uint32_t *) &server_age);

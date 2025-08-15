@@ -9,10 +9,12 @@ static void run(struct CommandEntry entry) {
   get_server_time(&start_at, &server_age);
   server_age += difftime(time(NULL), start_at);
 
-  save_data(server_age);
-
   if (entry.client) {
-    WRITE_OK(entry.client);
+    if (save_data(server_age)) {
+      WRITE_OK(entry.client);
+    } else {
+      WRITE_ERROR(entry.client);
+    }
   }
 }
 
