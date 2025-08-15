@@ -4,6 +4,7 @@
 #include "../config.h"
 #include "../utils.h"
 
+#include <stdint.h>
 #include <time.h>
 
 #include <sys/types.h>

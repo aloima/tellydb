@@ -21,7 +21,7 @@ static void run(struct CommandEntry entry) {
 
   if (streq("ID", subcommand) && entry.client) {
     char buf[14];
-    const size_t nbytes = sprintf(buf, ":%u\r\n", entry.client->id);
+    const size_t nbytes = create_resp_integer(buf, entry.client->id);
     _write(entry.client, buf, nbytes);
   } else if (streq("INFO", subcommand) && entry.client) {
     const char *lib_name = entry.client->lib_name ? entry.client->lib_name : "unspecified";
@@ -63,11 +63,10 @@ static void run(struct CommandEntry entry) {
       }
     }
 
-    char buf[512];
-
     char connected_at[21];
     generate_date_string(connected_at, entry.client->connected_at);
 
+    char buf[512];
     const size_t buf_len = sprintf(buf, (
       "ID: %u\r\n"
       "Socket file descriptor: %d\r\n"
@@ -80,7 +79,11 @@ static void run(struct CommandEntry entry) {
     ), entry.client->id, entry.client->connfd, connected_at, entry.client->command->name, lib_name, lib_ver, protocol, permissions);
 
     char res[1024];
-    const size_t nbytes = sprintf(res, "$%zu\r\n%s\r\n", buf_len, buf);
+    const size_t nbytes = create_resp_string(res, (string_t) {
+      .value = buf,
+      .len = buf_len
+    });
+
     _write(entry.client, res, nbytes);
   }  else if (streq("LOCK", subcommand)) {
     if (entry.password->permissions & P_CLIENT) {
