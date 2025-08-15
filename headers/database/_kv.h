@@ -2,6 +2,8 @@
 
 #include "../utils.h"
 
+#include <stdbool.h>
+
 struct KVPair {
   string_t key;
   void *value;

@@ -9,7 +9,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-// TRANSACTIONS
 struct Transaction {
   struct Client *client;
   commanddata_t data;
