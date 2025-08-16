@@ -7,23 +7,20 @@ static void run(struct CommandEntry entry) {
   if (!entry.client) return;
   const uint32_t arg_count = entry.data->arg_count;
 
-  // arg_count != 0 && arg_count != 1 && arg_count != 3 && arg_count != 4 && arg_count != 6
-  if (arg_count > 6 || arg_count == 2 || arg_count == 5) {
+  if (arg_count != 1) {
     WRONG_ARGUMENT_ERROR(entry.client, "HELLO");
     return;
   }
 
-  if (arg_count > 0) {
-    const char *protover = entry.data->args[0].value;
+  const char *protover = entry.data->args[0].value;
 
-    if (streq(protover, "2")) {
-      entry.client->protover = RESP2;
-    } else if (streq(protover, "3")) {
-      entry.client->protover = RESP3;
-    } else {
-      WRITE_ERROR_MESSAGE(entry.client, "Invalid protocol version");
-      return;
-    }
+  if (streq(protover, "2")) {
+    entry.client->protover = RESP2;
+  } else if (streq(protover, "3")) {
+    entry.client->protover = RESP3;
+  } else {
+    WRITE_ERROR_MESSAGE(entry.client, "Invalid protocol version");
+    return;
   }
 
   char client_id[11];
