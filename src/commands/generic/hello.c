@@ -1,13 +1,7 @@
 #include <telly.h>
 
-#include <stdio.h>
 #include <string.h>
 #include <stdint.h>
-
-struct Value {
-  uint32_t length;
-  char *data;
-};
 
 static void run(struct CommandEntry entry) {
   if (!entry.client) return;
@@ -33,7 +27,7 @@ static void run(struct CommandEntry entry) {
   }
 
   char client_id[11];
-  uint32_t client_id_len = sprintf(client_id, "%d", entry.client->id);
+  const uint32_t client_id_len = ltoa(entry.client->id, client_id);
 
   char *protocol;
   uint32_t protocol_len;
@@ -54,40 +48,38 @@ static void run(struct CommandEntry entry) {
       protocol_len = 0;
   }
 
-  struct Value values[4][2] = {
-    {{6, "server"}, {5, "telly"}},
-    {{7, "version"}, {sizeof(VERSION) - 1, VERSION}},
-    {{8, "protocol"}, {protocol_len, protocol}},
-    {{9, "client id"}, {client_id_len, client_id}}
+  string_t values[4][2] = {
+    {{"server", 6}, {"telly", 5}},
+    {{"version", 7}, {VERSION, sizeof(VERSION) - 1}},
+    {{"protocol", 8}, {protocol, protocol_len}},
+    {{"client id", 9}, {client_id, client_id_len}}
   };
 
   char buf[1024];
+  uint32_t at;
 
   switch (entry.client->protover) {
     case RESP2:
-      memcpy(buf, "*8\r\n", 5);
-
-      for (uint32_t i = 0; i < 4; ++i) {
-        char element[128];
-        sprintf(element, "$%u\r\n%s\r\n$%u\r\n%s\r\n", values[i][0].length, values[i][0].data, values[i][1].length, values[i][1].data);
-        strcat(buf, element);
-      }
-
-      _write(entry.client, buf, strlen(buf));
+      memcpy(buf, "*8\r\n", 4);
+      at = 4;
       break;
 
     case RESP3:
-      memcpy(buf, "%4\r\n", 5);
-
-      for (uint32_t i = 0; i < 4; ++i) {
-        char element[128];
-        sprintf(element, "$%u\r\n%s\r\n$%u\r\n%s\r\n", values[i][0].length, values[i][0].data, values[i][1].length, values[i][1].data);
-        strcat(buf, element);
-      }
-
-      _write(entry.client, buf, strlen(buf));
+      memcpy(buf, "%4\r\n", 4);
+      at = 4;
       break;
   }
+
+  at += create_resp_string(buf + at, values[0][0]);
+  at += create_resp_string(buf + at, values[0][1]);
+  at += create_resp_string(buf + at, values[1][0]);
+  at += create_resp_string(buf + at, values[1][1]);
+  at += create_resp_string(buf + at, values[2][0]);
+  at += create_resp_string(buf + at, values[2][1]);
+  at += create_resp_string(buf + at, values[3][0]);
+  at += create_resp_string(buf + at, values[3][1]);
+
+  _write(entry.client, buf, at);
 }
 
 const struct Command cmd_hello = {
