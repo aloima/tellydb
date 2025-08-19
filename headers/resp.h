@@ -7,16 +7,24 @@
 #include <stdint.h>
 
 #define RDT_SSTRING '+'
+#define RDT_SSTRING_SL "+"
+
 #define RDT_BSTRING '$'
+#define RDT_BSTRING_SL "$"
+
 #define RDT_ARRAY '*'
+#define RDT_ARRAY_SL "*"
+
 #define RDT_INTEGER ':'
+#define RDT_INTEGER_SL ":"
+
 #define RDT_ERR '-'
-#define RDT_CLOSE 0
+#define RDT_ERR_SL "-"
 
 #define RESP_BUF_SIZE 4096
 
 static inline int create_resp_integer(char *buf, uint64_t value) {
-  *(buf) = ':';
+  *(buf) = RDT_INTEGER;
   const uint64_t nbytes = ltoa(value, buf + 1);
   *(buf + nbytes + 1) = '\r';
   *(buf + nbytes + 2) = '\n';
@@ -24,7 +32,7 @@ static inline int create_resp_integer(char *buf, uint64_t value) {
 }
 
 static inline uint64_t create_resp_string(char *buf, string_t string) {
-  *(buf) = '$';
+  *(buf) = RDT_BSTRING;
   const uint64_t nbytes = ltoa(string.len, buf + 1);
   *(buf + nbytes + 1) = '\r';
   *(buf + nbytes + 2) = '\n';

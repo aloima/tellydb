@@ -1,6 +1,9 @@
 #pragma once
 
 #include "_client.h"
+#include "../resp.h"
+
+#include <stddef.h>
 
 #include <unistd.h>
 
@@ -25,6 +28,6 @@ static inline int _write(struct Client *client, char *buf, const size_t nbytes) 
       break;\
   }
 
-#define WRITE_OK(client) _write((client), "+OK\r\n", 5)
-#define WRITE_ERROR(client) _write((client), "-ERROR\r\n", 8)
-#define WRITE_ERROR_MESSAGE(client, message) _write((client), "-" message "\r\n", sizeof(message) + 2)
+#define WRITE_OK(client)                     _write((client), RDT_SSTRING_SL "OK\r\n", 5)
+#define WRITE_ERROR(client)                  _write((client), RDT_ERR_SL "ERROR\r\n", 8)
+#define WRITE_ERROR_MESSAGE(client, message) _write((client), RDT_ERR_SL message "\r\n", sizeof(message) + 2)
