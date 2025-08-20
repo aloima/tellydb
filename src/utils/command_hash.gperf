@@ -1,0 +1,55 @@
+%{
+  #include <string.h>
+  #include <stdint.h>
+%}
+
+%struct-type
+%language=C
+%readonly-tables
+%define hash-function-name command_hash
+%define lookup-function-name get_command_index
+
+struct CommandIndex {
+  const char *name;
+  uint32_t idx;
+};
+
+%%
+BGSAVE, 0
+DBSIZE, 1
+LASTSAVE, 2
+SAVE, 3
+SELECT, 4
+AGE, 5
+AUTH, 6
+CLIENT, 7
+COMMAND, 8
+HELLO, 9
+INFO, 10
+PING, 11
+PWD, 12
+TIME, 13
+HDEL, 14
+HGET, 15
+HGETALL, 16
+HKEYS, 17
+HLEN, 18
+HSET, 19
+HTYPE, 20
+HVALS, 21
+APPEND, 22
+DECR, 23
+DEL, 24
+EXISTS, 25
+GET, 26
+INCR, 27
+RENAME, 28
+SET, 29
+TYPE, 30
+LINDEX, 31
+LLEN, 32
+LPOP, 33
+LPUSH, 34
+RPOP, 35
+RPUSH, 36
+%%

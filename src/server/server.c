@@ -450,26 +450,22 @@ void start_server(struct Configuration *config) {
             continue;
           }
 
-          bool found = false;
           to_uppercase(data.name.value, data.name.value);
 
-          for (uint32_t i = 0; i < command_count; ++i) {
-            if (streq(commands[i].name, data.name.value)) {
-              client->command = &commands[i];
-              found = true;
+          const struct CommandIndex *command_index = get_command_index(data.name.value, data.name.len);
 
-              if (!add_transaction(client, &commands[i], data)) {
-                free_command_data(data);
-                WRITE_ERROR_MESSAGE(client, "Transaction cannot be enqueued because of server settings");
-                write_log(LOG_WARN, "Transaction count reached their limit, so next transactions cannot be added.");
-              }
-
-              break;
-            }
+          if (!command_index) {
+            unknown_command(client, data.name);
+            continue;
           }
 
-          if (!found) {
-            unknown_command(client, data.name);
+          struct Command command = commands[command_index->idx];
+          client->command = &command;
+
+          if (!add_transaction(client, &command, data)) {
+            free_command_data(data);
+            WRITE_ERROR_MESSAGE(client, "Transaction cannot be enqueued because of server settings");
+            write_log(LOG_WARN, "Transaction count reached their limit, so next transactions cannot be added.");
           }
         }
       }

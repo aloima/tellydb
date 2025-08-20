@@ -1,5 +1,6 @@
 #include <telly.h>
 
+#include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -7,7 +8,7 @@ static struct Command *commands;
 static uint32_t command_count;
 
 struct Command *load_commands() {
-  const struct Command _commands[] = {
+  const struct Command command_list[] = {
     // Data commands
     cmd_bgsave,
     cmd_dbsize,
@@ -56,10 +57,15 @@ struct Command *load_commands() {
     cmd_rpush
   };
 
-  command_count = (sizeof(_commands) / sizeof(struct Command));
+  command_count = (sizeof(command_list) / sizeof(struct Command));
 
-  if (posix_memalign((void **) &commands, 32, sizeof(_commands)) == 0) {
-    memcpy_aligned(commands, _commands, sizeof(_commands));
+  if (posix_memalign((void **) &commands, 32, sizeof(command_list)) == 0) {
+    for (int i = 0; i < command_count; ++i) {
+      struct Command command = command_list[i];
+      uint32_t index = get_command_index(command.name, strlen(command.name))->idx;
+
+      commands[index] = command;
+    }
   } else {
     write_log(LOG_ERR, "Cannot create commands, out of memory.");
   }

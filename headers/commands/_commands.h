@@ -6,11 +6,19 @@
 #include "../auth.h"
 
 #include <stdint.h>
+#include <stddef.h>
 
 #define WRONG_ARGUMENT_ERROR(client, name)     WRITE_ERROR_MESSAGE((client), "Wrong argument count for '" name "' command")
 #define INVALID_TYPE_ERROR(client, name)       WRITE_ERROR_MESSAGE((client), "Invalid type for '" name "' command")
 #define MISSING_SUBCOMMAND_ERROR(client, name) WRITE_ERROR_MESSAGE((client), "Missing subcommand for '" name "' command")
 #define INVALID_SUBCOMMAND_ERROR(client, name) WRITE_ERROR_MESSAGE((client), "Invalid subcommand for '" name "' command")
+
+struct CommandIndex {
+  const char *name;
+  uint32_t idx;
+};
+
+const struct CommandIndex *get_command_index(const char *str, size_t len);
 
 struct CommandEntry {
   struct Database *database;

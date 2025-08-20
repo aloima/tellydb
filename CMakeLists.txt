@@ -9,6 +9,12 @@ find_package(OpenSSL REQUIRED)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
+execute_process(
+  COMMAND gperf command_hash.gperf
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/utils
+  OUTPUT_FILE ${CMAKE_SOURCE_DIR}/src/utils/command_hash.c
+)
+
 file(GLOB SOURCES "src/**/**/*.c" "src/**/*.c" "src/*.c")
 list(REMOVE_ITEM SOURCES "${CMAKE_SOURCE_DIR}/src/utils/memcpy_aligned.c")
 add_executable(telly ${SOURCES})
