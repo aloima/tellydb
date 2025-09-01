@@ -1,7 +1,6 @@
 #include <telly.h>
 
 #include <stdint.h>
-#include <string.h>
 #include <stdlib.h>
 
 struct List *create_list() {
@@ -24,7 +23,10 @@ void free_listnode(struct ListNode *node) {
     free(string->value);
   }
 
-  if (node->type != TELLY_NULL) free(node->value);
+  if (node->type != TELLY_NULL) {
+    free(node->value);
+  }
+
   free(node);
 }
 
