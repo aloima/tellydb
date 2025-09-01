@@ -9,6 +9,7 @@ static struct Configuration default_conf = {
   .port = 6379,
   .max_clients = 128,
   .max_transactions = 262144,
+  .max_transaction_blocks = 262144,
   .allowed_log_levels = LOG_INFO | LOG_ERR | LOG_WARN,
   .max_log_lines = 128,
   .data_file = ".tellydb",
@@ -64,6 +65,10 @@ struct Configuration parse_configuration(FILE *file) {
           buf[0] = '\0';
           parse_value(file, buf);
           conf.max_transactions = atoi(buf);
+        } else if (streq(buf, "MAX_TRANSACTION_BLOCKS")) {
+          buf[0] = '\0';
+          parse_value(file, buf);
+          conf.max_transaction_blocks = atoi(buf);
         } else if (streq(buf, "ALLOWED_LOG_LEVELS")) {
           buf[0] = '\0';
           parse_value(file, buf);
@@ -161,6 +166,9 @@ size_t get_configuration_string(char *buf, struct Configuration conf) {
     "# Specifies max storable transaction count, higher values may cause higher resource usage\n"
     "MAX_TRANSACTIONS=%u\n\n"
 
+    "# Specifies max storable transaction block count, higher values may cause higher resource usage\n"
+    "MAX_TRANSACTION_BLOCKS=%u\n\n"
+
     "# Allowed log levels:\n"
     "# w = warning\n"
     "# i = information\n"
@@ -191,7 +199,7 @@ size_t get_configuration_string(char *buf, struct Configuration conf) {
     "TLS=%s\n"
     "CERT=%s\n"
     "PRIVATE_KEY=%s\n"
-  ), conf.port, conf.max_clients, conf.max_transactions, allowed_log_levels, conf.max_log_lines, conf.data_file, conf.log_file, conf.database_name,
+  ), conf.port, conf.max_clients, conf.max_transactions, conf.max_transaction_blocks, allowed_log_levels, conf.max_log_lines, conf.data_file, conf.log_file, conf.database_name,
      conf.tls ? "true" : "false", conf.cert, conf.private_key
   );
 }
