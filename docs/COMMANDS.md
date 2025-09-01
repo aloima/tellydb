@@ -348,7 +348,7 @@ The list of unwritten behavior to commands.
 **Syntax**: `LINDEX key index`  
 **Description**: Returns element at the index in the list.  
 **Since**: `0.1.4`  
-**Time complexity**: `O(N) where N is absolute index number`  
+**Time complexity**: `O(N) where N is min(absolute index, list size - absolute index - 1) number`  
 **Permissions**: `P_READ`  
 **Returns**: A value or null reply if the index is not exist  
 **Behavior**:
