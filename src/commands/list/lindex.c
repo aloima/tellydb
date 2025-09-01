@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <limits.h>
 
 static void run(struct CommandEntry entry) {
   if (!entry.client) return;
@@ -28,20 +29,30 @@ static void run(struct CommandEntry entry) {
   struct ListNode *node;
 
   if (index_str[0] != '-') {
-    const uint32_t index = atoi(index_str);
-    node = list->begin;
+    const uint64_t index = strtoull(index_str, (char **) NULL, 10);
+
+    if (index == ULLONG_MAX) {
+      WRITE_ERROR_MESSAGE(entry.client, "Index exceeded integer bounds");
+      return;
+    }
 
     if ((index + 1) > list->size) {
       WRITE_NULL_REPLY(entry.client);
       return;
     }
 
+    node = list->begin;
+
     for (uint32_t i = 0; i < index; ++i) {
       node = node->next;
     }
   } else {
-    const uint64_t index = atoi(index_str + 1);
-    node = list->end;
+    const uint64_t index = strtoull(index_str + 1, (char **) NULL, 10);
+
+    if (index == ULLONG_MAX) {
+      WRITE_ERROR_MESSAGE(entry.client, "Index exceeded integer bounds");
+      return;
+    }
 
     if (index > list->size) {
       WRITE_NULL_REPLY(entry.client);
@@ -49,6 +60,7 @@ static void run(struct CommandEntry entry) {
     }
 
     const uint32_t bound = index - 1;
+    node = list->end;
 
     for (uint32_t i = 0; i < bound; ++i) {
       node = node->prev;
