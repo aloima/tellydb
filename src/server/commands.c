@@ -85,22 +85,3 @@ uint32_t get_command_count() {
   return command_count;
 }
 
-void execute_command(struct Transaction *transaction) {
-  struct Command *command = transaction->command;
-  struct Client *client = transaction->client;
-  struct Password *password = transaction->password;
-
-  struct CommandEntry entry = {
-    .client = client,
-    .data = &transaction->data,
-    .database = transaction->database,
-    .password = password
-  };
-
-  if ((password->permissions & command->permissions) != command->permissions) {
-    WRITE_ERROR_MESSAGE(client, "No permissions to execute this command");
-    return;
-  }
-
-  command->run(entry);
-}

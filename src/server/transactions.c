@@ -1,3 +1,4 @@
+#include "transactions.h"
 #include <telly.h>
 
 // For EBUSY enum
@@ -9,10 +10,10 @@
 
 #include <pthread.h>
 
-struct Transaction *transactions;
+struct TransactionBlock *blocks;
 
 uint64_t processed_transaction_count = 0;
-uint32_t transaction_count = 0;
+uint32_t block_count = 0;
 uint32_t at = 0;
 uint32_t end = 0;
 struct Configuration *conf;
@@ -30,12 +31,12 @@ void *transaction_thread(void *arg) {
 
   while (true) {
     pthread_mutex_lock(&mutex);
-    while (transaction_count == 0) pthread_cond_wait(&cond, &mutex);
+    while (block_count == 0) pthread_cond_wait(&cond, &mutex);
 
-    struct Transaction *transaction = &transactions[at];
-    execute_command(transaction);
-    remove_transaction(transaction);
-    at = ((at + 1) % conf->max_transactions);
+    struct TransactionBlock *block = &blocks[at];
+    execute_transaction_block(block);
+    remove_transaction_block(block);
+    at = ((at + 1) % conf->max_transaction_blocks);
 
     pthread_mutex_unlock(&mutex);
   }
@@ -44,6 +45,14 @@ void *transaction_thread(void *arg) {
 }
 
 uint32_t get_transaction_count() {
+  uint64_t transaction_count = 0;
+  uint32_t idx = at;
+
+  for (uint32_t i = 0; i < block_count; ++i) {
+    transaction_count += blocks[idx].transaction_count;
+    idx = ((idx + 1) % conf->max_transaction_blocks);
+  }
+
   return transaction_count;
 }
 
@@ -63,7 +72,7 @@ void deactive_transaction_thread() {
 
 void create_transaction_thread(struct Configuration *config) {
   conf = config;
-  transactions = calloc(conf->max_transactions, sizeof(struct Transaction));
+  blocks = calloc(conf->max_transaction_blocks, sizeof(struct TransactionBlock));
 
   pthread_mutex_init(&mutex, NULL);
   pthread_cond_init(&cond, NULL);
@@ -71,21 +80,33 @@ void create_transaction_thread(struct Configuration *config) {
   pthread_detach(thread);
 }
 
-bool add_transaction(struct Client *client, struct Command *command, commanddata_t data) {
-  if (transaction_count == conf->max_transactions) {
-    return false;
-  }
-
+bool add_transaction(struct TransactionBlock *block, struct Client *client, struct Command *command, commanddata_t data) {
+  struct Transaction *transaction;
   pthread_mutex_lock(&mutex);
 
-  struct Transaction *transaction = &transactions[end];
-  transaction_count += 1;
-  end = ((end + 1) % conf->max_transactions);
+  if (block == NULL) {
+    if (block_count == conf->max_transaction_blocks) {
+      return false;
+    }
 
-  transaction->client = client;
+    block = &blocks[end];
+    block_count += 1;
+    end = ((end + 1) % conf->max_transaction_blocks);
+
+    block->transaction_count += 1;
+    block->transactions = malloc(sizeof(struct Transaction));
+    transaction = &block->transactions[0];
+  } else {
+    block->transaction_count += 1;
+    block->transactions = realloc(block->transactions, sizeof(struct Transaction) * block->transaction_count);
+    transaction = &block->transactions[block->transaction_count - 1];
+  }
+
+  block->client = client;
+  block->password = client->password;
+
   transaction->command = command;
   transaction->data = data;
-  transaction->password = client->password;
   transaction->database = client->database;
 
   pthread_cond_signal(&cond);
@@ -95,21 +116,62 @@ bool add_transaction(struct Client *client, struct Command *command, commanddata
 }
 
 // Run by thread, no need mutex
-void remove_transaction(struct Transaction *transaction) {
-  transaction_count -= 1;
-  processed_transaction_count += 1;
-  free_command_data(transaction->data);
-  transaction->command = NULL;
-}
+void remove_transaction_block(struct TransactionBlock *block) {
+  block_count -= 1;
+  processed_transaction_count += block->transaction_count;
 
-void free_transactions() {
-  for (uint32_t i = 0; i < conf->max_transactions; ++i) {
-    struct Transaction transaction = transactions[i];
+  for (uint32_t i = 0; i < block->transaction_count; ++i) {
+    struct Transaction transaction = block->transactions[i];
 
     if (transaction.command) {
       free_command_data(transaction.data);
     }
   }
 
-  free(transactions);
+  free(block->transactions);
+  block->transactions = NULL;
+  block->transaction_count = 0;
+}
+
+void free_transactions() {
+  uint32_t idx = at;
+
+  for (uint32_t i = 0; i < block_count; ++i) {
+    struct TransactionBlock block = blocks[idx];
+    idx = ((idx + 1) % conf->max_transaction_blocks);
+
+    for (uint32_t j = 0; i < block.transaction_count; ++j) {
+      struct Transaction transaction = block.transactions[j];
+
+      if (transaction.command) {
+        free_command_data(transaction.data);
+      }
+    }
+  }
+
+  free(blocks);
+}
+
+void execute_transaction_block(struct TransactionBlock *block) {
+  struct Client *client = block->client;
+  struct Password *password = block->password;
+
+  for (uint32_t i = 0; i < block->transaction_count; ++i) {
+    struct Transaction transaction = block->transactions[i];
+    struct Command *command = transaction.command;
+
+    struct CommandEntry entry = {
+      .client = client,
+      .data = &transaction.data,
+      .database = transaction.database,
+      .password = password
+    };
+
+    if ((password->permissions & command->permissions) != command->permissions) {
+      WRITE_ERROR_MESSAGE(client, "No permissions to execute this command");
+      return;
+    }
+
+    command->run(entry);
+  }
 }
