@@ -40,10 +40,10 @@ static bool get_section(char *section, const struct Configuration *conf, const c
       "Connected clients: %u\r\n"
       "Max clients: %u\r\n"
       "Transactions: %u\r\n"
-      "Max transactions: %u\r\n"
+      "Max transaction blocks: %u\r\n"
       "Total processed transactions: %" PRIu64 "\r\n"
       "Total received connections: %u\r\n"
-    ), get_client_count(), conf->max_clients, get_transaction_count(), conf->max_transactions, get_processed_transaction_count(), get_last_connection_client_id());
+    ), get_client_count(), conf->max_clients, get_transaction_count(), conf->max_transaction_blocks, get_processed_transaction_count(), get_last_connection_client_id());
   } else {
     return false;
   }
