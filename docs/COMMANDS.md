@@ -249,6 +249,18 @@ The list of unwritten behavior to commands.
 
 ---
 
+### MULTI
+**Syntax**: `MULTI`  
+**Description**: Creates a transaction block consists of multiple transactions.  
+**Since**: `0.2.0`  
+**Time complexity**: `O(1)`  
+**Permissions**: None  
+**Returns**: `OK`  
+**Behavior**:
++ If there is a started transaction block already, throws an error.
+
+---
+
 ### PING
 **Syntax**: `PING [value]`  
 **Description**: Pings the server and returns a simple/bulk string.  

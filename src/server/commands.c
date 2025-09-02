@@ -23,6 +23,7 @@ struct Command *load_commands() {
     cmd_command,
     cmd_hello,
     cmd_info,
+    cmd_multi,
     cmd_ping,
     cmd_pwd,
     cmd_time,
