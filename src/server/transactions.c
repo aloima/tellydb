@@ -34,10 +34,13 @@ void *transaction_thread(void *arg) {
     while (block_count == 0) pthread_cond_wait(&cond, &mutex);
 
     struct TransactionBlock *block = &blocks[at];
-    execute_transaction_block(block);
-    remove_transaction_block(block);
-    at = ((at + 1) % conf->max_transaction_blocks);
 
+    if (!block->client->waiting_execution) {
+      execute_transaction_block(block);
+      remove_transaction_block(block);
+    }
+
+    at = ((at + 1) % conf->max_transaction_blocks);
     pthread_mutex_unlock(&mutex);
   }
 

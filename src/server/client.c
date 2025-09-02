@@ -27,17 +27,34 @@ static bool create_constant_password(struct Password **password, uint64_t permis
 
 bool create_constant_passwords() {
   const uint64_t permissions = (P_READ | P_WRITE | P_CLIENT | P_CONFIG | P_AUTH | P_SERVER);
-  if (!create_constant_password(&default_password, permissions)) return false;
-  if (!create_constant_password(&empty_password, 0)) return false;
-  if (!create_constant_password(&full_password, permissions)) return false;
+
+  if (!create_constant_password(&default_password, permissions)) {
+    return false;
+  }
+
+  if (!create_constant_password(&empty_password, 0)) {
+    return false;
+  }
+
+  if (!create_constant_password(&full_password, permissions)) {
+    return false;
+  }
 
   return true;
 }
 
 void free_constant_passwords() {
-  if (default_password) free(default_password);
-  if (empty_password) free(empty_password);
-  if (full_password) free(full_password);
+  if (default_password) {
+    free(default_password);
+  }
+
+  if (empty_password) {
+    free(empty_password);
+  }
+
+  if (full_password) {
+    free(full_password);
+  }
 }
 
 struct Password *get_empty_password() {
@@ -54,8 +71,11 @@ struct Client *get_client(const int input) {
   while (node) {
     struct Client *client = node->data;
 
-    if (client->connfd == input) return client;
-    else node = node->next;
+    if (client->connfd == input) {
+      return client;
+    } else {
+      node = node->next;
+    }
   }
 
   return NULL;
@@ -108,6 +128,7 @@ struct Client *add_client(const int connfd) {
     client->ssl = NULL;
     client->protover = RESP2;
     client->locked = false;
+    client->waiting_execution = false;
 
     if (get_password_count() == 0) {
       client->password = default_password;
@@ -132,17 +153,29 @@ void remove_client(const int connfd) {
     if (client->connfd == connfd) {
       client_count -= 1;
 
-      if (client->ssl) SSL_free(client->ssl);
-      if (client->lib_name) free(client->lib_name);
-      if (client->lib_ver) free(client->lib_ver);
+      if (client->ssl) {
+        SSL_free(client->ssl);
+      }
+
+      if (client->lib_name) {
+        free(client->lib_name);
+      }
+
+      if (client->lib_ver) {
+        free(client->lib_ver);
+      }
+
       free(client);
 
       if (client_count == 0) {
         free(head);
         head = NULL;
       } else {
-        if (prev) prev->next = node->next;
-        else head = node->next;
+        if (prev) {
+          prev->next = node->next;
+        } else {
+          head = node->next;
+        }
 
         free(node);
       }
@@ -164,9 +197,18 @@ void remove_head_client() {
 
   client_count -= 1;
 
-  if (client->ssl) SSL_free(client->ssl);
-  if (client->lib_name) free(client->lib_name);
-  if (client->lib_ver) free(client->lib_ver);
+  if (client->ssl) {
+    SSL_free(client->ssl);
+  }
+
+  if (client->lib_name) {
+    free(client->lib_name);
+  }
+
+  if (client->lib_ver) {
+    free(client->lib_ver);
+  }
+
   free(client);
 
   if (client_count == 0) {

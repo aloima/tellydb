@@ -25,6 +25,7 @@ struct Client {
   enum ProtocolVersion protover;
 
   bool locked;
+  bool waiting_execution;
 };
 
 struct Client *get_client(const int input);
