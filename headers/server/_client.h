@@ -27,7 +27,6 @@ struct Client {
   enum ProtocolVersion protover;
 
   bool locked;
-  bool waiting_execution;
   struct TransactionBlock *waiting_block;
 };
 

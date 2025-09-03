@@ -128,7 +128,6 @@ struct Client *add_client(const int connfd) {
     client->ssl = NULL;
     client->protover = RESP2;
     client->locked = false;
-    client->waiting_execution = false;
     client->waiting_block = NULL;
 
     if (get_password_count() == 0) {

@@ -5,12 +5,12 @@
 static void run(struct CommandEntry entry) {
   if (!entry.client) return;
 
-  if (entry.client->waiting_execution) {
+  if (entry.client->waiting_block) {
     WRITE_ERROR_MESSAGE(entry.client, "Already started a transaction block, cannot create one without executing before");
     return;
   }
 
-  entry.client->waiting_execution = true;
+  entry.client->waiting_block = reserve_transaction_block();
   WRITE_OK(entry.client);
 }
 
