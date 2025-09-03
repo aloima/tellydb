@@ -1,6 +1,7 @@
 #include <telly.h>
 
 #include <stdint.h>
+#include <stdbool.h>
 
 static void run(struct CommandEntry entry) {
   if (!entry.client) return;
@@ -10,7 +11,7 @@ static void run(struct CommandEntry entry) {
     return;
   }
 
-  entry.client->waiting_block = reserve_transaction_block();
+  entry.client->waiting_block = reserve_transaction_block(entry.client, true);
 
   if (!entry.client->waiting_block) {
     WRITE_ERROR_MESSAGE(entry.client, "Cannot create a transaction block because of configuration limit");

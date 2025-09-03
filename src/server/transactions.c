@@ -37,12 +37,31 @@ void *transaction_thread(void *arg) {
 
     struct TransactionBlock *block = &blocks[at];
 
-    if (block && !block->client->waiting_block) {
-      execute_transaction_block(block);
-      remove_transaction_block(block);
+    if (!block->client) {
+      pthread_mutex_unlock(&mutex);
+      continue;
     }
 
-    at = ((at + 1) % conf->max_transaction_blocks);
+    if (block->client->waiting_block) {
+      uint32_t _at = ((at + 1) % conf->max_transaction_blocks);
+      block = &blocks[_at];
+
+      while (!block->client || block->client->waiting_block) {
+        _at = (_at + 1) % conf->max_transaction_blocks;
+        block = &blocks[_at];
+      }
+
+      if (block->transaction_count == 0) {
+        pthread_mutex_unlock(&mutex);
+        continue;
+      }
+    } else {
+      at = ((at + 1) % conf->max_transaction_blocks);
+    }
+
+    execute_transaction_block(block);
+    remove_transaction_block(block);
+
     pthread_mutex_unlock(&mutex);
   }
 
@@ -85,23 +104,22 @@ void create_transaction_thread(struct Configuration *config) {
   pthread_detach(thread);
 }
 
-struct TransactionBlock *reserve_transaction_block() {
-  if (!IS_IN_PROCESS()) {
-    pthread_mutex_lock(&mutex);
-  }
-
+struct TransactionBlock *reserve_transaction_block(struct Client *client, bool as_queued) {
   if (block_count == conf->max_transaction_blocks) {
     return NULL;
   }
 
   struct TransactionBlock *block = &blocks[end];
-  block_count += 1;
-  end = ((end + 1) % conf->max_transaction_blocks);
+  block->client = client;
+  block->password = client->password;
+  block->transactions = NULL;
+  block->transaction_count = 0;
 
-  if (!IS_IN_PROCESS()) {
-    pthread_mutex_unlock(&mutex);
+  if (!as_queued) {
+    block_count += 1;
   }
 
+  end = ((end + 1) % conf->max_transaction_blocks);
   return block;
 }
 
@@ -110,16 +128,13 @@ bool add_transaction(struct Client *client, struct Command *command, commanddata
   pthread_mutex_lock(&mutex);
 
   if (client->waiting_block == NULL) {
-    struct TransactionBlock *block = reserve_transaction_block();
+    struct TransactionBlock *block = reserve_transaction_block(client, false);
 
     if (!block) {
       return false;
     }
 
-    block->client = client;
-    block->password = client->password;
-
-    block->transaction_count += 1;
+    block->transaction_count = 1;
     block->transactions = malloc(sizeof(struct Transaction));
     transaction = &block->transactions[0];
   } else {
@@ -153,6 +168,8 @@ void remove_transaction_block(struct TransactionBlock *block) {
   }
 
   free(block->transactions);
+  block->client = NULL;
+  block->password = NULL;
   block->transactions = NULL;
   block->transaction_count = 0;
 }
