@@ -11,6 +11,12 @@ static void run(struct CommandEntry entry) {
   }
 
   entry.client->waiting_block = reserve_transaction_block();
+
+  if (!entry.client->waiting_block) {
+    WRITE_ERROR_MESSAGE(entry.client, "Cannot create a transaction block because of configuration limit");
+    return;
+  }
+
   WRITE_OK(entry.client);
 }
 

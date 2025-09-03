@@ -111,6 +111,11 @@ bool add_transaction(struct Client *client, struct Command *command, commanddata
 
   if (client->waiting_block == NULL) {
     struct TransactionBlock *block = reserve_transaction_block();
+
+    if (!block) {
+      return false;
+    }
+
     block->client = client;
     block->password = client->password;
 
