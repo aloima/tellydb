@@ -11,6 +11,8 @@ enum ProtocolVersion {
   RESP3 = 3
 };
 
+struct TransactionBlock;
+
 struct Client {
   SSL *ssl;
   int connfd;
@@ -26,6 +28,7 @@ struct Client {
 
   bool locked;
   bool waiting_execution;
+  struct TransactionBlock *waiting_block;
 };
 
 struct Client *get_client(const int input);

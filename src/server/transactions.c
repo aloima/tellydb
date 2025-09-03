@@ -1,4 +1,3 @@
-#include "transactions.h"
 #include <telly.h>
 
 // For EBUSY enum
@@ -31,11 +30,14 @@ void *transaction_thread(void *arg) {
 
   while (true) {
     pthread_mutex_lock(&mutex);
-    while (block_count == 0) pthread_cond_wait(&cond, &mutex);
+
+    while (block_count == 0) {
+      pthread_cond_wait(&cond, &mutex);
+    }
 
     struct TransactionBlock *block = &blocks[at];
 
-    if (!block->client->waiting_execution) {
+    if (block && !block->client->waiting_block) {
       execute_transaction_block(block);
       remove_transaction_block(block);
     }
@@ -83,30 +85,44 @@ void create_transaction_thread(struct Configuration *config) {
   pthread_detach(thread);
 }
 
-bool add_transaction(struct TransactionBlock *block, struct Client *client, struct Command *command, commanddata_t data) {
+struct TransactionBlock *reserve_transaction_block() {
+  if (!IS_IN_PROCESS()) {
+    pthread_mutex_lock(&mutex);
+  }
+
+  if (block_count == conf->max_transaction_blocks) {
+    return NULL;
+  }
+
+  struct TransactionBlock *block = &blocks[end];
+  block_count += 1;
+  end = ((end + 1) % conf->max_transaction_blocks);
+
+  if (!IS_IN_PROCESS()) {
+    pthread_mutex_unlock(&mutex);
+  }
+
+  return block;
+}
+
+bool add_transaction(struct Client *client, struct Command *command, commanddata_t data) {
   struct Transaction *transaction;
   pthread_mutex_lock(&mutex);
 
-  if (block == NULL) {
-    if (block_count == conf->max_transaction_blocks) {
-      return false;
-    }
-
-    block = &blocks[end];
-    block_count += 1;
-    end = ((end + 1) % conf->max_transaction_blocks);
+  if (client->waiting_block == NULL) {
+    struct TransactionBlock *block = reserve_transaction_block();
+    block->client = client;
+    block->password = client->password;
 
     block->transaction_count += 1;
     block->transactions = malloc(sizeof(struct Transaction));
     transaction = &block->transactions[0];
   } else {
+    struct TransactionBlock *block = client->waiting_block;
     block->transaction_count += 1;
     block->transactions = realloc(block->transactions, sizeof(struct Transaction) * block->transaction_count);
     transaction = &block->transactions[block->transaction_count - 1];
   }
-
-  block->client = client;
-  block->password = client->password;
 
   transaction->command = command;
   transaction->data = data;
