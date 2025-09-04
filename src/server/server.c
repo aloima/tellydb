@@ -466,6 +466,11 @@ void start_server(struct Configuration *config) {
             free_command_data(data);
             WRITE_ERROR_MESSAGE(client, "Transaction cannot be enqueued because of server settings");
             write_log(LOG_WARN, "Transaction count reached their limit, so next transactions cannot be added.");
+            continue;
+          }
+
+          if (client->waiting_block) {
+            _write(client, "+QUEUED\r\n", 9);
           }
         }
       }
