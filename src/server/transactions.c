@@ -49,8 +49,12 @@ void *transaction_thread(void *arg) {
       block = &blocks[_at];
 
       while (!block->client || block->client->waiting_block) {
-        if (block->transaction_count != 0 && streq(block->transactions[0].command.name, "EXEC")) {
-          break;
+        if (block->transaction_count != 0) {
+          const char *name = block->transactions[0].command.name;
+
+          if (streq(name, "EXEC") || streq(name, "DISCARD")) {
+            break;
+          }
         }
 
         _at = (_at + 1) % conf->max_transaction_blocks;
@@ -61,7 +65,7 @@ void *transaction_thread(void *arg) {
     }
 
     execute_transaction_block(block);
-    remove_transaction_block(block);
+    remove_transaction_block(block, true);
 
     pthread_mutex_unlock(&mutex);
   }
@@ -135,7 +139,7 @@ bool add_transaction(struct Client *client, struct Command command, commanddata_
   struct Transaction *transaction;
   pthread_mutex_lock(&mutex);
 
-  if (client->waiting_block == NULL || streq(command.name, "EXEC")) {
+  if (client->waiting_block == NULL || streq(command.name, "EXEC") || streq(command.name, "DISCARD")) {
     struct TransactionBlock *block = reserve_transaction_block(client, false);
 
     if (!block) {
@@ -163,11 +167,13 @@ bool add_transaction(struct Client *client, struct Command command, commanddata_
 }
 
 // Run by thread, no need mutex
-void remove_transaction_block(struct TransactionBlock *block) {
-  block_count -= 1;
-  processed_transaction_count += block->transaction_count;
+void remove_transaction_block(struct TransactionBlock *block, const bool processed) {
+  if (processed) {
+    block_count -= 1;
+    processed_transaction_count += block->transaction_count;
+  }
 
-  for (uint32_t i = 0; i < block->transaction_count; ++i) {
+  for (uint64_t i = 0; i < block->transaction_count; ++i) {
     struct Transaction transaction = block->transactions[i];
     free_command_data(transaction.data);
   }

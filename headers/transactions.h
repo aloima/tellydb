@@ -33,7 +33,7 @@ uint32_t get_transaction_count();
 void release_queued_transaction_block(struct Client *client);
 bool add_transaction(struct Client *client, struct Command command, commanddata_t data);
 struct TransactionBlock *reserve_transaction_block(struct Client *client, bool as_queued);
-void remove_transaction_block(struct TransactionBlock *block);
+void remove_transaction_block(struct TransactionBlock *block, const bool processed);
 void free_transactions();
 
 void execute_transaction_block(struct TransactionBlock *block);

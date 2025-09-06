@@ -223,6 +223,18 @@ The list of unwritten behavior to commands.
 
 ---
 
+### DISCARD
+**Syntax**: `DISCARD`  
+**Description**: Discards the current started transaction block.  
+**Since**: `0.2.0`  
+**Time complexity**: `O(1)`  
+**Permissions**: None  
+**Returns**: `OK`  
+**Behavior**:
++ If there is no started transaction block, throws an error.
+
+---
+
 ### EXEC
 **Syntax**: `EXEC`  
 **Description**: Executes a transaction block consists of multiple transactions.  
@@ -231,7 +243,7 @@ The list of unwritten behavior to commands.
 **Permissions**: None  
 **Returns**: `OK`  
 **Behavior**:
-+ If there is no started transaction block already, throws an error.
++ If there is no started transaction block, throws an error.
 
 ---
 
