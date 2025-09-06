@@ -180,7 +180,7 @@ static string_t run(struct CommandEntry entry) {
 
       if (res) {
         if (entry.client) {
-          write_value(entry.client, value, type);
+          return write_value(value, type, entry.client->protover, entry.buffer);
         }
       }
 

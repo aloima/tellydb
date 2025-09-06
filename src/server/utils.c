@@ -4,52 +4,42 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-void write_value(struct Client *client, void *value, enum TellyTypes type) {
+string_t write_value(void *value, const enum TellyTypes type, const enum ProtocolVersion protover, char *buffer) {
   switch (type) {
     case TELLY_NULL:
-      _write(client, "+null\r\n", 7);
-      break;
+      return RESP_OK_MESSAGE("null");
 
     case TELLY_NUM: {
-      char buf[24];
-      const size_t nbytes = create_resp_integer(buf, (*(long *) value));
-      _write(client, buf, nbytes);
-      break;
+      const size_t nbytes = create_resp_integer(buffer, (*(long *) value));
+      return CREATE_STRING(buffer, nbytes);
     }
 
     case TELLY_STR: {
       const string_t *string = value;
 
-      char *buf = malloc(26 + string->len);
-      const size_t nbytes = create_resp_string(buf, *string);
-      _write(client, buf, nbytes);
-      free(buf);
-      break;
+      const size_t nbytes = create_resp_string(buffer, *string);
+      return CREATE_STRING(buffer, nbytes);
     }
 
     case TELLY_BOOL:
       if (*((bool *) value)) {
-        if (client->protover == RESP3) {
-          _write(client, "#t\r\n", 4);
+        if (protover == RESP3) {
+          return CREATE_STRING("#t\r\n", 4);
         } else {
-          _write(client, "+true\r\n", 7);
+          return RESP_OK_MESSAGE("true");
         }
       } else {
-        if (client->protover == RESP3) {
-          _write(client, "#f\r\n", 4);
+        if (protover == RESP3) {
+          return CREATE_STRING("#f\r\n", 4);
         } else {
-          _write(client, "+false\r\n", 8);
+          return RESP_OK_MESSAGE("false");
         }
       }
 
-      break;
-
     case TELLY_HASHTABLE:
-      _write(client, "+hash table\r\n", 13);
-      break;
+      return RESP_OK_MESSAGE("hash table");
 
     case TELLY_LIST:
-      _write(client, "+list\r\n", 7);
-      break;
+      return RESP_OK_MESSAGE("list");
   }
 }

@@ -35,7 +35,7 @@ static string_t run(struct CommandEntry entry) {
   string_t response = EMPTY_STRING();
 
   if (entry.client) {
-    write_value(entry.client, node->value, node->type);
+    return write_value(node->value, node->type, entry.client->protover, entry.buffer);
   }
 
   if (list->size == 1) {

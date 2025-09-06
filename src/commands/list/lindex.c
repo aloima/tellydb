@@ -94,7 +94,7 @@ static string_t run(struct CommandEntry entry) {
     return RESP_NULL(entry.client->protover);
   }
 
-  write_value(entry.client, node->value, node->type);
+  return write_value(node->value, node->type, entry.client->protover, entry.buffer);
 }
 
 const struct Command cmd_lindex = {
