@@ -469,7 +469,7 @@ void start_server(struct Configuration *config) {
             continue;
           }
 
-          if (client->waiting_block && !streq(command.name, "EXEC") && !streq(command.name, "DISCARD")) {
+          if (client->waiting_block && !streq(command.name, "EXEC") && !streq(command.name, "DISCARD") && !streq(command.name, "MULTI")) {
             _write(client, "+QUEUED\r\n", 9);
           }
         }

@@ -52,7 +52,7 @@ void *transaction_thread(void *arg) {
         if (block->transaction_count != 0) {
           const char *name = block->transactions[0].command.name;
 
-          if (streq(name, "EXEC") || streq(name, "DISCARD")) {
+          if (streq(name, "EXEC") || streq(name, "DISCARD") || streq(name, "MULTI")) {
             break;
           }
         }
@@ -139,7 +139,7 @@ bool add_transaction(struct Client *client, struct Command command, commanddata_
   struct Transaction *transaction;
   pthread_mutex_lock(&mutex);
 
-  if (client->waiting_block == NULL || streq(command.name, "EXEC") || streq(command.name, "DISCARD")) {
+  if (client->waiting_block == NULL || streq(command.name, "EXEC") || streq(command.name, "DISCARD") || streq(command.name, "MULTI")) {
     struct TransactionBlock *block = reserve_transaction_block(client, false);
 
     if (!block) {
