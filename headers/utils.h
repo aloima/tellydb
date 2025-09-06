@@ -25,6 +25,9 @@ typedef struct String {
   uint32_t len;
 } string_t;
 
+#define EMPTY_STRING() ((string_t) {"", 0})
+#define CREATE_STRING(value, len) ((string_t) {value, len})
+
 enum TellyTypes {
   TELLY_NULL,
   TELLY_NUM,

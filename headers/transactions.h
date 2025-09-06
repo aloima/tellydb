@@ -9,6 +9,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define MAX_RESPONSE_SIZE 121000
+
 struct Transaction {
   commanddata_t data;
   struct Command *command;

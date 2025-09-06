@@ -8,10 +8,15 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define WRONG_ARGUMENT_ERROR(client, name)     WRITE_ERROR_MESSAGE((client), "Wrong argument count for '" name "' command")
-#define INVALID_TYPE_ERROR(client, name)       WRITE_ERROR_MESSAGE((client), "Invalid type for '" name "' command")
-#define MISSING_SUBCOMMAND_ERROR(client, name) WRITE_ERROR_MESSAGE((client), "Missing subcommand for '" name "' command")
-#define INVALID_SUBCOMMAND_ERROR(client, name) WRITE_ERROR_MESSAGE((client), "Invalid subcommand for '" name "' command")
+#define WRONG_ARGUMENT_ERROR(name)     RESP_ERROR_MESSAGE("Wrong argument count for '" name "' command")
+#define INVALID_TYPE_ERROR(name)       RESP_ERROR_MESSAGE("Invalid type for '" name "' command")
+#define MISSING_SUBCOMMAND_ERROR(name) RESP_ERROR_MESSAGE("Missing subcommand for '" name "' command")
+#define INVALID_SUBCOMMAND_ERROR(name) RESP_ERROR_MESSAGE("Invalid subcommand for '" name "' command")
+#define PASS_COMMAND()                 return EMPTY_STRING()
+#define PASS_NO_CLIENT(client) \
+  if (!(client)) { \
+    PASS_COMMAND(); \
+  }
 
 struct CommandIndex {
   const char *name;
@@ -25,6 +30,7 @@ struct CommandEntry {
   struct Client *client;
   struct Password *password;
   commanddata_t *data;
+  char *buffer;
 };
 
 struct Subcommand {
@@ -40,7 +46,7 @@ struct Command {
   char *since;
   char *complexity;
   uint64_t permissions;
-  void (*run)(struct CommandEntry entry);
+  string_t (*run)(struct CommandEntry entry);
   struct Subcommand *subcommands;
   uint32_t subcommand_count;
 };
