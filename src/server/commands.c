@@ -21,6 +21,7 @@ struct Command *load_commands() {
     cmd_auth,
     cmd_client,
     cmd_command,
+    cmd_exec,
     cmd_hello,
     cmd_info,
     cmd_multi,

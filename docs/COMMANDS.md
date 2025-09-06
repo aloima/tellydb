@@ -223,6 +223,18 @@ The list of unwritten behavior to commands.
 
 ---
 
+### EXEC
+**Syntax**: `EXEC`  
+**Description**: Executes a transaction block consists of multiple transactions.  
+**Since**: `0.2.0`  
+**Time complexity**: `O(1)`  
+**Permissions**: None  
+**Returns**: `OK`  
+**Behavior**:
++ If there is no started transaction block already, throws an error.
+
+---
+
 ### HELLO
 **Syntax**: `HELLO [protover]`  
 **Description**: Handshakes with the tellydb server.  
