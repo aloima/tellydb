@@ -203,14 +203,7 @@ void execute_transaction_block(struct TransactionBlock *block) {
   for (uint32_t i = 0; i < block->transaction_count; ++i) {
     struct Transaction transaction = block->transactions[i];
     struct Command *command = transaction.command;
-
-    struct CommandEntry entry = {
-      .client = client,
-      .data = &transaction.data,
-      .database = transaction.database,
-      .password = password,
-      .buffer = buffer
-    };
+    struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction.data, transaction.database, password, buffer);
 
     if ((password->permissions & command->permissions) != command->permissions) {
       WRITE_ERROR_MESSAGE(client, "No permissions to execute this command");

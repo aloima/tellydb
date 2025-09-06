@@ -18,6 +18,16 @@
     PASS_COMMAND(); \
   }
 
+#define CREATE_COMMAND_ENTRY(_client, _data, _database, _password, _buffer) ({\
+  (struct CommandEntry) {\
+    .client = (_client),\
+    .data = (_data),\
+    .database = (_database),\
+    .password = (_password),\
+    .buffer = (_buffer)\
+  };\
+})
+
 struct CommandIndex {
   const char *name;
   uint32_t idx;
