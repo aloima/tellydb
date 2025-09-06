@@ -39,6 +39,7 @@ void *transaction_thread(void *arg) {
     struct TransactionBlock *block = &blocks[at];
 
     if (!block->client) {
+      at += 1;
       pthread_mutex_unlock(&mutex);
       continue;
     }
@@ -48,13 +49,12 @@ void *transaction_thread(void *arg) {
       block = &blocks[_at];
 
       while (!block->client || block->client->waiting_block) {
+        if (block->transaction_count != 0 && streq(block->transactions[0].command.name, "EXEC")) {
+          break;
+        }
+
         _at = (_at + 1) % conf->max_transaction_blocks;
         block = &blocks[_at];
-      }
-
-      if (block->transaction_count == 0) {
-        pthread_mutex_unlock(&mutex);
-        continue;
       }
     } else {
       at = ((at + 1) % conf->max_transaction_blocks);
@@ -131,11 +131,11 @@ void release_queued_transaction_block(struct Client *client) {
   block_count += 1;
 }
 
-bool add_transaction(struct Client *client, struct Command *command, commanddata_t data) {
+bool add_transaction(struct Client *client, struct Command command, commanddata_t data) {
   struct Transaction *transaction;
   pthread_mutex_lock(&mutex);
 
-  if (client->waiting_block == NULL) {
+  if (client->waiting_block == NULL || streq(command.name, "EXEC")) {
     struct TransactionBlock *block = reserve_transaction_block(client, false);
 
     if (!block) {
@@ -199,22 +199,66 @@ void execute_transaction_block(struct TransactionBlock *block) {
   struct Client *client = block->client;
   struct Password *password = block->password;
 
-  for (uint32_t i = 0; i < block->transaction_count; ++i) {
-    struct Transaction transaction = block->transactions[i];
-    struct Command *command = transaction.command;
+  if (block->transaction_count == 1) {
+    struct Transaction transaction = block->transactions[0];
+    struct Command command = transaction.command;
     struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction.data, transaction.database, password, buffer);
 
-    if ((password->permissions & command->permissions) != command->permissions) {
+    if ((password->permissions & command.permissions) != command.permissions) {
       WRITE_ERROR_MESSAGE(client, "No permissions to execute this command");
       return;
     }
 
-    string_t response = command->run(entry);
+    string_t response = command.run(entry);
 
-    if (response.len == 0) {
+    if (response.len != 0) {
+      _write(client, response.value, response.len);
+    }
+
+    return;
+  }
+
+  string_t results[block->transaction_count];
+  uint64_t result_count = 0;
+  uint64_t length = 0;
+
+  for (uint32_t i = 0; i < block->transaction_count; ++i) {
+    struct Transaction transaction = block->transactions[i];
+    struct Command command = transaction.command;
+    struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction.data, transaction.database, password, buffer);
+
+    if ((password->permissions & command.permissions) != command.permissions) {
+      WRITE_ERROR_MESSAGE(client, "No permissions to execute this command");
+      return;
+    }
+
+    string_t result = command.run(entry);
+
+    if (result.len == 0) {
       continue;
     }
 
-    _write(client, response.value, response.len);
+    string_t *area = &results[result_count++];
+    area->value = malloc(result.len);
+    area->len = result.len;
+    memcpy(area->value, result.value, area->len);
+
+    length += area->len;
   }
+
+  size_t at = get_digit_count(result_count) + 3;
+  length += at;
+
+  char *response = malloc(length + 1);
+  sprintf(response, "*%" PRIu64 "\r\n", result_count);
+
+  for (uint64_t i = 0; i < result_count; ++i) {
+    string_t result = results[i];
+    memcpy(response + at, result.value, result.len);
+    at += result.len;
+    free(result.value);
+  }
+
+  _write(client, response, length);
+  free(response);
 }
