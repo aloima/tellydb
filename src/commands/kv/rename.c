@@ -4,13 +4,10 @@
 #include <string.h>
 #include <stdint.h>
 
-static void run(struct CommandEntry entry) {
+static string_t run(struct CommandEntry entry) {
   if (entry.data->arg_count != 2) {
-    if (entry.client) {
-      WRONG_ARGUMENT_ERROR(entry.client, "RENAME");
-    }
-
-    return;
+    PASS_NO_CLIENT(entry.client);
+    return WRONG_ARGUMENT_ERROR("RENAME");
   }
 
   const string_t search = entry.data->args[0];
@@ -26,8 +23,8 @@ static void run(struct CommandEntry entry) {
       const string_t new = entry.data->args[1];
 
       if (get_data(entry.database, new)) {
-        WRITE_ERROR_MESSAGE(entry.client, "The new key already exists");
-        return;
+        PASS_NO_CLIENT(entry.client);
+        return RESP_ERROR_MESSAGE("The new key already exists");
       }
 
       value->index = hash(new.value, new.len);
@@ -35,17 +32,13 @@ static void run(struct CommandEntry entry) {
       old->value = realloc(old->value, new.len);
       memcpy(old->value, new.value, new.len);
 
-      if (entry.client) {
-        WRITE_OK(entry.client);
-      }
-
-      return;
+      PASS_NO_CLIENT(entry.client);
+      return RESP_OK();
     }
   }
 
-  if (entry.client) {
-    WRITE_NULL_REPLY(entry.client);
-  }
+  PASS_NO_CLIENT(entry.client);
+  return RESP_NULL(entry.client->protover);
 }
 
 const struct Command cmd_rename = {

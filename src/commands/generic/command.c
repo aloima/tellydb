@@ -5,22 +5,24 @@
 #include <string.h>
 #include <stdlib.h>
 
-static void run(struct CommandEntry entry) {
-  if (!entry.client) return;
+static string_t run(struct CommandEntry entry) {
+  PASS_NO_CLIENT(entry.client);
+
   if (entry.data->arg_count == 0) {
-    MISSING_SUBCOMMAND_ERROR(entry.client, "COMMAND");
-    return;
+    return MISSING_SUBCOMMAND_ERROR("COMMAND");
   }
 
   const string_t input = entry.data->args[0];
   char *subcommand = malloc(input.len + 1);
   to_uppercase(input.value, subcommand);
 
+  string_t response;
+
   if (streq("DOCS", subcommand)) {
     const struct Command *commands = get_commands();
     const uint32_t command_count = get_command_count();
 
-    char res[16384];
+    char *res = entry.buffer;
     uint32_t res_len;
 
     switch (entry.client->protover) {
@@ -88,12 +90,12 @@ static void run(struct CommandEntry entry) {
         res_len = 0;
     }
 
-    _write(entry.client, res, res_len);
+    response = CREATE_STRING(res, res_len);
   } else if (streq("LIST", subcommand)) {
     const struct Command *commands = get_commands();
     const uint32_t command_count = get_command_count();
 
-    char res[16384];
+    char *res = entry.buffer;
     uint32_t res_len = sprintf(res, "*%u\r\n", command_count);
 
     for (uint32_t i = 0; i < command_count; ++i) {
@@ -102,16 +104,16 @@ static void run(struct CommandEntry entry) {
       strcat(res, buf);
     }
 
-    _write(entry.client, res, res_len);
+    response = CREATE_STRING(res, res_len);
   } else if (streq("COUNT", subcommand)) {
-    char buf[14];
-    const size_t nbytes = sprintf(buf, ":%u\r\n", get_command_count());
-    _write(entry.client, buf, nbytes);
+    const size_t nbytes = sprintf(entry.buffer, ":%u\r\n", get_command_count());
+    response = CREATE_STRING(entry.buffer, nbytes);
   } else {
-    INVALID_SUBCOMMAND_ERROR(entry.client, "COMMAND");
+    response = INVALID_SUBCOMMAND_ERROR("COMMAND");
   }
 
   free(subcommand);
+  return response;
 }
 
 static struct Subcommand subcommands[] = {

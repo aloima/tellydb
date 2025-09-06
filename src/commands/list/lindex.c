@@ -50,25 +50,23 @@ static inline struct ListNode *get_node(const struct List *list, const uint32_t 
   return node;
 }
 
-static void run(struct CommandEntry entry) {
-  if (!entry.client) return;
+static string_t run(struct CommandEntry entry) {
+  PASS_NO_CLIENT(entry.client);
+
   if (entry.data->arg_count != 2) {
-    WRONG_ARGUMENT_ERROR(entry.client, "LINDEX");
-    return;
+    return WRONG_ARGUMENT_ERROR("LINDEX");
   }
 
   const struct KVPair *kv = get_data(entry.database, entry.data->args[0]);
 
   if (!kv || kv->type != TELLY_LIST) {
-    INVALID_TYPE_ERROR(entry.client, "LINDEX");
-    return;
+    return INVALID_TYPE_ERROR("LINDEX");
   }
 
   const char *index_str = entry.data->args[1].value;
 
   if (!is_integer(index_str)) {
-    WRITE_ERROR_MESSAGE(entry.client, "Second argument must be an integer");
-    return;
+    return RESP_ERROR_MESSAGE("Second argument must be an integer");
   }
 
   const struct List *list = kv->value;
@@ -78,8 +76,7 @@ static void run(struct CommandEntry entry) {
     const uint64_t index = strtoull(index_str, (char **) NULL, 10);
 
     if (index == ULLONG_MAX) {
-      WRITE_ERROR_MESSAGE(entry.client, "Index exceeded integer bounds");
-      return;
+      return RESP_ERROR_MESSAGE("Index exceeded integer bounds");
     }
 
     node = get_node(list, index, FORWARD);
@@ -87,16 +84,14 @@ static void run(struct CommandEntry entry) {
     const uint64_t index = strtoull(index_str + 1, (char **) NULL, 10);
 
     if (index == ULLONG_MAX) {
-      WRITE_ERROR_MESSAGE(entry.client, "Index exceeded integer bounds");
-      return;
+      return RESP_ERROR_MESSAGE("Index exceeded integer bounds");
     }
 
     node = get_node(list, index, BACKWARD);
   }
 
   if (!node) {
-    WRITE_NULL_REPLY(entry.client);
-    return;
+    return RESP_NULL(entry.client->protover);
   }
 
   write_value(entry.client, node->value, node->type);

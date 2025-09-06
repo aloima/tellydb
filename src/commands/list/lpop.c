@@ -2,13 +2,13 @@
 
 #include <stddef.h>
 
-static void run(struct CommandEntry entry) {
+static string_t run(struct CommandEntry entry) {
   if (entry.data->arg_count != 1) {
     if (entry.client) {
-      WRONG_ARGUMENT_ERROR(entry.client, "LPOP");
+      return WRONG_ARGUMENT_ERROR("LPOP");
     }
 
-    return;
+    return EMPTY_STRING();
   }
 
   const string_t key = entry.data->args[0];
@@ -16,22 +16,23 @@ static void run(struct CommandEntry entry) {
 
   if (!kv) {
     if (entry.client) {
-      WRITE_NULL_REPLY(entry.client);
+      return RESP_NULL(entry.client->protover);
     }
 
-    return;
+    return EMPTY_STRING();
   }
 
   if (kv->type != TELLY_LIST) {
     if (entry.client) {
-      INVALID_TYPE_ERROR(entry.client, "LPOP");
+      return INVALID_TYPE_ERROR("LPOP");
     }
 
-    return;
+    return EMPTY_STRING();
   }
 
   struct List *list = kv->value;
   struct ListNode *node = list->begin;
+  string_t response = EMPTY_STRING();
 
   if (entry.client) {
     write_value(entry.client, node->value, node->type);
@@ -46,6 +47,8 @@ static void run(struct CommandEntry entry) {
     list->size -= 1;
     free_listnode(node);
   }
+
+  return response;
 }
 
 const struct Command cmd_lpop = {

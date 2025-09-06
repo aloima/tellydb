@@ -3,11 +3,11 @@
 #include <stdint.h>
 #include <stddef.h>
 
-static void run(struct CommandEntry entry) {
-  if (!entry.client) return;
+static string_t run(struct CommandEntry entry) {
+  PASS_NO_CLIENT(entry.client);
+
   if (entry.data->arg_count != 1) {
-    WRITE_ERROR_MESSAGE(entry.client, "Invalid command usage");
-    return;
+    return WRONG_ARGUMENT_ERROR("SELECT");
   }
 
   struct LinkedListNode *node = get_database_node();
@@ -18,14 +18,13 @@ static void run(struct CommandEntry entry) {
 
     if (database->id == target) {
       entry.client->database = database;
-      WRITE_OK(entry.client);
-      return;
+      return RESP_OK();
     }
 
     node = node->next;
   }
 
-  WRITE_ERROR_MESSAGE(entry.client, "This database cannot be found");
+  return RESP_ERROR_MESSAGE("This database cannot be found");
 }
 
 const struct Command cmd_select = {

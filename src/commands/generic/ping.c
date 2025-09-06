@@ -1,30 +1,25 @@
-#include "resp.h"
 #include <telly.h>
 
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 
-static void run(struct CommandEntry entry) {
-  if (!entry.client) return;
+static string_t run(struct CommandEntry entry) {
+  PASS_NO_CLIENT(entry.client);
+
   switch (entry.data->arg_count) {
     case 0:
-      _write(entry.client, "+PONG\r\n", 7);
-      break;
+      return RESP_OK_MESSAGE("PONG");
 
     case 1: {
       const string_t arg = entry.data->args[0];
 
-      char *buf = malloc(26 + arg.len);
-      const size_t nbytes = create_resp_string(buf, arg);
-      _write(entry.client, buf, nbytes);
-      free(buf);
-
-      break;
+      const size_t nbytes = create_resp_string(entry.buffer, arg);
+      return CREATE_STRING(entry.buffer, nbytes);
     }
 
     default:
-      WRONG_ARGUMENT_ERROR(entry.client, "PING");
+      return WRONG_ARGUMENT_ERROR("PING");
   }
 }
 

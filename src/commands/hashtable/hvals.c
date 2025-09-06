@@ -1,7 +1,6 @@
 #include <telly.h>
 
 #include <string.h>
-#include <stdlib.h>
 #include <stdint.h>
 
 static const uint64_t calculate_length(const enum ProtocolVersion protover, const struct HashTable *table) {
@@ -84,28 +83,26 @@ static const uint64_t calculate_length(const enum ProtocolVersion protover, cons
 }
 
 
-static void run(struct CommandEntry entry) {
-  if (!entry.client) return;
+static string_t run(struct CommandEntry entry) {
+  PASS_NO_CLIENT(entry.client);
+
   if (entry.data->arg_count != 1) {
-    WRONG_ARGUMENT_ERROR(entry.client, "HVALS");
-    return;
+    return WRONG_ARGUMENT_ERROR("HVALS");
   }
 
   const struct KVPair *kv = get_data(entry.database, entry.data->args[0]);
 
   if (!kv) {
-    _write(entry.client, "*0\r\n", 4);
-    return;
+    return CREATE_STRING("*0\r\n", 4);
   }
 
   if (kv->type != TELLY_HASHTABLE) {
-    INVALID_TYPE_ERROR(entry.client, "HVALS");
-    return;
+    return INVALID_TYPE_ERROR("HVALS");
   }
 
   const struct HashTable *table = kv->value;
   const uint64_t length = calculate_length(entry.client->protover, table);
-  char *response = malloc(length);
+  char *response = entry.buffer;
 
   response[0] = '*';
   uint64_t at = ltoa(table->size.used, response + 1) + 1;
@@ -191,8 +188,7 @@ static void run(struct CommandEntry entry) {
     }
   }
 
-  _write(entry.client, response, length);
-  free(response);
+  return CREATE_STRING(response, at);
 }
 
 const struct Command cmd_hvals = {

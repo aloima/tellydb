@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-static void lpush_to_list(struct List *list, void *value, enum TellyTypes type) {
+static void inline lpush_to_list(struct List *list, void *value, enum TellyTypes type) {
   struct ListNode *node = create_listnode(value, type);
   node->next = list->begin;
   list->begin = node;
@@ -18,13 +18,10 @@ static void lpush_to_list(struct List *list, void *value, enum TellyTypes type) 
   }
 }
 
-static void run(struct CommandEntry entry) {
+static string_t run(struct CommandEntry entry) {
   if (entry.data->arg_count < 2) {
-    if (entry.client) {
-      WRONG_ARGUMENT_ERROR(entry.client, "LPUSH");
-    }
-
-    return;
+    PASS_NO_CLIENT(entry.client);
+    return WRONG_ARGUMENT_ERROR("LPUSH");
   }
 
   const string_t key = entry.data->args[0];
@@ -33,11 +30,8 @@ static void run(struct CommandEntry entry) {
 
   if (kv) {
     if (kv->type != TELLY_LIST) {
-      if (entry.client) {
-        INVALID_TYPE_ERROR(entry.client, "LPUSH");
-      }
-
-      return;
+      PASS_NO_CLIENT(entry.client);
+      return INVALID_TYPE_ERROR("LPUSH");
     }
 
     list = kv->value;
@@ -75,11 +69,9 @@ static void run(struct CommandEntry entry) {
     }
   }
 
-  if (entry.client) {
-    char buf[14];
-    const size_t nbytes = sprintf(buf, ":%u\r\n", entry.data->arg_count - 1);
-    _write(entry.client, buf, nbytes);
-  }
+  PASS_NO_CLIENT(entry.client);
+  const size_t nbytes = sprintf(entry.buffer, ":%u\r\n", entry.data->arg_count - 1);
+  return CREATE_STRING(entry.buffer, nbytes);
 }
 
 const struct Command cmd_lpush = {

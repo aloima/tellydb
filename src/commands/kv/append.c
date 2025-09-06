@@ -4,13 +4,10 @@
 #include <string.h>
 #include <stdlib.h>
 
-static void run(struct CommandEntry entry) {
+static string_t run(struct CommandEntry entry) {
   if (entry.data->arg_count != 2) {
-    if (entry.client) {
-      WRONG_ARGUMENT_ERROR(entry.client, "APPEND");
-    }
-
-    return;
+    PASS_NO_CLIENT(entry.client);
+    return WRONG_ARGUMENT_ERROR("APPEND");
   }
 
   const string_t key = entry.data->args[0];
@@ -18,11 +15,8 @@ static void run(struct CommandEntry entry) {
 
   if (kv) {
     if (kv->type != TELLY_STR) {
-      if (entry.client) {
-        INVALID_TYPE_ERROR(entry.client, "APPEND");
-      }
-
-      return;
+      PASS_NO_CLIENT(entry.client);
+      return INVALID_TYPE_ERROR("APPEND");
     }
 
     const string_t arg = entry.data->args[1];
@@ -32,11 +26,9 @@ static void run(struct CommandEntry entry) {
     memcpy(string->value + string->len, arg.value, arg.len);
     string->len += arg.len;
 
-    if (entry.client) {
-      char buf[14];
-      const size_t nbytes = sprintf(buf, ":%u\r\n", string->len);
-      _write(entry.client, buf, nbytes);
-    }
+    PASS_NO_CLIENT(entry.client);
+    const size_t nbytes = sprintf(entry.buffer, ":%u\r\n", string->len);
+    return CREATE_STRING(entry.buffer, nbytes);
   } else {
     const string_t arg = entry.data->args[1];
 
@@ -46,11 +38,9 @@ static void run(struct CommandEntry entry) {
     memcpy(string->value, arg.value, string->len);
     set_data(entry.database, NULL, key, string, TELLY_STR);
 
-    if (entry.client) {
-      char buf[14];
-      const size_t nbytes = sprintf(buf, ":%u\r\n", string->len);
-      _write(entry.client, buf, nbytes);
-    }
+    PASS_NO_CLIENT(entry.client);
+    const size_t nbytes = sprintf(entry.buffer, ":%u\r\n", string->len);
+    return CREATE_STRING(entry.buffer, nbytes);
   }
 }
 

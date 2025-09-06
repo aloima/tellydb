@@ -20,6 +20,7 @@ struct Configuration *conf;
 pthread_t thread;
 pthread_cond_t cond;
 pthread_mutex_t mutex;
+char *buffer;
 
 void *transaction_thread(void *arg) {
   sigset_t set;
@@ -90,6 +91,7 @@ void deactive_transaction_thread() {
     pthread_cancel(thread);
     pthread_cond_destroy(&cond);
     pthread_mutex_destroy(&mutex);
+    free(buffer);
     return;
   }
 }
@@ -97,6 +99,7 @@ void deactive_transaction_thread() {
 void create_transaction_thread(struct Configuration *config) {
   conf = config;
   blocks = calloc(conf->max_transaction_blocks, sizeof(struct TransactionBlock));
+  buffer = malloc(MAX_RESPONSE_SIZE);
 
   pthread_mutex_init(&mutex, NULL);
   pthread_cond_init(&cond, NULL);
@@ -205,7 +208,8 @@ void execute_transaction_block(struct TransactionBlock *block) {
       .client = client,
       .data = &transaction.data,
       .database = transaction.database,
-      .password = password
+      .password = password,
+      .buffer = buffer
     };
 
     if ((password->permissions & command->permissions) != command->permissions) {
@@ -213,6 +217,12 @@ void execute_transaction_block(struct TransactionBlock *block) {
       return;
     }
 
-    command->run(entry);
+    string_t response = command->run(entry);
+
+    if (response.len == 0) {
+      continue;
+    }
+
+    _write(client, response.value, response.len);
   }
 }

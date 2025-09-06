@@ -4,11 +4,11 @@
 #include <string.h>
 #include <stdint.h>
 
-static void run(struct CommandEntry entry) {
-  if (!entry.client) return;
+static string_t run(struct CommandEntry entry) {
+  PASS_NO_CLIENT(entry.client);
+
   if (entry.data->arg_count == 0) {
-    WRONG_ARGUMENT_ERROR(entry.client, "EXISTS");
-    return;
+    return WRONG_ARGUMENT_ERROR("EXISTS");
   }
 
   uint32_t existed = 0, not_existed = 0;
@@ -28,15 +28,15 @@ static void run(struct CommandEntry entry) {
     }
   }
 
-  char res[85 + (existed * 9) + (not_existed * 12)];
-  const size_t nbytes = sprintf(res, (
+  // calculated length: 85 + (existed * 9) + (not_existed * 12)
+  const size_t nbytes = sprintf(entry.buffer, (
     "*%u\r\n"
       "+existed key count is %u\r\n"
       "+not existed key count is %u\r\n"
       "%s"
   ), entry.data->arg_count + 2, existed, not_existed, buf);
 
-  _write(entry.client, res, nbytes);
+  return CREATE_STRING(entry.buffer, nbytes);
 }
 
 const struct Command cmd_exists = {

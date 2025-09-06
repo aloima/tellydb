@@ -3,22 +3,20 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-static void run(struct CommandEntry entry) {
-  if (!entry.client) return;
+static string_t run(struct CommandEntry entry) {
+  PASS_NO_CLIENT(entry.client);
 
   if (entry.client->waiting_block) {
-    WRITE_ERROR_MESSAGE(entry.client, "Already started a transaction block, cannot create one without executing before");
-    return;
+    return RESP_ERROR_MESSAGE("Already started a transaction block, cannot create one without executing before");
   }
 
   entry.client->waiting_block = reserve_transaction_block(entry.client, true);
 
   if (!entry.client->waiting_block) {
-    WRITE_ERROR_MESSAGE(entry.client, "Cannot create a transaction block because of configuration limit");
-    return;
+    return RESP_ERROR_MESSAGE("Cannot create a transaction block because of configuration limit");
   }
 
-  WRITE_OK(entry.client);
+  return RESP_OK();
 }
 
 const struct Command cmd_multi = {

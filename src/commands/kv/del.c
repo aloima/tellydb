@@ -3,13 +3,10 @@
 #include <stdio.h>
 #include <stdint.h>
 
-static void run(struct CommandEntry entry) {
+static string_t run(struct CommandEntry entry) {
   if (entry.data->arg_count == 0) {
-    if (entry.client) {
-      WRONG_ARGUMENT_ERROR(entry.client, "DEL");
-    }
-
-    return;
+    PASS_NO_CLIENT(entry.client);
+    return WRONG_ARGUMENT_ERROR("DEL");
   }
 
   uint32_t deleted = 0;
@@ -18,12 +15,9 @@ static void run(struct CommandEntry entry) {
     deleted += delete_data(entry.database, entry.data->args[i]);
   }
 
-  if (entry.client) {
-    char res[13];
-    const size_t res_len = sprintf(res, ":%u\r\n", deleted);
-
-    _write(entry.client, res, res_len);
-  }
+  PASS_NO_CLIENT(entry.client);
+  const size_t res_len = sprintf(entry.buffer, ":%u\r\n", deleted);
+  return CREATE_STRING(entry.buffer, res_len);
 }
 
 const struct Command cmd_del = {
