@@ -126,6 +126,11 @@ struct TransactionBlock *reserve_transaction_block(struct Client *client, bool a
   return block;
 }
 
+void release_queued_transaction_block(struct Client *client) {
+  client->waiting_block = NULL;
+  block_count += 1;
+}
+
 bool add_transaction(struct Client *client, struct Command *command, commanddata_t data) {
   struct Transaction *transaction;
   pthread_mutex_lock(&mutex);

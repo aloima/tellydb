@@ -1,5 +1,6 @@
 #pragma once
 
+#include "commands/_commands.h"
 #include "database/database.h"
 #include "server/server.h"
 #include "config.h"
@@ -29,6 +30,7 @@ void deactive_transaction_thread();
 
 uint64_t get_processed_transaction_count();
 uint32_t get_transaction_count();
+void release_queued_transaction_block(struct Client *client);
 bool add_transaction(struct Client *client, struct Command *command, commanddata_t data);
 struct TransactionBlock *reserve_transaction_block(struct Client *client, bool as_queued);
 void remove_transaction_block(struct TransactionBlock *block);
