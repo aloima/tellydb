@@ -6,13 +6,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-static void run(struct CommandEntry entry) {
+static string_t run(struct CommandEntry entry) {
   if (entry.data->arg_count == 1 || (entry.data->arg_count - 1) % 2 != 0) {
-    if (entry.client) {
-      WRONG_ARGUMENT_ERROR(entry.client, "HSET");
-    }
-
-    return;
+    PASS_NO_CLIENT(entry.client);
+    return WRONG_ARGUMENT_ERROR("HSET");
   }
 
   const string_t key = entry.data->args[0];
@@ -23,11 +20,8 @@ static void run(struct CommandEntry entry) {
     if (kv->type == TELLY_HASHTABLE) {
       table = kv->value;
     } else {
-      if (entry.client) {
-        INVALID_TYPE_ERROR(entry.client, "HSET");
-      }
-
-      return;
+      PASS_NO_CLIENT(entry.client);
+      return INVALID_TYPE_ERROR("HSET");
     }
   } else {
     table = create_hashtable(16);
@@ -66,12 +60,9 @@ static void run(struct CommandEntry entry) {
     }
   }
 
-  if (entry.client) {
-    char buf[14];
-    const size_t buf_len = create_resp_integer(buf, fv_count);
-
-    _write(entry.client, buf, buf_len);
-  }
+  PASS_NO_CLIENT(entry.client)
+  const size_t buf_len = create_resp_integer(entry.buffer, fv_count);
+  return CREATE_STRING(entry.buffer, buf_len);
 }
 
 const struct Command cmd_hset = {

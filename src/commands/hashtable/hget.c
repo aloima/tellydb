@@ -2,31 +2,29 @@
 
 #include <stddef.h>
 
-static void run(struct CommandEntry entry) {
-  if (!entry.client) return;
+static string_t run(struct CommandEntry entry) {
+  PASS_NO_CLIENT(entry.client);
+
   if (entry.data->arg_count != 2) {
-    WRONG_ARGUMENT_ERROR(entry.client, "HGET");
-    return;
+    return WRONG_ARGUMENT_ERROR("HGET");
   }
 
   const struct KVPair *kv = get_data(entry.database, entry.data->args[0]);
 
   if (!kv) {
-    WRITE_NULL_REPLY(entry.client);
-    return;
+    return RESP_NULL(entry.client->protover);
   }
 
   if (kv->type != TELLY_HASHTABLE) {
-    INVALID_TYPE_ERROR(entry.client, "HGET");
-    return;
+    return INVALID_TYPE_ERROR("HGET");
   }
 
   const struct HashTableField *field = get_field_from_hashtable(kv->value, entry.data->args[1]);
 
   if (field) {
-    write_value(entry.client, field->value, field->type);
+    return write_value(field->value, field->type, entry.client->protover, entry.buffer);
   } else {
-    WRITE_NULL_REPLY(entry.client);
+    return RESP_NULL(entry.client->protover);
   }
 }
 

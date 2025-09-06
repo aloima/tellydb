@@ -1,10 +1,10 @@
 #include <telly.h>
 
 #include <stdio.h>
-#include <stdint.h>
 #include <stdlib.h>
+#include <stdint.h>
 
-static uint8_t read_permissions_value(struct Client *client, const char *value) {
+static inline uint8_t read_permissions_value(struct CommandEntry entry, const char *value) {
   uint8_t permissions = 0;
   char *cval = (char *) value;
   char c;
@@ -36,11 +36,8 @@ static uint8_t read_permissions_value(struct Client *client, const char *value) 
         break;
 
       default: {
-        char buf[27];
-        sprintf(buf, "-Invalid permission: '%c'\r\n", c);
-
-        if (client) _write(client, buf, 26);
-        return 0;
+        const size_t nbytes = sprintf(entry.buffer, "-Invalid permission: '%c'\r\n", c);
+        return -1;
       }
     }
 
@@ -50,126 +47,115 @@ static uint8_t read_permissions_value(struct Client *client, const char *value) 
   return permissions;
 }
 
-static void add_pwd(struct CommandEntry entry) {
+static inline string_t add_pwd(struct CommandEntry entry) {
   if (entry.data->arg_count != 3) {
-    if (entry.client) {
-      WRONG_ARGUMENT_ERROR(entry.client, "PWD ADD");
-    }
-
-    return;
+    PASS_NO_CLIENT(entry.client);
+    return WRONG_ARGUMENT_ERROR("PWD ADD");
   }
 
   const uint8_t all = get_full_password()->permissions;
   const string_t data = entry.data->args[1];
   const char *value = entry.data->args[2].value;
-  const uint8_t permissions = (streq(value, "all") ? all : read_permissions_value(entry.client, value));
+  const uint8_t permissions = (streq(value, "all") ? all : read_permissions_value(entry, value));
   const uint8_t not_have = ~entry.password->permissions & permissions;
 
   if (not_have) {
-    if (entry.client) {
-      WRITE_ERROR_MESSAGE(entry.client, "Tried to give permissions your password do not have");
-    }
-
-    return;
+    PASS_NO_CLIENT(entry.client);
+    return RESP_ERROR_MESSAGE("Tried to give permissions your password do not have");
   }
 
   if (where_password(data.value, data.len) == -1) {
     add_password(entry.client, data, permissions);
-    if (entry.client) WRITE_OK(entry.client);
-    return;
+
+    PASS_NO_CLIENT(entry.client);
+    return RESP_OK();
   }
 
-  WRITE_ERROR_MESSAGE(entry.client, "This password already exists");
+  return RESP_ERROR_MESSAGE("This password already exists");
 }
 
-static void edit_pwd(struct CommandEntry entry) {
+static inline string_t edit_pwd(struct CommandEntry entry) {
   if (entry.data->arg_count != 3) {
-    if (entry.client) {
-      WRONG_ARGUMENT_ERROR(entry.client, "PWD EDIT");
-    }
-
-    return;
+    PASS_NO_CLIENT(entry.client);
+    return WRONG_ARGUMENT_ERROR("PWD EDIT");
   }
 
   const string_t input = entry.data->args[1];
   const char *value = entry.data->args[2].value;
 
   struct Password *target = get_password(input.value, input.len);
-  if (!target) {
-    if (entry.client) {
-      WRITE_ERROR_MESSAGE(entry.client, "This password does not exist");
-    }
 
-    return;
+  if (!target) {
+    PASS_NO_CLIENT(entry.client);
+    return RESP_ERROR_MESSAGE("This password does not exist");
   }
 
-  const uint8_t permissions = read_permissions_value(entry.client, value);
+  const uint8_t permissions = read_permissions_value(entry, value);
   const uint8_t not_have = ~entry.password->permissions & permissions;
 
   if (not_have) {
-    if (entry.client) {
-      WRITE_ERROR_MESSAGE(entry.client, "Tried to give permissions your password do not have");
-    }
-
-    return;
+    PASS_NO_CLIENT(entry.client);
+    return RESP_ERROR_MESSAGE("Tried to give permissions your password do not have");
   }
 
   target->permissions = permissions;
-  if (entry.client) WRITE_OK(entry.client);
+
+  PASS_NO_CLIENT(entry.client);
+  return RESP_OK();
 }
 
-static void remove_pwd(struct CommandEntry entry) {
+static inline string_t remove_pwd(struct CommandEntry entry) {
   if (entry.data->arg_count != 2) {
-    if (entry.client) {
-      WRONG_ARGUMENT_ERROR(entry.client, "PWD REMOVE");
-    }
-
-    return;
+    PASS_NO_CLIENT(entry.client);
+    return WRONG_ARGUMENT_ERROR("PWD REMOVE");
   }
 
   const string_t input = entry.data->args[1];
 
   if (remove_password(entry.client, input.value, input.len) && entry.client) {
-    WRITE_OK(entry.client);
-  } else if (entry.client) {
-    WRITE_ERROR_MESSAGE(entry.client, "This password cannot be found");
+    PASS_NO_CLIENT(entry.client);
+    return RESP_OK();
   }
+
+  PASS_NO_CLIENT(entry.client);
+  return RESP_ERROR_MESSAGE("This password cannot be found");
 }
 
-static void run(struct CommandEntry entry) {
-  if (entry.data->arg_count == 0) {
-    if (entry.client) {
-      MISSING_SUBCOMMAND_ERROR(entry.client, "PWD");
-    }
+static inline string_t generate_pwd(struct CommandEntry entry) {
+  PASS_NO_CLIENT(entry.client);
 
-    return;
+  char value[33];
+  generate_random_string(value, 32);
+
+  sprintf(entry.buffer, "$32\r\n%s\r\n", value);
+  return CREATE_STRING(entry.buffer, 39);
+}
+
+static string_t run(struct CommandEntry entry) {
+  if (entry.data->arg_count == 0) {
+    PASS_NO_CLIENT(entry.client);
+    return MISSING_SUBCOMMAND_ERROR("PWD");
   }
 
   const string_t subcommand_string = entry.data->args[0];
   char *subcommand = malloc(subcommand_string.len + 1);
   to_uppercase(subcommand_string.value, subcommand);
 
+  string_t response;
+
   if (streq(subcommand, "ADD")) {
-    add_pwd(entry);
+    response = add_pwd(entry);
   } else if (streq(subcommand, "EDIT")) {
-    edit_pwd(entry);
+    response = edit_pwd(entry);
   } else if (streq(subcommand, "REMOVE")) {
-    remove_pwd(entry);
+    response = remove_pwd(entry);
   } else if (streq(subcommand, "GENERATE")) {
-    if (!entry.client) return;
-
-    char value[33];
-    generate_random_string(value, 32);
-
-    char buf[41];
-    sprintf(buf, "$32\r\n%s\r\n", value);
-
-    _write(entry.client, buf, 39);
-  } else if (entry.client) {
-    INVALID_SUBCOMMAND_ERROR(entry.client, "PWD");
+    response = generate_pwd(entry);
   }
 
   free(subcommand);
+  PASS_NO_CLIENT(entry.client);
+  return INVALID_SUBCOMMAND_ERROR("PWD");
 }
 
 static struct Subcommand subcommands[] = {

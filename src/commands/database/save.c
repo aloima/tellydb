@@ -3,18 +3,20 @@
 #include <stdint.h>
 #include <time.h>
 
-static void run(struct CommandEntry entry) {
+static string_t run(struct CommandEntry entry) {
   uint32_t server_age;
   time_t start_at;
   get_server_time(&start_at, &server_age);
   server_age += difftime(time(NULL), start_at);
 
-  if (entry.client) {
-    if (save_data(server_age)) {
-      WRITE_OK(entry.client);
-    } else {
-      WRITE_ERROR(entry.client);
-    }
+  if (!entry.client) {
+    return EMPTY_STRING();
+  }
+
+  if (save_data(server_age)) {
+    return RESP_OK();
+  } else {
+    return RESP_ERROR();
   }
 }
 

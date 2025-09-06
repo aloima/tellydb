@@ -15,4 +15,4 @@ void get_server_time(time_t *server_start_at, uint32_t *server_age);
 void start_server(struct Configuration *config);
 struct Configuration *get_server_configuration();
 
-void write_value(struct Client *client, void *value, enum TellyTypes type);
+string_t write_value(void *value, const enum TellyTypes type, const enum ProtocolVersion protover, char *buffer);

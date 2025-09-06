@@ -462,10 +462,15 @@ void start_server(struct Configuration *config) {
           struct Command command = commands[command_index->idx];
           client->command = &command;
 
-          if (!add_transaction(client, &command, data)) {
+          if (!add_transaction(client, command, data)) {
             free_command_data(data);
             WRITE_ERROR_MESSAGE(client, "Transaction cannot be enqueued because of server settings");
             write_log(LOG_WARN, "Transaction count reached their limit, so next transactions cannot be added.");
+            continue;
+          }
+
+          if (client->waiting_block && !streq(command.name, "EXEC") && !streq(command.name, "DISCARD") && !streq(command.name, "MULTI")) {
+            _write(client, "+QUEUED\r\n", 9);
           }
         }
       }

@@ -2,46 +2,40 @@
 
 #include <stddef.h>
 
-static void run(struct CommandEntry entry) {
-  if (!entry.client) return;
+static string_t run(struct CommandEntry entry) {
+  PASS_NO_CLIENT(entry.client);
+
   if (entry.data->arg_count != 2) {
-    WRONG_ARGUMENT_ERROR(entry.client, "HTYPE");
-    return;
+    return WRONG_ARGUMENT_ERROR("HTYPE");
   }
 
   const struct KVPair *kv = get_data(entry.database, entry.data->args[0]);
 
   if (!kv) {
-    WRITE_NULL_REPLY(entry.client);
-    return;
+    return RESP_NULL(entry.client->protover);
   }
 
   if (kv->type != TELLY_HASHTABLE) {
-    INVALID_TYPE_ERROR(entry.client, "HTYPE");
-    return;
+    return INVALID_TYPE_ERROR("HTYPE");
   }
 
   const struct HashTableField *field = get_field_from_hashtable(kv->value, entry.data->args[1]);
 
   switch (field->type) {
     case TELLY_NULL:
-      _write(entry.client, "+null\r\n", 7);
-      break;
+      return RESP_OK_MESSAGE("null");
 
     case TELLY_NUM:
-      _write(entry.client, "+number\r\n", 9);
-      break;
+      return RESP_OK_MESSAGE("number");
 
     case TELLY_STR:
-      _write(entry.client, "+string\r\n", 9);
-      break;
+      return RESP_OK_MESSAGE("string");
 
     case TELLY_BOOL:
-      _write(entry.client, "+boolean\r\n", 10);
-      break;
+      return RESP_OK_MESSAGE("boolean");
 
     default:
-      break;
+      PASS_COMMAND();
   }
 }
 

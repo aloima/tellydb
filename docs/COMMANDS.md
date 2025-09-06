@@ -223,6 +223,30 @@ The list of unwritten behavior to commands.
 
 ---
 
+### DISCARD
+**Syntax**: `DISCARD`  
+**Description**: Discards the current started transaction block.  
+**Since**: `0.2.0`  
+**Time complexity**: `O(1)`  
+**Permissions**: None  
+**Returns**: `OK`  
+**Behavior**:
++ If there is no started transaction block, throws an error.
+
+---
+
+### EXEC
+**Syntax**: `EXEC`  
+**Description**: Executes a transaction block consists of multiple transactions.  
+**Since**: `0.2.0`  
+**Time complexity**: `O(1)`  
+**Permissions**: None  
+**Returns**: `OK`  
+**Behavior**:
++ If there is no started transaction block, throws an error.
+
+---
+
 ### HELLO
 **Syntax**: `HELLO [protover]`  
 **Description**: Handshakes with the tellydb server.  
@@ -246,6 +270,18 @@ The list of unwritten behavior to commands.
 **Returns**: Information about the server and connection as string  
 **Behavior**:
 + Allowed section names are `server` and `clients`, if it is not specified, includes all of them in return value.
+
+---
+
+### MULTI
+**Syntax**: `MULTI`  
+**Description**: Creates a transaction block consists of multiple transactions.  
+**Since**: `0.2.0`  
+**Time complexity**: `O(1)`  
+**Permissions**: None  
+**Returns**: `OK`  
+**Behavior**:
++ If there is a started transaction block already, throws an error.
 
 ---
 

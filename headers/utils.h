@@ -7,7 +7,11 @@
 #include <stdbool.h>
 #include <time.h>
 
+#include <sys/syscall.h> // IWYU pragma: keep
+#include <unistd.h> // IWYU pragma: keep
+
 #define streq(s1, s2) (strcmp((s1), (s2)) == 0)
+#define IS_IN_PROCESS() (getpid() == syscall(SYS_gettid))
 
 void to_uppercase(char *in, char *out);
 
@@ -20,6 +24,9 @@ typedef struct String {
   char *value;
   uint32_t len;
 } string_t;
+
+#define EMPTY_STRING() ((string_t) {"", 0})
+#define CREATE_STRING(value, len) ((string_t) {value, len})
 
 enum TellyTypes {
   TELLY_NULL,

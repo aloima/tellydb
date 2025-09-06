@@ -2,35 +2,32 @@
 
 #include <stdio.h>
 
-static void run(struct CommandEntry entry) {
-  if (!entry.client) return;
+static string_t run(struct CommandEntry entry) {
+  PASS_NO_CLIENT(entry.client);
+
   if (entry.data->arg_count != 1) {
-    WRONG_ARGUMENT_ERROR(entry.client, "HLEN");
-    return;
+    return WRONG_ARGUMENT_ERROR("HLEN");
   }
 
   const struct KVPair *kv = get_data(entry.database, entry.data->args[0]);
 
   if (!kv) {
-    WRITE_NULL_REPLY(entry.client);
-    return;
+    return RESP_NULL(entry.client->protover);
   }
 
   if (kv->type != TELLY_HASHTABLE) {
-    INVALID_TYPE_ERROR(entry.client, "HLEN");
-    return;
+    return INVALID_TYPE_ERROR("HLEN");
   }
 
   const struct HashTable *table = kv->value;
 
-  char buf[90];
-  const size_t nbytes = sprintf(buf, (
+  const size_t nbytes = sprintf(entry.buffer, (
     "*3\r\n"
       "+Capacity: %u\r\n"
       "+Used: %u\r\n"
   ), table->size.capacity, table->size.used);
 
-  _write(entry.client, buf, nbytes);
+  return CREATE_STRING(entry.buffer, nbytes);
 }
 
 const struct Command cmd_hlen = {

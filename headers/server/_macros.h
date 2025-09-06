@@ -2,6 +2,7 @@
 
 #include "_client.h"
 #include "../resp.h"
+#include "../utils.h" // IWYU pragma: export
 
 #include <stddef.h>
 
@@ -28,6 +29,24 @@ static inline int _write(struct Client *client, char *buf, const size_t nbytes) 
       break;\
   }
 
-#define WRITE_OK(client)                     _write((client), RDT_SSTRING_SL "OK\r\n", 5)
-#define WRITE_ERROR(client)                  _write((client), RDT_ERR_SL "ERROR\r\n", 8)
+#define RESP_NULL(protover) ({\
+  string_t response;\
+  switch (protover) {\
+    case RESP2:\
+      response = CREATE_STRING("$-1\r\n", 5);\
+      break;\
+\
+    case RESP3:\
+      response = CREATE_STRING("_\r\n", 3);\
+      break;\
+  }\
+\
+  response;\
+})
+
+#define RESP_OK()                   CREATE_STRING(RDT_SSTRING_SL "OK\r\n",       5)
+#define RESP_OK_MESSAGE(message)    CREATE_STRING(RDT_SSTRING_SL message "\r\n", sizeof(message) + 2)
+#define RESP_ERROR()                CREATE_STRING(RDT_ERR_SL     "ERROR\r\n",    8)
+#define RESP_ERROR_MESSAGE(message) CREATE_STRING(RDT_ERR_SL     message "\r\n", sizeof(message) + 2)
+
 #define WRITE_ERROR_MESSAGE(client, message) _write((client), RDT_ERR_SL message "\r\n", sizeof(message) + 2)

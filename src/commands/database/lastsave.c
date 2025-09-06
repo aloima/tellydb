@@ -6,21 +6,21 @@
 
 #include <sys/stat.h>
 
-static void run(struct CommandEntry entry) {
-  if (!entry.client) return;
+static string_t run(struct CommandEntry entry) {
+  PASS_NO_CLIENT(entry.client);
+
   const struct Configuration *conf = get_server_configuration();
   struct stat res;
 
   if (stat(conf->data_file, &res) == -1) {
     write_log(LOG_ERR, "stat(): Cannot access database file");
-    return;
+    return EMPTY_STRING();
   }
 
   const uint64_t last_save = res.st_mtime;
-  char buf[24];
-  const size_t nbytes = sprintf(buf, ":%" PRIu64 "\r\n", last_save);
 
-  _write(entry.client, buf, nbytes);
+  const size_t nbytes = sprintf(entry.buffer, ":%" PRIu64 "\r\n", last_save);
+  return CREATE_STRING(entry.buffer, nbytes);
 }
 
 const struct Command cmd_lastsave = {

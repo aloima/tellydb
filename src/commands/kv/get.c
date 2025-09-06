@@ -2,17 +2,22 @@
 
 #include <stddef.h>
 
-static void run(struct CommandEntry entry) {
-  if (!entry.client) return;
+static string_t run(struct CommandEntry entry) {
+  PASS_NO_CLIENT(entry.client);
+
   if (entry.data->arg_count != 1) {
-    WRONG_ARGUMENT_ERROR(entry.client, "GET");
-    return;
+    return WRONG_ARGUMENT_ERROR("GET");
   }
 
   const struct KVPair *kv = get_data(entry.database, entry.data->args[0]);
 
-  if (kv) write_value(entry.client, kv->value, kv->type);
-  else WRITE_NULL_REPLY(entry.client);
+  if (kv) {
+    return write_value(kv->value, kv->type, entry.client->protover, entry.buffer);
+  } else {
+    return RESP_NULL(entry.client->protover);
+  }
+
+  PASS_COMMAND();
 }
 
 const struct Command cmd_get = {

@@ -9,10 +9,10 @@
 
 #include <pthread.h>
 
-struct Transaction *transactions;
+struct TransactionBlock *blocks;
 
 uint64_t processed_transaction_count = 0;
-uint32_t transaction_count = 0;
+uint32_t block_count = 0;
 uint32_t at = 0;
 uint32_t end = 0;
 struct Configuration *conf;
@@ -20,6 +20,7 @@ struct Configuration *conf;
 pthread_t thread;
 pthread_cond_t cond;
 pthread_mutex_t mutex;
+char *buffer;
 
 void *transaction_thread(void *arg) {
   sigset_t set;
@@ -30,12 +31,41 @@ void *transaction_thread(void *arg) {
 
   while (true) {
     pthread_mutex_lock(&mutex);
-    while (transaction_count == 0) pthread_cond_wait(&cond, &mutex);
 
-    struct Transaction *transaction = &transactions[at];
-    execute_command(transaction);
-    remove_transaction(transaction);
-    at = ((at + 1) % conf->max_transactions);
+    while (block_count == 0) {
+      pthread_cond_wait(&cond, &mutex);
+    }
+
+    struct TransactionBlock *block = &blocks[at];
+
+    if (!block->client) {
+      at += 1;
+      pthread_mutex_unlock(&mutex);
+      continue;
+    }
+
+    if (block->client->waiting_block) {
+      uint32_t _at = ((at + 1) % conf->max_transaction_blocks);
+      block = &blocks[_at];
+
+      while (!block->client || block->client->waiting_block) {
+        if (block->transaction_count != 0) {
+          const char *name = block->transactions[0].command.name;
+
+          if (streq(name, "EXEC") || streq(name, "DISCARD") || streq(name, "MULTI")) {
+            break;
+          }
+        }
+
+        _at = (_at + 1) % conf->max_transaction_blocks;
+        block = &blocks[_at];
+      }
+    } else {
+      at = ((at + 1) % conf->max_transaction_blocks);
+    }
+
+    execute_transaction_block(block);
+    remove_transaction_block(block, true);
 
     pthread_mutex_unlock(&mutex);
   }
@@ -44,6 +74,14 @@ void *transaction_thread(void *arg) {
 }
 
 uint32_t get_transaction_count() {
+  uint64_t transaction_count = 0;
+  uint32_t idx = at;
+
+  for (uint32_t i = 0; i < block_count; ++i) {
+    transaction_count += blocks[idx].transaction_count;
+    idx = ((idx + 1) % conf->max_transaction_blocks);
+  }
+
   return transaction_count;
 }
 
@@ -57,13 +95,15 @@ void deactive_transaction_thread() {
     pthread_cancel(thread);
     pthread_cond_destroy(&cond);
     pthread_mutex_destroy(&mutex);
+    free(buffer);
     return;
   }
 }
 
 void create_transaction_thread(struct Configuration *config) {
   conf = config;
-  transactions = calloc(conf->max_transactions, sizeof(struct Transaction));
+  blocks = calloc(conf->max_transaction_blocks, sizeof(struct TransactionBlock));
+  buffer = malloc(MAX_RESPONSE_SIZE);
 
   pthread_mutex_init(&mutex, NULL);
   pthread_cond_init(&cond, NULL);
@@ -71,21 +111,53 @@ void create_transaction_thread(struct Configuration *config) {
   pthread_detach(thread);
 }
 
-bool add_transaction(struct Client *client, struct Command *command, commanddata_t data) {
-  if (transaction_count == conf->max_transactions) {
-    return false;
+struct TransactionBlock *reserve_transaction_block(struct Client *client, bool as_queued) {
+  if (block_count == conf->max_transaction_blocks) {
+    return NULL;
   }
 
+  struct TransactionBlock *block = &blocks[end];
+  block->client = client;
+  block->password = client->password;
+  block->transactions = NULL;
+  block->transaction_count = 0;
+
+  if (!as_queued) {
+    block_count += 1;
+  }
+
+  end = ((end + 1) % conf->max_transaction_blocks);
+  return block;
+}
+
+void release_queued_transaction_block(struct Client *client) {
+  client->waiting_block = NULL;
+  block_count += 1;
+}
+
+bool add_transaction(struct Client *client, struct Command command, commanddata_t data) {
+  struct Transaction *transaction;
   pthread_mutex_lock(&mutex);
 
-  struct Transaction *transaction = &transactions[end];
-  transaction_count += 1;
-  end = ((end + 1) % conf->max_transactions);
+  if (client->waiting_block == NULL || streq(command.name, "EXEC") || streq(command.name, "DISCARD") || streq(command.name, "MULTI")) {
+    struct TransactionBlock *block = reserve_transaction_block(client, false);
 
-  transaction->client = client;
+    if (!block) {
+      return false;
+    }
+
+    block->transaction_count = 1;
+    block->transactions = malloc(sizeof(struct Transaction));
+    transaction = &block->transactions[0];
+  } else {
+    struct TransactionBlock *block = client->waiting_block;
+    block->transaction_count += 1;
+    block->transactions = realloc(block->transactions, sizeof(struct Transaction) * block->transaction_count);
+    transaction = &block->transactions[block->transaction_count - 1];
+  }
+
   transaction->command = command;
   transaction->data = data;
-  transaction->password = client->password;
   transaction->database = client->database;
 
   pthread_cond_signal(&cond);
@@ -95,21 +167,104 @@ bool add_transaction(struct Client *client, struct Command *command, commanddata
 }
 
 // Run by thread, no need mutex
-void remove_transaction(struct Transaction *transaction) {
-  transaction_count -= 1;
-  processed_transaction_count += 1;
-  free_command_data(transaction->data);
-  transaction->command = NULL;
+void remove_transaction_block(struct TransactionBlock *block, const bool processed) {
+  if (processed) {
+    block_count -= 1;
+    processed_transaction_count += block->transaction_count;
+  }
+
+  for (uint64_t i = 0; i < block->transaction_count; ++i) {
+    struct Transaction transaction = block->transactions[i];
+    free_command_data(transaction.data);
+  }
+
+  free(block->transactions);
+  block->client = NULL;
+  block->password = NULL;
+  block->transactions = NULL;
+  block->transaction_count = 0;
 }
 
 void free_transactions() {
-  for (uint32_t i = 0; i < conf->max_transactions; ++i) {
-    struct Transaction transaction = transactions[i];
+  uint32_t idx = at;
 
-    if (transaction.command) {
+  for (uint32_t i = 0; i < block_count; ++i) {
+    struct TransactionBlock block = blocks[idx];
+    idx = ((idx + 1) % conf->max_transaction_blocks);
+
+    for (uint32_t j = 0; i < block.transaction_count; ++j) {
+      struct Transaction transaction = block.transactions[j];
       free_command_data(transaction.data);
     }
   }
 
-  free(transactions);
+  free(blocks);
+}
+
+void execute_transaction_block(struct TransactionBlock *block) {
+  struct Client *client = block->client;
+  struct Password *password = block->password;
+
+  if (block->transaction_count == 1) {
+    struct Transaction transaction = block->transactions[0];
+    struct Command command = transaction.command;
+    struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction.data, transaction.database, password, buffer);
+
+    if ((password->permissions & command.permissions) != command.permissions) {
+      WRITE_ERROR_MESSAGE(client, "No permissions to execute this command");
+      return;
+    }
+
+    string_t response = command.run(entry);
+
+    if (response.len != 0) {
+      _write(client, response.value, response.len);
+    }
+
+    return;
+  }
+
+  string_t results[block->transaction_count];
+  uint64_t result_count = 0;
+  uint64_t length = 0;
+
+  for (uint32_t i = 0; i < block->transaction_count; ++i) {
+    struct Transaction transaction = block->transactions[i];
+    struct Command command = transaction.command;
+    struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction.data, transaction.database, password, buffer);
+
+    if ((password->permissions & command.permissions) != command.permissions) {
+      WRITE_ERROR_MESSAGE(client, "No permissions to execute this command");
+      return;
+    }
+
+    string_t result = command.run(entry);
+
+    if (result.len == 0) {
+      continue;
+    }
+
+    string_t *area = &results[result_count++];
+    area->value = malloc(result.len);
+    area->len = result.len;
+    memcpy(area->value, result.value, area->len);
+
+    length += area->len;
+  }
+
+  size_t at = get_digit_count(result_count) + 3;
+  length += at;
+
+  char *response = malloc(length + 1);
+  sprintf(response, "*%" PRIu64 "\r\n", result_count);
+
+  for (uint64_t i = 0; i < result_count; ++i) {
+    string_t result = results[i];
+    memcpy(response + at, result.value, result.len);
+    at += result.len;
+    free(result.value);
+  }
+
+  _write(client, response, length);
+  free(response);
 }

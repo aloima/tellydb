@@ -40,10 +40,10 @@ static bool get_section(char *section, const struct Configuration *conf, const c
       "Connected clients: %u\r\n"
       "Max clients: %u\r\n"
       "Transactions: %u\r\n"
-      "Max transactions: %u\r\n"
+      "Max transaction blocks: %u\r\n"
       "Total processed transactions: %" PRIu64 "\r\n"
       "Total received connections: %u\r\n"
-    ), get_client_count(), conf->max_clients, get_transaction_count(), conf->max_transactions, get_processed_transaction_count(), get_last_connection_client_id());
+    ), get_client_count(), conf->max_clients, get_transaction_count(), conf->max_transaction_blocks, get_processed_transaction_count(), get_last_connection_client_id());
   } else {
     return false;
   }
@@ -51,8 +51,9 @@ static bool get_section(char *section, const struct Configuration *conf, const c
   return true;
 }
 
-static void run(struct CommandEntry entry) {
-  if (!entry.client) return;
+static string_t run(struct CommandEntry entry) {
+  PASS_NO_CLIENT(entry.client);
+
   const struct Configuration *conf = get_server_configuration();
 
   char buf[8192], section[2048];
@@ -65,8 +66,7 @@ static void run(struct CommandEntry entry) {
       char *name = entry.data->args[i].value;
 
       if (!get_section(section, conf, name)) {
-        WRITE_ERROR_MESSAGE(entry.client, "Invalid section name");
-        return;
+        return RESP_ERROR_MESSAGE("Invalid section name");
       }
 
       strcat(buf, section);
@@ -76,8 +76,7 @@ static void run(struct CommandEntry entry) {
     const char *name = entry.data->args[n].value;
 
     if (!get_section(section, conf, name)) {
-      WRITE_ERROR_MESSAGE(entry.client, "Invalid section name");
-      return;
+      return RESP_ERROR_MESSAGE("Invalid section name");
     }
 
     strcat(buf, section);
@@ -89,8 +88,7 @@ static void run(struct CommandEntry entry) {
       const char *name = names[i];
 
       if (!get_section(section, conf, name)) {
-        WRITE_ERROR_MESSAGE(entry.client, "Invalid section name");
-        return;
+        return RESP_ERROR_MESSAGE("Invalid section name");
       }
 
       strcat(buf, section);
@@ -100,18 +98,16 @@ static void run(struct CommandEntry entry) {
     const char *name = names[n];
 
     if (!get_section(section, conf, name)) {
-      WRITE_ERROR_MESSAGE(entry.client, "Invalid section name");
-      return;
+      return RESP_ERROR_MESSAGE("Invalid section name");
     }
 
     strcat(buf, section);
   }
 
   const uint16_t buf_len = strlen(buf);
-  char res[buf_len + 11];
 
-  const size_t nbytes = sprintf(res, "$%hu\r\n%s\r\n", buf_len, buf);
-  _write(entry.client, res, nbytes);
+  const size_t nbytes = sprintf(entry.buffer, "$%hu\r\n%s\r\n", buf_len, buf);
+  return CREATE_STRING(entry.buffer, nbytes);
 }
 
 const struct Command cmd_info = {

@@ -3,13 +3,10 @@
 #include <stdio.h>
 #include <stdint.h>
 
-static void run(struct CommandEntry entry) {
+static string_t run(struct CommandEntry entry) {
   if (entry.data->arg_count < 2) {
-    if (entry.client) {
-      WRONG_ARGUMENT_ERROR(entry.client, "HDEL");
-    }
-
-    return;
+    PASS_NO_CLIENT(entry.client);
+    return WRONG_ARGUMENT_ERROR("HDEL");
   }
 
   const string_t key = entry.data->args[0];
@@ -20,43 +17,15 @@ static void run(struct CommandEntry entry) {
     if (kv->type == TELLY_HASHTABLE) {
       table = kv->value;
     } else {
-      if (entry.client) {
-        INVALID_TYPE_ERROR(entry.client, "HDEL");
-      }
-
-      return;
+      PASS_NO_CLIENT(entry.client);
+      return INVALID_TYPE_ERROR("HDEL");
     }
   } else {
-    if (entry.client) {
-      _write(entry.client, ":0\r\n", 4);
-    }
-
-    return;
+    PASS_NO_CLIENT(entry.client);
+    return CREATE_STRING(":0\r\n", 4);
   }
 
-  if (entry.client) {
-    if (!(entry.password->permissions & P_READ)) {
-      WRITE_ERROR_MESSAGE(entry.client, "Not allowed to use this command, need P_READ");
-      return;
-    }
-
-    const uint32_t old_size = table->size.used;
-
-    for (uint32_t i = 1; i < entry.data->arg_count; ++i) {
-      del_field_to_hashtable(table, entry.data->args[i]);
-    }
-
-    const uint32_t current_size = table->size.used;
-
-    if (table->size.used == 0) {
-      delete_data(entry.database, key);
-    }
-
-    char buf[14];
-
-    const size_t nbytes = sprintf(buf, ":%u\r\n", old_size - current_size);
-    _write(entry.client, buf, nbytes);
-  } else {
+  if (!entry.client) {
     for (uint32_t i = 1; i < entry.data->arg_count; ++i) {
       del_field_to_hashtable(table, entry.data->args[i]);
     }
@@ -64,7 +33,28 @@ static void run(struct CommandEntry entry) {
     if (table->size.used == 0) {
       delete_data(entry.database, key);
     }
+
+    PASS_COMMAND();
   }
+
+  if (!(entry.password->permissions & P_READ)) {
+    return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_READ");
+  }
+
+  const uint32_t old_size = table->size.used;
+
+  for (uint32_t i = 1; i < entry.data->arg_count; ++i) {
+    del_field_to_hashtable(table, entry.data->args[i]);
+  }
+
+  const uint32_t current_size = table->size.used;
+
+  if (table->size.used == 0) {
+    delete_data(entry.database, key);
+  }
+
+  const size_t nbytes = sprintf(entry.buffer, ":%u\r\n", old_size - current_size);
+  return CREATE_STRING(entry.buffer, nbytes);
 }
 
 const struct Command cmd_hdel = {

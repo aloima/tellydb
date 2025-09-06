@@ -5,14 +5,14 @@
 
 #include <sys/time.h>
 
-static void run(struct CommandEntry entry) {
-  if (!entry.client) return;
+static string_t run(struct CommandEntry entry) {
+  PASS_NO_CLIENT(entry.client);
+
   struct timeval timestamp;
   gettimeofday(&timestamp, NULL);
 
-  char buf[51];
-  const size_t nbytes = sprintf(buf, "*2\r\n:%ld\r\n:%ld\r\n", timestamp.tv_sec, timestamp.tv_usec);
-  _write(entry.client, buf, nbytes);
+  const size_t nbytes = sprintf(entry.buffer, "*2\r\n:%ld\r\n:%ld\r\n", timestamp.tv_sec, timestamp.tv_usec);
+  return CREATE_STRING(entry.buffer, nbytes);
 }
 
 const struct Command cmd_time = {

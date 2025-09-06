@@ -12,13 +12,10 @@ static void take_as_string(void **value, const string_t data) {
   memcpy(string->value, data.value, string->len);
 }
 
-static void run(struct CommandEntry entry) {
+static string_t run(struct CommandEntry entry) {
   if (entry.data->arg_count < 2) {
-    if (entry.client) {
-      WRONG_ARGUMENT_ERROR(entry.client, "SET");
-    }
-
-    return;
+    PASS_NO_CLIENT(entry.client);
+    return WRONG_ARGUMENT_ERROR("SET");
   }
 
   char *value_in = entry.data->args[1].value;
@@ -32,10 +29,13 @@ static void run(struct CommandEntry entry) {
     char *arg = malloc(input.len + 1);
     to_uppercase(input.value, arg);
 
-    if (streq(arg, "GET")) get = true;
-    else if (streq(arg, "NX")) nx = true;
-    else if (streq(arg, "XX")) xx = true;
-    else if (streq(arg, "AS")) {
+    if (streq(arg, "GET")) {
+      get = true;
+    } else if (streq(arg, "NX")) {
+      nx = true;
+    } else if (streq(arg, "XX")) {
+      xx = true;
+    } else if (streq(arg, "AS")) {
       as = true;
 
       if ((i + 1) < entry.data->arg_count) {
@@ -54,35 +54,28 @@ static void run(struct CommandEntry entry) {
         } else if (streq(type_name, "NULL")) {
           type = TELLY_NULL;
         } else {
-          if (entry.client) {
-            WRITE_ERROR_MESSAGE(entry.client, "'AS' argument must be followed by a valid type name for 'SET' command");
-          }
-
           free(arg);
           free(type_name);
-          return;
+
+          PASS_NO_CLIENT(entry.client);
+          return RESP_ERROR_MESSAGE("'AS' argument must be followed by a valid type name for 'SET' command");;
         }
 
         free(type_name);
       }
     } else {
-      if (entry.client) {
-        WRITE_ERROR_MESSAGE(entry.client, "Invalid argument(s) for 'SET' command");
-      }
-
       free(arg);
-      return;
+
+      PASS_NO_CLIENT(entry.client);
+      return RESP_ERROR_MESSAGE("Invalid argument(s) for 'SET' command");;
     }
 
     free(arg);
   }
 
   if (nx && xx) {
-    if (entry.client) {
-      WRITE_ERROR_MESSAGE(entry.client, "XX and NX arguments cannot be specified simultaneously for 'SET' command");
-    }
-
-    return;
+    PASS_NO_CLIENT(entry.client);
+    return RESP_ERROR_MESSAGE("XX and NX arguments cannot be specified simultaneously for 'SET' command");
   }
 
   const string_t key = entry.data->args[0];
@@ -90,25 +83,23 @@ static void run(struct CommandEntry entry) {
   struct KVPair *res = get_data(entry.database, key);
 
   if (nx && res) {
-    if (entry.client) WRITE_NULL_REPLY(entry.client);
-    return;
+    PASS_NO_CLIENT(entry.client);
+    return RESP_NULL(entry.client->protover);
   }
 
   if (xx && !res) {
-    if (entry.client) WRITE_NULL_REPLY(entry.client);
-    return;
+    PASS_NO_CLIENT(entry.client);
+    return RESP_NULL(entry.client->protover);
   }
 
-  bool is_true = streq(value_in, "true");
+  const bool is_true = streq(value_in, "true");
 
   if (is_integer(value_in)) {
-    if (!as) type = TELLY_NUM;
-    else if (type != TELLY_NUM && type != TELLY_STR) {
-      if (entry.client) {
-        WRITE_ERROR_MESSAGE(entry.client, "The type must be string or integer for this value");
-      }
-
-      return;
+    if (!as) {
+      type = TELLY_NUM;
+    } else if (type != TELLY_NUM && type != TELLY_STR) {
+      PASS_NO_CLIENT(entry.client);
+      return RESP_ERROR_MESSAGE("The type must be string or integer for this value");;
     }
 
     switch (type) {
@@ -128,13 +119,11 @@ static void run(struct CommandEntry entry) {
         break;
     }
   } else if (is_true || streq(value_in, "false")) {
-    if (!as) type = TELLY_BOOL;
-    else if (type != TELLY_BOOL && type != TELLY_STR) {
-      if (entry.client) {
-        WRITE_ERROR_MESSAGE(entry.client, "The type must be string or boolean for this value");
-      }
-
-      return;
+    if (!as) {
+      type = TELLY_BOOL;
+    } else if (type != TELLY_BOOL && type != TELLY_STR) {
+      PASS_NO_CLIENT(entry.client);
+      return RESP_ERROR_MESSAGE("The type must be string or boolean for this value");;
     }
 
     switch (type) {
@@ -153,13 +142,11 @@ static void run(struct CommandEntry entry) {
         break;
     }
   } else if (streq(value_in, "null")) {
-    if (!as) type = TELLY_NULL;
-    else if (type != TELLY_NULL && type != TELLY_STR) {
-      if (entry.client) {
-        WRITE_ERROR_MESSAGE(entry.client, "The type must be string or null for this value");
-      }
-
-      return;
+    if (!as) {
+      type = TELLY_NULL;
+    } else if (type != TELLY_NULL && type != TELLY_STR) {
+      PASS_NO_CLIENT(entry.client);
+      return RESP_ERROR_MESSAGE("The type must be string or null for this value");
     }
 
     switch (type) {
@@ -177,13 +164,11 @@ static void run(struct CommandEntry entry) {
         break;
     }
   } else {
-    if (!as) type = TELLY_STR;
-    else if (type != TELLY_STR) {
-      if (entry.client) {
-        WRITE_ERROR_MESSAGE(entry.client, "The type must be string fot this value");
-      }
-
-      return;
+    if (!as) {
+      type = TELLY_STR;
+    } else if (type != TELLY_STR) {
+      PASS_NO_CLIENT(entry.client);
+      return RESP_ERROR_MESSAGE("The type must be string fot this value");
     }
 
     take_as_string(&value, entry.data->args[1]);
@@ -191,20 +176,29 @@ static void run(struct CommandEntry entry) {
 
   if (get) {
     if (entry.password->permissions & P_READ) {
-      if (res) {
-        if (entry.client) write_value(entry.client, value, type);
-      } else if (entry.client) WRITE_NULL_REPLY(entry.client);
-
       set_data(entry.database, res, key, value, type);
+
+      if (res) {
+        if (entry.client) {
+          return write_value(value, type, entry.client->protover, entry.buffer);
+        }
+      }
+
+      PASS_NO_CLIENT(entry.client);
+      return RESP_NULL(entry.client->protover);
     } else {
-      WRITE_ERROR_MESSAGE(entry.client, "Not allowed to use this command, need P_READ");
+      PASS_NO_CLIENT(entry.client);
+      return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_READ");
     }
   } else {
     const bool success = set_data(entry.database, res, key, value, type);
-    if (!entry.client) return;
+    PASS_NO_CLIENT(entry.client);
 
-    if (success) WRITE_OK(entry.client);
-    else WRITE_ERROR(entry.client);
+    if (success) {
+      return RESP_OK();
+    } else {
+      return RESP_ERROR();
+    }
   }
 }
 

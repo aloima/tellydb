@@ -3,13 +3,13 @@
 #include <string.h>
 #include <stdint.h>
 
-static void run(struct CommandEntry entry) {
-  if (!entry.client) return;
+static string_t run(struct CommandEntry entry) {
+  PASS_NO_CLIENT(entry.client);
+
   const uint32_t arg_count = entry.data->arg_count;
 
   if (arg_count != 1) {
-    WRONG_ARGUMENT_ERROR(entry.client, "HELLO");
-    return;
+    return WRONG_ARGUMENT_ERROR("HELLO");
   }
 
   const char *protover = entry.data->args[0].value;
@@ -19,8 +19,7 @@ static void run(struct CommandEntry entry) {
   } else if (streq(protover, "3")) {
     entry.client->protover = RESP3;
   } else {
-    WRITE_ERROR_MESSAGE(entry.client, "Invalid protocol version");
-    return;
+    return RESP_ERROR_MESSAGE("Invalid protocol version");
   }
 
   char client_id[11];
@@ -41,18 +40,18 @@ static void run(struct CommandEntry entry) {
       break;
 
     default:
-      protocol = "";
-      protocol_len = 0;
+      protocol = "unknown";
+      protocol_len = 7;
   }
 
   string_t values[4][2] = {
-    {{"server", 6}, {"telly", 5}},
-    {{"version", 7}, {VERSION, sizeof(VERSION) - 1}},
-    {{"protocol", 8}, {protocol, protocol_len}},
+    {{"server",    6}, {"telly",   5}},
+    {{"version",   7}, {VERSION,   sizeof(VERSION) - 1}},
+    {{"protocol",  8}, {protocol,  protocol_len}},
     {{"client id", 9}, {client_id, client_id_len}}
   };
 
-  char buf[1024];
+  char *buf = entry.buffer;
   uint32_t at;
 
   switch (entry.client->protover) {
@@ -76,7 +75,7 @@ static void run(struct CommandEntry entry) {
   at += create_resp_string(buf + at, values[3][0]);
   at += create_resp_string(buf + at, values[3][1]);
 
-  _write(entry.client, buf, at);
+  return CREATE_STRING(buf, at);
 }
 
 const struct Command cmd_hello = {

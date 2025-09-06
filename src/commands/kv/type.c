@@ -2,47 +2,40 @@
 
 #include <stddef.h>
 
-static void run(struct CommandEntry entry) {
-  if (!entry.client) return;
+static string_t run(struct CommandEntry entry) {
+  PASS_NO_CLIENT(entry.client);
+
   if (entry.data->arg_count != 1) {
-    WRONG_ARGUMENT_ERROR(entry.client, "TYPE");
-    return;
+    return WRONG_ARGUMENT_ERROR("TYPE");
   }
 
   struct KVPair *res = get_data(entry.database, entry.data->args[0]);
 
   if (!res) {
-    WRITE_NULL_REPLY(entry.client);
-    return;
+    return RESP_NULL(entry.client->protover);
   }
 
   switch (res->type) {
     case TELLY_NULL:
-      _write(entry.client, "+null\r\n", 7);
-      break;
+      return RESP_OK_MESSAGE("null");
 
     case TELLY_NUM:
-      _write(entry.client, "+number\r\n", 9);
-      break;
+      return RESP_OK_MESSAGE("number");
 
     case TELLY_STR:
-      _write(entry.client, "+string\r\n", 9);
-      break;
+      return RESP_OK_MESSAGE("string");
 
     case TELLY_HASHTABLE:
-      _write(entry.client, "+hash table\r\n", 13);
-      break;
+      return RESP_OK_MESSAGE("hash table");
 
     case TELLY_LIST:
-      _write(entry.client, "+list\r\n", 7);
-      break;
+      return RESP_OK_MESSAGE("list");
 
     case TELLY_BOOL:
-      _write(entry.client, "+boolean\r\n", 10);
-      break;
+      return RESP_OK_MESSAGE("boolean");
 
     default:
-      break;
+      PASS_COMMAND();
   }
 }
 
