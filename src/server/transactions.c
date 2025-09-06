@@ -164,10 +164,7 @@ void remove_transaction_block(struct TransactionBlock *block) {
 
   for (uint32_t i = 0; i < block->transaction_count; ++i) {
     struct Transaction transaction = block->transactions[i];
-
-    if (transaction.command) {
-      free_command_data(transaction.data);
-    }
+    free_command_data(transaction.data);
   }
 
   free(block->transactions);
@@ -186,10 +183,7 @@ void free_transactions() {
 
     for (uint32_t j = 0; i < block.transaction_count; ++j) {
       struct Transaction transaction = block.transactions[j];
-
-      if (transaction.command) {
-        free_command_data(transaction.data);
-      }
+      free_command_data(transaction.data);
     }
   }
 
