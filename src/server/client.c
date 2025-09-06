@@ -165,6 +165,10 @@ void remove_client(const int connfd) {
         free(client->lib_ver);
       }
 
+      if (client->waiting_block) {
+        remove_transaction_block(client->waiting_block, false);
+      }
+
       free(client);
 
       if (client_count == 0) {
@@ -207,6 +211,10 @@ void remove_head_client() {
 
   if (client->lib_ver) {
     free(client->lib_ver);
+  }
+
+  if (client->waiting_block) {
+    remove_transaction_block(client->waiting_block, false);
   }
 
   free(client);
