@@ -62,15 +62,16 @@ struct Command *load_commands() {
 
   command_count = (sizeof(command_list) / sizeof(struct Command));
 
-  if (posix_memalign((void **) &commands, 32, sizeof(command_list)) == 0) {
-    for (int i = 0; i < command_count; ++i) {
-      struct Command command = command_list[i];
-      uint32_t index = get_command_index(command.name, strlen(command.name))->idx;
-
-      commands[index] = command;
-    }
-  } else {
+  if (posix_memalign((void **) &commands, 32, sizeof(command_list)) != 0) {
     write_log(LOG_ERR, "Cannot create commands, out of memory.");
+    return NULL;
+  }
+
+  for (int i = 0; i < command_count; ++i) {
+    struct Command command = command_list[i];
+    uint32_t index = get_command_index(command.name, strlen(command.name))->idx;
+
+    commands[index] = command;
   }
 
   return commands;
