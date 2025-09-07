@@ -18,17 +18,6 @@ static inline int _write(struct Client *client, char *buf, const size_t nbytes) 
   return (client->ssl ? SSL_write(client->ssl, buf, nbytes) : write(client->connfd, buf, nbytes));
 }
 
-#define WRITE_NULL_REPLY(client) \
-  switch ((client)->protover) {\
-    case RESP2:\
-      _write((client), "$-1\r\n", 5);\
-      break;\
-\
-    case RESP3:\
-      _write((client), "_\r\n", 3);\
-      break;\
-  }
-
 #define RESP_NULL(protover) ({\
   string_t response;\
   switch (protover) {\
