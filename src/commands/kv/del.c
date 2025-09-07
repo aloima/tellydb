@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <inttypes.h>
 
 static string_t run(struct CommandEntry entry) {
   if (entry.data->arg_count == 0) {
@@ -16,7 +17,7 @@ static string_t run(struct CommandEntry entry) {
   }
 
   PASS_NO_CLIENT(entry.client);
-  const size_t res_len = sprintf(entry.buffer, ":%u\r\n", deleted);
+  const size_t res_len = sprintf(entry.buffer, ":%" PRIu32 "\r\n", deleted);
   return CREATE_STRING(entry.buffer, res_len);
 }
 

@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <inttypes.h>
 
 static void inline lpush_to_list(struct List *list, void *value, enum TellyTypes type) {
   struct ListNode *node = create_listnode(value, type);
@@ -70,7 +71,7 @@ static string_t run(struct CommandEntry entry) {
   }
 
   PASS_NO_CLIENT(entry.client);
-  const size_t nbytes = sprintf(entry.buffer, ":%u\r\n", entry.data->arg_count - 1);
+  const size_t nbytes = sprintf(entry.buffer, ":%" PRIu32 "\r\n", entry.data->arg_count - 1);
   return CREATE_STRING(entry.buffer, nbytes);
 }
 

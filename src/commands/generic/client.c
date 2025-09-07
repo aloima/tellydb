@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <ctype.h>
 
 static inline string_t subcommand_id(struct Client *client, char *buffer) {
@@ -56,8 +57,8 @@ static inline string_t subcommand_info(struct Client *client, char *buffer) {
 
   char res[512];
   const size_t res_len = sprintf(res, (
-    "ID: %u\r\n"
-    "Socket file descriptor: %d\r\n"
+    "ID: %" PRIu32 "\r\n"
+    "Socket file descriptor: %" PRIi32 "\r\n"
     "Connected at: %.20s\r\n"
     "Last used command: %s\r\n"
     "Library name: %s\r\n"
@@ -80,7 +81,7 @@ static string_t subcommand_lock(struct CommandEntry entry) {
     return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_CLIENT");
   }
 
-  const long id = atol(entry.data->args[1].value);
+  const int64_t id = strtoll(entry.data->args[1].value, NULL, 10);
 
   if ((id > UINT32_MAX) || (id < 0)) {
     PASS_NO_CLIENT(entry.client);
@@ -91,17 +92,17 @@ static string_t subcommand_lock(struct CommandEntry entry) {
 
   if (!target) {
     PASS_NO_CLIENT(entry.client);
-    const size_t nbytes = sprintf(entry.buffer, "-There is no client whose ID is #%ld\r\n", id);
+    const size_t nbytes = sprintf(entry.buffer, "-There is no client whose ID is #%" PRIi64 "\r\n", id);
     return CREATE_STRING(entry.buffer, nbytes);
   }
 
   if (target->password->permissions & P_CLIENT) {
     PASS_NO_CLIENT(entry.client);
-    const size_t nbytes = sprintf(entry.buffer, "-Client #%ld has P_CLIENT, so cannot be locked\r\n", id);
+    const size_t nbytes = sprintf(entry.buffer, "-Client #%" PRIi64 " has P_CLIENT, so cannot be locked\r\n", id);
     return CREATE_STRING(entry.buffer, nbytes);
   } else if (target->locked) {
     PASS_NO_CLIENT(entry.client);
-    const size_t nbytes = sprintf(entry.buffer, "-Client #%ld is locked, so cannot be relocked\r\n", id);
+    const size_t nbytes = sprintf(entry.buffer, "-Client #%" PRIi64 " is locked, so cannot be relocked\r\n", id);
     return CREATE_STRING(entry.buffer, nbytes);
   }
 
@@ -155,7 +156,7 @@ static inline string_t subcommand_kill(struct CommandEntry entry) {
     return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_CLIENT");
   }
 
-  const long id = atol(entry.data->args[1].value);
+  const int64_t id = strtoll(entry.data->args[1].value, NULL, 10);
 
   if ((id > UINT32_MAX) || (id < 0)) {
     PASS_NO_CLIENT(entry.client);
@@ -166,13 +167,13 @@ static inline string_t subcommand_kill(struct CommandEntry entry) {
 
   if (!target) {
     PASS_NO_CLIENT(entry.client);
-    const size_t nbytes = sprintf(entry.buffer, "-There is no client whose ID is #%ld\r\n", id);
+    const size_t nbytes = sprintf(entry.buffer, "-There is no client whose ID is #%" PRIi64 "\r\n", id);
     return CREATE_STRING(entry.buffer, nbytes);;
   }
 
   if (target->password->permissions & P_CLIENT) {
     PASS_NO_CLIENT(entry.client);
-    const size_t nbytes = sprintf(entry.buffer, "-Client #%ld has P_CLIENT, so cannot be killed\r\n", id);
+    const size_t nbytes = sprintf(entry.buffer, "-Client #%" PRIi64 " has P_CLIENT, so cannot be killed\r\n", id);
     return CREATE_STRING(entry.buffer, nbytes);
   }
 
@@ -188,7 +189,7 @@ static inline string_t subcommand_unlock(struct CommandEntry entry) {
     return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_CLIENT");
   }
 
-  const long id = atol(entry.data->args[1].value);
+  const int64_t id = strtoll(entry.data->args[1].value, NULL, 10);
 
   if ((id > UINT32_MAX) || (id < 0)) {
     PASS_NO_CLIENT(entry.client);
@@ -199,13 +200,13 @@ static inline string_t subcommand_unlock(struct CommandEntry entry) {
 
   if (!target) {
     PASS_NO_CLIENT(entry.client);
-    const size_t nbytes = sprintf(entry.buffer, "-There is no client whose ID is #%ld\r\n", id);
+    const size_t nbytes = sprintf(entry.buffer, "-There is no client whose ID is #%" PRIi64 "\r\n", id);
     return CREATE_STRING(entry.buffer, nbytes);
   }
 
   if (!target->locked) {
     PASS_NO_CLIENT(entry.client);
-    const size_t nbytes = sprintf(entry.buffer, "-Client #%ld is not locked, so cannot be unlocked\r\n", id);
+    const size_t nbytes = sprintf(entry.buffer, "-Client #%" PRIi64 " is not locked, so cannot be unlocked\r\n", id);
     return CREATE_STRING(entry.buffer, nbytes);
   }
 

@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <inttypes.h>
 #include <time.h>
 
 #include <fcntl.h>
@@ -79,7 +80,7 @@ void terminate_connection(const int connfd) {
 
 #ifdef __linux__
   if (epoll_ctl(epfd, EPOLL_CTL_DEL, connfd, NULL) == -1) {
-    write_log(LOG_ERR, "Cannot remove Client #%u from multiplexing.", client->id);
+    write_log(LOG_ERR, "Cannot remove Client #%" PRIu32 " from multiplexing.", client->id);
     return;
   }
 #elif __APPLE__
@@ -91,7 +92,7 @@ void terminate_connection(const int connfd) {
   }
 #endif
 
-  write_log(LOG_INFO, "Client #%u is disconnected.", client->id);
+  write_log(LOG_INFO, "Client #%" PRIu32 " is disconnected.", client->id);
 
   if (conf->tls) {
     SSL_shutdown(client->ssl);
@@ -106,7 +107,7 @@ static void close_server() {
 
   while ((client_node = get_head_client())) {
     struct Client *client = client_node->data;
-    write_log(LOG_INFO, "Client #%u is terminated.", client->id);
+    write_log(LOG_INFO, "Client #%" PRIu32 " is terminated.", client->id);
 
     if (conf->tls) {
       SSL_shutdown(client->ssl);
@@ -198,7 +199,7 @@ static int accept_client() {
     SSL_set_fd(client->ssl, client->connfd);
 
     if (SSL_accept(client->ssl) <= 0) {
-      write_log(LOG_WARN, "Cannot accept Client #%u because of SSL. Please check client authority file.", client->id);
+      write_log(LOG_WARN, "Cannot accept Client #%" PRIu32 " because of SSL. Please check client authority file.", client->id);
       terminate_connection(client->connfd);
       return -1;
     }
@@ -351,7 +352,7 @@ void start_server(struct Configuration *config) {
     return;
   }
 
-  write_log(LOG_INFO, "tellydb server age: %u seconds", age);
+  write_log(LOG_INFO, "tellydb server age: %" PRIu32 " seconds", age);
 
 #ifdef __linux__
   if ((epfd = epoll_create1(0)) == -1) {
@@ -397,7 +398,7 @@ void start_server(struct Configuration *config) {
 #endif
 
   start_at = time(NULL);
-  write_log(LOG_INFO, "Server is listening on %hu port for accepting connections...", conf->port);
+  write_log(LOG_INFO, "Server is listening on %" PRIu16 " port for accepting connections...", conf->port);
 
   while (true) {
 #ifdef __linux__

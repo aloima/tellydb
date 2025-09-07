@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include <ctype.h>
 #include <time.h>
 
@@ -41,5 +42,5 @@ void generate_date_string(char *text, const time_t value) {
   number_pad(min, tm->tm_min);
   number_pad(sec, tm->tm_sec);
 
-  sprintf(text, "%s %s %d %s:%s:%s", date, mon, 1900 + tm->tm_year, hour, min, sec);
+  sprintf(text, "%s %s %" PRIi32 " %s:%s:%s", date, mon, 1900 + tm->tm_year, hour, min, sec);
 }

@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include <inttypes.h>
 
 static string_t run(struct CommandEntry entry) {
   PASS_NO_CLIENT(entry.client);
@@ -30,7 +31,7 @@ static string_t run(struct CommandEntry entry) {
 
   // calculated length: 85 + (existed * 9) + (not_existed * 12)
   const size_t nbytes = sprintf(entry.buffer, (
-    "*%u\r\n"
+    "*%" PRIu32 "\r\n"
       "+existed key count is %u\r\n"
       "+not existed key count is %u\r\n"
       "%s"

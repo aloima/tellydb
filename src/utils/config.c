@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
+#include <inttypes.h>
 
 static struct Configuration default_conf = {
   .port = 6379,
@@ -153,13 +154,13 @@ size_t get_configuration_string(char *buf, struct Configuration conf) {
 
   return sprintf(buf, (
     "# TCP server port\n"
-    "PORT=%hu\n\n"
+    "PORT=%" PRIu16 "\n\n"
 
     "# Specifies max connectable client count, higher values may cause higher resource usage\n"
-    "MAX_CLIENTS=%hu\n\n"
+    "MAX_CLIENTS=%" PRIu16 "\n\n"
 
     "# Specifies max storable transaction block count, higher values may cause higher resource usage\n"
-    "MAX_TRANSACTION_BLOCKS=%u\n\n"
+    "MAX_TRANSACTION_BLOCKS=%" PRIu32 "\n\n"
 
     "# Allowed log levels:\n"
     "# w = warning\n"
@@ -171,7 +172,7 @@ size_t get_configuration_string(char *buf, struct Configuration conf) {
     "# Specifies maximum line count of logs will be saved to log file, to make undetermined, change it to -1.\n"
     "# If the log file contains more log lines than this value, will not be deleted old logs and will not be saved new logs.\n"
     "# MAX_LOG_LINES * (FILE BLOCK SIZE [512, 4096 or a power of 2] + 1) bytes will be allocated, so be careful\n"
-    "MAX_LOG_LINES=%u\n\n"
+    "MAX_LOG_LINES=%" PRIi32 "\n\n"
 
     "# Specifies database file where data will be saved\n"
     "DATA_FILE=%s\n\n"

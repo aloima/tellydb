@@ -31,15 +31,15 @@ static bool get_section(char *section, const struct Configuration *conf, const c
       "Multiplexing API: epoll\r\n"
       "GCC version: %s\r\n"
       "TLS server: %s\r\n"
-      "Age: %u seconds\r\n"
+      "Age: %" PRIu32 " seconds\r\n"
       "Started at: %.20s\r\n"
     ), getpid(), gcc_version, (conf->tls ? "yes" : "no"), age, str_start_at);
   } else if (streq(name, "clients")) {
     sprintf(section, (
       "# Clients\r\n"
       "Connected clients: %u\r\n"
-      "Max clients: %u\r\n"
-      "Transactions: %u\r\n"
+      "Max clients: %" PRIu16 "\r\n"
+      "Transactions: %" PRIu32 "\r\n"
       "Max transaction blocks: %u\r\n"
       "Total processed transactions: %" PRIu64 "\r\n"
       "Total received connections: %u\r\n"
@@ -106,7 +106,7 @@ static string_t run(struct CommandEntry entry) {
 
   const uint16_t buf_len = strlen(buf);
 
-  const size_t nbytes = sprintf(entry.buffer, "$%hu\r\n%s\r\n", buf_len, buf);
+  const size_t nbytes = sprintf(entry.buffer, "$%" PRIu16 "\r\n%s\r\n", buf_len, buf);
   return CREATE_STRING(entry.buffer, nbytes);
 }
 

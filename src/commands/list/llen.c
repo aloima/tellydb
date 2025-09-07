@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <inttypes.h>
 
 static string_t run(struct CommandEntry entry) {
   PASS_NO_CLIENT(entry.client);
@@ -18,7 +19,7 @@ static string_t run(struct CommandEntry entry) {
     return INVALID_TYPE_ERROR("LLEN");
   }
 
-  const size_t nbytes = sprintf(entry.buffer, ":%u\r\n", ((struct List *) kv->value)->size);
+  const size_t nbytes = sprintf(entry.buffer, ":%" PRIu32 "\r\n", ((struct List *) kv->value)->size);
   return CREATE_STRING(entry.buffer, nbytes);
 }
 
