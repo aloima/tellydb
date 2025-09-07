@@ -42,7 +42,7 @@ static string_t parse_resp_bstring(struct Client *client, char *buf, int32_t *at
   };
 
   char c;
-  TAKE_BYTES(&c, 1, ((string_t) {0}));
+  TAKE_BYTES(&c, 1, EMPTY_STRING());
 
   if (VERY_UNLIKELY(c != RDT_BSTRING)) {
     DATA_ERR(client);
@@ -50,12 +50,12 @@ static string_t parse_resp_bstring(struct Client *client, char *buf, int32_t *at
   }
 
   while (true) {
-    TAKE_BYTES(&c, 1, ((string_t) {0}));
+    TAKE_BYTES(&c, 1, EMPTY_STRING());
 
     if (isdigit(c)) {
       data.len = (data.len * 10) + (c - 48);
     } else if (c == '\r') {
-      TAKE_BYTES(&c, 1, ((string_t) {0}));
+      TAKE_BYTES(&c, 1, EMPTY_STRING());
 
       if (c != '\n') {
         DATA_ERR(client);
@@ -63,11 +63,11 @@ static string_t parse_resp_bstring(struct Client *client, char *buf, int32_t *at
       }
 
       data.value = malloc(data.len + 1);
-      TAKE_BYTES(data.value, data.len, ((string_t) {0}));
+      TAKE_BYTES(data.value, data.len, EMPTY_STRING());
       data.value[data.len] = '\0';
 
       char crlf[2];
-      TAKE_BYTES(crlf, 2, ((string_t) {0}));
+      TAKE_BYTES(crlf, 2, EMPTY_STRING());
 
       if (VERY_UNLIKELY(crlf[0] != '\r' || crlf[1] != '\n')) {
         DATA_ERR(client);
