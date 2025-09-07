@@ -10,31 +10,36 @@ string_t write_value(void *value, const enum TellyTypes type, const enum Protoco
       return RESP_OK_MESSAGE("null");
 
     case TELLY_NUM: {
-      const size_t nbytes = create_resp_integer(buffer, (*(long *) value));
+      const long *number = value;
+      const size_t nbytes = create_resp_integer(buffer, *number);
       return CREATE_STRING(buffer, nbytes);
     }
 
     case TELLY_STR: {
       const string_t *string = value;
-
       const size_t nbytes = create_resp_string(buffer, *string);
       return CREATE_STRING(buffer, nbytes);
     }
 
-    case TELLY_BOOL:
-      if (*((bool *) value)) {
-        if (protover == RESP3) {
-          return CREATE_STRING("#t\r\n", 4);
-        } else {
-          return RESP_OK_MESSAGE("true");
-        }
-      } else {
-        if (protover == RESP3) {
-          return CREATE_STRING("#f\r\n", 4);
-        } else {
-          return RESP_OK_MESSAGE("false");
-        }
+    case TELLY_BOOL: {
+      const bool is_true = *((bool *) value);
+
+      switch (protover) {
+        case RESP2:
+          if (is_true) {
+            return RESP_OK_MESSAGE("true");
+          } else {
+            return RESP_OK_MESSAGE("false");
+          }
+
+        case RESP3:
+          if (is_true) {
+            return CREATE_STRING("#t\r\n", 4);
+          } else {
+            return CREATE_STRING("#f\r\n", 4);
+          }
       }
+    }
 
     case TELLY_HASHTABLE:
       return RESP_OK_MESSAGE("hash table");
