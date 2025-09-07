@@ -1,15 +1,11 @@
 #include <telly.h>
 
-#include <stdio.h>
-#include <string.h>
 #include <stdint.h>
-#include <stdbool.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <inttypes.h>
 #include <time.h>
 
-#include <fcntl.h>
 #ifdef __linux__
 #include <sys/epoll.h>
 #elif __APPLE__
@@ -17,10 +13,10 @@
 #include <sys/time.h>
 #endif
 #include <sys/socket.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include <openssl/ssl.h>
 #include <openssl/crypto.h>
@@ -52,11 +48,7 @@
   free_kdf();\
 }
 
-#ifdef __linux__
-static int epfd;
-#elif __APPLE__
-static int kq;
-#endif
+static int eventfd;
 static int sockfd;
 static SSL_CTX *ctx = NULL;
 static struct Configuration *conf;
@@ -64,7 +56,6 @@ static time_t start_at;
 static uint32_t age;
 
 static struct Command *commands;
-static uint32_t command_count;
 
 struct Configuration *get_server_configuration() {
   return conf;
@@ -79,18 +70,16 @@ void terminate_connection(const int connfd) {
   const struct Client *client = get_client(connfd);
 
 #ifdef __linux__
-  if (epoll_ctl(epfd, EPOLL_CTL_DEL, connfd, NULL) == -1) {
-    write_log(LOG_ERR, "Cannot remove Client #%" PRIu32 " from multiplexing.", client->id);
-    return;
-  }
+  if (epoll_ctl(eventfd, EPOLL_CTL_DEL, connfd, NULL) == -1) {
 #elif __APPLE__
   struct kevent ev;
   EV_SET(&ev, connfd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+
   if (kevent(kq, &ev, 1, NULL, 0, NULL) == -1) {
+#endif
     write_log(LOG_ERR, "Cannot remove Client #%u from multiplexing.", client->id);
     return;
   }
-#endif
 
   write_log(LOG_INFO, "Client #%" PRIu32 " is disconnected.", client->id);
 
@@ -133,11 +122,7 @@ static void close_server() {
   }
 
   FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);
-#ifdef __linux__
-  close(epfd);
-#elif __APPLE__
-  close(kq);
-#endif
+  close(eventfd);
   free_passwords();
   free_transactions();
   free_databases();
@@ -161,60 +146,6 @@ static void close_signal(int arg) {
   }
 
   close_server();
-}
-
-static int read_client(struct Client *client, char *buf, int32_t *size, int32_t *at) {
-  *size = _read(client, buf, RESP_BUF_SIZE);
-  *at = 0;
-  if (*size == -1) return -1;
-
-  return 0;
-}
-
-#ifdef __linux__
-static int accept_client(struct epoll_event event) {
-#elif __APPLE__
-static int accept_client() {
-#endif
-  struct sockaddr_in addr;
-  socklen_t addr_len = sizeof(addr);
-
-  const int connfd = accept(sockfd, (struct sockaddr *) &addr, &addr_len);
-  struct Client *client = add_client(connfd);
-
-  fcntl(connfd, F_SETFL, fcntl(connfd, F_GETFL, 0) | O_NONBLOCK);
-
-#ifdef __linux__
-  event.events = (EPOLLIN | EPOLLET);
-  event.data.fd = connfd;
-  epoll_ctl(epfd, EPOLL_CTL_ADD, connfd, &event);
-#elif __APPLE__
-  struct kevent ev;
-  EV_SET(&ev, connfd, EVFILT_READ, EV_ADD, 0, 0, NULL);
-  kevent(kq, &ev, 1, NULL, 0, NULL);
-#endif
-
-  if (conf->tls) {
-    client->ssl = SSL_new(ctx);
-    SSL_set_fd(client->ssl, client->connfd);
-
-    if (SSL_accept(client->ssl) <= 0) {
-      write_log(LOG_WARN, "Cannot accept Client #%" PRIu32 " because of SSL. Please check client authority file.", client->id);
-      terminate_connection(client->connfd);
-      return -1;
-    }
-  }
-
-  write_log(LOG_INFO, "Client #%u is connected.", client->id);
-  return 0;
-}
-
-static void unknown_command(struct Client *client, string_t command_name) {
-  char *buf = malloc(command_name.len + 22);
-  const size_t nbytes = sprintf(buf, "-Unknown command '%s'\r\n", command_name.value);
-
-  _write(client, buf, nbytes);
-  free(buf);
 }
 
 static int initialize_server_ssl() {
@@ -335,8 +266,7 @@ void start_server(struct Configuration *config) {
   }
 
   commands = load_commands();
-  command_count = get_command_count();
-  write_log(LOG_INFO, "Initialized commands.");
+  write_log(LOG_INFO, "Loaded commands.");
 
   create_transaction_thread(config);
   write_log(LOG_INFO, "Created transaction thread.");
@@ -354,8 +284,11 @@ void start_server(struct Configuration *config) {
 
   write_log(LOG_INFO, "tellydb server age: %" PRIu32 " seconds", age);
 
-#ifdef __linux__
-  if ((epfd = epoll_create1(0)) == -1) {
+#if defined(__linux__)
+  if ((eventfd = epoll_create1(0)) == -1) {
+#elif defined(__APPLE__)
+  if ((kq = kqueue()) == -1) {
+#endif
     FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);
     close_database_fd();
 		write_log(LOG_ERR, "Cannot create epoll instance.");
@@ -363,120 +296,29 @@ void start_server(struct Configuration *config) {
     return;
   }
 
-  struct epoll_event event, events[32];
+  event_t event;
+
+#if defined(__linux__)
   event.events = EPOLLIN;
   event.data.fd = sockfd;
 
-  if (epoll_ctl(epfd, EPOLL_CTL_ADD, sockfd, &event) == -1) {
-    FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);
-    close_database_fd();
-    close(epfd);
-		write_log(LOG_ERR, "Cannot add server to epoll instance.");
-    FREE_CONF_LOGS(conf);
-    return;
-	}
-#elif __APPLE__
-  if ((kq = kqueue()) == -1) {
-    FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);
-    close_database_fd();
-    write_log(LOG_ERR, "Cannot create kqueue instance.");
-    FREE_CONF_LOGS(conf);
-    return;
-  }
+  if (epoll_ctl(eventfd, EPOLL_CTL_ADD, sockfd, &event) == -1) {
+#elif defined(__APPLE__)
+  EV_SET(&event, sockfd, EVFILT_READ, EV_ADD, 0, 0, NULL);
 
-  struct kevent event, events[32];
-  EV_SET(&ev, sockfd, EVFILT_READ, EV_ADD, 0, 0, NULL);
-  
-  if (kevent(kq, &ev, 1, NULL, 0, NULL) == -1) {
+  if (kevent(eventfd, &ev, 1, NULL, 0, NULL) == -1) {
+#endif
     FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);
     close_database_fd();
-    close(kq);
-    write_log(LOG_ERR, "Cannot add server to kqueue instance.");
+    close(eventfd);
+    write_log(LOG_ERR, "Cannot add server to event instance.");
     FREE_CONF_LOGS(conf);
     return;
   }
-#endif
 
   start_at = time(NULL);
   write_log(LOG_INFO, "Server is listening on %" PRIu16 " port for accepting connections...", conf->port);
 
-  while (true) {
-#ifdef __linux__
-    const int nfds = epoll_wait(epfd, events, 32, -1);
-
-    for (int i = 0; i < nfds; ++i) {
-      const int fd = events[i].data.fd;
-
-      if (fd == sockfd) {
-        if (UINT32_MAX == get_last_connection_client_id()) {
-          write_log(LOG_WARN, "A connection is rejected, because client that has highest ID number is maximum, so cannot be increased it.");
-          continue;
-        }
-
-        if (accept_client(event) == -1) continue;
-#elif __APPLE__
-    const int nfds = kevent(kq, NULL, 0, events, 32, NULL);
-
-    for (int i = 0; i < nfds; ++i) {
-      const int fd = events[i].ident;
-
-      if (fd == sockfd) {
-        if (UINT32_MAX == get_last_connection_client_id()) {
-          write_log(LOG_WARN, "A connection is rejected, because client that has highest ID number is maximum, so cannot be increased it.");
-          continue;
-        }
-
-        if (accept_client() == -1) continue;
-#endif
-      } else {
-        struct Client *client = get_client(fd);
-        char buf[RESP_BUF_SIZE];
-        int32_t at = 0;
-        int32_t size = _read(client, buf, RESP_BUF_SIZE);
-
-        if (size == 0) {
-          terminate_connection(fd);
-          continue;
-        }
-
-        while (size != -1) {
-          commanddata_t data;
-
-          if (!get_command_data(client, buf, &at, &size, &data)) continue;
-          if (size == at) read_client(client, buf, &size, &at);
-
-          if (client->locked) {
-            free_command_data(data);
-            WRITE_ERROR_MESSAGE(client, "Your client is locked, you cannot use any commands until your client is unlocked");
-            continue;
-          }
-
-          to_uppercase(data.name.value, data.name.value);
-
-          const struct CommandIndex *command_index = get_command_index(data.name.value, data.name.len);
-
-          if (!command_index) {
-            unknown_command(client, data.name);
-            continue;
-          }
-
-          struct Command command = commands[command_index->idx];
-          client->command = &command;
-
-          if (!add_transaction(client, command, data)) {
-            free_command_data(data);
-            WRITE_ERROR_MESSAGE(client, "Transaction cannot be enqueued because of server settings");
-            write_log(LOG_WARN, "Transaction count reached their limit, so next transactions cannot be added.");
-            continue;
-          }
-
-          if (client->waiting_block && !streq(command.name, "EXEC") && !streq(command.name, "DISCARD") && !streq(command.name, "MULTI")) {
-            _write(client, "+QUEUED\r\n", 9);
-          }
-        }
-      }
-    }
-  }
-
+  handle_events(conf, ctx, sockfd, commands, eventfd);
   close_server();
 }
