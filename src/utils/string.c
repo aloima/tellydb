@@ -7,13 +7,16 @@
 #include <ctype.h>
 #include <time.h>
 
-static const char months[][4] = {
+static const char months[12][4] = {
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 };
 
 void to_uppercase(char *in, char *out) {
-  while (*in != '\0') *(out++) = toupper(*(in++));
+  while (*in != '\0') {
+    *(out++) = toupper(*(in++));
+  }
+
   *out = '\0';
 }
 
@@ -35,12 +38,17 @@ void generate_random_string(char *dest, size_t length) {
 void generate_date_string(char *text, const time_t value) {
   const struct tm *tm = localtime(&value);
 
-  char date[3], mon[4], hour[3], min[3], sec[3];
-  number_pad(date, tm->tm_mday);
-  sprintf(mon, "%.3s", months[tm->tm_mon]);
-  number_pad(hour, tm->tm_hour);
-  number_pad(min, tm->tm_min);
-  number_pad(sec, tm->tm_sec);
-
-  sprintf(text, "%s %s %" PRIi32 " %s:%s:%s", date, mon, 1900 + tm->tm_year, hour, min, sec);
+  // 01 Jan 1970 00:00:00
+  number_pad(text, tm->tm_mday); // 01
+  text[2] = ' ';
+  sprintf(text + 3, "%.3s", months[tm->tm_mon]); // Jan
+  text[6] = ' ';
+  ltoa(1900 + tm->tm_year, text + 7); // 1970
+  text[11] = ' ';
+  number_pad(text + 12, tm->tm_hour); // 00
+  text[14] = ':';
+  number_pad(text + 15, tm->tm_min); // 00
+  text[17] = ':';
+  number_pad(text + 18, tm->tm_sec); // 00
+  // latest number_pad writes '\0' to latest byte
 }
