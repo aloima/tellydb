@@ -62,25 +62,18 @@ const int ltoa(const int64_t value, char *dst) {
   uint64_t uval = (neg ? -value : value);
 
   int len = 1;
-  len += (uval >= pow10_table[ 1]);
-  len += (uval >= pow10_table[ 2]);
-  len += (uval >= pow10_table[ 3]);
-  len += (uval >= pow10_table[ 4]);
-  len += (uval >= pow10_table[ 5]);
-  len += (uval >= pow10_table[ 6]);
-  len += (uval >= pow10_table[ 7]);
-  len += (uval >= pow10_table[ 8]);
-  len += (uval >= pow10_table[ 9]);
-  len += (uval >= pow10_table[10]);
-  len += (uval >= pow10_table[11]);
-  len += (uval >= pow10_table[12]);
-  len += (uval >= pow10_table[13]);
-  len += (uval >= pow10_table[14]);
-  len += (uval >= pow10_table[15]);
-  len += (uval >= pow10_table[16]);
-  len += (uval >= pow10_table[17]);
-  len += (uval >= pow10_table[18]);
-  len += (uval >= pow10_table[19]);
+  int l = 1, r = 19;
+
+  while (l <= r) {
+    int m = l + (r - l) / 2;
+
+    if (uval >= pow10_table[m]) {
+      len = m + 1;
+      l = m + 1;
+    } else {
+      r = m - 1;
+    }
+  }
 
   const int total_len = (len + neg);
   dst[total_len] = '\0';
