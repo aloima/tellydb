@@ -2,7 +2,6 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include <inttypes.h>
 
 static string_t run(struct CommandEntry entry) {
   if (entry.data->arg_count < 2) {
@@ -54,7 +53,7 @@ static string_t run(struct CommandEntry entry) {
     delete_data(entry.database, key);
   }
 
-  const size_t nbytes = sprintf(entry.buffer, ":%" PRIu32 "\r\n", old_size - current_size);
+  const size_t nbytes = create_resp_integer(entry.buffer, old_size - current_size);
   return CREATE_STRING(entry.buffer, nbytes);
 }
 

@@ -26,7 +26,7 @@ static bool get_section(char *section, const struct Configuration *conf, const c
     sprintf(section, (
       "# Server\r\n"
       "Version: " VERSION "\r\n"
-      "Process ID: %d\r\n"
+      "Process ID: %" PRIi32 "\r\n"
       "Git hash: " GIT_HASH "\r\n"
       "Multiplexing API: epoll\r\n"
       "GCC version: %s\r\n"

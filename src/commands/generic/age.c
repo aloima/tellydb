@@ -2,7 +2,6 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include <inttypes.h>
 #include <time.h>
 
 static string_t run(struct CommandEntry entry) {
@@ -13,7 +12,7 @@ static string_t run(struct CommandEntry entry) {
   get_server_time(&start_at, &age);
   age += difftime(time(NULL), start_at);
 
-  const size_t nbytes = sprintf(entry.buffer, ":%" PRIu32 "\r\n", age);
+  const size_t nbytes = create_resp_integer(entry.buffer, age);
   return CREATE_STRING(entry.buffer, nbytes);
 }
 

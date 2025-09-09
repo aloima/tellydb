@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <inttypes.h>
 
 static string_t run(struct CommandEntry entry) {
   if (entry.data->arg_count != 1) {
@@ -30,7 +29,7 @@ static string_t run(struct CommandEntry entry) {
     *number -= 1;
 
     PASS_NO_CLIENT(entry.client);
-    const size_t nbytes = sprintf(entry.buffer, ":%" PRIi64 "\r\n", *number);
+    const size_t nbytes = create_resp_integer(entry.buffer, *number);
     return CREATE_STRING(entry.buffer, nbytes);
   }
 

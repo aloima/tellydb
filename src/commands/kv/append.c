@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <inttypes.h>
 
 static string_t run(struct CommandEntry entry) {
   if (entry.data->arg_count != 2) {
@@ -28,7 +27,7 @@ static string_t run(struct CommandEntry entry) {
     string->len += arg.len;
 
     PASS_NO_CLIENT(entry.client);
-    const size_t nbytes = sprintf(entry.buffer, ":%" PRIu32 "\r\n", string->len);
+    const size_t nbytes = create_resp_integer(entry.buffer, string->len);
     return CREATE_STRING(entry.buffer, nbytes);
   } else {
     const string_t arg = entry.data->args[1];
@@ -40,7 +39,7 @@ static string_t run(struct CommandEntry entry) {
     set_data(entry.database, NULL, key, string, TELLY_STR);
 
     PASS_NO_CLIENT(entry.client);
-    const size_t nbytes = sprintf(entry.buffer, ":%" PRIu32 "\r\n", string->len);
+    const size_t nbytes = create_resp_integer(entry.buffer, string->len);
     return CREATE_STRING(entry.buffer, nbytes);
   }
 }

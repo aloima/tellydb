@@ -15,7 +15,7 @@ static string_t run(struct CommandEntry entry) {
   remove_transaction_block(entry.client->waiting_block, false);
   entry.client->waiting_block = NULL;
 
-  const size_t nbytes = sprintf(entry.buffer, ":%" PRIu64 "\r\n", count);
+  const size_t nbytes = create_resp_integer(entry.buffer, count);
   return CREATE_STRING(entry.buffer, nbytes);
 }
 
