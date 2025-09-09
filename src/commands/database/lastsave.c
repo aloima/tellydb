@@ -14,7 +14,7 @@ static string_t run(struct CommandEntry entry) {
 
   if (stat(conf->data_file, &res) == -1) {
     write_log(LOG_ERR, "stat(): Cannot access database file");
-    return EMPTY_STRING();
+    return RESP_ERROR();
   }
 
   const uint64_t last_save = res.st_mtime;
