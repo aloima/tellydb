@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <inttypes.h>
-#include <ctype.h>
 #include <time.h>
 
 static const char months[12][4] = {
@@ -14,7 +13,9 @@ static const char months[12][4] = {
 
 void to_uppercase(char *in, char *out) {
   while (*in != '\0') {
-    *(out++) = toupper(*(in++));
+    const char c = *in;
+    *(out++) = (c <= 'Z') ? c : (c + 48);
+    in += 1;
   }
 
   *out = '\0';
