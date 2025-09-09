@@ -66,9 +66,9 @@ static inline int accept_client(const int sockfd, struct Configuration *conf, SS
   return 0;
 }
 
-static inline void unknown_command(struct Client *client, string_t command_name) {
-  char *buf = malloc(command_name.len + 22);
-  const size_t nbytes = sprintf(buf, "-Unknown command '%s'\r\n", command_name.value);
+static inline void unknown_command(struct Client *client, commandname_t name) {
+  char *buf = malloc(name.len + 22);
+  const size_t nbytes = sprintf(buf, "-Unknown command '%s'\r\n", name.value);
 
   _write(client, buf, nbytes);
   free(buf);

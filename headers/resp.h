@@ -22,6 +22,7 @@
 #define RDT_ERR_SL "-"
 
 #define RESP_BUF_SIZE 4096
+#define COMMAND_NAME_MAX_LENGTH 64
 
 static inline int create_resp_integer(char *buf, uint64_t value) {
   *(buf) = RDT_INTEGER;
@@ -43,8 +44,13 @@ static inline uint64_t create_resp_string(char *buf, string_t string) {
   return (nbytes + string.len + 5);
 }
 
+typedef struct {
+  char value[COMMAND_NAME_MAX_LENGTH];
+  uint32_t len;
+} commandname_t;
+
 typedef struct CommandData {
-  string_t name;
+  commandname_t name;
 
   string_t *args;
   uint32_t arg_count;
