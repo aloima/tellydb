@@ -7,6 +7,8 @@
 
 #include <openssl/ssl.h>
 
+// TODO: change linkedlist as hashmap
+
 struct LinkedListNode *head = NULL;
 struct LinkedListNode *tail = NULL;
 

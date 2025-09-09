@@ -50,7 +50,6 @@ void save_and_close_logs();
 void memcpy_aligned(void *restrict dest, const void *restrict src, size_t n);
 
 bool is_integer(const char *value);
-void number_pad(char *res, const uint32_t value);
 const int ltoa(const int64_t value, char *dst);
 const int get_digit_count(const uint64_t value);
 

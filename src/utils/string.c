@@ -1,9 +1,8 @@
 #include <telly.h>
 
-#include <stdio.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <inttypes.h>
 #include <time.h>
 
 static const char months[12][4] = {
@@ -36,13 +35,29 @@ void generate_random_string(char *dest, size_t length) {
   *dest = '\0';
 }
 
+static inline void number_pad(char *res, const uint32_t value) {
+  if (value < 10) {
+    res[0] = '0';
+    res[1] = (value + 48);
+  } else if (value < 100) {
+    res[0] = ((value / 10) + 48);
+    res[1] = ((value % 10) + 48);
+  }
+}
+
 void generate_date_string(char *text, const time_t value) {
   const struct tm *tm = localtime(&value);
+  const char *month = months[tm->tm_mon];
 
   // 01 Jan 1970 00:00:00
   number_pad(text, tm->tm_mday); // 01
   text[2] = ' ';
-  sprintf(text + 3, "%.3s", months[tm->tm_mon]); // Jan
+
+  // Jan
+  text[3] = month[0];
+  text[4] = month[1];
+  text[5] = month[2];
+
   text[6] = ' ';
   ltoa(1900 + tm->tm_year, text + 7); // 1970
   text[11] = ' ';
@@ -51,5 +66,5 @@ void generate_date_string(char *text, const time_t value) {
   number_pad(text + 15, tm->tm_min); // 00
   text[17] = ':';
   number_pad(text + 18, tm->tm_sec); // 00
-  // latest number_pad writes '\0' to latest byte
+  text[20] = '\0';
 }

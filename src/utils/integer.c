@@ -45,18 +45,6 @@ bool is_integer(const char *value) {
   return (_value != value) && (*_value == 0x00);
 }
 
-void number_pad(char *res, const uint32_t value) {
-  if (value < 10) {
-    res[0] = '0';
-    res[1] = (value + 48);
-  } else if (value < 100) {
-    res[0] = ((value / 10) + 48);
-    res[1] = ((value % 10) + 48);
-  }
-
-  res[2] = '\0';
-}
-
 const int ltoa(const int64_t value, char *dst) {
   const bool neg = (value < 0);
   uint64_t uval = (neg ? -value : value);
