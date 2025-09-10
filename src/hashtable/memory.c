@@ -15,7 +15,6 @@ void set_field_of_hashtable(struct HashTable *table, const string_t name, void *
 
   struct HashTableField *field;
 
-
   do {
     field = table->fields[index];
 
@@ -53,6 +52,7 @@ void set_field_of_hashtable(struct HashTable *table, const string_t name, void *
   field->hash = hashed;
 }
 
+// TODO: repositioning fields on deletion of linear-probed field
 bool del_field_to_hashtable(struct HashTable *table, const string_t name) {
   const uint64_t hashed = hash(name.value, name.len);
   uint32_t index = hashed % table->size.capacity;

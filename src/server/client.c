@@ -7,13 +7,12 @@
 
 #include <openssl/ssl.h>
 
-// TODO: change linkedlist as hashmap
+static struct Client **clients = NULL;
+static struct Client **connfd_clients = NULL;
+static uint32_t client_capacity = 16;
+static uint32_t client_count = 0;
 
-struct LinkedListNode *head = NULL;
-struct LinkedListNode *tail = NULL;
-
-uint32_t client_count = 0;
-uint32_t last_connection_client_id = 0;
+static uint32_t last_connection_client_id = 0;
 
 struct Password *default_password = NULL, *empty_password = NULL, *full_password = NULL;
 
@@ -68,142 +67,195 @@ struct Password *get_full_password() {
 }
 
 struct Client *get_client(const int input) {
-  struct LinkedListNode *node = head;
+  struct Client *client;
+  uint32_t at = (input % client_capacity);
 
-  while (node) {
-    struct Client *client = node->data;
-
+  while ((client = connfd_clients[at])) {
     if (client->connfd == input) {
       return client;
-    } else {
-      node = node->next;
+    }
+
+    at += 1;
+
+    if (at == client_capacity) {
+      return NULL;
     }
   }
 
-  return NULL;
+  return clients[at];
 }
 
 struct Client *get_client_from_id(const uint32_t id) {
-  struct LinkedListNode *node = head;
+  struct Client *client;
+  uint32_t at = (id % client_capacity);
 
-  while (node) {
-    struct Client *client = node->data;
+  while ((client = clients[at])) {
+    if (client->id == id) {
+      return client;
+    }
 
-    if (client->id == id) return client;
-    else node = node->next;
+    at += 1;
+
+    if (at == client_capacity) {
+      return NULL;
+    }
   }
 
-  return NULL;
+  return client;
+}
+
+struct Client **get_clients() {
+  return clients;
 }
 
 uint32_t get_client_count() {
   return client_count;
 }
 
+uint32_t get_client_capacity() {
+  return client_capacity;
+}
+
 uint32_t get_last_connection_client_id() {
   return last_connection_client_id;
 }
 
-struct Client *add_client(const int connfd) {
-  client_count += 1;
-  last_connection_client_id += 1;
+bool initialize_client_maps() {
+  const size_t size = (sizeof(struct Client *) * client_capacity);
 
-  if (client_count == 1) {
-    head = malloc(sizeof(struct LinkedListNode));
-    tail = head;
-  } else {
-    tail->next = malloc(sizeof(struct LinkedListNode));
-    tail = tail->next;
+  if (posix_memalign((void **) &clients, 16, size) != 0) {
+    write_log(LOG_ERR, "Cannot create a map for storing clients, out of memory.");
+    return false;
   }
 
-  tail->next = NULL;
+  if (posix_memalign((void **) &connfd_clients, 16, size) != 0) {
+    write_log(LOG_ERR, "Cannot create a map for storing clients, out of memory.");
+    return false;
+  }
 
-  if (posix_memalign((void **) &tail->data, 64, sizeof(struct Client)) == 0) {
-    struct Client *client = tail->data;
-    client->id = last_connection_client_id;
-    client->connfd = connfd;
-    time(&client->connected_at);
-    client->database = get_main_database();
-    client->command = NULL;
-    client->lib_name = NULL;
-    client->lib_ver = NULL;
-    client->ssl = NULL;
-    client->protover = RESP2;
-    client->locked = false;
-    client->waiting_block = NULL;
+  memset(clients, 0, size);
+  memset(connfd_clients, 0, size);
+  return true;
+}
 
-    if (get_password_count() == 0) {
-      client->password = default_password;
-    } else {
-      client->password = empty_password;
-    }
+static inline void insert_client(struct Client *client) {
+  uint32_t at = (client->id % client_capacity);
 
-    return client;
-  } else {
+  while (clients[at]) {
+    at = ((at + 1) % client_capacity);
+  }
+
+  // printf("inserted: %d\n", at);
+  clients[at] = client;
+
+  at = (client->connfd % client_capacity);
+
+  while (connfd_clients[at]) {
+    at = ((at + 1) % client_capacity);
+  }
+
+  connfd_clients[at] = client;
+}
+
+static inline bool resize_client_maps() {
+  client_capacity += client_capacity;
+
+  const uint32_t size = (sizeof(struct Client *) * client_capacity);
+  struct Client **old_clients = clients;
+  free(connfd_clients);
+
+  if (posix_memalign((void **) &clients, 16, size) != 0) {
+    write_log(LOG_ERR, "Cannot resize a map for storing clients, out of memory.");
+    return false;
+  }
+
+  if (posix_memalign((void **) &connfd_clients, 16, size) != 0) {
+    write_log(LOG_ERR, "Cannot resize a map for storing clients, out of memory.");
+    return false;
+  }
+
+  memset(clients, 0, size);
+  memset(connfd_clients, 0, size);
+
+  for (uint32_t i = 0; i < client_count; ++i) {
+    insert_client(old_clients[i]);
+  }
+
+  free(old_clients);
+  return true;
+}
+
+struct Client *add_client(const int connfd) {
+  struct Client *client;
+
+  if (posix_memalign((void **) &client, 16, sizeof(struct Client)) != 0) {
     write_log(LOG_ERR, "Cannot create a new client, out of memory.");
     return NULL;
   }
-}
 
-void remove_client(const int connfd) {
-  struct LinkedListNode *prev = NULL;
-  struct LinkedListNode *node = head;
-
-  while (node) {
-    struct Client *client = node->data;
-
-    if (client->connfd == connfd) {
-      client_count -= 1;
-
-      if (client->ssl) {
-        SSL_free(client->ssl);
-      }
-
-      if (client->lib_name) {
-        free(client->lib_name);
-      }
-
-      if (client->lib_ver) {
-        free(client->lib_ver);
-      }
-
-      if (client->waiting_block) {
-        remove_transaction_block(client->waiting_block, false);
-      }
-
-      free(client);
-
-      if (client_count == 0) {
-        free(head);
-        head = NULL;
-      } else {
-        if (prev) {
-          prev->next = node->next;
-        } else {
-          head = node->next;
-        }
-
-        free(node);
-      }
-
-      break;
-    } else {
-      prev = node;
-      node = node->next;
+  if (client_count == client_capacity) {
+    if (!resize_client_maps()) {
+      return NULL;
     }
   }
+
+  client_count += 1;
+  last_connection_client_id += 1;
+
+  client->id = last_connection_client_id;
+  client->connfd = connfd;
+  time(&client->connected_at);
+  client->database = get_main_database();
+  client->command = NULL;
+  client->lib_name = NULL;
+  client->lib_ver = NULL;
+  client->ssl = NULL;
+  client->protover = RESP2;
+  client->locked = false;
+  client->waiting_block = NULL;
+
+  if (get_password_count() == 0) {
+    client->password = default_password;
+  } else {
+    client->password = empty_password;
+  }
+
+  insert_client(client);
+  return client;
 }
 
-struct LinkedListNode *get_head_client() {
-  return head;
-}
+bool remove_client(const int connfd) {
+  uint32_t at = (connfd % client_capacity);
+  struct Client *client = connfd_clients[at];
 
-void remove_head_client() {
-  struct Client *client = head->data;
+  if (!client) {
+    return false;
+  }
 
+  while (client->connfd != connfd) {
+    at = ((at + 1) % client_capacity);
+    client = connfd_clients[at];
+
+    if (!client) {
+      return false;
+    }
+  }
+
+  const uint32_t id = client->id;
+  connfd_clients[at] = NULL;
+  at = (client->id % client_capacity);
+  client = clients[at];
+
+  while (client->id != id) {
+    at = ((at + 1) % client_capacity);
+    client = clients[at];
+  }
+
+  clients[at] = NULL;
   client_count -= 1;
 
   if (client->ssl) {
+    SSL_shutdown(client->ssl);
     SSL_free(client->ssl);
   }
 
@@ -220,13 +272,16 @@ void remove_head_client() {
   }
 
   free(client);
+  return true;
+}
 
-  if (client_count == 0) {
-    free(head);
-    head = NULL;
-  } else {
-    struct LinkedListNode *prev = head;
-    head = head->next;
-    free(prev);
+void free_client_maps() {
+  for (uint32_t i = 0; i < client_capacity; ++i) {
+    if (clients[i]) {
+      remove_client(clients[i]->connfd);
+    }
   }
+
+  free(connfd_clients);
+  free(clients);
 }

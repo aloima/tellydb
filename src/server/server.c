@@ -1,3 +1,4 @@
+#include "server/_client.h"
 #include <telly.h>
 
 #include <stdint.h>
@@ -92,19 +93,8 @@ void terminate_connection(const int connfd) {
 }
 
 static void close_server() {
-  struct LinkedListNode *client_node;
-
-  while ((client_node = get_head_client())) {
-    struct Client *client = client_node->data;
-    write_log(LOG_INFO, "Client #%" PRIu32 " is terminated.", client->id);
-
-    if (conf->tls) {
-      SSL_shutdown(client->ssl);
-    }
-
-    close(client->connfd);
-    remove_head_client();
-  }
+  free_client_maps();
+  write_log(LOG_INFO, "Terminated all clients.");
 
   const uint32_t server_age = age + difftime(time(NULL), start_at);
   const clock_t start = clock();
@@ -312,6 +302,14 @@ void start_server(struct Configuration *config) {
     close_database_fd();
     close(eventfd);
     write_log(LOG_ERR, "Cannot add server to event instance.");
+    FREE_CONF_LOGS(conf);
+    return;
+  }
+
+  if (!initialize_client_maps()) {
+    FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);
+    close_database_fd();
+    close(eventfd);
     FREE_CONF_LOGS(conf);
     return;
   }

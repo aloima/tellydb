@@ -30,13 +30,16 @@ struct Client {
   struct TransactionBlock *waiting_block;
 };
 
+bool initialize_client_maps();
+void free_client_maps();
+
 struct Client *get_client(const int input);
-struct LinkedListNode *get_head_client();
 struct Client *get_client_from_id(const uint32_t id);
 
 uint32_t get_last_connection_client_id();
+struct Client **get_clients();
 uint32_t get_client_count();
+uint32_t get_client_capacity();
 
 struct Client *add_client(const int connfd);
-void remove_client(const int connfd);
-void remove_head_client();
+bool remove_client(const int connfd);
