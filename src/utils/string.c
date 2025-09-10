@@ -13,7 +13,7 @@ static const char months[12][4] = {
 void to_uppercase(char *in, char *out) {
   while (*in != '\0') {
     const char c = *in;
-    *(out++) = (c <= 'Z') ? c : (c + 48);
+    *(out++) = (c <= 'Z') ? c : (c - 32);
     in += 1;
   }
 
