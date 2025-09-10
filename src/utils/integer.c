@@ -83,7 +83,7 @@ const int ltoa(const int64_t value, char *dst) {
   return total_len;
 }
 
-const int get_digit_count(const uint64_t value) {
+const uint8_t get_digit_count(const uint64_t value) {
   if (value >= pow10_table[19]) return 20;
   if (value >= pow10_table[18]) return 19;
   if (value >= pow10_table[17]) return 18;
@@ -103,5 +103,16 @@ const int get_digit_count(const uint64_t value) {
   if (value >= pow10_table[3])  return  4;
   if (value >= pow10_table[2])  return  3;
   if (value >= pow10_table[1])  return  2;
+  return 1;
+}
+
+const uint8_t get_byte_count(const uint64_t value) {
+  if (value >= (1ULL << 56)) return 8;
+  if (value >= (1ULL << 48)) return 7;
+  if (value >= (1ULL << 40)) return 6;
+  if (value >= (1ULL << 32)) return 5;
+  if (value >= (1ULL << 24)) return 4;
+  if (value >= (1ULL << 16)) return 3;
+  if (value >= (1ULL << 8))  return 2;
   return 1;
 }

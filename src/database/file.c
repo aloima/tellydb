@@ -72,20 +72,19 @@ const bool close_database_fd() {
   return (close(fd) == 0);
 }
 
-static off_t get_value_size(const enum TellyTypes type, void *value) {
+static inline off_t get_value_size(const enum TellyTypes type, void *value) {
   switch (type) {
     case TELLY_NULL:
       return 0;
 
     case TELLY_NUM: {
-      const double bit_count = log2(*((long *) value)) + 1;
-      return (ceil(bit_count / 8) + 1);
+      const uint8_t byte_count = get_byte_count(*((long *) value));
+      return (byte_count + 1);
     }
 
     case TELLY_STR: {
       const string_t *string = value;
-      const uint8_t bit_count = log2(string->len) + 1;
-      const uint8_t byte_count = ceil(((float) bit_count) / 8);
+      const uint8_t byte_count = get_byte_count(string->len);
 
       return (byte_count + string->len);
     }
@@ -126,18 +125,16 @@ static off_t get_value_size(const enum TellyTypes type, void *value) {
   }
 }
 
-static void generate_number_value(char **data, off_t *len, const long *number) {
-  const uint32_t bit_count = log2(*number) + 1;
-  const uint32_t byte_count = (bit_count / 8) + 1;
+static inline void generate_number_value(char **data, off_t *len, const long *number) {
+  const uint32_t byte_count = get_byte_count(*number) + 1;
 
   (*data)[*len] = byte_count;
   memcpy(*data + (*len += 1), number, byte_count);
   *len += byte_count;
 }
 
-static uint32_t generate_string_value(char **data, off_t *len, const string_t *string) {
-  const uint8_t bit_count = log2(string->len) + 1;
-  const uint8_t byte_count = ceil((float) (bit_count - 6) / 8);
+static inline uint32_t generate_string_value(char **data, off_t *len, const string_t *string) {
+  const uint8_t byte_count = get_byte_count(string->len >> 6);
   const uint8_t first = (byte_count << 6) | (string->len & 0b111111);
   const uint32_t length_in_bytes = string->len >> 6;
 
@@ -154,7 +151,7 @@ static void generate_boolean_value(char **data, off_t *len, const bool *boolean)
   *len += 1;
 }
 
-static off_t generate_value(char **data, struct KVPair *kv) {
+static inline off_t generate_value(char **data, struct KVPair *kv) {
   off_t len = 0;
 
   generate_string_value(data, &len, &kv->key);
@@ -258,7 +255,7 @@ static off_t generate_value(char **data, struct KVPair *kv) {
   return len;
 }
 
-static void generate_headers(char *headers, const uint32_t server_age) {
+static inline void generate_headers(char *headers, const uint32_t server_age) {
   headers[0] = 0x18;
   headers[1] = 0x10;
   memcpy(headers + 2, &server_age, sizeof(uint32_t));
