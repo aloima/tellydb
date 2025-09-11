@@ -84,35 +84,37 @@ const int ltoa(const int64_t value, char *dst) {
 }
 
 const uint8_t get_digit_count(const uint64_t value) {
-  if (value >= pow10_table[19]) return 20;
-  if (value >= pow10_table[18]) return 19;
-  if (value >= pow10_table[17]) return 18;
-  if (value >= pow10_table[16]) return 17;
-  if (value >= pow10_table[15]) return 16;
-  if (value >= pow10_table[14]) return 15;
-  if (value >= pow10_table[13]) return 14;
-  if (value >= pow10_table[12]) return 13;
-  if (value >= pow10_table[11]) return 12;
-  if (value >= pow10_table[10]) return 11;
-  if (value >= pow10_table[9])  return 10;
-  if (value >= pow10_table[8])  return  9;
-  if (value >= pow10_table[7])  return  8;
-  if (value >= pow10_table[6])  return  7;
-  if (value >= pow10_table[5])  return  6;
-  if (value >= pow10_table[4])  return  5;
-  if (value >= pow10_table[3])  return  4;
-  if (value >= pow10_table[2])  return  3;
-  if (value >= pow10_table[1])  return  2;
-  return 1;
+  if (value < pow10_table[10]) {
+    if (value < pow10_table[5]) {
+      if (value < pow10_table[1]) return 1;
+      if (value < pow10_table[2]) return 2;
+      if (value < pow10_table[3]) return 3;
+      if (value < pow10_table[4]) return 4;
+      return 5;
+    } else {
+      if (value < pow10_table[6]) return 6;
+      if (value < pow10_table[7]) return 7;
+      if (value < pow10_table[8]) return 8;
+      if (value < pow10_table[9]) return 9;
+      return 10;
+    }
+  } else {
+    if (value < pow10_table[15]) {
+      if (value < pow10_table[11]) return 11;
+      if (value < pow10_table[12]) return 12;
+      if (value < pow10_table[13]) return 13;
+      if (value < pow10_table[14]) return 14;
+      return 15;
+    } else {
+      if (value < pow10_table[16]) return 16;
+      if (value < pow10_table[17]) return 17;
+      if (value < pow10_table[18]) return 18;
+      return 19;
+    }
+  }
 }
 
 const uint8_t get_byte_count(const uint64_t value) {
-  if (value >= (1ULL << 56)) return 8;
-  if (value >= (1ULL << 48)) return 7;
-  if (value >= (1ULL << 40)) return 6;
-  if (value >= (1ULL << 32)) return 5;
-  if (value >= (1ULL << 24)) return 4;
-  if (value >= (1ULL << 16)) return 3;
-  if (value >= (1ULL << 8))  return 2;
-  return 1;
+  if (value == 0) return 0;
+  return (64 - __builtin_clzll(value) + 7) / 8;
 }
