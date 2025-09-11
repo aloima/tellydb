@@ -1,8 +1,6 @@
 #include <telly.h>
 
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
+#include <stddef.h>
 
 static string_t run(struct CommandEntry entry) {
   PASS_NO_CLIENT(entry.client);
@@ -12,9 +10,7 @@ static string_t run(struct CommandEntry entry) {
       return RESP_OK_MESSAGE("PONG");
 
     case 1: {
-      const string_t arg = entry.data->args[0];
-
-      const size_t nbytes = create_resp_string(entry.buffer, arg);
+      const size_t nbytes = create_resp_string(entry.buffer, entry.data->args[0]);
       return CREATE_STRING(entry.buffer, nbytes);
     }
 

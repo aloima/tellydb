@@ -25,31 +25,25 @@ static string_t run(struct CommandEntry entry) {
   char client_id[11];
   const uint32_t client_id_len = ltoa(entry.client->id, client_id);
 
-  char *protocol;
-  uint32_t protocol_len;
-
-  switch (entry.client->protover) {
-    case RESP2:
-      protocol = "RESP2";
-      protocol_len = 5;
-      break;
-
-    case RESP3:
-      protocol = "RESP3";
-      protocol_len = 5;
-      break;
-
-    default:
-      protocol = "unknown";
-      protocol_len = 7;
-  }
-
   string_t values[4][2] = {
     {{"server",    6}, {"telly",   5}},
     {{"version",   7}, {VERSION,   sizeof(VERSION) - 1}},
-    {{"protocol",  8}, {protocol,  protocol_len}},
+    {{"protocol",  8}},
     {{"client id", 9}, {client_id, client_id_len}}
   };
+
+  static const string_t protocols[] = {
+    {"unspecified", 11},
+    {"unspecified", 11},
+    {"RESP2", 5},
+    {"RESP3", 5}
+  };
+
+  if (entry.client->protover < 4) {
+    values[2][1] = protocols[entry.client->protover];
+  } else {
+    values[2][1] = protocols[0];
+  }
 
   char *buf = entry.buffer;
   uint32_t at;

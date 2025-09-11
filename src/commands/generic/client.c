@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <inttypes.h>
-#include <ctype.h>
 
 static inline string_t subcommand_id(struct Client *client, char *buffer) {
   const size_t nbytes = create_resp_integer(buffer, client->id);
@@ -13,42 +12,54 @@ static inline string_t subcommand_id(struct Client *client, char *buffer) {
 }
 
 static inline string_t subcommand_info(struct Client *client, char *buffer) {
-  const char *lib_name = client->lib_name ? client->lib_name : "unspecified";
-  const char *lib_ver  = client->lib_ver  ? client->lib_ver  : "unspecified";
-  char *protocol;
+  const char *lib_name = client->lib_name ?: "unspecified";
+  const char *lib_ver  = client->lib_ver ?: "unspecified";
+  const char *protocol;
 
-  switch (client->protover) {
-    case RESP2:
-      protocol = "RESP2";
-      break;
+  static const char *protocols[] = {
+    "unspecified",
+    "unspecified",
+    "RESP2",
+    "RESP3"
+  };
 
-    case RESP3:
-      protocol = "RESP3";
-      break;
-
-    default:
-      protocol = "unspecified";
+  if (client->protover < 4) {
+    protocol = protocols[client->protover];
+  } else {
+    protocol = protocols[0];
   }
 
-  char permissions[44];
-  permissions[0] = '\0';
+  char permissions[43];
+  uint32_t permissions_len = 0;
 
   {
     const uint8_t value = client->password->permissions;
-    uint32_t length = 0;
 
     if (value == 0) {
       memcpy(permissions, "None", 5);
     } else {
-      if (value & P_READ)   strcat(permissions, "read, "), length += 6;
-      if (value & P_WRITE)  strcat(permissions, "write, "), length += 7;
-      if (value & P_CLIENT) strcat(permissions, "client, "), length += 8;
-      if (value & P_CONFIG) strcat(permissions, "config, "), length += 8;
-      if (value & P_AUTH)   strcat(permissions, "auth, "), length += 6;
-      if (value & P_SERVER) strcat(permissions, "server, "), length += 8;
+      const string_t perm_names[] = {
+        {"read",   4}, {"write", 5}, {"client", 6},
+        {"config", 6}, {"auth",  4}, {"server", 6}
+      };
 
-      permissions[0] = toupper(permissions[0]);
-      permissions[length - 2] = '\0';
+      const enum Permissions perm_masks[] = {
+        P_READ, P_WRITE, P_CLIENT,
+        P_CONFIG, P_AUTH, P_SERVER
+      };
+
+      for (uint32_t i = 0; i < 6; ++i) {
+        if (value & perm_masks[i]) {
+          memcpy(permissions + permissions_len, perm_names[i].value, perm_names[i].len);
+          permissions_len += perm_names[i].len;
+
+          memcpy(permissions + permissions_len, ", ", 2);
+          permissions_len += 2;
+        }
+      }
+
+      permissions[0] = (permissions[0] - 32);
+      permissions_len -= 2;
     }
   }
 
@@ -64,8 +75,8 @@ static inline string_t subcommand_info(struct Client *client, char *buffer) {
     "Library name: %s\r\n"
     "Library version: %s\r\n"
     "Protocol: %s\r\n"
-    "Permissions: %s\r\n"
-  ), client->id, client->connfd, connected_at, client->command->name, lib_name, lib_ver, protocol, permissions);
+    "Permissions: %.*s\r\n"
+  ), client->id, client->connfd, connected_at, client->command->name, lib_name, lib_ver, protocol, permissions_len, permissions);
 
   const size_t nbytes = create_resp_string(buffer, (string_t) {
     .value = res,
@@ -94,9 +105,7 @@ static string_t subcommand_lock(struct CommandEntry entry) {
     PASS_NO_CLIENT(entry.client);
     const size_t nbytes = sprintf(entry.buffer, "-There is no client whose ID is #%" PRIi64 "\r\n", id);
     return CREATE_STRING(entry.buffer, nbytes);
-  }
-
-  if (target->password->permissions & P_CLIENT) {
+  } else if (target->password->permissions & P_CLIENT) {
     PASS_NO_CLIENT(entry.client);
     const size_t nbytes = sprintf(entry.buffer, "-Client #%" PRIi64 " has P_CLIENT, so cannot be locked\r\n", id);
     return CREATE_STRING(entry.buffer, nbytes);
@@ -202,9 +211,7 @@ static inline string_t subcommand_unlock(struct CommandEntry entry) {
     PASS_NO_CLIENT(entry.client);
     const size_t nbytes = sprintf(entry.buffer, "-There is no client whose ID is #%" PRIi64 "\r\n", id);
     return CREATE_STRING(entry.buffer, nbytes);
-  }
-
-  if (!target->locked) {
+  } else if (!target->locked) {
     PASS_NO_CLIENT(entry.client);
     const size_t nbytes = sprintf(entry.buffer, "-Client #%" PRIi64 " is not locked, so cannot be unlocked\r\n", id);
     return CREATE_STRING(entry.buffer, nbytes);
