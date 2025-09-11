@@ -10,7 +10,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define MAX_RESPONSE_SIZE 121000
+#define MAX_RESPONSE_SIZE 262144
 
 struct Transaction {
   commanddata_t data;
