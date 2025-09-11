@@ -127,7 +127,7 @@ void handle_events(struct Configuration *conf, SSL_CTX *ctx, const int sockfd, s
             continue;
           }
 
-          to_uppercase(data.name.value, data.name.value);
+          to_uppercase(CREATE_STRING(data.name.value, data.name.len), data.name.value);
 
           const struct CommandIndex *command_index = get_command_index(data.name.value, data.name.len);
 

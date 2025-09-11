@@ -13,8 +13,6 @@
 #define streq(s1, s2) (strcmp((s1), (s2)) == 0)
 #define IS_IN_PROCESS() (getpid() == syscall(SYS_gettid))
 
-void to_uppercase(char *in, char *out);
-
 struct LinkedListNode {
   void *data;
   void *next;
@@ -24,6 +22,8 @@ typedef struct String {
   char *value;
   uint32_t len;
 } string_t;
+
+void to_uppercase(string_t src, char *dst);
 
 #define EMPTY_STRING() ((string_t) {"", 0})
 #define CREATE_STRING(value, len) ((string_t) {value, len})

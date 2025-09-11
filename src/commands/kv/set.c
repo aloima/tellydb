@@ -25,52 +25,40 @@ static string_t run(struct CommandEntry entry) {
   enum TellyTypes type;
 
   for (uint32_t i = 2; i < entry.data->arg_count; ++i) {
-    string_t input = entry.data->args[i];
-    char *arg = malloc(input.len + 1);
-    to_uppercase(input.value, arg);
+    string_t arg = entry.data->args[i];
+    to_uppercase(arg, arg.value);
 
-    if (streq(arg, "GET")) {
+    if (streq(arg.value, "GET")) {
       get = true;
-    } else if (streq(arg, "NX")) {
+    } else if (streq(arg.value, "NX")) {
       nx = true;
-    } else if (streq(arg, "XX")) {
+    } else if (streq(arg.value, "XX")) {
       xx = true;
-    } else if (streq(arg, "AS")) {
+    } else if (streq(arg.value, "AS")) {
       as = true;
 
       if ((i + 1) < entry.data->arg_count) {
         i += 1;
-        input = entry.data->args[i];
+        string_t name = entry.data->args[i];
+        to_uppercase(name, name.value);
 
-        char *type_name = malloc(input.len + 1);
-        to_uppercase(input.value, type_name);
-
-        if (streq(type_name, "STRING") || streq(type_name, "STR")) {
+        if (streq(name.value, "STRING") || streq(name.value, "STR")) {
           type = TELLY_STR;
-        } else if (streq(type_name, "BOOLEAN") || streq(type_name, "BOOL")) {
+        } else if (streq(name.value, "BOOLEAN") || streq(name.value, "BOOL")) {
           type = TELLY_BOOL;
-        } else if (streq(type_name, "NUMBER") || streq(type_name, "NUM") || streq(type_name, "INTEGER") || streq(type_name, "INT")) {
+        } else if (streq(name.value, "NUMBER") || streq(name.value, "NUM") || streq(name.value, "INTEGER") || streq(name.value, "INT")) {
           type = TELLY_NUM;
-        } else if (streq(type_name, "NULL")) {
+        } else if (streq(name.value, "NULL")) {
           type = TELLY_NULL;
         } else {
-          free(arg);
-          free(type_name);
-
           PASS_NO_CLIENT(entry.client);
           return RESP_ERROR_MESSAGE("'AS' argument must be followed by a valid type name for 'SET' command");;
         }
-
-        free(type_name);
       }
     } else {
-      free(arg);
-
       PASS_NO_CLIENT(entry.client);
       return RESP_ERROR_MESSAGE("Invalid argument(s) for 'SET' command");;
     }
-
-    free(arg);
   }
 
   if (nx && xx) {

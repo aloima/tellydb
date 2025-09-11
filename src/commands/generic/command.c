@@ -13,13 +13,12 @@ static string_t run(struct CommandEntry entry) {
     return MISSING_SUBCOMMAND_ERROR("COMMAND");
   }
 
-  const string_t input = entry.data->args[0];
-  char *subcommand = malloc(input.len + 1);
-  to_uppercase(input.value, subcommand);
+  const string_t subcommand = entry.data->args[0];
+  to_uppercase(subcommand, subcommand.value);
 
   string_t response;
 
-  if (streq("DOCS", subcommand)) {
+  if (streq("DOCS", subcommand.value)) {
     const struct Command *commands = get_commands();
     const uint32_t command_count = get_command_count();
 
@@ -92,7 +91,7 @@ static string_t run(struct CommandEntry entry) {
     }
 
     response = CREATE_STRING(res, res_len);
-  } else if (streq("LIST", subcommand)) {
+  } else if (streq("LIST", subcommand.value)) {
     const struct Command *commands = get_commands();
     const uint32_t command_count = get_command_count();
 
@@ -106,14 +105,13 @@ static string_t run(struct CommandEntry entry) {
     }
 
     response = CREATE_STRING(res, res_len);
-  } else if (streq("COUNT", subcommand)) {
+  } else if (streq("COUNT", subcommand.value)) {
     const size_t nbytes = sprintf(entry.buffer, ":%" PRIu32 "\r\n", get_command_count());
     response = CREATE_STRING(entry.buffer, nbytes);
   } else {
     response = INVALID_SUBCOMMAND_ERROR("COMMAND");
   }
 
-  free(subcommand);
   return response;
 }
 

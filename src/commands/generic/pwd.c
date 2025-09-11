@@ -137,23 +137,21 @@ static string_t run(struct CommandEntry entry) {
     return MISSING_SUBCOMMAND_ERROR("PWD");
   }
 
-  const string_t subcommand_string = entry.data->args[0];
-  char *subcommand = malloc(subcommand_string.len + 1);
-  to_uppercase(subcommand_string.value, subcommand);
+  const string_t subcommand = entry.data->args[0];
+  to_uppercase(subcommand, subcommand.value);
 
   string_t response;
 
-  if (streq(subcommand, "ADD")) {
+  if (streq(subcommand.value, "ADD")) {
     response = add_pwd(entry);
-  } else if (streq(subcommand, "EDIT")) {
+  } else if (streq(subcommand.value, "EDIT")) {
     response = edit_pwd(entry);
-  } else if (streq(subcommand, "REMOVE")) {
+  } else if (streq(subcommand.value, "REMOVE")) {
     response = remove_pwd(entry);
-  } else if (streq(subcommand, "GENERATE")) {
+  } else if (streq(subcommand.value, "GENERATE")) {
     response = generate_pwd(entry);
   }
 
-  free(subcommand);
   PASS_NO_CLIENT(entry.client);
   return INVALID_SUBCOMMAND_ERROR("PWD");
 }

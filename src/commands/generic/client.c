@@ -127,10 +127,9 @@ static inline string_t subcommand_setinfo(struct CommandEntry entry) {
   }
 
   string_t property = entry.data->args[1];
-  char property_value[property.len + 1];
-  to_uppercase(property.value, property_value);
+  to_uppercase(property, property.value);
 
-  if (streq(property_value, "LIB-NAME")) {
+  if (streq(property.value, "LIB-NAME")) {
     string_t value = entry.data->args[2];
     const uint32_t value_size = value.len + 1;
 
@@ -142,7 +141,7 @@ static inline string_t subcommand_setinfo(struct CommandEntry entry) {
     memcpy(entry.client->lib_name, value.value, value_size);
 
     return RESP_OK();
-  } else if (streq(property_value, "LIB-VERSION")) {
+  } else if (streq(property.value, "LIB-VERSION")) {
     string_t value = entry.data->args[2];
     const uint32_t value_size = value.len + 1;
 
@@ -229,29 +228,27 @@ static string_t run(struct CommandEntry entry) {
     return MISSING_SUBCOMMAND_ERROR("CLIENT");
   }
 
-  const string_t subcommand_string = entry.data->args[0];
-  char *subcommand = malloc(subcommand_string.len + 1);
-  to_uppercase(subcommand_string.value, subcommand);
+  const string_t subcommand = entry.data->args[0];
+  to_uppercase(subcommand, subcommand.value);
 
   string_t response;
 
-  if (streq("ID", subcommand) && entry.client) {
+  if (streq("ID", subcommand.value) && entry.client) {
     response = subcommand_id(entry.client, entry.buffer);
-  } else if (streq("INFO", subcommand) && entry.client) {
+  } else if (streq("INFO", subcommand.value) && entry.client) {
     response = subcommand_info(entry.client, entry.buffer);
-  } else if (streq("LOCK", subcommand)) {
+  } else if (streq("LOCK", subcommand.value)) {
     response = subcommand_lock(entry);
-  } else if (streq("SETINFO", subcommand) && entry.client) {
+  } else if (streq("SETINFO", subcommand.value) && entry.client) {
     response = subcommand_setinfo(entry);
-  } else if (streq("KILL", subcommand)) {
+  } else if (streq("KILL", subcommand.value)) {
     response = subcommand_kill(entry);
-  } else if (streq("UNLOCK", subcommand)) {
+  } else if (streq("UNLOCK", subcommand.value)) {
     response = subcommand_unlock(entry);
   } else if (entry.client) {
     response = INVALID_SUBCOMMAND_ERROR("CLIENT");
   }
 
-  free(subcommand);
   return response;
 }
 

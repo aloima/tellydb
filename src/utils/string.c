@@ -10,14 +10,11 @@ static const char months[12][4] = {
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 };
 
-void to_uppercase(char *in, char *out) {
-  while (*in != '\0') {
-    const char c = *in;
-    *(out++) = (c <= 'Z') ? c : (c - 32);
-    in += 1;
+void to_uppercase(string_t src, char *dst) {
+  for (uint32_t i = 0; i < src.len; ++i) {
+    const char c = src.value[i];
+    dst[i] = ((c <= 'Z') ? c : (c - 32));
   }
-
-  *out = '\0';
 }
 
 void generate_random_string(char *dest, size_t length) {
