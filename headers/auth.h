@@ -14,9 +14,9 @@ enum Permissions {
   P_READ   = 0b00000001,
   P_WRITE  = 0b00000010,
   P_CLIENT = 0b00000100,
-  P_CONFIG = 0b00000100,
-  P_AUTH   = 0b00001000,
-  P_SERVER = 0b00010000,
+  P_CONFIG = 0b00001000,
+  P_AUTH   = 0b00010000,
+  P_SERVER = 0b00100000,
 };
 
 struct Password {
