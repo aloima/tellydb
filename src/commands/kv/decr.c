@@ -3,10 +3,12 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#include <gmp.h>
+
 static string_t run(struct CommandEntry entry) {
   if (entry.data->arg_count == 0) {
     PASS_NO_CLIENT(entry.client);
-    return WRONG_ARGUMENT_ERROR("DECR");
+    return WRONG_ARGUMENT_ERROR("INCR");
   }
 
   uint32_t at;
@@ -32,51 +34,59 @@ static string_t run(struct CommandEntry entry) {
     for (uint32_t i = 0; i < entry.data->arg_count; ++i) {
       const string_t key = entry.data->args[i];
       struct KVPair *result = get_data(entry.database, key);
-      long *number;
+      mpf_t *number;
       at += create_resp_string(entry.buffer + at, key);
 
       if (!result) {
-        number = calloc(1, sizeof(long));
+        number = malloc(sizeof(mpf_t));
+        mpf_init2(*number, FLOAT_PRECISION);
+        mpf_set_ui(*number, 0);
+
         const bool success = set_data(entry.database, NULL, key, number, TELLY_NUM);
 
         if (!success) {
           at += create_resp_string(entry.buffer + at, CREATE_STRING("error", 5));
+          mpf_clear(*number);
           free(number);
           continue;
         }
       } else if (result->type == TELLY_NUM) {
         number = result->value;
-        *number -= 1;
+        mpf_sub_ui(*number, *number, 1);
       } else {
         at += create_resp_string(entry.buffer + at, CREATE_STRING("invalid type", 12));
         continue;
       }
 
-      at += create_resp_integer(entry.buffer + at, *number);
+      at += create_resp_integer_mpf(entry.client->protover, entry.buffer + at, *number);
     }
   } else {
     for (uint32_t i = 0; i < entry.data->arg_count; ++i) {
       const string_t key = entry.data->args[i];
       struct KVPair *result = get_data(entry.database, key);
-      long *number;
+      mpf_t *number;
       at += create_resp_string(entry.buffer + at, key);
 
       if (!result) {
-        number = calloc(1, sizeof(long));
+        number = malloc(sizeof(mpf_t));
+        mpf_init2(*number, FLOAT_PRECISION);
+        mpf_set_ui(*number, 0);
+
         const bool success = set_data(entry.database, NULL, key, number, TELLY_NUM);
 
         if (!success) {
+          mpf_clear(*number);
           free(number);
           continue;
         }
       } else if (result->type == TELLY_NUM) {
         number = result->value;
-        *number -= 1;
+        mpf_sub_ui(*number, *number, 1);
       } else {
         continue;
       }
 
-      at += create_resp_integer(entry.buffer + at, *number);
+      at += create_resp_integer_mpf(entry.client->protover, entry.buffer + at, *number);
     }
   }
 

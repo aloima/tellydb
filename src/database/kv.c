@@ -3,6 +3,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <gmp.h>
+
 void set_kv(struct KVPair *kv, const string_t key, void *value, const enum TellyTypes type) {
   kv->type = type;
   kv->value = value;
@@ -13,8 +15,20 @@ void set_kv(struct KVPair *kv, const string_t key, void *value, const enum Telly
 
 void free_kv(struct KVPair *kv) {
   switch (kv->type) {
+    case TELLY_NULL:
+      break;
+
+    case TELLY_NUM:
+      mpf_clear(*((mpf_t *) kv->value));
+      free(kv->value);
+      break;
+
     case TELLY_STR:
       free(((string_t *) kv->value)->value);
+      free(kv->value);
+      break;
+
+    case TELLY_BOOL:
       free(kv->value);
       break;
 
@@ -24,13 +38,6 @@ void free_kv(struct KVPair *kv) {
 
     case TELLY_LIST:
       free_list(kv->value);
-      break;
-
-    case TELLY_NULL:
-      break;
-
-    default:
-      free(kv->value);
       break;
   }
 

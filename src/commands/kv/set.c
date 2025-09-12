@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#include <gmp.h>
+
 static void take_as_string(void **value, const string_t data) {
   string_t *string = (*value = malloc(sizeof(string_t)));
   string->len = data.len;
@@ -92,9 +94,9 @@ static string_t run(struct CommandEntry entry) {
 
     switch (type) {
       case TELLY_NUM: {
-        const long number = atol(value_in);
-        value = malloc(sizeof(long));
-        *((long *) value) = number;
+        value = malloc(sizeof(mpf_t));
+        mpf_init2(*((mpf_t *) value), FLOAT_PRECISION);
+        mpf_set_str(*((mpf_t *) value), value_in, 10);
         break;
       }
 

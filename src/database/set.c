@@ -1,13 +1,26 @@
 #include <telly.h>
 
-#include <stdint.h>
 #include <stdlib.h>
+
+#include <gmp.h>
 
 struct KVPair *set_data(struct Database *database, struct KVPair *data, const string_t key, void *value, const enum TellyTypes type) {
   if (data) {
     switch (data->type) {
+      case TELLY_NULL:
+        break;
+
+      case TELLY_NUM:
+        mpf_clear(*((mpf_t *) data->value));
+        free(data->value);
+        break;
+
       case TELLY_STR:
         free(((string_t *) data->value)->value);
+        free(data->value);
+        break;
+
+      case TELLY_BOOL:
         free(data->value);
         break;
 
@@ -17,13 +30,6 @@ struct KVPair *set_data(struct Database *database, struct KVPair *data, const st
 
       case TELLY_LIST:
         free_list(data->value);
-        break;
-
-      case TELLY_NULL:
-        break;
-
-      default:
-        free(data->value);
         break;
     }
 

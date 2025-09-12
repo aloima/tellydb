@@ -4,14 +4,16 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include <gmp.h>
+
 string_t write_value(void *value, const enum TellyTypes type, const enum ProtocolVersion protover, char *buffer) {
   switch (type) {
     case TELLY_NULL:
       return RESP_OK_MESSAGE("null");
 
     case TELLY_NUM: {
-      const long *number = value;
-      const size_t nbytes = create_resp_integer(buffer, *number);
+      mpf_t *number = value;
+      const size_t nbytes = create_resp_integer_mpf(protover, buffer, *number);
       return CREATE_STRING(buffer, nbytes);
     }
 
