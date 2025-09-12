@@ -187,6 +187,4 @@ struct BTreeValue *insert_value_to_btree(struct BTree *tree, uint64_t index, voi
 
     return insert_value_to_node(tree, node, value, value_at);
   }
-
-  return NULL;
 }

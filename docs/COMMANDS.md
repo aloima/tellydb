@@ -660,19 +660,22 @@ APPEND user_name " Black"
 ---
 
 ### DECR
-**Syntax**: `DECR key`  
+**Syntax**: `DECR [...key(s)]`  
 **Description**: Decrements value.  
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
 **Permissions**: `P_READ` and `P_WRITE`  
-**Returns**: New integer value stored at the key or `ERROR`  
+**Returns**: A map/an array that keys to responses  
 **Behavior**:
-* If key is not holding a value, value will be set to `0` and will not be decremented.
-* Throws an error if the key is holding a value that is not integer.
+* If the key is not holding a value, value will be set to `0` and will not be decremented.
+* If the key is holding a value that is not integer, response will be `invalid type`.
+* If the new key cannot be set, response will be `error`.
+* Response will be new value of the key when the key is set successfully.
 
 **Example**:
 ```shell
 DECR user_age
+DECR user_count user_money
 ```
 
 ### DEL
@@ -726,19 +729,22 @@ GET user_name
 ---
 
 ### INCR
-**Syntax**: `INCR key`  
-**Description**: Increments value.  
+**Syntax**: `INCR [..key(s)]`  
+**Description**: Increments value(s).  
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
 **Permissions**: `P_READ` and `P_WRITE`  
-**Returns**: New integer value stored at the key or `ERROR`  
+**Returns**: A map/an array that keys to responses  
 **Behavior**:
-* If key is not holding a value, value will be set to `0` and will not be incremented.
-* Throws an error if the key is holding a value that is not integer.
+* If the key is not holding a value, value will be set to `0` and will not be incremented.
+* If the key is holding a value that is not integer, response will be `invalid type`.
+* If the new key cannot be set, response will be `error`.
+* Response will be new value of the key when the key is set successfully.
 
 **Example**:
 ```shell
 INCR user_age
+INCR user_count user_money
 ```
 
 ---
