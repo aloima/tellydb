@@ -51,6 +51,7 @@ target_link_libraries(telly
   OpenSSL::Crypto
   Threads::Threads
   m
+  jemalloc
 )
 
 target_compile_definitions(telly
