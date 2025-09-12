@@ -6,6 +6,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include <gmp.h>
+
 #define RDT_SSTRING '+'
 #define RDT_SSTRING_SL "+"
 
@@ -27,6 +29,17 @@
 static inline int create_resp_integer(char *buf, uint64_t value) {
   *(buf) = RDT_INTEGER;
   const uint64_t nbytes = ltoa(value, buf + 1);
+  *(buf + nbytes + 1) = '\r';
+  *(buf + nbytes + 2) = '\n';
+  return (nbytes + 3);
+}
+
+
+static inline int create_resp_integer_mpz(char *buf, mpz_t value) {
+  *(buf) = RDT_INTEGER;
+  mpz_get_str(buf + 1, 10, value);
+
+  const uint64_t nbytes = strlen(buf) - 1;
   *(buf + nbytes + 1) = '\r';
   *(buf + nbytes + 2) = '\n';
   return (nbytes + 3);
