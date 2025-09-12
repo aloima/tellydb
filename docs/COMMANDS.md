@@ -661,7 +661,7 @@ APPEND user_name " Black"
 
 ### DECR
 **Syntax**: `DECR [...key(s)]`  
-**Description**: Decrements value.  
+**Description**: Decrements the number stored at each key.  
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
 **Permissions**: `P_READ` and `P_WRITE`  
@@ -677,6 +677,27 @@ APPEND user_name " Black"
 DECR user_age
 DECR user_count user_money
 ```
+
+---
+
+### DECRBY
+**Syntax**: `DECRBY key value`  
+**Description**: Decrements the number stored at key by value.  
+**Since**: `0.2.0`  
+**Time complexity**: `O(1)`  
+**Permissions**: `P_READ` and `P_WRITE`  
+**Returns**: An integer  
+**Behavior**:
+* If the key is not holding a value, value will be set to `-value`.
+* If the key is holding a value that is not integer, throws an error.
+* If the new key cannot be set, throws an error.
+
+**Example**:
+```shell
+DECRBY user_age 3
+```
+
+---
 
 ### DEL
 **Syntax**: `DEL key [key ...]`  
@@ -730,7 +751,7 @@ GET user_name
 
 ### INCR
 **Syntax**: `INCR [..key(s)]`  
-**Description**: Increments value(s).  
+**Description**: Increments the number stored at each key.  
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
 **Permissions**: `P_READ` and `P_WRITE`  
@@ -745,6 +766,25 @@ GET user_name
 ```shell
 INCR user_age
 INCR user_count user_money
+```
+
+---
+
+### INCRBY
+**Syntax**: `INCRBY key value`  
+**Description**: Increments the number stored at key by value.  
+**Since**: `0.2.0`  
+**Time complexity**: `O(1)`  
+**Permissions**: `P_READ` and `P_WRITE`  
+**Returns**: An integer  
+**Behavior**:
+* If the key is not holding a value, value will be set to `value`.
+* If the key is holding a value that is not integer, throws an error.
+* If the new key cannot be set, throws an error.
+
+**Example**:
+```shell
+INCRBY user_age 3
 ```
 
 ---

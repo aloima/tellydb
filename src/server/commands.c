@@ -43,10 +43,12 @@ struct Command *load_commands() {
     // KV commands
     cmd_append,
     cmd_decr,
+    cmd_decrby,
     cmd_del,
     cmd_exists,
     cmd_get,
     cmd_incr,
+    cmd_incrby,
     cmd_rename,
     cmd_set,
     cmd_type,

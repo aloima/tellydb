@@ -86,7 +86,7 @@ static string_t run(struct CommandEntry entry) {
 
 const struct Command cmd_decr = {
   .name = "DECR",
-  .summary = "Decrements value(s).",
+  .summary = "Decrements the number stored at each key.",
   .since = "0.1.0",
   .complexity = "O(1)",
   .permissions = (P_READ | P_WRITE),
