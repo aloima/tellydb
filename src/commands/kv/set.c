@@ -84,7 +84,7 @@ static string_t run(struct CommandEntry entry) {
 
   const bool is_true = streq(value_in, "true");
 
-  if (is_integer(value_in)) {
+  if (is_integer(value_in) || is_double(value_in)) {
     if (!as) {
       type = TELLY_NUM;
     } else if (type != TELLY_NUM && type != TELLY_STR) {

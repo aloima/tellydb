@@ -11,7 +11,9 @@ static string_t run(struct CommandEntry entry) {
     return WRONG_ARGUMENT_ERROR("INCRBY");
   }
 
-  if (!is_integer(entry.data->args[1].value)) {
+  const char *input = entry.data->args[1].value;
+
+  if (!is_integer(input) && !is_double(input)) {
     PASS_NO_CLIENT(entry.client);
     return RESP_ERROR_MESSAGE("Second argument must be an integer");
   }
@@ -24,7 +26,7 @@ static string_t run(struct CommandEntry entry) {
   if (!result) {
     number = malloc(sizeof(mpf_t));
     mpf_init2(*number, FLOAT_PRECISION);
-    mpf_set_str(*number, entry.data->args[1].value, 10);
+    mpf_set_str(*number, input, 10);
 
     const bool success = set_data(entry.database, NULL, key, number, TELLY_NUM);
 
@@ -37,7 +39,7 @@ static string_t run(struct CommandEntry entry) {
     }
   } else if (result->type == TELLY_NUM) {
     mpf_init2(value, FLOAT_PRECISION);
-    mpf_set_str(value, entry.data->args[1].value, 10);
+    mpf_set_str(value, input, 10);
 
     number = result->value;
     mpf_add(*number, *number, value);
