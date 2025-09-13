@@ -7,7 +7,7 @@
 
 #include <gmp.h>
 
-int create_resp_integer(char *buf, uint64_t value) {
+uint8_t create_resp_integer(char *buf, uint64_t value) {
   *(buf) = RDT_INTEGER;
   const uint64_t nbytes = ltoa(value, buf + 1);
   *(buf + nbytes + 1) = '\r';
@@ -15,8 +15,7 @@ int create_resp_integer(char *buf, uint64_t value) {
   return (nbytes + 3);
 }
 
-// TODO: "Invalid response type 13" from redis-cli on RDT_BIGNUMBER
-int create_resp_integer_mpf(const enum ProtocolVersion protover, char *buf, mpf_t value) {
+uint64_t create_resp_integer_mpf(const enum ProtocolVersion protover, char *buf, mpf_t value) {
   int nbytes = 1;
 
   mp_exp_t exp;
@@ -25,16 +24,7 @@ int create_resp_integer_mpf(const enum ProtocolVersion protover, char *buf, mpf_
   bool zeroed = true;
 
   if (len == 0) {
-    switch (protover) {
-      case RESP2:
-        *(buf) = RDT_INTEGER;
-        break;
-
-      case RESP3:
-        *(buf) = RDT_BIGNUMBER;
-        break;
-    }
-
+    *(buf) = RDT_INTEGER;
     *(buf + 1) = '0';
     *(buf + 2) = '\r';
     *(buf + 3) = '\n';
@@ -64,6 +54,7 @@ int create_resp_integer_mpf(const enum ProtocolVersion protover, char *buf, mpf_
       switch (protover) {
         case RESP2:
           // TODO: string representation
+          *(buf) = RDT_INTEGER;
           break;
 
         case RESP3:

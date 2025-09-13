@@ -20,6 +20,8 @@
 #define RDT_INTEGER ':'
 #define RDT_INTEGER_SL ":"
 
+// valkey-cli / probably redis-cli do not support formatting/sending big numbers
+// valkey-cli throws "Unknown type: 13"
 #define RDT_BIGNUMBER '('
 #define RDT_BIGNUMBER_SL "("
 
@@ -32,8 +34,8 @@
 #define RESP_BUF_SIZE 4096
 #define COMMAND_NAME_MAX_LENGTH 64
 
-int create_resp_integer(char *buf, uint64_t value);
-int create_resp_integer_mpf(const enum ProtocolVersion protover, char *buf, mpf_t value);
+uint8_t create_resp_integer(char *buf, uint64_t value);
+uint64_t create_resp_integer_mpf(const enum ProtocolVersion protover, char *buf, mpf_t value);
 uint64_t create_resp_string(char *buf, string_t string);
 
 typedef struct {
