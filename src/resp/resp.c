@@ -3,10 +3,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include <ctype.h>
 
-#define DATA_ERR(client) \
-  write_log(LOG_ERR, "Received data from Client #%u cannot be validated as a RESP data, so it cannot be created as a command.", (client)->id);
+static inline void DATA_ERR(struct Client *client) {
+  write_log(LOG_ERR, "Received data from Client #%" PRIu32 " cannot be validated as a RESP data, so it cannot be created as a command.", client->id);
+}
 
 #define TAKE_BYTES(value, n, return_value) \
   if (take_n_bytes(client, buf, at, value, n, size) != n) { \
