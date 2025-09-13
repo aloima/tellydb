@@ -45,6 +45,34 @@ const bool is_integer(const char *value) {
   return (_value != value) && (*_value == 0x00);
 }
 
+const bool is_double(const char *value) {
+  uint64_t i = 0;
+
+  if (value[i] == '-') {
+    i += 1;
+  }
+
+  bool point = false;
+
+  while (value[i] != '\0') {
+    const char c = value[i];
+
+    if (i == '.') {
+      if (point) {
+        return false;
+      }
+
+      point = true;
+    } else if (c < '0' || '9' < c) {
+      return false;
+    }
+
+    i += 1;
+  }
+
+  return point;
+}
+
 const uint8_t ltoa(const int64_t value, char *dst) {
   const bool neg = (value < 0);
   uint64_t uval = (neg ? -value : value);
