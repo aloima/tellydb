@@ -30,6 +30,7 @@ An in-memory key-value database project.
 + Clone the repository
 + Install `OpenSSL` library and its development headers
 + Install `jemalloc` library and its development headers
++ Install `gmp` library and its development headers
 + Install `cmake` to generate compile files
 + Create build directory using `mkdir build` and enter `cd build`
 + Generate compilation files using `cmake ..`
