@@ -57,7 +57,7 @@ const bool is_double(const char *value) {
   while (value[i] != '\0') {
     const char c = value[i];
 
-    if (i == '.') {
+    if (c == '.') {
       if (point) {
         return false;
       }
