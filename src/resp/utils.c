@@ -75,7 +75,7 @@ uint64_t create_resp_integer_mpf(const enum ProtocolVersion protover, char *buf,
 
     buf[nbytes++] = str[i];
 
-    if (exp < i && zeroed && str[i] != 0) {
+    if (exp <= i && zeroed && str[i] != 0) {
       zeroed = false;
     }
   }
