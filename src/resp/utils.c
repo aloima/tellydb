@@ -1,8 +1,6 @@
 #include <telly.h>
 
 #include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
 #include <stdbool.h>
 
 #include <gmp.h>
@@ -48,7 +46,7 @@ uint64_t create_resp_integer_mpf(const enum ProtocolVersion protover, char *buf,
   }
 
   if (zeroed) {
-    nbytes = ((nbytes < exp) ? nbytes : exp);
+    nbytes = (((exp + 1) < nbytes) ? (exp + 1) : nbytes);
 
     if (mpf_fits_slong_p(value) == 0) {
       switch (protover) {
@@ -67,8 +65,15 @@ uint64_t create_resp_integer_mpf(const enum ProtocolVersion protover, char *buf,
   } else {
     switch (protover) {
       case RESP2:
-        nbytes = ((nbytes < exp) ? nbytes : exp);
-        *(buf) = RDT_INTEGER;
+        if (exp == 0) {
+          nbytes = 2;
+          *(buf) = RDT_INTEGER;
+          *(buf + 1) = '0';
+        } else {
+          nbytes = (((exp + 1) < nbytes) ? (exp + 1) : nbytes);
+          *(buf) = RDT_INTEGER;
+        }
+
         break;
 
       case RESP3:
