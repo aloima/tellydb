@@ -13,6 +13,41 @@ uint8_t create_resp_integer(char *buf, uint64_t value) {
   return (nbytes + 3);
 }
 
+uint64_t create_resp_integer_mpz(const enum ProtocolVersion protover, char *buf, mpz_t value) {
+  uint64_t nbytes = 1;
+
+  if (mpz_fits_slong_p(value) != 0) {
+    *(buf) = RDT_INTEGER;
+  } else {
+    switch (protover) {
+      case RESP2:
+        // TODO: string representation
+        break;
+
+      case RESP3:
+        *(buf) = RDT_BIGNUMBER;
+        break;
+    }
+  }
+
+  mpz_get_str((buf + 1), 10, value);
+
+  nbytes += ({
+    uint64_t size = mpz_sizeinbase(value, 10);
+
+    if (mpz_sgn(value) == -1) {
+      size += 1;
+    }
+
+    ((buf[size] == '\0') ? (size - 1) : size);
+  });
+
+  *(buf + nbytes++) = '\r';
+  *(buf + nbytes++) = '\n';
+
+  return nbytes;
+}
+
 uint64_t create_resp_integer_mpf(const enum ProtocolVersion protover, char *buf, mpf_t value) {
   int nbytes = 1;
 
