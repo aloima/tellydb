@@ -2,6 +2,8 @@
 
 #include <stddef.h>
 
+#include <gmp.h>
+
 static string_t run(struct CommandEntry entry) {
   PASS_NO_CLIENT(entry.client);
 
@@ -19,14 +21,18 @@ static string_t run(struct CommandEntry entry) {
     return INVALID_TYPE_ERROR("HTYPE");
   }
 
+  // TODO: add giving error when field could not be found
   const struct HashTableField *field = get_field_from_hashtable(kv->value, entry.data->args[1]);
 
   switch (field->type) {
     case TELLY_NULL:
       return RESP_OK_MESSAGE("null");
 
-    case TELLY_NUM:
-      return RESP_OK_MESSAGE("number");
+    case TELLY_INT:
+      return RESP_OK_MESSAGE("integer");
+
+    case TELLY_DOUBLE:
+      return RESP_OK_MESSAGE("double");
 
     case TELLY_STR:
       return RESP_OK_MESSAGE("string");

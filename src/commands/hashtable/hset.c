@@ -1,10 +1,11 @@
 #include <telly.h>
 
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+
+#include <gmp.h>
 
 static string_t run(struct CommandEntry entry) {
   if (entry.data->arg_count == 1 || (entry.data->arg_count - 1) % 2 != 0) {
@@ -33,28 +34,34 @@ static string_t run(struct CommandEntry entry) {
   for (uint32_t i = 1; i <= fv_count; ++i) {
     const string_t name = entry.data->args[(i * 2) - 1];
     const string_t input = entry.data->args[i * 2];
-    char *input_value = input.value;
 
-    bool is_true = streq(input_value, "true");
+    const bool is_true = streq(input.value, "true");
+    const bool is_integer_value = is_integer(input.value);
+    const bool is_double_value = is_double(input.value);
 
-    if (is_integer(input_value)) {
-      const long number = atol(input.value);
-      long *value = malloc(sizeof(long));
-      *value = number;
-
-      set_field_of_hashtable(table, name, value, TELLY_NUM);
-    } else if (is_true || streq(input_value, "false")) {
+    if (is_integer_value || is_double_value) {
+      if (is_integer_value) {
+        mpz_t *value = malloc(sizeof(mpz_t));
+        mpz_init_set_str(*value, input.value, 10);
+        set_field_of_hashtable(table, name, value, TELLY_INT);
+      } else if (is_double_value) {
+        mpf_t *value = malloc(sizeof(mpf_t));
+        mpf_init2(*((mpf_t *) value), FLOAT_PRECISION);
+        mpf_set_str(*((mpf_t *) value), input.value, 10);
+        set_field_of_hashtable(table, name, value, TELLY_DOUBLE);
+      }
+    } else if (is_true || streq(input.value, "false")) {
       bool *value = malloc(sizeof(bool));
       *value = is_true;
 
       set_field_of_hashtable(table, name, value, TELLY_BOOL);
-    } else if (streq(input_value, "null")) {
+    } else if (streq(input.value, "null")) {
       set_field_of_hashtable(table, name, NULL, TELLY_NULL);
     } else {
       string_t *value = malloc(sizeof(string_t));
       value->len = input.len;
       value->value = malloc(value->len);
-      memcpy(value->value, input_value, value->len);
+      memcpy(value->value, input.value, value->len);
 
       set_field_of_hashtable(table, name, value, TELLY_STR);
     }
