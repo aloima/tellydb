@@ -18,7 +18,12 @@ void free_kv(struct KVPair *kv) {
     case TELLY_NULL:
       break;
 
-    case TELLY_NUM:
+    case TELLY_INT:
+      mpz_clear(*((mpz_t *) kv->value));
+      free(kv->value);
+      break;
+
+    case TELLY_DOUBLE:
       mpf_clear(*((mpf_t *) kv->value));
       free(kv->value);
       break;

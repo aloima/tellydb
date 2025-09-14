@@ -21,6 +21,10 @@ static string_t run(struct CommandEntry entry) {
   }
 
   char *value_in = entry.data->args[1].value;
+  const bool is_true = streq(value_in, "true");
+  bool is_integer_value = false;
+  bool is_double_value = false;
+
   bool get = false;
   bool nx = false, xx = false, as = false;
 
@@ -48,8 +52,21 @@ static string_t run(struct CommandEntry entry) {
           type = TELLY_STR;
         } else if (streq(name.value, "BOOLEAN") || streq(name.value, "BOOL")) {
           type = TELLY_BOOL;
-        } else if (streq(name.value, "NUMBER") || streq(name.value, "NUM") || streq(name.value, "INTEGER") || streq(name.value, "INT")) {
-          type = TELLY_NUM;
+        } else if (streq(name.value, "INTEGER") || streq(name.value, "INT")) {
+          is_integer_value = is_integer(value_in);
+          type = TELLY_INT;
+        } else if (streq(name.value, "NUMBER") || streq(name.value, "NUM")) {
+          is_integer_value = is_integer(value_in);
+          is_double_value = is_double(value_in);
+
+          if (is_integer_value) {
+            type = TELLY_INT;
+          } else if (is_double_value) {
+            type = TELLY_DOUBLE;
+          }
+        } else if (streq(name.value, "DOUBLE")) {
+          is_double_value = is_double(value_in);
+          type = TELLY_DOUBLE;
         } else if (streq(name.value, "NULL")) {
           type = TELLY_NULL;
         } else {
@@ -82,18 +99,27 @@ static string_t run(struct CommandEntry entry) {
     return RESP_NULL(entry.client->protover);
   }
 
-  const bool is_true = streq(value_in, "true");
+  if (!as) {
+    is_integer_value = is_integer(value_in);
+    is_double_value = is_double(value_in);
+  }
 
-  if (is_integer(value_in) || is_double(value_in)) {
+  if (is_integer_value || is_double_value) {
     if (!as) {
-      type = TELLY_NUM;
-    } else if (type != TELLY_NUM && type != TELLY_STR) {
+      type = (is_integer_value ? TELLY_INT : TELLY_DOUBLE);
+    } else if (type != TELLY_INT && type != TELLY_DOUBLE && type != TELLY_STR) {
       PASS_NO_CLIENT(entry.client);
       return RESP_ERROR_MESSAGE("The type must be string or integer for this value");;
     }
 
     switch (type) {
-      case TELLY_NUM: {
+      case TELLY_INT: {
+        value = malloc(sizeof(mpz_t));
+        mpz_init_set_str(*((mpz_t *) value), value_in, 10);
+        break;
+      }
+
+      case TELLY_DOUBLE: {
         value = malloc(sizeof(mpf_t));
         mpf_init2(*((mpf_t *) value), FLOAT_PRECISION);
         mpf_set_str(*((mpf_t *) value), value_in, 10);

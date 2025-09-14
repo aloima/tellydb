@@ -10,7 +10,12 @@ struct KVPair *set_data(struct Database *database, struct KVPair *data, const st
       case TELLY_NULL:
         break;
 
-      case TELLY_NUM:
+      case TELLY_INT:
+        mpz_clear(*((mpz_t *) data->value));
+        free(data->value);
+        break;
+
+      case TELLY_DOUBLE:
         mpf_clear(*((mpf_t *) data->value));
         free(data->value);
         break;

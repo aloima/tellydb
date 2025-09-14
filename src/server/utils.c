@@ -1,7 +1,6 @@
 #include <telly.h>
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include <gmp.h>
@@ -11,7 +10,13 @@ string_t write_value(void *value, const enum TellyTypes type, const enum Protoco
     case TELLY_NULL:
       return RESP_OK_MESSAGE("null");
 
-    case TELLY_NUM: {
+    case TELLY_INT: {
+      mpz_t *number = value;
+      const size_t nbytes = create_resp_integer_mpz(protover, buffer, *number);
+      return CREATE_STRING(buffer, nbytes);
+    }
+
+    case TELLY_DOUBLE: {
       mpf_t *number = value;
       const size_t nbytes = create_resp_integer_mpf(protover, buffer, *number);
       return CREATE_STRING(buffer, nbytes);

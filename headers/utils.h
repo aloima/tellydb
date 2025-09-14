@@ -30,12 +30,16 @@ void to_uppercase(string_t src, char *dst);
 
 enum TellyTypes {
   TELLY_NULL,
-  TELLY_NUM,
+  TELLY_INT,
+  TELLY_DOUBLE,
   TELLY_STR,
   TELLY_BOOL,
   TELLY_HASHTABLE,
   TELLY_LIST
 };
+
+// will be deleted when complete implementation
+#define TELLY_NUM TELLY_INT
 
 enum LogLevel {
   LOG_INFO = 0b001,
