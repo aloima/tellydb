@@ -14,6 +14,8 @@
 #include <unistd.h>
 #include <pthread.h>
 
+#include <gmp.h>
+
 static int fd = -1;
 static bool saving = false;
 static uint16_t block_size;
@@ -55,7 +57,7 @@ const bool open_database_fd(struct Configuration *conf, uint32_t *server_age) {
       free(block);
     }
   } else {
-    set_main_database(create_database((string_t) {conf->database_name, strlen(conf->database_name)}));
+    set_main_database(create_database(CREATE_STRING(conf->database_name, strlen(conf->database_name))));
     write_log(LOG_INFO, "Database file is empty, loaded password and data count: 0");
     *server_age = 0;
   }
@@ -125,12 +127,36 @@ static inline off_t get_value_size(const enum TellyTypes type, void *value) {
   }
 }
 
-static inline void generate_number_value(char **data, off_t *len, const long *number) {
-  const uint32_t byte_count = get_byte_count(*number) + 1;
+static inline void generate_integer_value(char **data, off_t *len, mpz_t *number) {
+  const bool negative = (mpz_sgn(*number) == -1);
+  const uint8_t byte_count = ((mpz_sizeinbase(*number, 2) + 7) / 8);
 
-  (*data)[*len] = byte_count;
-  memcpy(*data + (*len += 1), number, byte_count);
-  *len += byte_count;
+  (*data)[*len] = byte_count | (negative << 7);
+  char *hex = mpz_get_str(NULL, 16, *number);
+  const bool is_even = mpz_tstbit(*number, ((byte_count - negative) * 2) - 1);
+
+  int i = 0;
+
+  for (uint8_t i = 0; i < byte_count; i++) {
+    char byte[3];
+
+    if (i == 0 && !is_even) {
+      puts("hm");
+      byte[0] = '0';
+      byte[1] = hex[0 + negative];
+      byte[2] = '\0';
+    } else {
+      const uint8_t str_index = ((is_even ? (i * 2) : ((i * 2) - 1)) + negative);
+      byte[0] = hex[str_index];
+      byte[1] = hex[str_index + 1];
+      byte[2] = '\0';
+    }
+
+    const uint64_t value = strtol(byte, NULL, 16);
+    (*data)[*len += 1] = value;
+  }
+
+  *len += 1;
 }
 
 static inline uint32_t generate_string_value(char **data, off_t *len, const string_t *string) {
@@ -162,8 +188,12 @@ static inline off_t generate_value(char **data, struct KVPair *kv) {
     case TELLY_NULL:
       break;
 
-    case TELLY_NUM:
-      generate_number_value(data, &len, kv->value);
+    case TELLY_INT:
+      generate_integer_value(data, &len, kv->value);
+      break;
+
+    case TELLY_DOUBLE:
+      // generate_number_value(data, &len, kv->value);
       break;
 
     case TELLY_STR:
@@ -189,8 +219,12 @@ static inline off_t generate_value(char **data, struct KVPair *kv) {
           generate_string_value(data, &len, &field->name);
 
           switch (field->type) {
-            case TELLY_NUM:
-              generate_number_value(data, &len, field->value);
+            case TELLY_INT:
+              generate_integer_value(data, &len, field->value);
+              break;
+
+            case TELLY_DOUBLE:
+              // generate_integer_value(data, &len, field->value);
               break;
 
             case TELLY_STR:
@@ -225,8 +259,12 @@ static inline off_t generate_value(char **data, struct KVPair *kv) {
         len += 1;
 
         switch (node->type) {
-          case TELLY_NUM:
-            generate_number_value(data, &len, node->value);
+          case TELLY_INT:
+            generate_integer_value(data, &len, node->value);
+            break;
+
+          case TELLY_DOUBLE:
+            // generate_integer_value(data, &len, field->value);
             break;
 
           case TELLY_STR:
