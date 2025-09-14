@@ -43,11 +43,13 @@ static string_t run(struct CommandEntry entry) {
       if (is_integer_value) {
         mpz_t *value = malloc(sizeof(mpz_t));
         mpz_init_set_str(*value, input.value, 10);
+
         set_field_of_hashtable(table, name, value, TELLY_INT);
       } else if (is_double_value) {
         mpf_t *value = malloc(sizeof(mpf_t));
-        mpf_init2(*((mpf_t *) value), FLOAT_PRECISION);
-        mpf_set_str(*((mpf_t *) value), input.value, 10);
+        mpf_init2(*value, FLOAT_PRECISION);
+        mpf_set_str(*value, input.value, 10);
+
         set_field_of_hashtable(table, name, value, TELLY_DOUBLE);
       }
     } else if (is_true || streq(input.value, "false")) {

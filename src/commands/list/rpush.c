@@ -1,9 +1,10 @@
 #include <telly.h>
 
-#include <stdio.h>
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
+
+#include <gmp.h>
 
 static void inline rpush_to_list(struct List *list, void *value, enum TellyTypes type) {
   struct ListNode *node = create_listnode(value, type);
@@ -42,28 +43,32 @@ static string_t run(struct CommandEntry entry) {
 
   for (uint32_t i = 1; i < entry.data->arg_count; ++i) {
     string_t input = entry.data->args[i];
-    char *input_value = input.value;
-    bool is_true = streq(input_value, "true");
+    bool is_true = streq(input.value, "true");
 
-    if (is_integer(input_value)) {
-      const long number = atol(input_value);
-      long *value = malloc(sizeof(long));
-      *value = number;
+    if (is_integer(input.value)) {
+      mpz_t *value = malloc(sizeof(mpz_t));
+      mpz_init_set_str(*value, input.value, 10);
 
-      rpush_to_list(list, value, TELLY_NUM);
-    } else if (is_true || streq(input_value, "false")) {
+      rpush_to_list(list, value, TELLY_INT);
+    } else if (is_double(input.value)) {
+      mpf_t *value = malloc(sizeof(mpf_t));
+      mpf_init2(*value, FLOAT_PRECISION);
+      mpf_set_str(*value, input.value, 10);
+
+      rpush_to_list(list, value, TELLY_DOUBLE);
+    } else if (is_true || streq(input.value, "false")) {
       bool *value = malloc(sizeof(bool));
       *value = is_true;
 
       rpush_to_list(list, value, TELLY_BOOL);
-    } else if (streq(input_value, "null")) {
+    } else if (streq(input.value, "null")) {
       rpush_to_list(list, NULL, TELLY_NULL);
     } else {
       string_t *value = malloc(sizeof(string_t));
       const uint32_t size = input.len + 1;
       value->len = input.len;
       value->value = malloc(size);
-      memcpy(value->value, input_value, size);
+      memcpy(value->value, input.value, size);
 
       rpush_to_list(list, value, TELLY_STR);
     }
