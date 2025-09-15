@@ -8,6 +8,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <gmp.h>
+
 static void collect_bytes(const int fd, char *block, const uint16_t block_size, uint16_t *at, const uint32_t count, void *data) {
   uint32_t remaining = count;
 
@@ -47,13 +49,36 @@ static size_t collect_string(string_t *string, const int fd, char *block, const 
   return (1 + byte_count + string->len);
 }
 
-static size_t collect_number(long *number, const int fd, char *block, const uint16_t block_size, uint16_t *at) {
-  *number = 0;
+static size_t collect_integer(mpz_t *number, const int fd, char *block, const uint16_t block_size, uint16_t *at) {
+  uint8_t specifier;
+  collect_bytes(fd, block, block_size, at, 1, &specifier);
 
-  uint8_t byte_count;
-  collect_bytes(fd, block, block_size, at, 1, &byte_count);
-  collect_bytes(fd, block, block_size, at, byte_count, number);
+  const bool negative = (specifier & 0x80);
+  const uint8_t byte_count = (specifier & 0x7F);
 
+  uint8_t data[byte_count];
+  collect_bytes(fd, block, block_size, at, byte_count, data);
+
+  mpz_t value;
+  mpz_init(value);
+  mpz_init_set_ui(*number, 0);
+
+  const uint8_t end = (byte_count - 1);
+
+  for (uint8_t i = 0; i < end; ++i) {
+    mpz_set_ui(value, data[i]);
+    mpz_ior(*number, *number, value);
+    mpz_mul_2exp(*number, *number, 8);
+  }
+
+  mpz_set_ui(value, data[end]);
+  mpz_ior(*number, *number, value);
+
+  if (negative) {
+    mpz_neg(*number, *number);
+  }
+
+  mpz_clear(value);
   return (1 + byte_count);
 }
 
@@ -69,9 +94,14 @@ static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uin
     case TELLY_NULL:
       break;
 
-    case TELLY_NUM:
-      value = malloc(sizeof(long));
-      collected_bytes += collect_number(value, fd, block, block_size, at);
+    case TELLY_INT:
+      value = malloc(sizeof(mpz_t));
+      mpz_init(value);
+      collected_bytes += collect_integer(value, fd, block, block_size, at);
+      break;
+
+    case TELLY_DOUBLE:
+      // TODO
       break;
 
     case TELLY_STR:
@@ -109,9 +139,13 @@ static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uin
             case TELLY_NULL:
               break;
 
-            case TELLY_NUM:
-              fv_value = malloc(sizeof(long));
-              collected_bytes += collect_number(fv_value, fd, block, block_size, at);
+            case TELLY_INT:
+              fv_value = malloc(sizeof(mpz_t));
+              collected_bytes += collect_integer(fv_value, fd, block, block_size, at);
+              break;
+
+            case TELLY_DOUBLE:
+              // TODO
               break;
 
             case TELLY_STR:
@@ -151,9 +185,13 @@ static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uin
           case TELLY_NULL:
             break;
 
-          case TELLY_NUM:
-            list_value = malloc(sizeof(long));
-            collected_bytes += collect_number(list_value, fd, block, block_size, at);
+          case TELLY_INT:
+            list_value = malloc(sizeof(mpz_t));
+            collected_bytes += collect_integer(list_value, fd, block, block_size, at);
+            break;
+
+          case TELLY_DOUBLE:
+            // TODO
             break;
 
           case TELLY_STR:
@@ -232,7 +270,7 @@ size_t get_all_data_from_file(struct Configuration *conf, const int fd, off_t fi
 
     if (!get_main_database()) set_main_database(create_database(database_name));
   } else {
-    set_main_database(create_database((string_t) {conf->database_name, strlen(conf->database_name)}));
+    set_main_database(create_database(CREATE_STRING(conf->database_name, strlen(conf->database_name))));
   }
 
   return loaded_count;
@@ -242,6 +280,9 @@ struct KVPair *get_data(struct Database *database, string_t key) {
   const uint64_t index = hash(key.value, key.len);
   struct BTreeValue *value = find_value_from_btree(database->cache, index, &key, (bool (*)(void *, void *)) check_correct_kv);
 
-  if (value) return value->data;
-  else return NULL;
+  if (value) {
+    return value->data;
+  } else {
+    return NULL;
+  }
 }

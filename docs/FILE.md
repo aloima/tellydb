@@ -48,6 +48,7 @@ Data value scheme is defined as:
 * For `TELLY_NULL (0x00)` type, data value is nothing and the line consists of `data key + 0x1D + TELLY_NULL`.
 * For `TELLY_INT (0x01)` type, data value is `specifier byte + number`.
 
+> [!NOTE]
 > All bits are used in specifier byte, the leftest bit represents the sign:  
 > 0 represents positive.  
 > 1 represents negative.  
