@@ -20,9 +20,35 @@ uint64_t create_resp_integer_mpz(const enum ProtocolVersion protover, char *buf,
     *(buf) = RDT_INTEGER;
   } else {
     switch (protover) {
-      case RESP2:
-        // TODO: string representation
-        break;
+      case RESP2: {
+        char *str = mpz_get_str(NULL, 10, value);
+        uint64_t size = mpz_sizeinbase(value, 10);
+
+        if (mpz_sgn(value) == -1) {
+          size += 1;
+        }
+
+        const uint64_t length = ((str[size - 2] == '\0') ? (size - 1) : size);
+
+        char digits[4]; // the maximum number of digits can be 310 (including negative sign)
+        const uint8_t digit_len = ltoa(length, digits);
+
+        *(buf) = RDT_BSTRING;
+        memcpy(buf + 1, digits, digit_len);
+        nbytes += digit_len;
+
+        *(buf + nbytes++) = '\r';
+        *(buf + nbytes++) = '\n';
+
+        memcpy(buf + nbytes, str, length);
+        nbytes += length;
+        free(str);
+
+        *(buf + nbytes++) = '\r';
+        *(buf + nbytes++) = '\n';
+
+        return nbytes;
+      }
 
       case RESP3:
         *(buf) = RDT_BIGNUMBER;
