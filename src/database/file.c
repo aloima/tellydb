@@ -137,7 +137,7 @@ static inline void generate_integer_value(char **data, off_t *len, mpz_t *number
   const bool negative = (mpz_sgn(*number) == -1);
   const uint8_t byte_count = ((mpz_sizeinbase(*number, 2) + 7) / 8);
 
-  (*data)[*len] = byte_count | (negative << 7);
+  (*data)[*len] = (byte_count - 1) | (negative << 7);
   char *hex = mpz_get_str(NULL, 16, *number);
   const bool is_even = mpz_tstbit(*number, ((byte_count - negative) * 2) - 1);
 

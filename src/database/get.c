@@ -54,7 +54,7 @@ static size_t collect_integer(mpz_t *number, const int fd, char *block, const ui
   collect_bytes(fd, block, block_size, at, 1, &specifier);
 
   const bool negative = (specifier & 0x80);
-  const uint8_t byte_count = (specifier & 0x7F);
+  const uint8_t byte_count = ((specifier & 0x7F) + 1);
 
   uint8_t data[byte_count];
   collect_bytes(fd, block, block_size, at, byte_count, data);
