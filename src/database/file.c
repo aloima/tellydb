@@ -79,10 +79,16 @@ static inline off_t get_value_size(const enum TellyTypes type, void *value) {
     case TELLY_NULL:
       return 0;
 
-    case TELLY_NUM: {
-      const uint8_t byte_count = get_byte_count(*((long *) value));
+    case TELLY_INT: {
+      mpz_t *val = value;
+      const uint8_t byte_count = ((mpz_sizeinbase(*val, 2) + 7) / 8);
+
       return (byte_count + 1);
     }
+
+    case TELLY_DOUBLE:
+      // TODO
+      return -1;
 
     case TELLY_STR: {
       const string_t *string = value;
@@ -141,7 +147,6 @@ static inline void generate_integer_value(char **data, off_t *len, mpz_t *number
     char byte[3];
 
     if (i == 0 && !is_even) {
-      puts("hm");
       byte[0] = '0';
       byte[1] = hex[0 + negative];
       byte[2] = '\0';
