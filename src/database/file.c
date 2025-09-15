@@ -139,9 +139,7 @@ static inline void generate_integer_value(char **data, off_t *len, mpz_t *number
 
   (*data)[*len] = (byte_count - 1) | (negative << 7);
   char *hex = mpz_get_str(NULL, 16, *number);
-  const bool is_even = mpz_tstbit(*number, ((byte_count - negative) * 2) - 1);
-
-  int i = 0;
+  const bool is_even = hex[(byte_count * 2) - 1] != '\0';
 
   for (uint8_t i = 0; i < byte_count; i++) {
     char byte[3];
