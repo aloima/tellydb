@@ -96,7 +96,6 @@ static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uin
 
     case TELLY_INT:
       value = malloc(sizeof(mpz_t));
-      mpz_init(value);
       collected_bytes += collect_integer(value, fd, block, block_size, at);
       break;
 
