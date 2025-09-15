@@ -162,6 +162,7 @@ static inline void generate_integer_value(char **data, off_t *len, mpz_t *number
   }
 
   *len += 1;
+  free(hex);
 }
 
 static inline uint32_t generate_string_value(char **data, off_t *len, const string_t *string) {
