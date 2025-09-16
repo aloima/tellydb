@@ -82,6 +82,51 @@ static size_t collect_integer(mpz_t *number, const int fd, char *block, const ui
   return (1 + byte_count);
 }
 
+static size_t collect_double(mpf_t *number, const int fd, char *block, const uint16_t block_size, uint16_t *at) {
+  uint8_t two[2];
+  collect_bytes(fd, block, block_size, at, 2, two);
+
+  uint8_t specifier = two[0], indicator = two[1];
+  const bool negative = (specifier & 0x80);
+  const uint8_t byte_count = ((specifier & 0x7F) + 1);
+  const int16_t exp = ((indicator & 0x80) ? (indicator & 0x7F) : -1);
+
+  uint8_t data[byte_count];
+  collect_bytes(fd, block, block_size, at, byte_count, data);
+
+  const bool is_even = (data[0] > 0x10);
+
+  const uint16_t hex_len = ((byte_count * 2) + (exp != -1));
+  char hex[hex_len + 1];
+
+  if (exp != -1) {
+    for (uint8_t i = 0; i < byte_count; ++i) {
+      if (i == exp) {
+        sprintf(hex + (i * 2), ".%02x", data[i]);
+      } else {
+        sprintf(hex + (i * 2) + (exp < i), "%02x", data[i]);
+      }
+    }
+  } else {
+    for (uint8_t i = 0; i < byte_count; ++i) {
+      if (i == exp) {
+        sprintf(hex + (i * 2), "%02x", data[i]);
+      }
+    }
+  }
+
+  hex[hex_len] = '\0';
+
+  mpf_init2(*number, FLOAT_PRECISION);
+  mpf_set_str(*number, hex, 16);
+
+  if (negative) {
+    mpf_neg(*number, *number);
+  }
+
+  return (2 + byte_count);
+}
+
 static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uint16_t block_size, uint16_t *at) {
   string_t key;
   void *value = NULL;
@@ -100,7 +145,8 @@ static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uin
       break;
 
     case TELLY_DOUBLE:
-      // TODO
+      value = malloc(sizeof(mpf_t));
+      collected_bytes += collect_double(value, fd, block, block_size, at);
       break;
 
     case TELLY_STR:
@@ -144,7 +190,8 @@ static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uin
               break;
 
             case TELLY_DOUBLE:
-              // TODO
+              fv_value = malloc(sizeof(mpf_t));
+              collected_bytes += collect_double(fv_value, fd, block, block_size, at);
               break;
 
             case TELLY_STR:
@@ -190,7 +237,8 @@ static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uin
             break;
 
           case TELLY_DOUBLE:
-            // TODO
+            list_value = malloc(sizeof(mpf_t));
+            collected_bytes += collect_double(list_value, fd, block, block_size, at);
             break;
 
           case TELLY_STR:

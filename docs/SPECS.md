@@ -25,7 +25,8 @@ To get information, look at [AUTH.md](./AUTH.md).
 
 * The max length of a key is `1 GB - 1 byte` or `1,073,741,823`.
 * The max length of a string-typed value is `1 GB - 1 byte` or `1,073,741,823`.
-* The bounds of an integer value is `[-2^1024-1, 2^1024-1]` and represented by 128 byte maximum.
+* The bounds of an integer value are `[-2^1024-1, 2^1024-1]` and represented by 128 byte maximum.
+* There is no bound for a double value, it is represented by 128 byte maximum and its precision limit is 128 bits.
 
 > [!TIP]
 > The amount of bytes represented by `uint64` is ~18 PB, this is too high for memory/caching for today's servers. So, selected `uint32` for most limits.

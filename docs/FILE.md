@@ -58,7 +58,21 @@ Data value scheme is defined as:
 >  
 > Numbers are saved in [Big-Endian format](https://en.wikipedia.org/wiki/Endianness).
 
-* For `TELLY_DOUBLE (0x02)` type, data value is `byte count (1-byte) + number`. For example, data value is `0x02 + (0x00 + 0x01)` or `0x020001` to get 256.
+* For `TELLY_DOUBLE (0x02)` type, data value is `specifier byte + point indicator byte + number`.
+
+> [!NOTE]
+> All bits are used in specifier byte, the leftest bit represents the sign:  
+> 0 represents positive.  
+> 1 represents negative.  
+>   
+> Other bits of specifier byte represent byte count of the number. For example:  
+> `0b11010000` represents a negative number that represented by `80` bytes.  
+>  
+> All bits are used in point indicator byte, the leftest bit represents that whether point is exist or not, it bit is for zeroed double values.  
+> Other bits indicate posiiton of point in double value.  
+>  
+> Numbers are saved in [Big-Endian format](https://en.wikipedia.org/wiki/Endianness).
+
 * For `TELLY_STR (0x03)` type, data value is `string length specifier + string data`.
 * For `TELLY_BOOL (0x04)` type, data value is `0x00` or `0x01`.
 

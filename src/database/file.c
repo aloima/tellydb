@@ -80,15 +80,23 @@ static inline off_t get_value_size(const enum TellyTypes type, void *value) {
       return 0;
 
     case TELLY_INT: {
-      mpz_t *val = value;
-      const uint8_t byte_count = ((mpz_sizeinbase(*val, 2) + 7) / 8);
+      mpz_t *number = value;
+      const uint8_t byte_count = ((mpz_sizeinbase(*number, 2) + 7) / 8);
 
       return (byte_count + 1);
     }
 
-    case TELLY_DOUBLE:
-      // TODO
-      return -1;
+    case TELLY_DOUBLE: {
+      mp_exp_t exp;
+      mpf_t *number = value;
+      char *hex = mpf_get_str(NULL, &exp, 16, 128, *number);
+      const bool negative = (hex[0] == '-');
+
+      const uint8_t ret = (strlen(hex) - negative + 2);
+      free(hex);
+
+      return ret;
+    }
 
     case TELLY_STR: {
       const string_t *string = value;
@@ -155,6 +163,46 @@ static inline void generate_integer_value(char **data, off_t *len, mpz_t *number
       byte[2] = '\0';
     }
 
+    const uint8_t value = strtol(byte, NULL, 16);
+    (*data)[*len += 1] = value;
+  }
+
+  *len += 1;
+  free(hex);
+}
+
+static inline void generate_double_value(char **data, off_t *len, mpf_t *number) {
+  mp_exp_t exp;
+  char *hex = mpf_get_str(NULL, &exp, 16, 0, *number);
+  const uint64_t size = strlen(hex);
+  const bool negative = (hex[0] == '-');
+
+  const uint8_t byte_count = (((size - negative) + 1) / 2);
+  const bool is_zeroed = (byte_count <= exp);
+
+  (*data)[*len] = ((byte_count - 1) | (negative << 7));
+  (*data)[*len += 1] = (!is_zeroed << 7);
+
+  if (!is_zeroed) {
+    (*data)[*len] |= exp;
+  }
+
+  const bool is_even = (hex[(byte_count * 2) - !negative] != '\0');
+
+  for (uint8_t i = 0; i < byte_count; i++) {
+    char byte[3];
+
+    if (i == 0 && !is_even) {
+      byte[0] = '0';
+      byte[1] = hex[0 + negative];
+      byte[2] = '\0';
+    } else {
+      const uint8_t str_index = ((is_even ? (i * 2) : ((i * 2) - 1)) + negative);
+      byte[0] = hex[str_index];
+      byte[1] = hex[str_index + 1];
+      byte[2] = '\0';
+    }
+
     const uint64_t value = strtol(byte, NULL, 16);
     (*data)[*len += 1] = value;
   }
@@ -197,7 +245,7 @@ static inline off_t generate_value(char **data, struct KVPair *kv) {
       break;
 
     case TELLY_DOUBLE:
-      // generate_number_value(data, &len, kv->value);
+      generate_double_value(data, &len, kv->value);
       break;
 
     case TELLY_STR:
@@ -228,7 +276,7 @@ static inline off_t generate_value(char **data, struct KVPair *kv) {
               break;
 
             case TELLY_DOUBLE:
-              // generate_integer_value(data, &len, field->value);
+              generate_double_value(data, &len, field->value);
               break;
 
             case TELLY_STR:
@@ -268,7 +316,7 @@ static inline off_t generate_value(char **data, struct KVPair *kv) {
             break;
 
           case TELLY_DOUBLE:
-            // generate_integer_value(data, &len, field->value);
+            generate_double_value(data, &len, node->value);
             break;
 
           case TELLY_STR:
