@@ -89,7 +89,7 @@ static size_t collect_double(mpf_t *number, const int fd, char *block, const uin
   uint8_t specifier = two[0], indicator = two[1];
   const bool negative = (specifier & 0x80);
   const uint8_t byte_count = ((specifier & 0x7F) + 1);
-  const int16_t exp = ((indicator & 0x80) ? (indicator & 0x7F) : -1);
+  int16_t exp = ((indicator & 0x80) ? (indicator & 0x7F) : -1);
 
   uint8_t data[byte_count];
   collect_bytes(fd, block, block_size, at, byte_count, data);
@@ -99,19 +99,40 @@ static size_t collect_double(mpf_t *number, const int fd, char *block, const uin
   const uint16_t hex_len = ((byte_count * 2) + (exp != -1));
   char hex[hex_len + 1];
 
+  if (!is_even) {
+    exp += 1;
+  }
+
   if (exp != -1) {
-    for (uint8_t i = 0; i < byte_count; ++i) {
-      if (i == exp) {
-        sprintf(hex + (i * 2), ".%02x", data[i]);
-      } else {
-        sprintf(hex + (i * 2) + (exp < i), "%02x", data[i]);
+    const bool exp_even = ((exp & 1) == 0); // (exp % 2) == 0
+
+    if (exp_even) {
+      for (uint8_t i = 0; i < byte_count; ++i) {
+        if ((i * 2) == exp) {
+          sprintf(hex + (i * 2), ".%02x", data[i]);
+        } else {
+          sprintf(hex + (i * 2) + (exp < (i * 2)), "%02x", data[i]);
+        }
+      }
+    } else {
+      for (uint8_t i = 0; i < byte_count; ++i) {
+        const uint8_t mul = (i * 2);
+
+        if ((mul + 1) == exp) {
+          char value[3];
+          sprintf(value, "%02x", data[i]);
+
+          hex[mul] = value[0];
+          hex[mul + 1] = '.';
+          hex[mul + 2] = value[1];
+        } else {
+          sprintf(hex + (i * 2) + (exp < (mul + 1)), "%02x", data[i]);
+        }
       }
     }
   } else {
     for (uint8_t i = 0; i < byte_count; ++i) {
-      if (i == exp) {
-        sprintf(hex + (i * 2), "%02x", data[i]);
-      }
+      sprintf(hex + (i * 2), "%02x", data[i]);
     }
   }
 

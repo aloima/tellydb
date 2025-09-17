@@ -184,7 +184,7 @@ static string_t run(struct CommandEntry entry) {
       type = TELLY_STR;
     } else if (type != TELLY_STR) {
       PASS_NO_CLIENT(entry.client);
-      return RESP_ERROR_MESSAGE("The type must be string fot this value");
+      return RESP_ERROR_MESSAGE("The type must be string for this value");
     }
 
     take_as_string(&value, entry.data->args[1]);
