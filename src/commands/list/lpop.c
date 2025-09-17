@@ -4,30 +4,21 @@
 
 static string_t run(struct CommandEntry entry) {
   if (entry.data->arg_count != 1) {
-    if (entry.client) {
-      return WRONG_ARGUMENT_ERROR("LPOP");
-    }
-
-    return EMPTY_STRING();
+    PASS_NO_CLIENT(entry.client);
+    return WRONG_ARGUMENT_ERROR("LPOP");
   }
 
   const string_t key = entry.data->args[0];
   const struct KVPair *kv = get_data(entry.database, key);
 
   if (!kv) {
-    if (entry.client) {
-      return RESP_NULL(entry.client->protover);
-    }
-
-    return EMPTY_STRING();
+    PASS_NO_CLIENT(entry.client);
+    return RESP_NULL(entry.client->protover);
   }
 
   if (kv->type != TELLY_LIST) {
-    if (entry.client) {
-      return INVALID_TYPE_ERROR("LPOP");
-    }
-
-    return EMPTY_STRING();
+    PASS_NO_CLIENT(entry.client);
+    return INVALID_TYPE_ERROR("LPOP");
   }
 
   struct List *list = kv->value;

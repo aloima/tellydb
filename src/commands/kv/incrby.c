@@ -3,43 +3,53 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#include <gmp.h>
+
 static string_t run(struct CommandEntry entry) {
   if (entry.data->arg_count != 2) {
     PASS_NO_CLIENT(entry.client);
     return WRONG_ARGUMENT_ERROR("INCRBY");
   }
 
-  if (!is_integer(entry.data->args[1].value)) {
+  const char *input = entry.data->args[1].value;
+
+  if (!is_integer(input) && !is_double(input)) {
     PASS_NO_CLIENT(entry.client);
     return RESP_ERROR_MESSAGE("Second argument must be an integer");
   }
 
   const string_t key = entry.data->args[0];
   struct KVPair *result = get_data(entry.database, key);
-  const int64_t value = strtoll(entry.data->args[1].value, NULL, 10);
-  int64_t *number;
+
+  mpf_t *number, value;
 
   if (!result) {
-    number = malloc(sizeof(int64_t));
-    *number = value;
+    number = malloc(sizeof(mpf_t));
+    mpf_init2(*number, FLOAT_PRECISION);
+    mpf_set_str(*number, input, 10);
 
     const bool success = set_data(entry.database, NULL, key, number, TELLY_NUM);
 
     if (!success) {
+      mpf_clear(*number);
       free(number);
 
       PASS_NO_CLIENT(entry.client);
       return RESP_ERROR();
     }
   } else if (result->type == TELLY_NUM) {
+    mpf_init2(value, FLOAT_PRECISION);
+    mpf_set_str(value, input, 10);
+
     number = result->value;
-    *number += value;
+    mpf_add(*number, *number, value);
+    mpf_clear(value);
   } else {
     return INVALID_TYPE_ERROR("INCRBY");
   }
 
   PASS_NO_CLIENT(entry.client);
-  const size_t nbytes = create_resp_integer(entry.buffer, *number);
+  const size_t nbytes = create_resp_integer_mpf(entry.client->protover, entry.buffer, *number);
   return CREATE_STRING(entry.buffer, nbytes);
 }
 

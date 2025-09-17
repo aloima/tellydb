@@ -19,8 +19,11 @@ static string_t run(struct CommandEntry entry) {
     case TELLY_NULL:
       return RESP_OK_MESSAGE("null");
 
-    case TELLY_NUM:
-      return RESP_OK_MESSAGE("number");
+    case TELLY_INT:
+      return RESP_OK_MESSAGE("integer");
+
+    case TELLY_DOUBLE:
+      return RESP_OK_MESSAGE("double");
 
     case TELLY_STR:
       return RESP_OK_MESSAGE("string");

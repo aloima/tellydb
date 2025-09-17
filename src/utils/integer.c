@@ -27,7 +27,7 @@ static const uint64_t pow10_table[] = {
   10000000000000000000UL
 };
 
-bool is_integer(const char *value) {
+const bool is_integer(const char *value) {
   char *_value = (char *) value;
 
   if (*value == '-') {
@@ -45,15 +45,43 @@ bool is_integer(const char *value) {
   return (_value != value) && (*_value == 0x00);
 }
 
-const int ltoa(const int64_t value, char *dst) {
+const bool is_double(const char *value) {
+  uint64_t i = 0;
+
+  if (value[i] == '-') {
+    i += 1;
+  }
+
+  bool point = false;
+
+  while (value[i] != '\0') {
+    const char c = value[i];
+
+    if (c == '.') {
+      if (point) {
+        return false;
+      }
+
+      point = true;
+    } else if (c < '0' || '9' < c) {
+      return false;
+    }
+
+    i += 1;
+  }
+
+  return point;
+}
+
+const uint8_t ltoa(const int64_t value, char *dst) {
   const bool neg = (value < 0);
   uint64_t uval = (neg ? -value : value);
 
-  int len = 1;
-  int l = 1, r = 19;
+  uint8_t len = 1;
+  uint8_t l = 1, r = 19;
 
   while (l <= r) {
-    int m = l + (r - l) / 2;
+    uint8_t m = l + (r - l) / 2;
 
     if (uval >= pow10_table[m]) {
       len = m + 1;
@@ -63,10 +91,10 @@ const int ltoa(const int64_t value, char *dst) {
     }
   }
 
-  const int total_len = (len + neg);
+  const uint8_t total_len = (len + neg);
   dst[total_len] = '\0';
 
-  int pos = (total_len - 1);
+  uint8_t pos = (total_len - 1);
 
   while (uval >= 10) {
     uint64_t q = (uval / 10);

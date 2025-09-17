@@ -6,6 +6,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include <gmp.h>
+
 #define RDT_SSTRING '+'
 #define RDT_SSTRING_SL "+"
 
@@ -18,31 +20,24 @@
 #define RDT_INTEGER ':'
 #define RDT_INTEGER_SL ":"
 
+// valkey-cli / probably redis-cli do not support formatting/sending big numbers
+// valkey-cli throws "Unknown type: 13"
+#define RDT_BIGNUMBER '('
+#define RDT_BIGNUMBER_SL "("
+
+#define RDT_DOUBLE ','
+#define RDT_DOUBLE_SL ","
+
 #define RDT_ERR '-'
 #define RDT_ERR_SL "-"
 
 #define RESP_BUF_SIZE 4096
 #define COMMAND_NAME_MAX_LENGTH 64
 
-static inline int create_resp_integer(char *buf, uint64_t value) {
-  *(buf) = RDT_INTEGER;
-  const uint64_t nbytes = ltoa(value, buf + 1);
-  *(buf + nbytes + 1) = '\r';
-  *(buf + nbytes + 2) = '\n';
-  return (nbytes + 3);
-}
-
-static inline uint64_t create_resp_string(char *buf, string_t string) {
-  *(buf) = RDT_BSTRING;
-  const uint64_t nbytes = ltoa(string.len, buf + 1);
-  *(buf + nbytes + 1) = '\r';
-  *(buf + nbytes + 2) = '\n';
-
-  memcpy(buf + nbytes + 3, string.value, string.len);
-  *(buf + nbytes + string.len + 3) = '\r';
-  *(buf + nbytes + string.len + 4) = '\n';
-  return (nbytes + string.len + 5);
-}
+uint8_t create_resp_integer(char *buf, uint64_t value);
+uint64_t create_resp_integer_mpf(const enum ProtocolVersion protover, char *buf, mpf_t value);
+uint64_t create_resp_integer_mpz(const enum ProtocolVersion protover, char *buf, mpz_t value);
+uint64_t create_resp_string(char *buf, string_t string);
 
 typedef struct {
   char value[COMMAND_NAME_MAX_LENGTH];

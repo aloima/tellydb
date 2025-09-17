@@ -3,6 +3,8 @@
 #include <string.h>
 #include <stdint.h>
 
+#include <gmp.h>
+
 static const uint64_t calculate_length(const enum ProtocolVersion protover, const struct HashTable *table) {
   uint64_t length = (3 + get_digit_count(table->size.used)); // *number\r\n
 
@@ -10,23 +12,38 @@ static const uint64_t calculate_length(const enum ProtocolVersion protover, cons
     case RESP2: {
       for (uint32_t i = 0; i < table->size.capacity; ++i) {
         const struct HashTableField *field = table->fields[i];
-    
+
         if (field) {
           switch (field->type) {
             case TELLY_NULL:
               length += 7; // +null\r\n
               break;
-    
-            case TELLY_NUM:
-              length += (3 + get_digit_count(*((long *) field->value))); // :number\r\n
+
+            case TELLY_INT: {
+              // This way may return an additional byte because of gmp logic
+              mpz_t *value = field->value;
+              length += (3 + mpz_sizeinbase(*value, 10)); // :number\r\n
+
+              if (mpz_sgn(*value) == -1) {
+                length += 1;
+              }
+
               break;
-    
+            }
+
+            case TELLY_DOUBLE: {
+              // TODO: there is no way to get length of float without allocation
+              // even if allocation will be done, it may not be a proper way,
+              // because create_resp_integer_mpf logic is different from gmp
+              length += 1;
+              break;
+            }
             case TELLY_STR: {
               const string_t *string = field->value;
               length += (5 + get_digit_count(string->len) + string->len); // $length\r\nstring\r\n
               break;
             }
-    
+
             case TELLY_BOOL:
               if (*((bool *) field->value)) {
                 length += 7; // +true\r\n
@@ -35,7 +52,7 @@ static const uint64_t calculate_length(const enum ProtocolVersion protover, cons
               }
 
               break;
-    
+
             default:
               break;
           }
@@ -48,27 +65,43 @@ static const uint64_t calculate_length(const enum ProtocolVersion protover, cons
     case RESP3: {
       for (uint32_t i = 0; i < table->size.capacity; ++i) {
         const struct HashTableField *field = table->fields[i];
-    
+
         if (field) {
           switch (field->type) {
             case TELLY_NULL:
               length += 3; // _\r\n
               break;
-    
-            case TELLY_NUM:
-              length += (3 + get_digit_count(*((long *) field->value))); // :number\r\n
+
+            case TELLY_INT: {
+              // This way may return an additional byte because of gmp logic
+              mpz_t *value = field->value;
+              length += (3 + mpz_sizeinbase(*value, 10)); // :number\r\n
+
+              if (mpz_sgn(*value) == -1) {
+                length += 1;
+              }
+
               break;
-    
+            }
+
+            case TELLY_DOUBLE: {
+              // TODO: there is no way to get length of float without allocation
+              // even if allocation will be done, it may not be a proper way,
+              // because create_resp_integer_mpf logic is different from gmp
+              length += 1;
+              break;
+            }
+
             case TELLY_STR: {
               const string_t *string = field->value;
               length += (5 + get_digit_count(string->len) + string->len); // $length\r\nstring\r\n
               break;
             }
-    
+
             case TELLY_BOOL:
               length += 4; // #t\r\n or #f\r\n
               break;
-    
+
             default:
               break;
           }
@@ -121,8 +154,12 @@ static string_t run(struct CommandEntry entry) {
               at += 7;
               break;
 
-            case TELLY_NUM:
-              at += create_resp_integer(response + at, *((long *) field->value));
+            case TELLY_INT:
+              at += create_resp_integer_mpz(entry.client->protover, response + at, *((mpz_t *) field->value));
+              break;
+
+            case TELLY_DOUBLE:
+              at += create_resp_integer_mpf(entry.client->protover, response + at, *((mpf_t *) field->value));
               break;
 
             case TELLY_STR:
@@ -159,8 +196,12 @@ static string_t run(struct CommandEntry entry) {
               at += 3;
               break;
 
-            case TELLY_NUM:
-              at += create_resp_integer(response + at, *((long *) field->value));
+            case TELLY_INT:
+              at += create_resp_integer_mpz(entry.client->protover, response + at, *((mpz_t *) field->value));
+              break;
+
+            case TELLY_DOUBLE:
+              at += create_resp_integer_mpf(entry.client->protover, response + at, *((mpf_t *) field->value));
               break;
 
             case TELLY_STR: {

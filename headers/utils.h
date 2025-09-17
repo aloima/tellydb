@@ -30,12 +30,16 @@ void to_uppercase(string_t src, char *dst);
 
 enum TellyTypes {
   TELLY_NULL,
-  TELLY_NUM,
+  TELLY_INT,
+  TELLY_DOUBLE,
   TELLY_STR,
   TELLY_BOOL,
   TELLY_HASHTABLE,
   TELLY_LIST
 };
+
+// will be deleted when complete implementation
+#define TELLY_NUM TELLY_INT
 
 enum LogLevel {
   LOG_INFO = 0b001,
@@ -49,8 +53,9 @@ void save_and_close_logs();
 
 void memcpy_aligned(void *restrict dest, const void *restrict src, size_t n);
 
-bool is_integer(const char *value);
-const int ltoa(const int64_t value, char *dst);
+const bool is_integer(const char *value);
+const bool is_double(const char *value);
+const uint8_t ltoa(const int64_t value, char *dst);
 const uint8_t get_digit_count(const uint64_t value);
 const uint8_t get_byte_count(const uint64_t value);
 

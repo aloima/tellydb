@@ -46,11 +46,37 @@ Data value scheme is defined as:
 > All content of data value that stores a number (list size, byte count, number etc.) is [little-endian](https://en.wikipedia.org/wiki/Endianness).
 
 * For `TELLY_NULL (0x00)` type, data value is nothing and the line consists of `data key + 0x1D + TELLY_NULL`.
-* For `TELLY_NUM (0x01)` type, data value is `byte count (1-byte) + number`. For example, data value is `0x02 + (0x00 + 0x01)` or `0x020001` to get 256.
-* For `TELLY_STR (0x02)` type, data value is `string length specifier + string data`.
-* For `TELLY_BOOL (0x03)` type, data value is `0x00` or `0x01`.
+* For `TELLY_INT (0x01)` type, data value is `specifier byte + number`.
 
-* For `TELLY_HASHTABLE (0x04)` type, data value is `hash table allocated size (n) + hash table element 1 + hash table element 2 ... hash table element n + 0x17`.
+> [!NOTE]
+> All bits are used in specifier byte, the leftest bit represents the sign:  
+> 0 represents positive.  
+> 1 represents negative.  
+>   
+> Other bits of specifier byte represent byte count of the number. For example:  
+> `0b11010000` represents a negative number that represented by `80` bytes.  
+>  
+> Numbers are saved in [Big-Endian format](https://en.wikipedia.org/wiki/Endianness).
+
+* For `TELLY_DOUBLE (0x02)` type, data value is `specifier byte + point indicator byte + number`.
+
+> [!NOTE]
+> All bits are used in specifier byte, the leftest bit represents the sign:  
+> 0 represents positive.  
+> 1 represents negative.  
+>   
+> Other bits of specifier byte represent byte count of the number. For example:  
+> `0b11010000` represents a negative number that represented by `80` bytes.  
+>  
+> All bits are used in point indicator byte, the leftest bit represents that whether point is exist or not, it bit is for zeroed double values.  
+> Other bits indicate posiiton of point in double value.  
+>  
+> Numbers are saved in [Big-Endian format](https://en.wikipedia.org/wiki/Endianness).
+
+* For `TELLY_STR (0x03)` type, data value is `string length specifier + string data`.
+* For `TELLY_BOOL (0x04)` type, data value is `0x00` or `0x01`.
+
+* For `TELLY_HASHTABLE (0x05)` type, data value is `hash table allocated size (n) + hash table element 1 + hash table element 2 ... hash table element n + 0x17`.
 
 > [!IMPORTANT]
 > The hash table **allocated** size is a 4-byte value. For example, `32` is represented as `0x20 0x00 0x00 0x00`.  
@@ -59,7 +85,7 @@ Data value scheme is defined as:
 > Additionally, type of a hash table element should be `TELLY_NULL`, `TELLY_NUM`, `TELLY_STR` or `TELLY_BOOL`.
 
 
-* For `TELLY_LIST (0x05)` type, data value is `list size (n) + list element 1 + list element 2 ... list element n`.
+* For `TELLY_LIST (0x06)` type, data value is `list size (n) + list element 1 + list element 2 ... list element n`.
 
 > [!IMPORTANT]
 > The list size is a 4-byte value. For example, `32` is represented as `0x20 0x00 0x00 0x00`.  

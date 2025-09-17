@@ -52,6 +52,7 @@ target_link_libraries(telly
   Threads::Threads
   m
   jemalloc
+  gmp
 )
 
 target_compile_definitions(telly

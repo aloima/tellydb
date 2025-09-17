@@ -3,10 +3,12 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#include <gmp.h>
+
 static string_t run(struct CommandEntry entry) {
   if (entry.data->arg_count == 0) {
     PASS_NO_CLIENT(entry.client);
-    return WRONG_ARGUMENT_ERROR("DECR");
+    return WRONG_ARGUMENT_ERROR("INCR");
   }
 
   uint32_t at;
@@ -32,51 +34,91 @@ static string_t run(struct CommandEntry entry) {
     for (uint32_t i = 0; i < entry.data->arg_count; ++i) {
       const string_t key = entry.data->args[i];
       struct KVPair *result = get_data(entry.database, key);
-      long *number;
+      void *number;
       at += create_resp_string(entry.buffer + at, key);
 
       if (!result) {
-        number = calloc(1, sizeof(long));
-        const bool success = set_data(entry.database, NULL, key, number, TELLY_NUM);
+        number = malloc(sizeof(mpz_t));
+
+        mpz_t *value = number;
+        mpz_init_set_ui(*value, 0);
+
+        const bool success = set_data(entry.database, NULL, key, value, TELLY_INT);
 
         if (!success) {
           at += create_resp_string(entry.buffer + at, CREATE_STRING("error", 5));
+          mpz_clear(*value);
           free(number);
           continue;
         }
-      } else if (result->type == TELLY_NUM) {
-        number = result->value;
-        *number -= 1;
-      } else {
-        at += create_resp_string(entry.buffer + at, CREATE_STRING("invalid type", 12));
-        continue;
-      }
 
-      at += create_resp_integer(entry.buffer + at, *number);
+        at += create_resp_integer_mpz(entry.client->protover, entry.buffer + at, *value);
+      } else {
+        switch (result->type) {
+          case TELLY_INT: {
+            number = result->value;
+
+            mpz_t *value = number;
+            mpz_sub_ui(*value, *value, 1);
+            at += create_resp_integer_mpz(entry.client->protover, entry.buffer + at, *value);
+            break;
+          }
+
+          case TELLY_DOUBLE: {
+            number = result->value;
+
+            mpf_t *value = number;
+            mpf_sub_ui(*value, *value, 1);
+            at += create_resp_integer_mpf(entry.client->protover, entry.buffer + at, *value);
+            break;
+          }
+
+          default:
+            at += create_resp_string(entry.buffer + at, CREATE_STRING("invalid type", 12));
+            break;
+        }
+      }
     }
   } else {
     for (uint32_t i = 0; i < entry.data->arg_count; ++i) {
       const string_t key = entry.data->args[i];
       struct KVPair *result = get_data(entry.database, key);
-      long *number;
+      void *number;
       at += create_resp_string(entry.buffer + at, key);
 
       if (!result) {
-        number = calloc(1, sizeof(long));
-        const bool success = set_data(entry.database, NULL, key, number, TELLY_NUM);
+        number = malloc(sizeof(mpz_t));
+        mpz_init_set_ui(*((mpz_t *) number), 0);
+
+        const bool success = set_data(entry.database, NULL, key, number, TELLY_INT);
 
         if (!success) {
+          mpz_clear(*((mpz_t *) number));
           free(number);
           continue;
         }
-      } else if (result->type == TELLY_NUM) {
-        number = result->value;
-        *number -= 1;
       } else {
-        continue;
-      }
+        switch (result->type) {
+          case TELLY_INT: {
+            number = result->value;
 
-      at += create_resp_integer(entry.buffer + at, *number);
+            mpz_t *value = number;
+            mpz_sub_ui(*value, *value, 1);
+            break;
+          }
+
+          case TELLY_DOUBLE: {
+            number = result->value;
+
+            mpf_t *value = number;
+            mpf_sub_ui(*value, *value, 1);
+            break;
+          }
+
+          default:
+            break;
+        }
+      }
     }
   }
 
