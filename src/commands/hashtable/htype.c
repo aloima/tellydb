@@ -21,8 +21,11 @@ static string_t run(struct CommandEntry entry) {
     return INVALID_TYPE_ERROR("HTYPE");
   }
 
-  // TODO: add giving error when field could not be found
   const struct HashTableField *field = get_field_from_hashtable(kv->value, entry.data->args[1]);
+
+  if (!field) {
+    return RESP_NULL(entry.client->protover);
+  }
 
   switch (field->type) {
     case TELLY_NULL:
