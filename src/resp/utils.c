@@ -80,7 +80,6 @@ uint64_t create_resp_integer_mpf(const enum ProtocolVersion protover, char *buf,
   mp_exp_t exp;
   char *str = mpf_get_str(NULL, &exp, 10, 0, value);
   const uint64_t len = strlen(str);
-  bool zeroed = true;
 
   if (len == 0) {
     *(buf) = RDT_INTEGER;
@@ -100,13 +99,9 @@ uint64_t create_resp_integer_mpf(const enum ProtocolVersion protover, char *buf,
     }
 
     buf[nbytes++] = str[i];
-
-    if (exp <= i && zeroed && str[i] != 0) {
-      zeroed = false;
-    }
   }
 
-  if (zeroed) {
+  if (len == exp) { // if value is in double type, but it is integer like 4.000000
     nbytes = (((exp + 1) < nbytes) ? (exp + 1) : nbytes);
 
     if (mpf_fits_slong_p(value) == 0) {
