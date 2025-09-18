@@ -13,39 +13,42 @@ void set_kv(struct KVPair *kv, const string_t key, void *value, const enum Telly
   memcpy(kv->key.value, key.value, key.len);
 }
 
-void free_kv(struct KVPair *kv) {
-  switch (kv->type) {
+void free_value(const enum TellyTypes type, void *value) {
+  switch (type) {
     case TELLY_NULL:
       break;
 
     case TELLY_INT:
-      mpz_clear(*((mpz_t *) kv->value));
-      free(kv->value);
+      mpz_clear(*((mpz_t *) value));
+      free(value);
       break;
 
     case TELLY_DOUBLE:
-      mpf_clear(*((mpf_t *) kv->value));
-      free(kv->value);
+      mpf_clear(*((mpf_t *) value));
+      free(value);
       break;
 
     case TELLY_STR:
-      free(((string_t *) kv->value)->value);
-      free(kv->value);
+      free(((string_t *) value)->value);
+      free(value);
       break;
 
     case TELLY_BOOL:
-      free(kv->value);
+      free(value);
       break;
 
     case TELLY_HASHTABLE:
-      free_hashtable(kv->value);
+      free_hashtable(value);
       break;
 
     case TELLY_LIST:
-      free_list(kv->value);
+      free_list(value);
       break;
   }
+}
 
+void free_kv(struct KVPair *kv) {
+  free_value(kv->type, kv->value);
   free(kv->key.value);
   free(kv);
 }

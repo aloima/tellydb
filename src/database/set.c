@@ -6,38 +6,7 @@
 
 struct KVPair *set_data(struct Database *database, struct KVPair *data, const string_t key, void *value, const enum TellyTypes type) {
   if (data) {
-    switch (data->type) {
-      case TELLY_NULL:
-        break;
-
-      case TELLY_INT:
-        mpz_clear(*((mpz_t *) data->value));
-        free(data->value);
-        break;
-
-      case TELLY_DOUBLE:
-        mpf_clear(*((mpf_t *) data->value));
-        free(data->value);
-        break;
-
-      case TELLY_STR:
-        free(((string_t *) data->value)->value);
-        free(data->value);
-        break;
-
-      case TELLY_BOOL:
-        free(data->value);
-        break;
-
-      case TELLY_HASHTABLE:
-        free_hashtable(data->value);
-        break;
-
-      case TELLY_LIST:
-        free_list(data->value);
-        break;
-    }
-
+    free_value(data->type, data->value);
     data->type = type;
     data->value = value;
 

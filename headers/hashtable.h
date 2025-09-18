@@ -16,7 +16,7 @@ struct HashTableField {
 
 struct HashTableSize {
   uint32_t capacity; // total allocated size
-  uint32_t used; // filled allocated block count
+  uint32_t used;     // filled allocated block count
 };
 
 struct HashTable {

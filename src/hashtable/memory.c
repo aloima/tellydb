@@ -20,15 +20,7 @@ void set_field_of_hashtable(struct HashTable *table, const string_t name, void *
 
     if (field) {
       if ((name.len == field->name.len) && (memcmp(field->name.value, name.value, name.len) == 0)) {
-        if (field->type == TELLY_STR) {
-          string_t *string = field->value;
-          free(string->value);
-        }
-
-        if (field->type != TELLY_NULL) {
-          free(field->value);
-        }
-
+        free_value(field->type, field->value);
         break;
       }
 

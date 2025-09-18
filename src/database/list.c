@@ -1,6 +1,5 @@
 #include <telly.h>
 
-#include <stdint.h>
 #include <stdlib.h>
 
 struct List *create_list() {
@@ -18,15 +17,7 @@ struct ListNode *create_listnode(void *value, enum TellyTypes type) {
 }
 
 void free_listnode(struct ListNode *node) {
-  if (node->type == TELLY_STR) {
-    string_t *string = node->value;
-    free(string->value);
-  }
-
-  if (node->type != TELLY_NULL) {
-    free(node->value);
-  }
-
+  free_value(node->type, node->value);
   free(node);
 }
 
