@@ -44,7 +44,6 @@ void set_field_of_hashtable(struct HashTable *table, const string_t name, void *
   field->hash = hashed;
 }
 
-// TODO: repositioning fields on deletion of linear-probed field
 bool del_field_to_hashtable(struct HashTable *table, const string_t name) {
   const uint64_t hashed = hash(name.value, name.len);
   uint32_t index = hashed % table->size.capacity;
@@ -52,21 +51,32 @@ bool del_field_to_hashtable(struct HashTable *table, const string_t name) {
   struct HashTableField *field;
 
   while (index != table->size.capacity && (field = table->fields[index])) {
-    if ((name.len == field->name.len) && (memcmp(field->name.value, name.value, name.len) == 0)) {
-      table->size.used -= 1;
-      table->fields[index] = NULL;
-
-      const uint32_t size = (table->size.capacity * HASHTABLE_SHRINK_FACTOR);
-
-      if (size == table->size.used) {
-        resize_hashtable(table, size);
-      }
-
-      free_htfield(field);
-      return true;
-    } else {
+    if ((name.len != field->name.len) || (memcmp(field->name.value, name.value, name.len) != 0)) {
       index += 1;
+      continue;
     }
+
+    const uint32_t size = (table->size.capacity * HASHTABLE_SHRINK_FACTOR);
+    table->size.used -= 1;
+
+    if (size == table->size.used) {
+      table->fields[index] = NULL;
+      resize_hashtable(table, size);
+    } else {
+      for (uint32_t i = (index + 1); i < table->size.capacity; ++i) {
+        struct HashTableField *move = table->fields[i];
+
+        if (!move || move->hash != field->hash) {
+          table->fields[i - 1] = NULL; // table->fields[index] will be processed for valid situation
+          break;
+        }
+
+        table->fields[i - 1] = move;
+      }
+    }
+
+    free_htfield(field);
+    return true;
   }
 
   return false;
