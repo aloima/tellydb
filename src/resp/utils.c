@@ -102,19 +102,32 @@ uint64_t create_resp_integer_mpf(const enum ProtocolVersion protover, char *buf,
   }
 
   if (len == exp) { // if value is in double type, but it is integer like 4.000000
-    nbytes = (((exp + 1) < nbytes) ? (exp + 1) : nbytes);
+    nbytes = 1;
 
     if (mpf_fits_slong_p(value) == 0) {
+      const uint64_t length = exp;
+
       switch (protover) {
-        case RESP2:
-          // TODO: string representation
-          *(buf) = RDT_INTEGER;
+        case RESP2: {
+          char digits[4]; // the maximum number of digits can be 310 (including negative sign)
+          const uint8_t digit_len = ltoa(length, digits);
+
+          *(buf) = RDT_BSTRING;
+          memcpy(buf + 1, digits, digit_len);
+          nbytes += digit_len;
+
+          *(buf + nbytes++) = '\r';
+          *(buf + nbytes++) = '\n';
           break;
+        }
 
         case RESP3:
           *(buf) = RDT_BIGNUMBER;
           break;
       }
+
+      memcpy(buf + nbytes, str, length);
+      nbytes += length;
     } else {
       *(buf) = RDT_INTEGER;
     }
