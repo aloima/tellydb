@@ -3,21 +3,6 @@
 #include <string.h>
 #include <stdint.h>
 
-static const uint64_t calculate_length(const struct HashTable *table) {
-  uint64_t length = (3 + get_digit_count(table->size.used)); // *number\r\n
-
-  for (uint32_t i = 0; i < table->size.capacity; ++i) {
-    const struct HashTableField *field = table->fields[i];
-
-    if (field) {
-      const uint64_t line_length = (5 + get_digit_count(field->name.len) + field->name.len); // $number\r\nstring\r\n
-      length += line_length;
-    }
-  }
-
-  return length;
-}
-
 static string_t run(struct CommandEntry entry) {
   PASS_NO_CLIENT(entry.client);
 
@@ -36,7 +21,6 @@ static string_t run(struct CommandEntry entry) {
   }
 
   const struct HashTable *table = kv->value;
-  const uint64_t length = calculate_length(table);
   char *response = entry.buffer;
 
   response[0] = '*';
@@ -60,7 +44,7 @@ static string_t run(struct CommandEntry entry) {
     }
   }
 
-  return CREATE_STRING(response, length);
+  return CREATE_STRING(response, at);
 }
 
 const struct Command cmd_hkeys = {

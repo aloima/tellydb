@@ -5,126 +5,6 @@
 
 #include <gmp.h>
 
-static const uint64_t calculate_length(const enum ProtocolVersion protover, const struct HashTable *table) {
-  uint64_t length;
-
-  switch (protover) {
-    case RESP2: {
-      length = (3 + get_digit_count(table->size.used * 2)); // *number\r\n
-
-      for (uint32_t i = 0; i < table->size.capacity; ++i) {
-        const struct HashTableField *field = table->fields[i];
-
-        if (field) {
-          length += (5 + get_digit_count(field->name.len) + field->name.len); // $length\r\nstring\r\n for name
-
-          switch (field->type) {
-            case TELLY_NULL:
-              length += 7; // +null\r\n
-              break;
-
-            case TELLY_INT: {
-              // This way may return an additional byte because of gmp logic
-              mpz_t *value = field->value;
-              length += (3 + mpz_sizeinbase(*value, 10)); // :number\r\n
-
-              if (mpz_sgn(*value) == -1) {
-                length += 1;
-              }
-
-              break;
-            }
-
-            case TELLY_DOUBLE: {
-              // TODO: there is no way to get length of float without allocation
-              // even if allocation will be done, it may not be a proper way,
-              // because create_resp_integer_mpf logic is different from gmp
-              length += 1;
-              break;
-            }
-
-            case TELLY_STR: {
-              const string_t *string = field->value;
-              length += (5 + get_digit_count(string->len) + string->len); // $length\r\nstring\r\n
-              break;
-            }
-
-            case TELLY_BOOL:
-              if (*((bool *) field->value)) {
-                length += 7; // +true\r\n
-              } else {
-                length += 8; // +false\r\n
-              }
-
-              break;
-
-            default:
-              break;
-          }
-        }
-      }
-
-      break;
-    }
-
-    case RESP3: {
-      length = (3 + get_digit_count(table->size.used)); // %number\r\n
-
-      for (uint32_t i = 0; i < table->size.capacity; ++i) {
-        const struct HashTableField *field = table->fields[i];
-
-        if (field) {
-          length += (5 + get_digit_count(field->name.len) + field->name.len); // $length\r\nstring\r\n for name
-
-          switch (field->type) {
-            case TELLY_NULL:
-              length += 3;
-              break;
-
-            case TELLY_INT: {
-              // This way may return an additional byte because of gmp logic
-              mpz_t *value = field->value;
-              length += (3 + mpz_sizeinbase(*value, 10)); // :number\r\n
-
-              if (mpz_sgn(*value) == -1) {
-                length += 1;
-              }
-
-              break;
-            }
-
-            case TELLY_DOUBLE: {
-              // TODO: there is no way to get length of float without allocation
-              // even if allocation will be done, it may not be a proper way,
-              // because create_resp_integer_mpf logic is different from gmp
-              length += 1;
-              break;
-            }
-
-            case TELLY_STR: {
-              const string_t *string = field->value;
-              length += (5 + get_digit_count(string->len) + string->len); // $length\r\nstring\r\n
-              break;
-            }
-
-            case TELLY_BOOL:
-              length += 4; // #t\r\n or #f\r\n
-              break;
-
-            default:
-              break;
-          }
-        }
-      }
-
-      break;
-    }
-  }
-
-  return length;
-}
-
-
 static string_t run(struct CommandEntry entry) {
   PASS_NO_CLIENT(entry.client);
 
@@ -149,13 +29,13 @@ static string_t run(struct CommandEntry entry) {
   }
 
   const struct HashTable *table = kv->value;
-  const uint64_t length = calculate_length(entry.client->protover, table);
   char *response = entry.buffer;
+  uint64_t at;
 
   switch (entry.client->protover) {
     case RESP2: {
       response[0] = '*';
-      uint64_t at = ltoa(table->size.used * 2, response + 1) + 1;
+      at = ltoa(table->size.used * 2, response + 1) + 1;
       response[at++] = '\r';
       response[at++] = '\n';
 
@@ -204,7 +84,7 @@ static string_t run(struct CommandEntry entry) {
 
     case RESP3: {
       response[0] = '%';
-      uint64_t at = ltoa(table->size.used, response + 1) + 1;
+      at = ltoa(table->size.used, response + 1) + 1;
       response[at++] = '\r';
       response[at++] = '\n';
 
@@ -253,7 +133,7 @@ static string_t run(struct CommandEntry entry) {
     }
   }
 
-  return CREATE_STRING(response, length);
+  return CREATE_STRING(response, at);
 }
 
 const struct Command cmd_hgetall = {

@@ -320,9 +320,9 @@ static size_t collect_database(struct Database **database, const int fd, char *b
 size_t get_all_data_from_file(struct Configuration *conf, const int fd, off_t file_size, char *block, const uint16_t block_size, const uint16_t filled_block_size) {
   size_t loaded_count = 0;
   uint16_t at = filled_block_size;
+  const string_t database_name = CREATE_STRING(conf->database_name, strlen(conf->database_name));
 
   if (at != file_size) {
-    const string_t database_name = {conf->database_name, strlen(conf->database_name)};
     const uint64_t hashed = hash(database_name.value, database_name.len);
 
     off_t collected_bytes = at;
@@ -333,12 +333,16 @@ size_t get_all_data_from_file(struct Configuration *conf, const int fd, off_t fi
       collected_bytes += collect_database(&database, fd, block, block_size, &at, &data_count);
       loaded_count += data_count;
 
-      if (database->id == hashed) set_main_database(database);
+      if (database->id == hashed) {
+        set_main_database(database);
+      }
     } while (collected_bytes != file_size);
 
-    if (!get_main_database()) set_main_database(create_database(database_name));
+    if (!get_main_database()) {
+      set_main_database(create_database(database_name));
+    }
   } else {
-    set_main_database(create_database(CREATE_STRING(conf->database_name, strlen(conf->database_name))));
+    set_main_database(create_database(database_name));
   }
 
   return loaded_count;
