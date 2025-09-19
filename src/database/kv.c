@@ -54,7 +54,3 @@ void free_kv(struct KVPair *kv) {
   free(kv->key.value);
   free(kv);
 }
-
-bool check_correct_kv(struct KVPair *kv, string_t *key) {
-  return ((key->len == kv->key.len) && (memcmp(kv->key.value, key->value, key->len) == 0));
-}

@@ -13,7 +13,5 @@ struct KVPair {
 };
 
 void set_kv(struct KVPair *kv, const string_t key, void *value, const enum TellyTypes type);
-bool check_correct_kv(struct KVPair *kv, string_t *key);
-
 void free_value(const enum TellyTypes type, void *value);
 void free_kv(struct KVPair *kv);
