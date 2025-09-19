@@ -42,6 +42,6 @@ struct KVPair *set_data(struct Database *database, struct KVPair *data, const st
 
     database->size.stored += 1;
     database->data[kv->hashed % database->size.capacity] = kv;
-    return NULL;
+    return kv;
   }
 }
