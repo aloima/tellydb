@@ -10,8 +10,7 @@ static struct LinkedListNode *end = NULL;
 static struct Database *main = NULL;
 static uint32_t database_count = 0;
 
-// TODO: implement creating data and retrieving size as argument
-struct Database *create_database(const string_t name) {
+struct Database *create_database(const string_t name, const uint64_t capacity) {
   struct Database *database = malloc(sizeof(struct Database));;
   struct LinkedListNode *node = malloc(sizeof(struct LinkedListNode));
   database_count += 1;
@@ -32,6 +31,9 @@ struct Database *create_database(const string_t name) {
   memcpy(database->name.value, name.value, name.len);
 
   database->id = hash(name.value, name.len);
+  database->data = calloc(capacity, sizeof(struct KVPair *));
+  database->size.stored = 0;
+  database->size.capacity = capacity;
 
   return database;
 }

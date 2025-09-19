@@ -57,7 +57,7 @@ const bool open_database_fd(struct Configuration *conf, uint32_t *server_age) {
       free(block);
     }
   } else {
-    set_main_database(create_database(CREATE_STRING(conf->database_name, strlen(conf->database_name))));
+    set_main_database(create_database(CREATE_STRING(conf->database_name, strlen(conf->database_name)), DATABASE_INITIAL_SIZE));
     write_log(LOG_INFO, "Database file is empty, loaded password and data count: 0");
     *server_age = 0;
   }

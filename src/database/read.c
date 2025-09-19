@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -302,7 +303,9 @@ static size_t collect_database(struct Database **database, const int fd, char *b
   string_t name;
   size_t collected_bytes = collect_string(&name, fd, block, block_size, at) + 4;
 
-  *database = create_database(name);
+  const uint64_t needed = pow(2, get_bit_count(*count));
+  const uint64_t capacity = ((needed > DATABASE_INITIAL_SIZE) ? needed : DATABASE_INITIAL_SIZE);
+  *database = create_database(name, capacity);
   free(name.value);
 
   struct KVPair **cache = (*database)->data;
@@ -312,7 +315,7 @@ static size_t collect_database(struct Database **database, const int fd, char *b
     collected_bytes += collect_kv(kv, fd, block, block_size, at);
 
     const uint64_t index = hash(kv->key.value, kv->key.len);
-    // TODO: implement adding value to data
+    (*database)->data[index] = kv;
   }
 
   return collected_bytes;
@@ -340,10 +343,10 @@ size_t get_all_data_from_file(struct Configuration *conf, const int fd, off_t fi
     } while (collected_bytes != file_size);
 
     if (!get_main_database()) {
-      set_main_database(create_database(database_name));
+      set_main_database(create_database(database_name, DATABASE_INITIAL_SIZE));
     }
   } else {
-    set_main_database(create_database(database_name));
+    set_main_database(create_database(database_name, DATABASE_INITIAL_SIZE));
   }
 
   return loaded_count;

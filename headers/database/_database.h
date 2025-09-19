@@ -22,7 +22,7 @@ struct Database {
   /* struct Client *clients;*/
 };
 
-struct Database *create_database(const string_t name);
+struct Database *create_database(const string_t name, const uint64_t capacity);
 struct LinkedListNode *get_database_node();
 void set_main_database(struct Database *database);
 struct Database *get_main_database();
