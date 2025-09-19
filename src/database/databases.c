@@ -97,7 +97,15 @@ bool rename_database(const string_t old_name, const string_t new_name) {
 }
 
 static void free_database(struct Database *database) {
-  // TODO: implement freeing data (do not forget using free_kv)
+  for (uint64_t i = 0; i < database->size.capacity; ++i) {
+    struct KVPair *kv = database->data[i];
+
+    if (kv) {
+      free_kv(kv);
+    }
+  }
+
+  free(database->data);
   free(database->name.value);
   free(database);
 }
