@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
+// TODO: add creating database when it is unexisted
 static string_t run(struct CommandEntry entry) {
   PASS_NO_CLIENT(entry.client);
 
