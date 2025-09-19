@@ -408,20 +408,13 @@ const bool save_data(const uint32_t server_age) {
     }
   }
 
-  // TODO: implement
-  /* {
+  {
     struct LinkedListNode *node = get_database_node();
 
     while (node) {
       struct Database *database = node->data;
-      uint32_t size = 0;
-      struct BTreeValue **values = get_values_from_btree(database->cache, &size);
-
-      if (values == NULL && database->cache->size != 0) {
-        write_log(LOG_ERR, "Cannot collect data to save to database file, out of memory.");
-        free(block);
-        return false;
-      }
+      const uint64_t capacity = database->size.capacity;
+      const uint64_t size = database->size.stored;
 
       memcpy(block + length, &size, 4);
       length += 4;
@@ -429,18 +422,25 @@ const bool save_data(const uint32_t server_age) {
 
       uint64_t data_size = 0;
 
-      for (uint32_t i = 0; i < size; ++i) {
-        struct KVPair *kv = values[i]->data;
-        uint64_t kv_size = (1 + get_value_size(TELLY_STR, &kv->key) + get_value_size(kv->type, kv->value));
-        data_size = fmax(data_size, kv_size);
+      for (uint32_t i = 0; i < capacity; ++i) {
+        struct KVPair *kv = database->data[i];
+
+        if (kv) {
+          const uint64_t kv_size = (1 + get_value_size(TELLY_STR, &kv->key) + get_value_size(kv->type, kv->value));
+          data_size = ((data_size > kv_size) ? data_size : kv_size);
+        }
       }
 
       char *data = malloc(data_size);
 
-      for (uint32_t i = 0; i < size; ++i) {
-        struct KVPair *kv = values[i]->data;
-        const off_t kv_size = generate_value(&data, kv);
+      for (uint32_t i = 0; i < capacity; ++i) {
+        struct KVPair *kv = database->data[i];
 
+        if (!kv) {
+          continue;
+        }
+
+        const off_t kv_size = generate_value(&data, kv);
         const uint32_t block_count = ((length + kv_size + block_size - 1) / block_size);
 
         if (block_count != 1) {
@@ -469,16 +469,15 @@ const bool save_data(const uint32_t server_age) {
         total += kv_size;
       }
 
-      if (values) {
-        free(values);
-      }
-
       free(data);
       node = node->next;
     }
-  } */
+  }
 
-  if (length != block_size) write(fd, block, block_size);
+  if (length != block_size) {
+    write(fd, block, block_size);
+  }
+
   ftruncate(fd, total);
   free(block);
 
