@@ -17,7 +17,7 @@ struct DatabaseSize {
 struct Database {
   string_t name;
   uint64_t id; // hashed from name
-  struct KVPair *data;
+  struct KVPair **data;
   struct DatabaseSize size;
   /* struct Client *clients;*/
 };
