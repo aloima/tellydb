@@ -13,9 +13,35 @@ struct KVPair *set_data(struct Database *database, struct KVPair *data, const st
     return data;
   } else {
     struct KVPair *kv = malloc(sizeof(struct KVPair));
+
+    if (!kv) {
+      return NULL;
+    }
+
     set_kv(kv, key, value, type);
 
-    // TODO: implement
+    if (database->size.capacity == database->size.stored) {
+      struct KVPair **nd = calloc(database->size.capacity * 2, sizeof(struct KVPair *));
+
+      if (!nd) {
+        return NULL;
+      }
+
+      database->size.capacity *= 2;
+
+      for (uint64_t i = 0; i < database->size.stored; ++i) {
+        struct KVPair *current = database->data[i];
+        const uint64_t index = (current->hashed % index);
+
+        nd[index] = current;
+      }
+
+      free(database->data);
+      database->data = nd;
+    }
+
+    database->size.stored += 1;
+    database->data[kv->hashed % database->size.capacity] = kv;
     return NULL;
   }
 }
