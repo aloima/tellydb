@@ -13,11 +13,10 @@ static string_t run(struct CommandEntry entry) {
   const string_t search = entry.data->args[0];
   const uint64_t index = hash(search.value, search.len);
 
-  struct BTreeValue *value = find_value_from_btree(entry.database->cache, index, (char *) search.value, (bool (*)(void *, void *)) check_correct_kv);
+  // TODO: implement
+  struct KVPair *kv = NULL;
 
-  if (value) {
-    struct KVPair *kv = value->data;
-
+  if (kv) {
     if ((search.len == kv->key.len) && (strncmp(search.value, kv->key.value, search.len) == 0)) {
       string_t *old = &kv->key;
       const string_t new = entry.data->args[1];
@@ -27,7 +26,7 @@ static string_t run(struct CommandEntry entry) {
         return RESP_ERROR_MESSAGE("The new key already exists");
       }
 
-      value->index = hash(new.value, new.len);
+      // value->index = hash(new.value, new.len);
       old->len = new.len;
       old->value = realloc(old->value, new.len);
       memcpy(old->value, new.value, new.len);

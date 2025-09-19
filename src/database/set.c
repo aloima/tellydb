@@ -15,6 +15,7 @@ struct KVPair *set_data(struct Database *database, struct KVPair *data, const st
     struct KVPair *kv = malloc(sizeof(struct KVPair));
     set_kv(kv, key, value, type);
 
-    return insert_value_to_btree(database->cache, hash(key.value, key.len), kv)->data;
+    // TODO: implement
+    return NULL;
   }
 }

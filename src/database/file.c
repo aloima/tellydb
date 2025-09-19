@@ -408,7 +408,8 @@ const bool save_data(const uint32_t server_age) {
     }
   }
 
-  {
+  // TODO: implement
+  /* {
     struct LinkedListNode *node = get_database_node();
 
     while (node) {
@@ -475,7 +476,7 @@ const bool save_data(const uint32_t server_age) {
       free(data);
       node = node->next;
     }
-  }
+  } */
 
   if (length != block_size) write(fd, block, block_size);
   ftruncate(fd, total);

@@ -303,15 +303,16 @@ static size_t collect_database(struct Database **database, const int fd, char *b
   size_t collected_bytes = collect_string(&name, fd, block, block_size, at) + 4;
 
   *database = create_database(name);
-  struct BTree *cache = (*database)->cache;
   free(name.value);
+
+  struct KVPair *cache = (*database)->data;
 
   for (uint32_t i = 0; i < *count; ++i) {
     struct KVPair *kv = malloc(sizeof(struct KVPair));
     collected_bytes += collect_kv(kv, fd, block, block_size, at);
 
     const uint64_t index = hash(kv->key.value, kv->key.len);
-    insert_value_to_btree(cache, index, kv);
+    // TODO: implement adding value to data
   }
 
   return collected_bytes;
@@ -350,11 +351,6 @@ size_t get_all_data_from_file(struct Configuration *conf, const int fd, off_t fi
 
 struct KVPair *get_data(struct Database *database, string_t key) {
   const uint64_t index = hash(key.value, key.len);
-  struct BTreeValue *value = find_value_from_btree(database->cache, index, &key, (bool (*)(void *, void *)) check_correct_kv);
-
-  if (value) {
-    return value->data;
-  } else {
-    return NULL;
-  }
+  // TODO: implement
+  return NULL;
 }

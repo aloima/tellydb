@@ -3,17 +3,22 @@
 #include "_kv.h"
 #include "../config.h"
 #include "../utils.h"
-#include "../btree.h"
 
 #include <stdint.h>
 #include <stdbool.h>
 
 #include <sys/types.h>
 
+struct DatabaseSize {
+  uint64_t stored;
+  uint64_t capacity;
+};
+
 struct Database {
   string_t name;
   uint64_t id; // hashed from name
-  struct BTree *cache;
+  struct KVPair *data;
+  struct DatabaseSize size;
   /* struct Client *clients;*/
 };
 
@@ -21,7 +26,7 @@ struct Database *create_database(const string_t name);
 struct LinkedListNode *get_database_node();
 void set_main_database(struct Database *database);
 struct Database *get_main_database();
-struct BTree *get_cache_of_database(const string_t name);
+struct Database *get_database(const string_t name);
 bool rename_database(const string_t old_name, const string_t new_name);
 void free_databases();
 
