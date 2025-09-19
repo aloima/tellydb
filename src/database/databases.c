@@ -27,10 +27,7 @@ struct Database *create_database(const string_t name) {
     node->next = NULL;
   }
 
-  database->name = (string_t) {
-    .value = malloc(name.len),
-    .len = name.len
-  };
+  database->name = CREATE_STRING(malloc(name.len), name.len);
   memcpy(database->name.value, name.value, name.len);
 
   database->id = hash(name.value, name.len);
@@ -53,7 +50,11 @@ struct BTree *get_cache_of_database(const string_t name) {
 
   while (node) {
     struct Database *database = node->data;
-    if (database->id == target) return database->cache;
+
+    if (database->id == target) {
+      return database->cache;
+    }
+
     node = node->next;
   }
 
@@ -72,7 +73,18 @@ bool rename_database(const string_t old_name, const string_t new_name) {
     struct Database *database = node->data;
 
     if (database->id == target) {
+      char *name = malloc(new_name.len);
+
+      if (!name) {
+        return false;
+      }
+
       database->id = hash(new_name.value, new_name.len);
+      free(database->name.value);
+
+      database->name = CREATE_STRING(name, new_name.len);
+      memcpy(database->name.value, new_name.value, new_name.len);
+
       return true;
     }
 
