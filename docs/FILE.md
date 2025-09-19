@@ -34,7 +34,7 @@ For permissions, look at [AUTH.md](./AUTH.md).
 
 ### Databases
 It consists of database names and their data lines.
-* `key-value pair count (4-byte) + string length specifier + database name + data lines`
+* `key-value pair count (8-byte) + string length specifier + database name + data lines`
 
 ### Data lines
 A data line is as follows:

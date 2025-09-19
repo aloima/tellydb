@@ -416,9 +416,9 @@ const bool save_data(const uint32_t server_age) {
       const uint64_t capacity = database->size.capacity;
       const uint64_t size = database->size.stored;
 
-      memcpy(block + length, &size, 4);
-      length += 4;
-      total += generate_string_value(&block, &length, &database->name) + 4;
+      memcpy(block + length, &size, 8);
+      length += 8;
+      total += generate_string_value(&block, &length, &database->name) + 8;
 
       uint64_t data_size = 0;
 

@@ -13,10 +13,11 @@ tellydb handles received data as follows:
 ## Authorization
 To get information, look at [AUTH.md](./AUTH.md).
 
-## B-Tree
-* BTree implementation of tellydb allows size of up to `uint32`. It means that a BTree can store up to `2^32-1` or `4,294,967,295` values.
-* BTree indexes are numbers, not keys. So, keys are converted to numbers by **djb2 hash algorithm**.
+## Databases
+* Each database stores the data in a HashMap.
+* The hashmap uses **djb2 hash algorithm** and all hashed values of key-value pairs will be stored in, so there is no re-hashing.
 * If a hash collision occurs, **linear probing scheme** will be executed.
+* The max size of this hashmap is `uint64_t`. It means that a database can store up to `2^64-1` or `18,446,744,073,709,551,615` key-value pairs.
 
 ## Limits
 * The max size of a list is `uint32`. It means that a list can store up to `2^32-1` or `4,294,967,295` list nodes.
@@ -29,4 +30,4 @@ To get information, look at [AUTH.md](./AUTH.md).
 * There is no bound for a double value, it is represented by 128 byte maximum and its precision limit is 128 bits.
 
 > [!TIP]
-> The amount of bytes represented by `uint64` is ~18 PB, this is too high for memory/caching for today's servers. So, selected `uint32` for most limits.
+> The amount of bytes represented by `uint64` is ~18 PB, this is too high for memory/caching for today's servers. So, selected `uint32` for the most limits.

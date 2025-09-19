@@ -297,11 +297,11 @@ static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uin
   return collected_bytes;
 }
 
-static size_t collect_database(struct Database **database, const int fd, char *block, const uint16_t block_size, uint16_t *at, uint32_t *count) {
-  collect_bytes(fd, block, block_size, at, 4, count);
+static size_t collect_database(struct Database **database, const int fd, char *block, const uint16_t block_size, uint16_t *at, uint64_t *count) {
+  collect_bytes(fd, block, block_size, at, 8, count);
 
   string_t name;
-  size_t collected_bytes = collect_string(&name, fd, block, block_size, at) + 4;
+  size_t collected_bytes = collect_string(&name, fd, block, block_size, at) + 8;
 
   const uint64_t needed = pow(2, get_bit_count(*count));
   const uint64_t capacity = ((needed > DATABASE_INITIAL_SIZE) ? needed : DATABASE_INITIAL_SIZE);
@@ -330,7 +330,7 @@ size_t get_all_data_from_file(struct Configuration *conf, const int fd, off_t fi
     const uint64_t hashed = hash(database_name.value, database_name.len);
 
     off_t collected_bytes = at;
-    uint32_t data_count = 0;
+    uint64_t data_count = 0;
     struct Database *database;
 
     do {
