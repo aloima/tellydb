@@ -3,9 +3,11 @@
 #include "../utils.h"
 
 #include <stdbool.h>
+#include <stdint.h>
 
 struct KVPair {
   string_t key;
+  uint64_t hashed;
   void *value;
   enum TellyTypes type;
 };

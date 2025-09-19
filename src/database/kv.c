@@ -6,11 +6,13 @@
 #include <gmp.h>
 
 void set_kv(struct KVPair *kv, const string_t key, void *value, const enum TellyTypes type) {
-  kv->type = type;
-  kv->value = value;
+  kv->hashed = hash(key.value, key.len);
   kv->key.len = key.len;
   kv->key.value = malloc(key.len);
   memcpy(kv->key.value, key.value, key.len);
+
+  kv->type = type;
+  kv->value = value;
 }
 
 void free_value(const enum TellyTypes type, void *value) {
