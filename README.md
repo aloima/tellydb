@@ -3,7 +3,6 @@ An in-memory key-value database project.
 
 ## Features
 + Follows [RESP2/RESP3](https://redis.io/docs/latest/develop/reference/protocol-spec/) from redis, so all redis clients are compatible
-+ Includes B-Tree for caching
 + Fully configurable via [.tellyconf](./docs/FILE.md)
 + Includes command queue system using a thread
 + Supports integer, string, null, boolean, list and hash table types
