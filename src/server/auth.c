@@ -41,6 +41,7 @@ bool initialize_kdf() {
     OSSL_PROVIDER_unload(prov);
     OSSL_LIB_CTX_free(libctx);
     write_log(LOG_ERR, "Cannot create KDF context, because an error occured.");
+    return false;
   }
 
   EVP_KDF_free(kdf);
