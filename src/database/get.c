@@ -3,12 +3,13 @@
 #include <string.h>
 
 struct KVPair *get_data(struct Database *database, string_t key) {
-  const uint64_t index = (hash(key.value, key.len) % database->size.capacity);
+  const uint64_t capacity = database->size.capacity;
+  const uint64_t index = (hash(key.value, key.len) % capacity);
   
-  for (uint64_t i = index; i < database->size.capacity; ++i) {
+  for (uint64_t i = index; i < capacity; ++i) {
     struct KVPair *pair = database->data[index];
 
-    if (!pair || ((pair->hashed % database->size.capacity) != index)) {
+    if (!pair || ((pair->hashed % capacity) != index)) {
       return NULL;
     }
 
