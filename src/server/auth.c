@@ -274,7 +274,7 @@ bool remove_password(struct Client *executor, char *value, const size_t value_le
     free_password(password);
     password_count -= 1;
 
-    memcpy(passwords + at, passwords + at + 1, (password_count - at) * sizeof(struct Password));
+    memmove(passwords + at, passwords + at + 1, (password_count - at) * sizeof(struct Password *));
     passwords = realloc(passwords, password_count * sizeof(struct Password));
 
     return true;
