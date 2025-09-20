@@ -192,7 +192,7 @@ void free_transactions() {
     struct TransactionBlock block = blocks[idx];
     idx = ((idx + 1) % conf->max_transaction_blocks);
 
-    for (uint32_t j = 0; i < block.transaction_count; ++j) {
+    for (uint32_t j = 0; j < block.transaction_count; ++j) {
       struct Transaction transaction = block.transactions[j];
       free_command_data(transaction.data);
     }
