@@ -24,7 +24,7 @@ struct HashTable {
   struct HashTableSize size;
 };
 
-struct HashTable *create_hashtable(uint32_t default_size);
+struct HashTable *create_hashtable(const uint32_t size);
 void resize_hashtable(struct HashTable *table, const uint32_t size);
 struct HashTableField *get_field_from_hashtable(struct HashTable *table, const string_t name);
 void free_hashtable(struct HashTable *table);

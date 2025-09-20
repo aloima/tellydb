@@ -4,10 +4,10 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-struct HashTable *create_hashtable(const uint32_t default_size) {
+struct HashTable *create_hashtable(const uint32_t size) {
   struct HashTable *table = malloc(sizeof(struct HashTable));
-  table->fields = calloc(default_size, sizeof(struct HashTableField *));
-  table->size.capacity = default_size;
+  table->fields = calloc(size, sizeof(struct HashTableField *));
+  table->size.capacity = size;
   table->size.used = 0;
 
   return table;
@@ -21,7 +21,7 @@ void resize_hashtable(struct HashTable *table, const uint32_t size) {
     uint32_t index = field->hash % size;
 
     while (data[index]) {
-      index += 1;
+      index = ((index + 1) % size);
     }
 
     data[index] = table->fields[i];
@@ -33,19 +33,19 @@ void resize_hashtable(struct HashTable *table, const uint32_t size) {
 }
 
 struct HashTableField *get_field_from_hashtable(struct HashTable *table, const string_t name) {
-  uint32_t index = hash(name.value, name.len) % table->size.capacity;
+  const uint32_t capacity = table->size.capacity;
+  uint32_t index = hash(name.value, name.len) % capacity;
   struct HashTableField *field;
 
-  do {
-    field = table->fields[index];
-    index += 1;
+  while ((field = table->fields[index])) {
+    index = ((index + 1) % capacity);
 
-    if (field && (name.len == field->name.len) && (memcmp(field->name.value, name.value, name.len) == 0)) {
+    if ((name.len == field->name.len) && (memcmp(field->name.value, name.value, name.len) == 0)) {
       return field;
     }
-  } while (index != table->size.capacity);
+  }
 
-  return field;
+  return NULL;
 }
 
 void free_hashtable(struct HashTable *table) {

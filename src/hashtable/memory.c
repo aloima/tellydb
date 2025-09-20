@@ -6,27 +6,25 @@
 #include <stdbool.h>
 
 void set_field_of_hashtable(struct HashTable *table, const string_t name, void *value, const enum TellyTypes type) {
-  if (table->size.used == table->size.capacity) {
-    resize_hashtable(table, (table->size.capacity * HASHTABLE_GROW_FACTOR));
+  const uint32_t capacity = table->size.capacity;
+
+  if (table->size.used == capacity) {
+    resize_hashtable(table, (capacity * HASHTABLE_GROW_FACTOR));
   }
 
   const uint64_t hashed = hash(name.value, name.len);
-  uint32_t index = hashed % table->size.capacity;
+  uint32_t index = hashed % capacity;
 
   struct HashTableField *field;
 
-  do {
-    field = table->fields[index];
-
-    if (field) {
-      if ((name.len == field->name.len) && (memcmp(field->name.value, name.value, name.len) == 0)) {
-        free_value(field->type, field->value);
-        break;
-      }
-
-      index += 1;
+  while ((field = table->fields[index])) {
+    if ((name.len == field->name.len) && (memcmp(field->name.value, name.value, name.len) == 0)) {
+      free_value(field->type, field->value);
+      break;
     }
-  } while (field && index != table->size.capacity);
+
+    index = ((index + 1) % capacity);
+  }
 
   if (field == NULL) {
     table->size.used += 1;
@@ -45,28 +43,29 @@ void set_field_of_hashtable(struct HashTable *table, const string_t name, void *
 }
 
 bool del_field_to_hashtable(struct HashTable *table, const string_t name) {
+  const uint32_t capacity = table->size.capacity;
   const uint64_t hashed = hash(name.value, name.len);
-  uint32_t index = hashed % table->size.capacity;
+  uint32_t index = hashed % capacity;
 
   struct HashTableField *field;
 
-  while (index != table->size.capacity && (field = table->fields[index])) {
+  while ((field = table->fields[index])) {
     if ((name.len != field->name.len) || (memcmp(field->name.value, name.value, name.len) != 0)) {
-      index += 1;
+      index = ((index + 1) % capacity);
       continue;
     }
 
-    const uint32_t size = (table->size.capacity * HASHTABLE_SHRINK_FACTOR);
+    const uint32_t size = (capacity * HASHTABLE_SHRINK_FACTOR);
     table->size.used -= 1;
 
     if (size == table->size.used) {
       table->fields[index] = NULL;
       resize_hashtable(table, size);
     } else {
-      for (uint32_t i = (index + 1); i < table->size.capacity; ++i) {
+      for (uint32_t i = (index + 1); i < capacity; ++i) {
         struct HashTableField *move = table->fields[i];
 
-        if (!move || move->hash != field->hash) {
+        if (!move || (move->hash != field->hash)) {
           table->fields[i - 1] = NULL; // table->fields[index] will be processed for valid situation
           break;
         }
