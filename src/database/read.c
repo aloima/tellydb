@@ -305,7 +305,9 @@ static size_t collect_database(struct Database **database, const int fd, char *b
 
   const uint64_t needed = pow(2, get_bit_count(*count));
   const uint64_t capacity = ((needed > DATABASE_INITIAL_SIZE) ? needed : DATABASE_INITIAL_SIZE);
+
   *database = create_database(name, capacity);
+  (*database)->size.stored = *count;
   free(name.value);
 
   struct KVPair **cache = (*database)->data;
