@@ -18,13 +18,18 @@ void resize_hashtable(struct HashTable *table, const uint32_t size) {
 
   for (uint32_t i = 0; i < table->size.capacity; ++i) {
     struct HashTableField *field = table->fields[i];
+
+    if (!field) {
+      continue;
+    }
+
     uint32_t index = field->hash % size;
 
     while (data[index]) {
       index += 1;
     }
 
-    data[index] = table->fields[i];
+    data[index] = field;
   }
 
   free(table->fields);
