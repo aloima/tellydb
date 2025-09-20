@@ -142,7 +142,18 @@ const uint8_t get_digit_count(const uint64_t value) {
   }
 }
 
+const uint8_t get_bit_count(const uint64_t value) {
+  if (value == 0) {
+    return 0;
+  }
+
+  return (64 - __builtin_clzll(value));
+}
+
 const uint8_t get_byte_count(const uint64_t value) {
-  if (value == 0) return 0;
+  if (value == 0) {
+    return 0;
+  }
+
   return (64 - __builtin_clzll(value) + 7) / 8;
 }

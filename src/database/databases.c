@@ -10,7 +10,7 @@ static struct LinkedListNode *end = NULL;
 static struct Database *main = NULL;
 static uint32_t database_count = 0;
 
-struct Database *create_database(const string_t name) {
+struct Database *create_database(const string_t name, const uint64_t capacity) {
   struct Database *database = malloc(sizeof(struct Database));;
   struct LinkedListNode *node = malloc(sizeof(struct LinkedListNode));
   database_count += 1;
@@ -31,7 +31,9 @@ struct Database *create_database(const string_t name) {
   memcpy(database->name.value, name.value, name.len);
 
   database->id = hash(name.value, name.len);
-  database->cache = create_btree(5);
+  database->data = calloc(capacity, sizeof(struct KVPair *));
+  database->size.stored = 0;
+  database->size.capacity = capacity;
 
   return database;
 }
@@ -44,7 +46,7 @@ struct Database *get_main_database() {
   return main;
 }
 
-struct BTree *get_cache_of_database(const string_t name) {
+struct Database *get_database(const string_t name) {
   const uint64_t target = hash(name.value, name.len);
   struct LinkedListNode *node = start;
 
@@ -52,7 +54,7 @@ struct BTree *get_cache_of_database(const string_t name) {
     struct Database *database = node->data;
 
     if (database->id == target) {
-      return database->cache;
+      return database;
     }
 
     node = node->next;
@@ -95,7 +97,15 @@ bool rename_database(const string_t old_name, const string_t new_name) {
 }
 
 static void free_database(struct Database *database) {
-  free_btree(database->cache, (void (*)(void *)) free_kv);
+  for (uint64_t i = 0; i < database->size.capacity; ++i) {
+    struct KVPair *kv = database->data[i];
+
+    if (kv) {
+      free_kv(kv);
+    }
+  }
+
+  free(database->data);
   free(database->name.value);
   free(database);
 }

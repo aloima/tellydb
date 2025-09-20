@@ -6,7 +6,6 @@
 #define FLOAT_PRECISION 1024
 
 #include "auth.h"              // IWYU pragma: export
-#include "btree.h"             // IWYU pragma: export
 #include "commands/commands.h" // IWYU pragma: export
 #include "config.h"            // IWYU pragma: export
 #include "database/database.h" // IWYU pragma: export

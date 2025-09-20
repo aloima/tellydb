@@ -57,6 +57,7 @@ const bool is_integer(const char *value);
 const bool is_double(const char *value);
 const uint8_t ltoa(const int64_t value, char *dst);
 const uint8_t get_digit_count(const uint64_t value);
+const uint8_t get_bit_count(const uint64_t value);
 const uint8_t get_byte_count(const uint64_t value);
 
 void generate_random_string(char *dest, size_t length);

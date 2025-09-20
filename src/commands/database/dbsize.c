@@ -1,26 +1,24 @@
 #include <telly.h>
 
-#include <stdio.h>
+#include <stddef.h>
 #include <stdint.h>
 
 static string_t run(struct CommandEntry entry) {
   PASS_NO_CLIENT(entry.client);
 
-  struct BTree *cache;
+  struct Database *database;
 
   if (entry.data->arg_count != 1) {
-    cache = entry.database->cache;
+    database = entry.database;
   } else {
-    struct BTree *found = get_cache_of_database(entry.data->args[0]);
+    database = get_database(entry.data->args[0]);
 
-    if (found) {
-      cache = found;
-    } else {
+    if (!database) {
       return RESP_ERROR_MESSAGE("Database cannot be found");
     }
   }
 
-  const size_t nbytes = create_resp_integer(entry.buffer, cache->size);
+  const size_t nbytes = create_resp_integer(entry.buffer, database->size.stored);
   return CREATE_STRING(entry.buffer, nbytes);
 }
 
