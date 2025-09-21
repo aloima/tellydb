@@ -39,14 +39,23 @@ void resize_hashtable(struct HashTable *table, const uint32_t size) {
 
 struct HashTableField *get_field_from_hashtable(struct HashTable *table, const string_t name) {
   const uint32_t capacity = table->size.capacity;
-  uint32_t index = hash(name.value, name.len) % capacity;
+  const uint32_t start_idx = (hash(name.value, name.len) % capacity);
+  uint32_t index = start_idx;
   struct HashTableField *field;
 
   while ((field = table->fields[index])) {
-    index = ((index + 1) % capacity);
+    if ((field->hash % capacity) != index) {
+      break;
+    }
 
     if ((name.len == field->name.len) && (memcmp(field->name.value, name.value, name.len) == 0)) {
       return field;
+    }
+
+    index = ((index + 1) % capacity);
+
+    if (index == start_idx) {
+      break;
     }
   }
 
