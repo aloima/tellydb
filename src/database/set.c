@@ -30,8 +30,9 @@ struct KVPair *set_data(struct Database *database, struct KVPair *data, const st
       database->size.capacity *= 2;
 
       for (uint64_t i = 0; i < database->size.stored; ++i) {
+        // No need for NULL checking, because database is fulled already, all data is available.
         struct KVPair *current = database->data[i];
-        const uint64_t index = (current->hashed % index);
+        const uint64_t index = (current->hashed % database->size.capacity);
 
         nd[index] = current;
       }
