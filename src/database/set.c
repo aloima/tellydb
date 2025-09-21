@@ -1,5 +1,6 @@
 #include <telly.h>
 
+#include <stdint.h>
 #include <stdlib.h>
 
 #include <gmp.h>
@@ -41,8 +42,15 @@ struct KVPair *set_data(struct Database *database, struct KVPair *data, const st
       database->data = nd;
     }
 
+    uint64_t index = (kv->hashed % database->size.capacity);
+
+    while (database->data[index]) {
+      index = ((index + 1) % database->size.capacity);
+    }
+
+    database->data[index] = kv;
     database->size.stored += 1;
-    database->data[kv->hashed % database->size.capacity] = kv;
+
     return kv;
   }
 }
