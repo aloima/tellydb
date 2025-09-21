@@ -7,7 +7,7 @@ struct KVPair *get_data(struct Database *database, string_t key) {
   const uint64_t index = (hash(key.value, key.len) % capacity);
   
   for (uint64_t i = index; i < capacity; ++i) {
-    struct KVPair *pair = database->data[index];
+    struct KVPair *pair = database->data[i];
 
     if (!pair || ((pair->hashed % capacity) != index)) {
       return NULL;
