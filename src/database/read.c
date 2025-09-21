@@ -319,7 +319,7 @@ static size_t collect_database(struct Database **database, const int fd, char *b
     uint64_t index = (hash(kv->key.value, kv->key.len) % capacity);
 
     while ((*database)->data[index]) {
-      index += 1;
+      index = ((index + 1) % capacity);
     }
 
     (*database)->data[index] = kv;
