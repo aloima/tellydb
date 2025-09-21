@@ -10,7 +10,8 @@ static inline uint64_t add_to_index(const uint64_t index, const uint64_t capacit
 
 bool delete_data(struct Database *database, const string_t key) {
   const uint64_t capacity = database->size.capacity;
-  uint64_t index = (hash((char *) key.value, key.len) % capacity);
+  const uint64_t start_idx = (hash((char *) key.value, key.len) % capacity);
+  uint64_t index = index;
   struct KVPair *kv;
 
   while ((kv = database->data[index])) {
@@ -20,15 +21,11 @@ bool delete_data(struct Database *database, const string_t key) {
       break;
     }
 
-    index += 1;
+    index = add_to_index(index, capacity);
 
-    if (index == capacity) {
+    if (index == start_idx) {
       return false;
     }
-  }
-
-  if (!kv) {
-    return false;
   }
 
   free_kv(kv);
