@@ -312,11 +312,16 @@ static size_t collect_database(struct Database **database, const int fd, char *b
 
   struct KVPair **cache = (*database)->data;
 
-  for (uint32_t i = 0; i < *count; ++i) {
+  for (uint64_t i = 0; i < *count; ++i) {
     struct KVPair *kv = malloc(sizeof(struct KVPair));
     collected_bytes += collect_kv(kv, fd, block, block_size, at);
 
-    const uint64_t index = (hash(kv->key.value, kv->key.len) % capacity);
+    uint64_t index = (hash(kv->key.value, kv->key.len) % capacity);
+
+    while ((*database)->data[index]) {
+      index = ((index + 1) % capacity);
+    }
+
     (*database)->data[index] = kv;
   }
 
