@@ -42,42 +42,47 @@ static inline int take_n_bytes(struct Client *client, char *buf, int32_t *at, vo
       return -1;
     }
   } else {
-    // TODO: fix dummy reading/add buffer
-        uint32_t length = n - remaining;   
-        char dummy[128];
-        uint32_t quotient = length / sizeof(dummy);
-        uint32_t rest = length % sizeof(dummy);
+    char dummy[128];
+    const uint32_t length = (n - remaining);
+    const uint32_t quotient = (length / sizeof(dummy));
+    const uint32_t rest = (length % sizeof(dummy));
+    uint32_t total = remaining;
 
-        uint32_t total = remaining;  
+    for (uint32_t i = 0; i < quotient; ++i) {
+      int got = _read(client, dummy, sizeof(dummy));
 
-        for (uint32_t i = 0; i < quotient; ++i) {
-            int got = _read(client, dummy, sizeof(dummy));
-            if (got <= 0) {
-                return total + (got > 0 ? got : 0); 
-            }
-            total += got;
-            if ((uint32_t)got < sizeof(dummy)) {  
-                return total;
-            }
-        }
+      if (got <= 0) {
+        return total + (got > 0 ? got : 0);
+      }
 
-        if (rest > 0) {
-            int got = _read(client, dummy, rest);
-            if (got <= 0) {
-                return total + (got > 0 ? got : 0);
-            }
-            total += got;
-            if ((uint32_t)got < rest) { 
-                return total;
-            }
-        }
+      total += got;
 
-        *size = _read(client, buf, RESP_BUF_SIZE);
-        if (*size <= 0) {
-            return total;  
-        }
+      if ((uint32_t) got < sizeof(dummy)) {
+        return total;
+      }
     }
-    
+
+    if (rest > 0) {
+      int got = _read(client, dummy, rest);
+
+      if (got <= 0) {
+        return total + (got > 0 ? got : 0);
+      }
+
+      total += got;
+
+      if ((uint32_t) got < rest) {
+        return total;
+      }
+    }
+
+    *size = _read(client, buf, RESP_BUF_SIZE);
+
+    if (*size <= 0) {
+      return total;
+    }
+  }
+
   *at = 0;
   return n;
 }
@@ -153,6 +158,12 @@ static inline bool get_resp_command_argument(struct Client *client, string_t *ar
       }
 
       argument->value = malloc(argument->len + 1);
+
+      if (!argument->value) {
+        DATA_ERR(client);
+        return false;
+      }
+
       TAKE_BYTES(argument->value, argument->len, false);
       argument->value[argument->len] = '\0';
 
@@ -161,7 +172,6 @@ static inline bool get_resp_command_argument(struct Client *client, string_t *ar
 
       if (VERY_UNLIKELY(crlf[0] != '\r' || crlf[1] != '\n')) {
         DATA_ERR(client);
-        free(argument->value);
         return false;
       }
 
@@ -209,8 +219,14 @@ static bool parse_resp_command(struct Client *client, char *buf, int32_t *at, in
 
         for (uint32_t i = 0; i < command->arg_count; ++i) {
           command->args[i].len = 0;
+          command->args[i].value = NULL;
 
           if (!get_resp_command_argument(client, &command->args[i], buf, at, size)) {
+            for (uint32_t j = 0; j < i; ++j) {
+              free(command->args[j].value);
+            }
+
+            free(command->args);
             return false;
           }
         }
