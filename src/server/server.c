@@ -78,7 +78,7 @@ void terminate_connection(const int connfd) {
 
   if (kevent(kq, &ev, 1, NULL, 0, NULL) == -1) {
 #endif
-    write_log(LOG_ERR, "Cannot remove Client #%u from multiplexing.", client->id);
+    write_log(LOG_ERR, "Cannot remove Client #%" PRIu32 " from multiplexing.", client->id);
     return;
   }
 
@@ -251,8 +251,8 @@ void start_server(struct Configuration *config) {
     write_log(LOG_WARN, "No configuration file. To specify, create .tellyconf or use `telly config /path/to/file`.");
   }
 
-  if (conf->tls) {
-    if (initialize_server_ssl() == -1) return;
+  if (conf->tls && (initialize_server_ssl() == -1)) {
+    return;
   }
 
   commands = load_commands();
@@ -263,8 +263,14 @@ void start_server(struct Configuration *config) {
 
   signal(SIGTERM, close_signal);
   signal(SIGINT, close_signal);
-  if (initialize_socket() == -1) return;
-  if (initialize_authorization() == -1) return;
+
+  if (initialize_socket() == -1) {
+    return;
+  }
+
+  if (initialize_authorization() == -1) {
+    return;
+  }
 
   if (!open_database_fd(conf, &age)) {
     FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);
