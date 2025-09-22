@@ -172,7 +172,6 @@ static inline bool get_resp_command_argument(struct Client *client, string_t *ar
 
       if (VERY_UNLIKELY(crlf[0] != '\r' || crlf[1] != '\n')) {
         DATA_ERR(client);
-        free(argument->value);
         return false;
       }
 
@@ -220,8 +219,14 @@ static bool parse_resp_command(struct Client *client, char *buf, int32_t *at, in
 
         for (uint32_t i = 0; i < command->arg_count; ++i) {
           command->args[i].len = 0;
+          command->args[i].value = NULL;
 
           if (!get_resp_command_argument(client, &command->args[i], buf, at, size)) {
+            for (uint32_t j = 0; j < i; ++j) {
+              free(command->args[j].value);
+            }
+
+            free(command->args);
             return false;
           }
         }
