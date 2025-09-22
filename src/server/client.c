@@ -145,7 +145,6 @@ static inline void insert_client(struct Client *client) {
     at = ((at + 1) % client_capacity);
   }
 
-  // printf("inserted: %d\n", at);
   clients[at] = client;
 
   at = (client->connfd % client_capacity);

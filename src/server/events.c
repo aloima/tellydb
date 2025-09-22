@@ -37,19 +37,40 @@ static inline int accept_client(const int sockfd, struct Configuration *conf, SS
   socklen_t addr_len = sizeof(addr);
 
   const int connfd = accept(sockfd, (struct sockaddr *) &addr, &addr_len);
+
+  if (connfd == -1) {
+    write_log(LOG_WARN, "Cannot accept a connection because of sockets.");
+    return -1;
+  }
+
   struct Client *client = add_client(connfd);
 
-  fcntl(connfd, F_SETFL, fcntl(connfd, F_GETFL, 0) | O_NONBLOCK);
+  if (!client) {
+    terminate_connection(client->connfd);
+    return -1;
+  }
+
+  if ((fcntl(connfd, F_SETFL, fcntl(connfd, F_GETFL, 0) | O_NONBLOCK)) == -1) {
+    write_log(LOG_WARN, "Cannot accept Client #%" PRIu32 ", because cannot set non-blocking file descriptor.", client->id);
+    terminate_connection(client->connfd);
+    return -1;
+  }
 
   event_t event;
 #ifdef __linux__
   event.events = (EPOLLIN | EPOLLET);
   event.data.fd = connfd;
-  epoll_ctl(eventfd, EPOLL_CTL_ADD, connfd, &event);
+
+  if ((epoll_ctl(eventfd, EPOLL_CTL_ADD, connfd, &event)) == -1) {
 #elif __APPLE__
   EV_SET(&event, connfd, EVFILT_READ, EV_ADD, 0, 0, NULL);
-  kevent(eventfd, &event, 1, NULL, 0, NULL);
+
+  if ((kevent(eventfd, &event, 1, NULL, 0, NULL)) == -1) {
 #endif
+    write_log(LOG_WARN, "Cannot accept Client #%" PRIu32 ", because cannot add it to multiplexing queue.", client->id);
+    terminate_connection(client->connfd);
+    return -1;
+  }
 
   if (conf->tls) {
     client->ssl = SSL_new(ctx);

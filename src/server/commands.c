@@ -69,9 +69,9 @@ struct Command *load_commands() {
     return NULL;
   }
 
-  for (int i = 0; i < command_count; ++i) {
-    struct Command command = command_list[i];
-    uint32_t index = get_command_index(command.name, strlen(command.name))->idx;
+  for (uint32_t i = 0; i < command_count; ++i) {
+    const struct Command command = command_list[i];
+    const uint32_t index = get_command_index(command.name, strlen(command.name))->idx;
 
     commands[index] = command;
   }
