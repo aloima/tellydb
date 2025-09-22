@@ -11,7 +11,7 @@ static inline void DATA_ERR(struct Client *client) {
 }
 
 #define TAKE_BYTES(value, n, return_value) \
-  if (take_n_bytes(client, buf, at, value, n, size) != n) { \
+  if (VERY_UNLIKELY(take_n_bytes(client, buf, at, value, n, size) != n)) { \
     DATA_ERR(client); \
     return return_value; \
   }
@@ -148,18 +148,18 @@ static inline bool get_resp_command_argument(struct Client *client, string_t *ar
     TAKE_BYTES(&c, 1, false);
 
     if (isdigit(c)) {
-      argument->len = (argument->len * 10) + (c - 48);
+      argument->len = (argument->len * 10) + (c - '0');
     } else if (c == '\r') {
       TAKE_BYTES(&c, 1, false);
 
-      if (c != '\n') {
+      if (VERY_UNLIKELY(c != '\n')) {
         DATA_ERR(client);
         return false;
       }
 
       argument->value = malloc(argument->len + 1);
 
-      if (!argument->value) {
+      if (VERY_UNLIKELY(argument->value == NULL)) {
         DATA_ERR(client);
         return false;
       }
@@ -167,7 +167,7 @@ static inline bool get_resp_command_argument(struct Client *client, string_t *ar
       TAKE_BYTES(argument->value, argument->len, false);
       argument->value[argument->len] = '\0';
 
-      char crlf[2] = {0, 0};
+      char crlf[2];
       TAKE_BYTES(crlf, 2, false);
 
       if (VERY_UNLIKELY(crlf[0] != '\r' || crlf[1] != '\n')) {
@@ -192,7 +192,7 @@ static bool parse_resp_command(struct Client *client, char *buf, int32_t *at, in
     TAKE_BYTES(&c, 1, false);
 
     if (isdigit(c)) {
-      command->arg_count = (command->arg_count * 10) + (c - 48);
+      command->arg_count = (command->arg_count * 10) + (c - '0');
     } else if (c == '\r') {
       TAKE_BYTES(&c, 1, false);
 
@@ -221,7 +221,7 @@ static bool parse_resp_command(struct Client *client, char *buf, int32_t *at, in
           command->args[i].len = 0;
           command->args[i].value = NULL;
 
-          if (!get_resp_command_argument(client, &command->args[i], buf, at, size)) {
+          if (VERY_UNLIKELY(!get_resp_command_argument(client, &command->args[i], buf, at, size))) {
             for (uint32_t j = 0; j < i; ++j) {
               free(command->args[j].value);
             }
