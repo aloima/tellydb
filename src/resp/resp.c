@@ -42,42 +42,47 @@ static inline int take_n_bytes(struct Client *client, char *buf, int32_t *at, vo
       return -1;
     }
   } else {
-    // TODO: fix dummy reading/add buffer
-        uint32_t length = n - remaining;   
-        char dummy[128];
-        uint32_t quotient = length / sizeof(dummy);
-        uint32_t rest = length % sizeof(dummy);
+    char dummy[128];
+    const uint32_t length = (n - remaining);
+    const uint32_t quotient = (length / sizeof(dummy));
+    const uint32_t rest = (length % sizeof(dummy));
+    uint32_t total = remaining;
 
-        uint32_t total = remaining;  
+    for (uint32_t i = 0; i < quotient; ++i) {
+      int got = _read(client, dummy, sizeof(dummy));
 
-        for (uint32_t i = 0; i < quotient; ++i) {
-            int got = _read(client, dummy, sizeof(dummy));
-            if (got <= 0) {
-                return total + (got > 0 ? got : 0); 
-            }
-            total += got;
-            if ((uint32_t)got < sizeof(dummy)) {  
-                return total;
-            }
-        }
+      if (got <= 0) {
+        return total + (got > 0 ? got : 0);
+      }
 
-        if (rest > 0) {
-            int got = _read(client, dummy, rest);
-            if (got <= 0) {
-                return total + (got > 0 ? got : 0);
-            }
-            total += got;
-            if ((uint32_t)got < rest) { 
-                return total;
-            }
-        }
+      total += got;
 
-        *size = _read(client, buf, RESP_BUF_SIZE);
-        if (*size <= 0) {
-            return total;  
-        }
+      if ((uint32_t) got < sizeof(dummy)) {
+        return total;
+      }
     }
-    
+
+    if (rest > 0) {
+      int got = _read(client, dummy, rest);
+
+      if (got <= 0) {
+        return total + (got > 0 ? got : 0);
+      }
+
+      total += got;
+
+      if ((uint32_t) got < rest) {
+        return total;
+      }
+    }
+
+    *size = _read(client, buf, RESP_BUF_SIZE);
+
+    if (*size <= 0) {
+      return total;
+    }
+  }
+
   *at = 0;
   return n;
 }
