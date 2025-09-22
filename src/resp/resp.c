@@ -226,6 +226,10 @@ static bool parse_resp_command(struct Client *client, char *buf, int32_t *at, in
               free(command->args[j].value);
             }
 
+            if (command->args[i].value) {
+              free(command->args[i].value);
+            }
+
             free(command->args);
             return false;
           }
