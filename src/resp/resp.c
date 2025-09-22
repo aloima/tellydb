@@ -158,6 +158,12 @@ static inline bool get_resp_command_argument(struct Client *client, string_t *ar
       }
 
       argument->value = malloc(argument->len + 1);
+
+      if (!argument->value) {
+        DATA_ERR(client);
+        return false;
+      }
+
       TAKE_BYTES(argument->value, argument->len, false);
       argument->value[argument->len] = '\0';
 
