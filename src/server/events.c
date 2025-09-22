@@ -92,7 +92,7 @@ void handle_events(struct Configuration *conf, SSL_CTX *ctx, const int sockfd, s
 
       if (fd == sockfd) {
         if (UINT32_MAX == get_last_connection_client_id()) {
-          write_log(LOG_WARN, "A connection is rejected, because client that has highest ID number is maximum, so cannot be increased it.");
+          write_log(LOG_WARN, "A connection is rejected, because client that has highest ID number is maximum.");
           continue;
         }
 
