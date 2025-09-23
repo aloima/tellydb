@@ -31,6 +31,7 @@ An in-memory key-value database project.
 + Install `jemalloc` library and its development headers
 + Install `gmp` library and its development headers
 + Install `cmake` to generate compile files
++ Install `gperf` to generate perfect hash method
 + Create build directory using `mkdir build` and enter `cd build`
 + Generate compilation files using `cmake ..`
   - Compile inside the directory using `make telly`, then start the server using `./telly`
