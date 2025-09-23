@@ -117,59 +117,58 @@ void handle_events(struct Configuration *conf, SSL_CTX *ctx, const int sockfd, s
           continue;
         }
 
-        if (accept_client(sockfd, conf, ctx, eventfd) == -1) {
+        // If client cannot be accepted, it continues already. No need condition.
+        accept_client(sockfd, conf, ctx, eventfd);
+        continue;
+      }
+
+      struct Client *client = get_client(fd);
+      char buf[RESP_BUF_SIZE];
+      int32_t at = 0;
+      int32_t size = _read(client, buf, RESP_BUF_SIZE);
+
+      if (size == 0) {
+        terminate_connection(fd);
+        continue;
+      }
+
+      while (size != -1) {
+        commanddata_t data;
+
+        if (!get_command_data(client, buf, &at, &size, &data)) {
           continue;
         }
-      } else {
-        struct Client *client = get_client(fd);
-        char buf[RESP_BUF_SIZE];
-        int32_t at = 0;
-        int32_t size = _read(client, buf, RESP_BUF_SIZE);
 
-        if (size == 0) {
-          terminate_connection(fd);
+        if (size == at) {
+          read_client(client, buf, &size, &at);
+        }
+
+        if (client->locked) {
+          free_command_data(data);
+          WRITE_ERROR_MESSAGE(client, "Your client is locked, you cannot use any commands until your client is unlocked");
           continue;
         }
 
-        while (size != -1) {
-          commanddata_t data;
+        to_uppercase(CREATE_STRING(data.name.value, data.name.len), data.name.value);
+        const struct CommandIndex *command_index = get_command_index(data.name.value, data.name.len);
 
-          if (!get_command_data(client, buf, &at, &size, &data)) {
-            continue;
-          }
+        if (!command_index) {
+          unknown_command(client, data.name);
+          continue;
+        }
 
-          if (size == at) {
-            read_client(client, buf, &size, &at);
-          }
+        struct Command command = commands[command_index->idx];
+        client->command = &command;
 
-          if (client->locked) {
-            free_command_data(data);
-            WRITE_ERROR_MESSAGE(client, "Your client is locked, you cannot use any commands until your client is unlocked");
-            continue;
-          }
+        if (!add_transaction(client, command, data)) {
+          free_command_data(data);
+          WRITE_ERROR_MESSAGE(client, "Transaction cannot be enqueued because of server settings");
+          write_log(LOG_WARN, "Transaction count reached their limit, so next transactions cannot be added.");
+          continue;
+        }
 
-          to_uppercase(CREATE_STRING(data.name.value, data.name.len), data.name.value);
-
-          const struct CommandIndex *command_index = get_command_index(data.name.value, data.name.len);
-
-          if (!command_index) {
-            unknown_command(client, data.name);
-            continue;
-          }
-
-          struct Command command = commands[command_index->idx];
-          client->command = &command;
-
-          if (!add_transaction(client, command, data)) {
-            free_command_data(data);
-            WRITE_ERROR_MESSAGE(client, "Transaction cannot be enqueued because of server settings");
-            write_log(LOG_WARN, "Transaction count reached their limit, so next transactions cannot be added.");
-            continue;
-          }
-
-          if (client->waiting_block && !streq(command.name, "EXEC") && !streq(command.name, "DISCARD") && !streq(command.name, "MULTI")) {
-            _write(client, "+QUEUED\r\n", 9);
-          }
+        if (client->waiting_block && !streq(command.name, "EXEC") && !streq(command.name, "DISCARD") && !streq(command.name, "MULTI")) {
+          _write(client, "+QUEUED\r\n", 9);
         }
       }
     }
