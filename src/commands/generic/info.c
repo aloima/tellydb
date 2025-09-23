@@ -28,7 +28,11 @@ static bool get_section(char *section, const struct Configuration *conf, const c
       "Version: " VERSION "\r\n"
       "Process ID: %" PRIi32 "\r\n"
       "Git hash: " GIT_HASH "\r\n"
+#if defined(__linux__)
       "Multiplexing API: epoll\r\n"
+#elif defined(__APPLE__)
+      "Multiplexing API: kqueue\r\n"
+#endif
       "GCC version: %s\r\n"
       "TLS server: %s\r\n"
       "Age: %" PRIu32 " seconds\r\n"
