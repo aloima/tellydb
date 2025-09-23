@@ -11,9 +11,9 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
-#ifdef __linux__
+#if defined(__linux__)
 #include <sys/epoll.h>
-#elif __APPLE__
+#elif defined(__APPLE__)
 #include <sys/event.h>
 #include <sys/time.h>
 #endif
@@ -57,12 +57,12 @@ static inline int accept_client(const int sockfd, struct Configuration *conf, SS
   }
 
   event_t event;
-#ifdef __linux__
+#if defined(__linux__)
   event.events = (EPOLLIN | EPOLLET);
   event.data.fd = connfd;
 
   if ((epoll_ctl(eventfd, EPOLL_CTL_ADD, connfd, &event)) == -1) {
-#elif __APPLE__
+#elif defined(__APPLE__)
   EV_SET(&event, connfd, EVFILT_READ, EV_ADD, 0, 0, NULL);
 
   if ((kevent(eventfd, &event, 1, NULL, 0, NULL)) == -1) {

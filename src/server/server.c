@@ -7,9 +7,9 @@
 #include <inttypes.h>
 #include <time.h>
 
-#ifdef __linux__
+#if defined(__linux__)
 #include <sys/epoll.h>
-#elif __APPLE__
+#elif defined(__APPLE__)
 #include <sys/event.h>
 #include <sys/time.h>
 #endif
@@ -70,9 +70,9 @@ void get_server_time(time_t *server_start_at, uint32_t *server_age) {
 void terminate_connection(const int connfd) {
   const struct Client *client = get_client(connfd);
 
-#ifdef __linux__
+#if defined(__linux__)
   if (epoll_ctl(eventfd, EPOLL_CTL_DEL, connfd, NULL) == -1) {
-#elif __APPLE__
+#elif defined(__APPLE__)
   struct kevent ev;
   EV_SET(&ev, connfd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
 
