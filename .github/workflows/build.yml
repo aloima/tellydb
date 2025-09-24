@@ -1,0 +1,78 @@
+name: C/C++ CI
+
+on: push
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Dependencies
+      run: sudo apt-get install libhiredis1.1.0 libhiredis-dev gperf libjemalloc2 libjemalloc-dev libgmp10 libgmp-dev
+
+    - name: Create build directory
+      run: mkdir build
+
+    - name: Run CMake
+      run: cmake -S . -B build
+
+    - name: Build
+      run: cmake --build build -- -j$(nproc)
+
+    - name: Rename output file
+      run: mv build/telly build/telly-linux-amd64
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        name: linux-build
+        path: build/telly-linux-amd64
+
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Dependencies
+      run: sudo brew install hiredis gperf jemalloc gmp cmake
+
+    - name: Create build directory
+      run: mkdir build
+
+    - name: Run CMake
+      run: cmake -S . -B build
+
+    - name: Build
+      run: cmake --build build -- -j$(nproc)
+
+    - name: Rename output file
+      if: startsWith(github.ref, 'refs/tags/')
+      run: mv build/telly build/telly-macos-arm64
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        name: macos-build
+        path: build/telly-macos-arm64
+
+  on-release:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        path: ./build
+
+    - name: Publish files
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          build/telly-macos-arm64
+          build/telly-linux-amd64
