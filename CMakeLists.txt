@@ -4,7 +4,13 @@ project(tellydb C)
 set(CMAKE_EXPORT_COMPILE_COMMANDS yes)
 set(CMAKE_BUILD_TYPE Release)
 
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
+    list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew")
+endif()
+
 find_package(OpenSSL REQUIRED)
+find_package(GMP REQUIRED)
+find_package(jemalloc REQUIRED)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
@@ -50,9 +56,9 @@ target_link_libraries(telly
   OpenSSL::SSL
   OpenSSL::Crypto
   Threads::Threads
+  GMP::GMP
+  jemalloc::jemalloc
   m
-  jemalloc
-  gmp
 )
 
 target_compile_definitions(telly
