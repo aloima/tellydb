@@ -5,7 +5,7 @@ An in-memory key-value database project.
 + Follows [RESP2/RESP3](https://redis.io/docs/latest/develop/reference/protocol-spec/) from redis, so all redis clients are compatible
 + Fully configurable via [.tellyconf](./docs/FILE.md)
 + Includes command queue system using a thread
-+ Supports integer, string, null, boolean, list and hash table types
++ Supports integer, double, string, null, boolean, list and hash table types
 + Provides atomicity when saving to the database file
 + Provides saving to the database file using a background thread
 + Provides authorization system with permissions using passwords
@@ -37,7 +37,7 @@ An in-memory key-value database project.
   - Compile inside the directory using `make telly`, then start the server using `./telly`
   - Install your local machine using `sudo make install`, then start the server using `telly`
 
-### Install via Docker (WIP):
+### Install via Docker:
 Pull docker image:
 ```sh
 docker pull aloima/tellydb
