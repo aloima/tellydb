@@ -1,0 +1,17 @@
+# .git directory is required because of getting latest version and commit hash by CMake
+# .git
+
+# Configuration files
+/.clangd
+/.editorconfig
+/.gitignore
+
+# Documentation/CI files
+/LICENSE
+/README.md
+docs/
+.github/
+
+# clangd directories
+/build
+.cache/
