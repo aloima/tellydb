@@ -6,7 +6,6 @@ set(CMAKE_BUILD_TYPE Release)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE STRING "Target architectures for macOS (Universal Binary)")
-  list(APPEND CMAKE_PREFIX_PATH "/usr/local" "/opt/homebrew")
 endif()
 
 find_package(OpenSSL REQUIRED)
@@ -33,6 +32,11 @@ if(COMPILER_SUPPORTS_AVX2)
   set_source_files_properties(src/utils/memcpy_aligned.c PROPERTIES COMPILE_OPTIONS "-mavx2")
 elseif(COMPILER_SUPPORTS_SSE2)
   set_source_files_properties(src/utils/memcpy_aligned.c PROPERTIES COMPILE_OPTIONS "-msse2")
+endif()
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+  target_include_directories(telly PUBLIC /opt/homebrew/include)
+  target_link_directories(telly PUBLIC /opt/homebrew/lib)
 endif()
 
 execute_process(
