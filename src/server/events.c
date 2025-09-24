@@ -105,7 +105,7 @@ void handle_events(struct Configuration *conf, SSL_CTX *ctx, const int sockfd, s
     for (int i = 0; i < nfds; ++i) {
       const int fd = events[i].data.fd;
 #elif defined(__APPLE__)
-    const int nfds = kevent(kq, NULL, 0, events, 32, NULL);
+    const int nfds = kevent(eventfd, NULL, 0, events, 32, NULL);
 
     for (int i = 0; i < nfds; ++i) {
       const int fd = events[i].ident;

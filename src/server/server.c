@@ -76,7 +76,7 @@ void terminate_connection(const int connfd) {
   struct kevent ev;
   EV_SET(&ev, connfd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
 
-  if (kevent(kq, &ev, 1, NULL, 0, NULL) == -1) {
+  if (kevent(eventfd, &ev, 1, NULL, 0, NULL) == -1) {
 #endif
     write_log(LOG_ERR, "Cannot remove Client #%" PRIu32 " from multiplexing.", client->id);
     return;
@@ -283,7 +283,7 @@ void start_server(struct Configuration *config) {
 #if defined(__linux__)
   if ((eventfd = epoll_create1(0)) == -1) {
 #elif defined(__APPLE__)
-  if ((kq = kqueue()) == -1) {
+  if ((eventfd = kqueue()) == -1) {
 #endif
     FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);
     close_database_fd();
@@ -302,7 +302,7 @@ void start_server(struct Configuration *config) {
 #elif defined(__APPLE__)
   EV_SET(&event, sockfd, EVFILT_READ, EV_ADD, 0, 0, NULL);
 
-  if (kevent(eventfd, &ev, 1, NULL, 0, NULL) == -1) {
+  if (kevent(eventfd, &event, 1, NULL, 0, NULL) == -1) {
 #endif
     FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);
     close_database_fd();
