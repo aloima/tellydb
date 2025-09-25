@@ -169,6 +169,8 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
 }
 
 void save_and_close_logs() {
+  int status;
+
   if (fd != -1) {
     char *buf;
 
@@ -196,13 +198,25 @@ void save_and_close_logs() {
       }
 
       if (at != 0) {
-        write(fd, buf, block_size);
-        ftruncate(fd, length + at);
-      } else {
-        ftruncate(fd, length);
-      }
+        if ((status = write(fd, buf, block_size)) == -1) {
+          free(buf);
+          write_log(LOG_WARN, "There was an error when writing logs to file.");
+          return;
+        }
 
-      free(buf);
+        free(buf);
+
+        if (status != -1 && (status = ftruncate(fd, length + at)) == -1) {
+          write_log(LOG_WARN, "There was an error when writing logs to file.");
+          return;
+        }
+      } else {
+        if ((status = ftruncate(fd, length)) == -1) {
+          free(buf);
+          write_log(LOG_WARN, "There was an error when writing logs to file.");
+          return;
+        }
+      }
     }
 
     if (_conf->max_log_lines != -1) {
@@ -217,7 +231,10 @@ void save_and_close_logs() {
 
     free(lines);
 
-    lockf(fd, F_ULOCK, 0);
+    if (status != -1 && (status = lockf(fd, F_ULOCK, 0)) == -1) {
+      write_log(LOG_WARN, "There was an error when writing logs to file. The lock cannot be removed.");
+    }
+
     close(fd);
   }
 }

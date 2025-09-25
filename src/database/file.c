@@ -36,7 +36,13 @@ const bool open_database_fd(struct Configuration *conf, uint32_t *server_age) {
 
     if (posix_memalign((void **) &block, block_size, block_size) == 0) {
       const clock_t start = clock();
-      read(fd, block, block_size);
+      
+      if (read(fd, block, block_size) == -1) {
+        close(fd);
+        free(block);
+        write_log(LOG_ERR, "Cannot read headers because of OS-specific problem");
+        return false;
+      }
 
       if (block[0] != 0x18 || block[1] != 0x10) {
         close(fd);
@@ -70,7 +76,10 @@ const bool close_database_fd() {
     usleep(100);
   }
 
-  lockf(fd, F_ULOCK, 0);
+  if (lockf(fd, F_ULOCK, 0) != -1) {
+    write_log(LOG_ERR, "The database file cannot be unlocked because of OS-specific problem.");
+  }
+
   return (close(fd) == 0);
 }
 
@@ -392,7 +401,14 @@ const bool save_data(const uint32_t server_age) {
       if (new_length > block_size) {
         const uint32_t allowed = (new_length - block_size);
         memcpy(block + length, password->data, allowed);
-        write(fd, block, block_size);
+        
+        if (write(fd, block, block_size) == -1) {
+          saving = false;
+          free(block);
+          close_database_fd();
+          write_log(LOG_ERR, "The passwords cannot be written to database file, it is a OS-specific error.");
+          return false;
+        }
 
         const uint32_t remaining = (48 - allowed); // remaining byte count except permissions
         memcpy(block, password->data, remaining);
@@ -448,13 +464,31 @@ const bool save_data(const uint32_t server_age) {
           const uint16_t complete = (block_size - length);
 
           memcpy(block + length, data, complete);
-          write(fd, block, block_size);
+          
+          if (write(fd, block, block_size) == -1) {
+            saving = false;
+            free(data);
+            free(block);
+            close_database_fd();
+            write_log(LOG_ERR, "The data cannot be written to database file, it is a OS-specific error.");
+            return false;
+          }
+
           remaining -= complete;
 
           if (remaining > block_size) {
             do {
               memcpy(block, data + (kv_size - remaining), block_size);
-              write(fd, block, block_size);
+              
+              if (write(fd, block, block_size) == -1) {
+                saving = false;
+                free(data);
+                free(block);
+                close_database_fd();
+                write_log(LOG_ERR, "The data cannot be written to database file, it is a OS-specific error.");
+                return false;
+              }
+
               remaining -= block_size;
             } while (remaining > block_size);
           }
@@ -475,10 +509,23 @@ const bool save_data(const uint32_t server_age) {
   }
 
   if (length != block_size) {
-    write(fd, block, block_size);
+    if (write(fd, block, block_size) == -1) {
+      saving = false;
+      free(block);
+      close_database_fd();
+      write_log(LOG_ERR, "The data cannot be written to database file, it is a OS-specific error.");
+      return false;
+    }
   }
 
-  ftruncate(fd, total);
+  if (ftruncate(fd, total) == -1) {
+    saving = false;
+    free(block);
+    close_database_fd();
+    write_log(LOG_ERR, "The data cannot be written to database file, it is a OS-specific error.");
+    return false;
+  }
+
   free(block);
 
   saving = false;
