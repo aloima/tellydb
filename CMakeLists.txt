@@ -102,7 +102,7 @@ target_include_directories(tests PRIVATE
 
 target_link_libraries(tests
   Threads::Threads
-  ${HIREDIS_LIBRARIES}
+  ${HIREDIS_LINK_LIBRARIES}
 )
 
 
@@ -115,5 +115,5 @@ target_include_directories(benchmark PRIVATE
 
 target_link_libraries(benchmark
   Threads::Threads
-  ${HIREDIS_LIBRARIES}
+  ${HIREDIS_LINK_LIBRARIES}
 )
