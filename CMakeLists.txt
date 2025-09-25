@@ -5,39 +5,26 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS yes)
 set(CMAKE_BUILD_TYPE Release)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-  set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE STRING "Target architectures for macOS (Universal Binary)")
+  set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64"
+    CACHE STRING "Target architectures for macOS (Universal Binary)"
+    FORCE
+  )
 endif()
 
-find_package(OpenSSL REQUIRED)
-
 set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(PkgConfig REQUIRED)
+find_package(OpenSSL REQUIRED)
 find_package(Threads REQUIRED)
+pkg_check_modules(GMP REQUIRED gmp)
+pkg_check_modules(JEMALLOC REQUIRED jemalloc)
+pkg_check_modules(HIREDIS REQUIRED hiredis)
+
 
 execute_process(
   COMMAND gperf command_hash.gperf
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/utils
   OUTPUT_FILE ${CMAKE_SOURCE_DIR}/src/utils/command_hash.c
 )
-
-file(GLOB SOURCES "src/**/**/*.c" "src/**/*.c" "src/*.c")
-list(REMOVE_ITEM SOURCES "${CMAKE_SOURCE_DIR}/src/utils/memcpy_aligned.c")
-add_executable(telly ${SOURCES})
-target_sources(telly PRIVATE src/utils/memcpy_aligned.c)
-
-include(CheckCCompilerFlag)
-check_c_compiler_flag(-mavx2 COMPILER_SUPPORTS_AVX2)
-check_c_compiler_flag(-msse2 COMPILER_SUPPORTS_SSE2)
-
-if(COMPILER_SUPPORTS_AVX2)
-  set_source_files_properties(src/utils/memcpy_aligned.c PROPERTIES COMPILE_OPTIONS "-mavx2")
-elseif(COMPILER_SUPPORTS_SSE2)
-  set_source_files_properties(src/utils/memcpy_aligned.c PROPERTIES COMPILE_OPTIONS "-msse2")
-endif()
-
-if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-  target_include_directories(telly PUBLIC /opt/homebrew/include)
-  target_link_directories(telly PUBLIC /opt/homebrew/lib)
-endif()
 
 execute_process(
   COMMAND git rev-parse HEAD
@@ -53,14 +40,36 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-target_include_directories(telly PUBLIC ${CMAKE_SOURCE_DIR}/headers)
+file(GLOB SOURCES "src/**/**/*.c" "src/**/*.c" "src/*.c")
+list(REMOVE_ITEM SOURCES "${CMAKE_SOURCE_DIR}/src/utils/memcpy_aligned.c")
+
+
+# telly target
+add_executable(telly ${SOURCES})
+target_sources(telly PRIVATE src/utils/memcpy_aligned.c)
+
+include(CheckCCompilerFlag)
+check_c_compiler_flag(-mavx2 COMPILER_SUPPORTS_AVX2)
+check_c_compiler_flag(-msse2 COMPILER_SUPPORTS_SSE2)
+
+if(COMPILER_SUPPORTS_AVX2)
+  set_source_files_properties(src/utils/memcpy_aligned.c PROPERTIES COMPILE_OPTIONS "-mavx2")
+elseif(COMPILER_SUPPORTS_SSE2)
+  set_source_files_properties(src/utils/memcpy_aligned.c PROPERTIES COMPILE_OPTIONS "-msse2")
+endif()
+
+target_include_directories(telly PUBLIC
+  ${CMAKE_SOURCE_DIR}/headers
+  ${GMP_INCLUDE_DIRS}
+  ${JEMALLOC_INCLUDE_DIRS}
+)
 
 target_link_libraries(telly
   OpenSSL::SSL
   OpenSSL::Crypto
   Threads::Threads
-  gmp
-  jemalloc
+  ${GMP_LIBRARIES}
+  ${JEMALLOC_LIBRARIES}
   m
 )
 
@@ -74,16 +83,28 @@ target_compile_definitions(telly
 
 install(TARGETS telly)
 
+
 # For testing
 add_executable(tests utils/tests.c)
+
+target_include_directories(tests PUBLIC
+  ${HIREDIS_INCLUDE_DIRS}
+)
+
 target_link_libraries(tests
   Threads::Threads
-  hiredis
+  ${HIREDIS_LIBRARIES}
 )
+
 
 # For benchmarking
 add_executable(benchmark utils/benchmark.c)
+
+target_include_directories(benchmark PUBLIC
+  ${HIREDIS_INCLUDE_DIRS}
+)
+
 target_link_libraries(benchmark
   Threads::Threads
-  hiredis
+  ${HIREDIS_LIBRARIES}
 )
