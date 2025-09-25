@@ -9,6 +9,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     CACHE STRING "Target architectures for macOS (Universal Binary)"
     FORCE
   )
+
+  list(APPEND CMAKE_PREFIX_PATH 
+    "/opt/homebrew" 
+    "/usr/local"
+  )
 endif()
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
