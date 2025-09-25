@@ -14,6 +14,10 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     "/opt/homebrew" 
     "/usr/local"
   )
+
+  set(MATH_LIB "")
+else()
+  set(MATH_LIB m)
 endif()
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
@@ -63,19 +67,19 @@ elseif(COMPILER_SUPPORTS_SSE2)
   set_source_files_properties(src/utils/memcpy_aligned.c PROPERTIES COMPILE_OPTIONS "-msse2")
 endif()
 
-target_include_directories(telly PUBLIC
+target_include_directories(telly PRIVATE
   ${CMAKE_SOURCE_DIR}/headers
   ${GMP_INCLUDE_DIRS}
   ${JEMALLOC_INCLUDE_DIRS}
 )
 
-target_link_libraries(telly
+target_link_libraries(telly PRIVATE
   OpenSSL::SSL
   OpenSSL::Crypto
   Threads::Threads
   ${GMP_LIBRARIES}
   ${JEMALLOC_LIBRARIES}
-  m
+  ${MATH_LIB}
 )
 
 target_compile_definitions(telly
@@ -92,7 +96,7 @@ install(TARGETS telly)
 # For testing
 add_executable(tests utils/tests.c)
 
-target_include_directories(tests PUBLIC
+target_include_directories(tests PRIVATE
   ${HIREDIS_INCLUDE_DIRS}
 )
 
@@ -105,7 +109,7 @@ target_link_libraries(tests
 # For benchmarking
 add_executable(benchmark utils/benchmark.c)
 
-target_include_directories(benchmark PUBLIC
+target_include_directories(benchmark PRIVATE
   ${HIREDIS_INCLUDE_DIRS}
 )
 
