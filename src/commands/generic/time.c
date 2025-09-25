@@ -12,7 +12,10 @@ static string_t run(struct CommandEntry entry) {
   struct timeval timestamp;
   gettimeofday(&timestamp, NULL);
 
-  const size_t nbytes = sprintf(entry.buffer, "*2\r\n:%" PRIi64 "\r\n:%" PRIi64 "\r\n", timestamp.tv_sec, timestamp.tv_usec);
+  const size_t nbytes = sprintf(entry.buffer, "*2\r\n"
+    ":%" PRIiMAX "\r\n"
+    ":%" PRIiMAX "\r\n", (intmax_t) timestamp.tv_sec, (intmax_t) timestamp.tv_usec);
+
   return CREATE_STRING(entry.buffer, nbytes);
 }
 

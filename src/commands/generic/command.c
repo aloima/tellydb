@@ -34,16 +34,16 @@ static string_t run(struct CommandEntry entry) {
 
           char buf[4096];
           res_len += sprintf(buf, (
-            "$%" PRIu64 "\r\n%s\r\n"
+            "$%zu\r\n%s\r\n"
             "*6\r\n"
               "$7\r\nsummary\r\n"
-              "$%" PRIu64 "\r\n%s\r\n"
+              "$%zu\r\n%s\r\n"
 
               "$5\r\nsince\r\n"
-              "$%" PRIu64 "\r\n%s\r\n"
+              "$%zu\r\n%s\r\n"
 
               "$10\r\ncomplexity\r\n"
-              "$%" PRIu64 "\r\n%s\r\n"
+              "$%zu\r\n%s\r\n"
           ),
             strlen(command.name), command.name,
             strlen(command.summary), command.summary,
@@ -64,16 +64,16 @@ static string_t run(struct CommandEntry entry) {
 
           char buf[4096];
           res_len += sprintf(buf, (
-            "$%" PRIu64 "\r\n%s\r\n"
+            "$%zu\r\n%s\r\n"
             "%%3\r\n"
               "$7\r\nsummary\r\n"
-              "$%" PRIu64 "\r\n%s\r\n"
+              "$%zu\r\n%s\r\n"
 
               "$5\r\nsince\r\n"
-              "$%" PRIu64 "\r\n%s\r\n"
+              "$%zu\r\n%s\r\n"
 
               "$10\r\ncomplexity\r\n"
-              "$%" PRIu64 "\r\n%s\r\n"
+              "$%zu\r\n%s\r\n"
           ),
             strlen(command.name), command.name,
             strlen(command.summary), command.summary,
