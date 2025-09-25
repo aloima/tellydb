@@ -76,7 +76,7 @@ const bool close_database_fd() {
     usleep(100);
   }
 
-  if (lockf(fd, F_ULOCK, 0) != -1) {
+  if (lockf(fd, F_ULOCK, 0) == -1) {
     write_log(LOG_ERR, "The database file cannot be unlocked because of OS-specific problem.");
   }
 
