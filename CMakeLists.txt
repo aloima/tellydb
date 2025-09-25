@@ -77,8 +77,8 @@ target_link_libraries(telly PRIVATE
   OpenSSL::SSL
   OpenSSL::Crypto
   Threads::Threads
-  ${GMP_LIBRARIES}
-  ${JEMALLOC_LIBRARIES}
+  ${GMP_LINK_LIBRARIES}
+  ${JEMALLOC_LINK_LIBRARIES}
   ${MATH_LIB}
 )
 
