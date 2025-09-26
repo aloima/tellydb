@@ -11,7 +11,7 @@ static inline string_t subcommand_id(struct Client *client, char *buffer) {
   return CREATE_STRING(buffer, nbytes);
 }
 
-static inline string_t subcommand_info(struct Client *client, char *buffer) {
+static inline string_t subcommand_info(struct CommandEntry entry) {
   const char *lib_name = client->lib_name ?: "unspecified";
   const char *lib_ver  = client->lib_ver ?: "unspecified";
   const char *protocol;
@@ -36,7 +36,8 @@ static inline string_t subcommand_info(struct Client *client, char *buffer) {
     const uint8_t value = client->password->permissions;
 
     if (value == 0) {
-      memcpy(permissions, "None", 5);
+      memcpy(permissions, "None", 4);
+      permissions_len = 4;
     } else {
       const string_t perm_names[] = {
         {"read",   4}, {"write", 5}, {"client", 6},
@@ -66,6 +67,8 @@ static inline string_t subcommand_info(struct Client *client, char *buffer) {
   char connected_at[21];
   generate_date_string(connected_at, client->connected_at);
 
+  const char *latest_command = (client->command ? client->command->name : "None");
+
   char res[512];
   const size_t res_len = sprintf(res, (
     "ID: %" PRIu32 "\r\n"
@@ -76,14 +79,10 @@ static inline string_t subcommand_info(struct Client *client, char *buffer) {
     "Library version: %s\r\n"
     "Protocol: %s\r\n"
     "Permissions: %.*s\r\n"
-  ), client->id, client->connfd, connected_at, client->command->name, lib_name, lib_ver, protocol, permissions_len, permissions);
+  ), client->id, client->connfd, connected_at, latest_command, lib_name, lib_ver, protocol, permissions_len, permissions);
 
-  const size_t nbytes = create_resp_string(buffer, (string_t) {
-    .value = res,
-    .len = res_len
-  });
-
-  return CREATE_STRING(buffer, nbytes);
+  const size_t nbytes = create_resp_string(entry.buffer, CREATE_STRING(res, res_len));
+  return CREATE_STRING(entry.buffer, nbytes);
 }
 
 static inline string_t subcommand_list(struct CommandEntry entry) {
@@ -263,7 +262,7 @@ static string_t run(struct CommandEntry entry) {
   if (streq("ID", subcommand.value) && entry.client) {
     response = subcommand_id(entry.client, entry.buffer);
   } else if (streq("INFO", subcommand.value) && entry.client) {
-    response = subcommand_info(entry.client, entry.buffer);
+    response = subcommand_info(entry);
   } else if (streq("LIST", subcommand.value) && entry.client) {
     response = subcommand_list(entry);
   } else if (streq("LOCK", subcommand.value)) {
