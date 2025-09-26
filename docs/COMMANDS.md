@@ -133,6 +133,14 @@ The list of unwritten behavior to commands.
 **Permissions**: None  
 **Returns**: String
 
+#### LIST
+**Syntax**: `CLIENT LIST`  
+**Description**: Lists IDs of the connected clients.  
+**Since**: `0.2.0`  
+**Time complexity**: `O(1)`  
+**Permissions**: `P_CLIENT`  
+**Returns**: Array
+
 #### LOCK
 **Syntax**: `CLIENT LOCK id`  
 **Description**: Locks specified client.  
@@ -141,7 +149,6 @@ The list of unwritten behavior to commands.
 **Permissions**: `P_CLIENT`  
 **Returns**: `OK`  
 **Behavior**:
-* If specified client has `P_CLIENT` permissions, throws an error.
 * If specified client is not exist, throws an error.
 * If specified client ID value is higher or less than uint32_t bounds, throws an error.
 * If specified client ID is already locked, throws an error.
@@ -167,7 +174,6 @@ The list of unwritten behavior to commands.
 **Permissions**: `P_CLIENT`  
 **Returns**: `OK`  
 **Behavior**:
-* If specified client has `P_CLIENT` permissions, throws an error.
 * If specified client is not exist, throws an error.
 * If specified client ID value is higher or less than uint32_t bounds, throws an error.
 
@@ -203,7 +209,7 @@ The list of unwritten behavior to commands.
 **Since**: `0.1.0`  
 **Time complexity**: `O(N) where N is count of all commands`  
 **Permissions**: None  
-**Returns**: Array includes string
+**Returns**: Array
 
 #### COUNT
 **Syntax**: `COMMAND COUNT`  

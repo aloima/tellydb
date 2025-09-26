@@ -86,6 +86,33 @@ static inline string_t subcommand_info(struct Client *client, char *buffer) {
   return CREATE_STRING(buffer, nbytes);
 }
 
+static inline string_t subcommand_list(struct CommandEntry entry) {
+  if (!(entry.password->permissions & P_CLIENT)) {
+    PASS_NO_CLIENT(entry.client);
+    return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_CLIENT");
+  }
+
+  struct Client **clients = get_clients();
+  const uint32_t client_capacity = get_client_capacity();
+  uint64_t at = 1;
+
+  entry.buffer[0] = RDT_ARRAY;
+  at += ltoa(get_client_count(), entry.buffer + at);
+  entry.buffer[at++] = '\r';
+  entry.buffer[at++] = '\n';
+
+  for (uint32_t i = 0; i < client_capacity; ++i) {
+    if (clients[i]) {
+      entry.buffer[at++] = RDT_SSTRING;
+      at += ltoa(clients[i]->id, entry.buffer + at);
+      entry.buffer[at++] = '\r';
+      entry.buffer[at++] = '\n';
+    }
+  }
+
+  return CREATE_STRING(entry.buffer, at);
+}
+
 static string_t subcommand_lock(struct CommandEntry entry) {
   if (!(entry.password->permissions & P_CLIENT)) {
     PASS_NO_CLIENT(entry.client);
@@ -237,6 +264,8 @@ static string_t run(struct CommandEntry entry) {
     response = subcommand_id(entry.client, entry.buffer);
   } else if (streq("INFO", subcommand.value) && entry.client) {
     response = subcommand_info(entry.client, entry.buffer);
+  } else if (streq("LIST", subcommand.value) && entry.client) {
+    response = subcommand_list(entry);
   } else if (streq("LOCK", subcommand.value)) {
     response = subcommand_lock(entry);
   } else if (streq("SETINFO", subcommand.value) && entry.client) {
@@ -263,6 +292,12 @@ static struct Subcommand subcommands[] = {
     .name = "INFO",
     .summary = "Returns information about the client.",
     .since = "0.1.0",
+    .complexity = "O(1)"
+  },
+  (struct Subcommand) {
+    .name = "LIST",
+    .summary = "Lists IDs of the connected clients.",
+    .since = "0.2.0",
     .complexity = "O(1)"
   },
   (struct Subcommand) {
