@@ -12,6 +12,38 @@ static inline string_t subcommand_id(struct Client *client, char *buffer) {
 }
 
 static inline string_t subcommand_info(struct CommandEntry entry) {
+  struct Client *client;
+
+  switch (entry.data->arg_count) {
+    case 1:
+      client = entry.client;
+      break;
+
+    case 2:
+      if (!(entry.password->permissions & P_CLIENT)) {
+        return RESP_ERROR_MESSAGE("Not allowed to use this command with argument, need P_CLIENT");
+      }
+
+      if (!is_integer(entry.data->args[1].value)) {
+        return RESP_ERROR_MESSAGE("Specified argument must be integer for the ID.");
+      }
+
+      const int64_t id = strtoll(entry.data->args[1].value, NULL, 10);
+
+      if ((id > UINT32_MAX) || (id < 0)) {
+        return RESP_ERROR_MESSAGE("Specified ID is out of bounds for uint32_t");
+      }
+
+      if (!(client = get_client_from_id(id))) {
+        return RESP_ERROR_MESSAGE("The client does not exist");
+      }
+
+      break;
+
+    default:
+      return RESP_ERROR_MESSAGE("The argument count must be 1 or 2.");
+  }
+
   const char *lib_name = client->lib_name ?: "unspecified";
   const char *lib_ver  = client->lib_ver ?: "unspecified";
   const char *protocol;

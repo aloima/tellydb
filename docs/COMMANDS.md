@@ -126,12 +126,16 @@ The list of unwritten behavior to commands.
 **Returns**: Integer
 
 #### INFO
-**Syntax**: `CLIENT INFO`  
+**Syntax**: `CLIENT INFO [<id>]`  
 **Description**: Returns information about the client.  
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
 **Permissions**: None  
-**Returns**: String
+**Returns**: String  
+**Behavior**:
+* If there is no client which has the specified ID, throws an error.
+* If there is no `P_CLIENT` permission with the specified ID, throws the permission error.
+* If the specified ID is not integer or out of bounds for `uint32_t`, throws an error.
 
 #### LIST
 **Syntax**: `CLIENT LIST`  
