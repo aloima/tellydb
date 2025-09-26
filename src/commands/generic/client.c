@@ -87,7 +87,7 @@ static inline string_t subcommand_info(struct Client *client, char *buffer) {
 }
 
 static string_t subcommand_lock(struct CommandEntry entry) {
-  if (entry.password->permissions & P_CLIENT) {
+  if (!(entry.password->permissions & P_CLIENT)) {
     PASS_NO_CLIENT(entry.client);
     return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_CLIENT");
   }
