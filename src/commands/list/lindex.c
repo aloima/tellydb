@@ -65,7 +65,7 @@ static string_t run(struct CommandEntry entry) {
 
   const char *index_str = entry.data->args[1].value;
 
-  if (!is_integer(index_str)) {
+  if (!try_parse_integer(index_str)) {
     return RESP_ERROR_MESSAGE("Second argument must be an integer");
   }
 

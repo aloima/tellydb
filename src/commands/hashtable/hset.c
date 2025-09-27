@@ -36,16 +36,16 @@ static string_t run(struct CommandEntry entry) {
     const string_t input = entry.data->args[i * 2];
 
     const bool is_true = streq(input.value, "true");
-    const bool is_integer_value = is_integer(input.value);
-    const bool is_double_value = is_double(input.value);
+    const bool is_integer = try_parse_integer(input.value);
+    const bool is_double = try_parse_double(input.value);
 
-    if (is_integer_value || is_double_value) {
-      if (is_integer_value) {
+    if (is_integer || is_double) {
+      if (is_integer) {
         mpz_t *value = malloc(sizeof(mpz_t));
         mpz_init_set_str(*value, input.value, 10);
 
         set_field_of_hashtable(table, name, value, TELLY_INT);
-      } else if (is_double_value) {
+      } else if (is_double) {
         mpf_t *value = malloc(sizeof(mpf_t));
         mpf_init2(*value, FLOAT_PRECISION);
         mpf_set_str(*value, input.value, 10);

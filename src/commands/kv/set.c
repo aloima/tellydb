@@ -22,8 +22,8 @@ static string_t run(struct CommandEntry entry) {
 
   char *value_in = entry.data->args[1].value;
   const bool is_true = streq(value_in, "true");
-  bool is_integer_value = false;
-  bool is_double_value = false;
+  bool is_integer = false;
+  bool is_double = false;
 
   bool get = false;
   bool nx = false, xx = false, as = false;
@@ -53,19 +53,19 @@ static string_t run(struct CommandEntry entry) {
         } else if (streq(name.value, "BOOLEAN") || streq(name.value, "BOOL")) {
           type = TELLY_BOOL;
         } else if (streq(name.value, "INTEGER") || streq(name.value, "INT")) {
-          is_integer_value = is_integer(value_in);
+          is_integer = try_parse_integer(value_in);
           type = TELLY_INT;
         } else if (streq(name.value, "NUMBER") || streq(name.value, "NUM")) {
-          is_integer_value = is_integer(value_in);
-          is_double_value = is_double(value_in);
+          is_integer = try_parse_integer(value_in);
+          is_double = try_parse_double(value_in);
 
-          if (is_integer_value) {
+          if (is_integer) {
             type = TELLY_INT;
-          } else if (is_double_value) {
+          } else if (is_double) {
             type = TELLY_DOUBLE;
           }
         } else if (streq(name.value, "DOUBLE")) {
-          is_double_value = is_double(value_in);
+          is_double = try_parse_double(value_in);
           type = TELLY_DOUBLE;
         } else if (streq(name.value, "NULL")) {
           type = TELLY_NULL;
@@ -100,13 +100,13 @@ static string_t run(struct CommandEntry entry) {
   }
 
   if (!as) {
-    is_integer_value = is_integer(value_in);
-    is_double_value = is_double(value_in);
+    is_integer = try_parse_integer(value_in);
+    is_double = try_parse_double(value_in);
   }
 
-  if (is_integer_value || is_double_value) {
+  if (is_integer || is_double) {
     if (!as) {
-      type = (is_integer_value ? TELLY_INT : TELLY_DOUBLE);
+      type = (is_integer ? TELLY_INT : TELLY_DOUBLE);
     } else if (type != TELLY_INT && type != TELLY_DOUBLE && type != TELLY_STR) {
       PASS_NO_CLIENT(entry.client);
       return RESP_ERROR_MESSAGE("The type must be string or integer for this value");;

@@ -27,7 +27,7 @@ static const uint64_t pow10_table[] = {
   10000000000000000000UL
 };
 
-const bool is_integer(const char *value) {
+const bool try_parse_integer(const char *value) {
   char *_value = (char *) value;
 
   if (*value == '-') {
@@ -45,7 +45,7 @@ const bool is_integer(const char *value) {
   return (_value != value) && (*_value == 0x00);
 }
 
-const bool is_double(const char *value) {
+const bool try_parse_double(const char *value) {
   uint64_t i = 0;
 
   if (value[i] == '-') {

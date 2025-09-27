@@ -45,12 +45,12 @@ static string_t run(struct CommandEntry entry) {
     string_t input = entry.data->args[i];
     bool is_true = streq(input.value, "true");
 
-    if (is_integer(input.value)) {
+    if (try_parse_integer(input.value)) {
       mpz_t *value = malloc(sizeof(mpz_t));
       mpz_init_set_str(*value, input.value, 10);
 
       rpush_to_list(list, value, TELLY_INT);
-    } else if (is_double(input.value)) {
+    } else if (try_parse_double(input.value)) {
       mpf_t *value = malloc(sizeof(mpf_t));
       mpf_init2(*value, FLOAT_PRECISION);
       mpf_set_str(*value, input.value, 10);

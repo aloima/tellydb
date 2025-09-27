@@ -13,7 +13,7 @@ static string_t run(struct CommandEntry entry) {
 
   const char *input = entry.data->args[1].value;
 
-  if (!is_integer(input) && !is_double(input)) {
+  if (!try_parse_integer(input) && !try_parse_double(input)) {
     PASS_NO_CLIENT(entry.client);
     return RESP_ERROR_MESSAGE("Second argument must be an integer");
   }

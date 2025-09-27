@@ -53,8 +53,8 @@ void save_and_close_logs();
 
 void memcpy_aligned(void *restrict dest, const void *restrict src, size_t n);
 
-const bool is_integer(const char *value);
-const bool is_double(const char *value);
+const bool try_parse_integer(const char *value);
+const bool try_parse_double(const char *value);
 const uint8_t ltoa(const int64_t value, char *dst);
 const uint8_t get_digit_count(const uint64_t value);
 const uint8_t get_bit_count(const uint64_t value);
