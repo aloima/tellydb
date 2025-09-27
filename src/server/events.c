@@ -21,15 +21,15 @@
 #include <openssl/ssl.h>
 #include <openssl/crypto.h>
 
-static inline int read_client(struct Client *client, char *buf, int32_t *size, int32_t *at) {
+static inline bool read_client(struct Client *client, char *buf, int32_t *size, int32_t *at) {
   *size = _read(client, buf, RESP_BUF_SIZE);
   *at = 0;
 
   if (*size == -1) {
-    return -1;
+    return false;
   }
 
-  return 0;
+  return true;
 }
 
 static inline int accept_client(const int sockfd, struct Configuration *conf, SSL_CTX *ctx, const int eventfd) {
@@ -139,8 +139,9 @@ void handle_events(struct Configuration *conf, SSL_CTX *ctx, const int sockfd, s
           continue;
         }
 
-        if (size == at) {
-          read_client(client, buf, &size, &at);
+        if (size == at && !read_client(client, buf, &size, &at)) {
+          write_log(LOG_ERR, "Cannot read message from Client #" PRIu32, client->id);
+          continue;
         }
 
         if (client->locked) {
