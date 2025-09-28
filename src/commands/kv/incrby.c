@@ -12,45 +12,87 @@ static string_t run(struct CommandEntry entry) {
   }
 
   const char *input = entry.data->args[1].value;
+  const bool is_integer = try_parse_integer(input);
+  const bool is_double = try_parse_double(input);
 
-  if (!try_parse_integer(input) && !try_parse_double(input)) {
+  if (!is_integer && !is_double) {
     PASS_NO_CLIENT(entry.client);
-    return RESP_ERROR_MESSAGE("Second argument must be an integer");
+    return RESP_ERROR_MESSAGE("Second argument must be an integer or double");
   }
 
   const string_t key = entry.data->args[0];
   struct KVPair *result = get_data(entry.database, key);
 
-  mpf_t *number, value;
-
   if (!result) {
-    number = malloc(sizeof(mpf_t));
-    mpf_init2(*number, FLOAT_PRECISION);
-    mpf_set_str(*number, input, 10);
+    void *number;
+    enum TellyTypes type;
 
-    const bool success = set_data(entry.database, NULL, key, number, TELLY_NUM);
+    if (is_integer) {
+      type = TELLY_INT;
+      mpz_t *raw = (number = malloc(sizeof(mpz_t)));
+      mpz_init_set_str(*raw, input, 10);
+    } else if (is_double) {
+      type = TELLY_DOUBLE;
+      mpf_t *raw = (number = malloc(sizeof(mpf_t)));
+      mpf_init2(*raw, FLOAT_PRECISION);
+      mpf_set_str(*raw, input, 10);
+    }
 
-    if (!success) {
-      mpf_clear(*number);
-      free(number);
+    result = set_data(entry.database, NULL, key, number, type);
 
+    if (!result) {
+      free_value(type, number);
       PASS_NO_CLIENT(entry.client);
       return RESP_ERROR();
     }
-  } else if (result->type == TELLY_NUM) {
-    mpf_init2(value, FLOAT_PRECISION);
-    mpf_set_str(value, input, 10);
-
-    number = result->value;
-    mpf_add(*number, *number, value);
-    mpf_clear(value);
   } else {
-    return INVALID_TYPE_ERROR("INCRBY");
+    switch (result->type) {
+      case TELLY_INT:
+        if (is_integer) {
+          mpz_t value;
+          mpz_init_set_str(value, input, 10);
+
+          result->type = TELLY_INT;
+          mpz_t *raw = result->value;
+          mpz_add(*raw, *raw, value);
+          mpz_clear(value);
+        } else {
+          mpf_t original;
+          mpf_init2(original, FLOAT_PRECISION);
+          mpf_set_z(original, result->value);
+
+          mpz_clear(result->value);
+          free(result->value);
+
+          result->type = TELLY_DOUBLE;
+          mpf_t *raw = (result->value = malloc(sizeof(mpf_t)));
+          mpf_init2(*raw, FLOAT_PRECISION);
+          mpf_set_str(*raw, input, 10);
+          mpf_add(*raw, *raw, original);
+          mpf_clear(original);
+        }
+
+        break;
+
+      case TELLY_DOUBLE: {
+        mpf_t value;
+        mpf_init2(value, FLOAT_PRECISION);
+        mpf_set_str(value, input, 10);
+
+        result->type = TELLY_DOUBLE;
+        mpf_t *raw = result->value;
+        mpf_add(*raw, *raw, value);
+        mpf_clear(value);
+        break;
+      }
+
+      default:
+        return INVALID_TYPE_ERROR("INCRBY");
+    }
   }
 
   PASS_NO_CLIENT(entry.client);
-  const size_t nbytes = create_resp_integer_mpf(entry.client->protover, entry.buffer, *number);
-  return CREATE_STRING(entry.buffer, nbytes);
+  return write_value(result->value, result->type, entry.client->protover, entry.buffer);
 }
 
 const struct Command cmd_incrby = {
