@@ -5,6 +5,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+static inline uint32_t add_to_index(const uint32_t index, const uint32_t capacity) {
+  return ((index + 1) % capacity);
+}
+
 void set_field_of_hashtable(struct HashTable *table, const string_t name, void *value, const enum TellyTypes type) {
   const uint32_t capacity = table->size.capacity;
 
@@ -23,7 +27,7 @@ void set_field_of_hashtable(struct HashTable *table, const string_t name, void *
       break;
     }
 
-    index = ((index + 1) % capacity);
+    index = add_to_index(index, capacity);
   }
 
   if (field == NULL) {
@@ -40,10 +44,6 @@ void set_field_of_hashtable(struct HashTable *table, const string_t name, void *
   field->type = type;
   field->value = value;
   field->hash = hashed;
-}
-
-static inline uint32_t add_to_index(const uint32_t index, const uint32_t capacity) {
-  return ((index + 1) % capacity);
 }
 
 bool del_field_from_hashtable(struct HashTable *table, const string_t name) {
