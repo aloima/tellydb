@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include <stddef.h>
 
-// TODO: add creating database when it is unexisted
 static string_t run(struct CommandEntry entry) {
   PASS_NO_CLIENT(entry.client);
 
@@ -25,7 +24,8 @@ static string_t run(struct CommandEntry entry) {
     node = node->next;
   }
 
-  return RESP_ERROR_MESSAGE("This database cannot be found");
+  entry.client->database = create_database(entry.data->args[0], DATABASE_INITIAL_SIZE);
+  return RESP_OK();
 }
 
 const struct Command cmd_select = {
