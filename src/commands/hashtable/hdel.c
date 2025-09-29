@@ -27,7 +27,7 @@ static string_t run(struct CommandEntry entry) {
 
   if (!entry.client) {
     for (uint32_t i = 1; i < entry.data->arg_count; ++i) {
-      del_field_to_hashtable(table, entry.data->args[i]);
+      del_field_from_hashtable(table, entry.data->args[i]);
     }
 
     if (table->size.used == 0) {
@@ -44,7 +44,7 @@ static string_t run(struct CommandEntry entry) {
   const uint32_t old_size = table->size.used;
 
   for (uint32_t i = 1; i < entry.data->arg_count; ++i) {
-    del_field_to_hashtable(table, entry.data->args[i]);
+    del_field_from_hashtable(table, entry.data->args[i]);
   }
 
   const uint32_t current_size = table->size.used;

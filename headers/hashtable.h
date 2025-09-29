@@ -32,4 +32,4 @@ void free_hashtable(struct HashTable *table);
 void free_htfield(struct HashTableField *field);
 
 void set_field_of_hashtable(struct HashTable *table, const string_t name, void *value, const enum TellyTypes type);
-bool del_field_to_hashtable(struct HashTable *table, const string_t name);
+bool del_field_from_hashtable(struct HashTable *table, const string_t name);
