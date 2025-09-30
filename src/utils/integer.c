@@ -28,9 +28,9 @@ static const uint64_t pow10_table[] = {
 };
 
 const bool try_parse_integer(const char *value) {
-  char *_value = (char *) value;
+  const char *_value = value;
 
-  if (*value == '-') {
+  if (*_value == '-') {
     _value += 1;
 
     if (*_value == '0' || *_value == '\0') {
