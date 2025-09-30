@@ -5,10 +5,16 @@
 #include <stdlib.h>
 #include <time.h>
 
-static const char months[12][4] = {
+static constexpr char months[12][4] = {
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 };
+
+static constexpr char charset[] = (
+  "0123456789"
+  "abcdefghijklmnopqrstuvwxyz"
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+);
 
 void to_uppercase(string_t src, char *dst) {
   for (uint32_t i = 0; i < src.len; ++i) {
@@ -18,12 +24,6 @@ void to_uppercase(string_t src, char *dst) {
 }
 
 void generate_random_string(char *dest, size_t length) {
-  const char charset[] = (
-    "0123456789"
-    "abcdefghijklmnopqrstuvwxyz"
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-  );
-
   while (length-- > 0) {
     const uint8_t index = (double) rand() / RAND_MAX * (sizeof(charset) - 1);
     *dest++ = charset[index];
