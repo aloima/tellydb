@@ -150,10 +150,13 @@ static string_t run(struct CommandEntry entry) {
     response = remove_pwd(entry);
   } else if (streq(subcommand.value, "GENERATE")) {
     response = generate_pwd(entry);
+  } else {
+    PASS_NO_CLIENT(entry.client);
+    return INVALID_SUBCOMMAND_ERROR("PWD");
   }
 
   PASS_NO_CLIENT(entry.client);
-  return INVALID_SUBCOMMAND_ERROR("PWD");
+  return response;
 }
 
 static struct Subcommand subcommands[] = {
