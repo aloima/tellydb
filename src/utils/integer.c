@@ -4,6 +4,9 @@
 #include <stdint.h>
 #include <ctype.h>
 
+// log10(2) * 1024 = 308.25 ~ 308
+#define LOG10_2_X_1024 308
+
 static constexpr uint64_t pow10_table[] = {
   1ULL,
   10ULL,
@@ -27,7 +30,7 @@ static constexpr uint64_t pow10_table[] = {
   10000000000000000000ULL
 };
 
-const bool try_parse_integer(const char *value) {
+bool try_parse_integer(const char *value) {
   const char *_value = value;
 
   if (*_value == '-') {
@@ -45,7 +48,7 @@ const bool try_parse_integer(const char *value) {
   return (_value != value) && (*_value == 0x00);
 }
 
-const bool try_parse_double(const char *value) {
+bool try_parse_double(const char *value) {
   uint64_t i = 0;
 
   if (value[i] == '-') {
@@ -73,24 +76,11 @@ const bool try_parse_double(const char *value) {
   return point;
 }
 
-const uint8_t ltoa(const int64_t value, char *dst) {
+uint8_t ltoa(const int64_t value, char *dst) {
   const bool neg = (value < 0);
   uint64_t uval = (neg ? -value : value);
 
-  uint8_t len = 1;
-  uint8_t l = 1, r = 19;
-
-  while (l <= r) {
-    uint8_t m = l + (r - l) / 2;
-
-    if (uval >= pow10_table[m]) {
-      len = m + 1;
-      l = m + 1;
-    } else {
-      r = m - 1;
-    }
-  }
-
+  const uint8_t len = get_digit_count(uval);
   const uint8_t total_len = (len + neg);
   dst[total_len] = '\0';
 
@@ -111,38 +101,18 @@ const uint8_t ltoa(const int64_t value, char *dst) {
   return total_len;
 }
 
-const uint8_t get_digit_count(const uint64_t value) {
-  if (value < pow10_table[10]) {
-    if (value < pow10_table[5]) {
-      if (value < pow10_table[1]) return 1;
-      if (value < pow10_table[2]) return 2;
-      if (value < pow10_table[3]) return 3;
-      if (value < pow10_table[4]) return 4;
-      return 5;
-    } else {
-      if (value < pow10_table[6]) return 6;
-      if (value < pow10_table[7]) return 7;
-      if (value < pow10_table[8]) return 8;
-      if (value < pow10_table[9]) return 9;
-      return 10;
-    }
-  } else {
-    if (value < pow10_table[15]) {
-      if (value < pow10_table[11]) return 11;
-      if (value < pow10_table[12]) return 12;
-      if (value < pow10_table[13]) return 13;
-      if (value < pow10_table[14]) return 14;
-      return 15;
-    } else {
-      if (value < pow10_table[16]) return 16;
-      if (value < pow10_table[17]) return 17;
-      if (value < pow10_table[18]) return 18;
-      return 19;
-    }
+uint8_t get_digit_count(const uint64_t value) {
+  if (value == 0) {
+    return 1;
   }
+
+  const uint64_t bits = (64 - __builtin_clzll(value));
+  const uint64_t approximate_digits = (bits * 308) >> 10;
+
+  return (uint8_t) (approximate_digits + (value >= pow10_table[approximate_digits]));
 }
 
-const uint8_t get_bit_count(const uint64_t value) {
+uint8_t get_bit_count(const uint64_t value) {
   if (value == 0) {
     return 0;
   }
@@ -150,7 +120,7 @@ const uint8_t get_bit_count(const uint64_t value) {
   return (64 - __builtin_clzll(value));
 }
 
-const uint8_t get_byte_count(const uint64_t value) {
+uint8_t get_byte_count(const uint64_t value) {
   if (value == 0) {
     return 0;
   }
