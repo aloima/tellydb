@@ -55,6 +55,8 @@ list(REMOVE_ITEM SOURCES "${CMAKE_SOURCE_DIR}/src/utils/memcpy_aligned.c")
 
 # telly target
 add_executable(telly ${SOURCES})
+set_property(TARGET telly PROPERTY C_STANDARD 23)
+set_property(TARGET telly PROPERTY C_STANDARD_REQUIRED ON)
 target_sources(telly PRIVATE src/utils/memcpy_aligned.c)
 
 include(CheckCCompilerFlag)
