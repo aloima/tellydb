@@ -134,7 +134,11 @@ void handle_events(struct Configuration *conf, SSL_CTX *ctx, const int sockfd, s
         }
 
         if (size == at) {
-          read_client(client, buf, &size, &at);
+          if (size != RESP_BUF_SIZE) {
+            size = -1;
+          } else {
+            read_client(client, buf, &size, &at);
+          }
         }
 
         if (client->locked) {
