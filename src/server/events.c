@@ -91,6 +91,7 @@ static inline void unknown_command(struct Client *client, commandname_t name) {
 
 void handle_events(struct Configuration *conf, SSL_CTX *ctx, const int sockfd, struct Command *commands, const int eventfd) {
   event_t events[32];
+  char buf[RESP_BUF_SIZE];
 
   while (true) {
 #if defined(__linux__)
@@ -117,7 +118,6 @@ void handle_events(struct Configuration *conf, SSL_CTX *ctx, const int sockfd, s
       }
 
       struct Client *client = get_client(fd);
-      char buf[RESP_BUF_SIZE];
       int32_t at = 0;
       int32_t size = _read(client, buf, RESP_BUF_SIZE);
 
