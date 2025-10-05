@@ -58,6 +58,7 @@ add_executable(telly ${SOURCES})
 set_property(TARGET telly PROPERTY C_STANDARD 23)
 set_property(TARGET telly PROPERTY C_STANDARD_REQUIRED ON)
 target_sources(telly PRIVATE src/utils/memcpy_aligned.c)
+target_link_options(telly PRIVATE "-Wl,-z,now")
 
 include(CheckCCompilerFlag)
 check_c_compiler_flag(-mavx2 COMPILER_SUPPORTS_AVX2)
