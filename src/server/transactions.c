@@ -156,6 +156,7 @@ bool add_transaction(struct Client *client, struct Command command, commanddata_
     transaction = &block->transactions[block->transaction_count - 1];
   }
 
+  __builtin_prefetch(transaction, 1, 3);
   transaction->command = command;
   transaction->data = data;
   transaction->database = client->database;
