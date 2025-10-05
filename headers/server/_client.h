@@ -16,7 +16,7 @@ struct TransactionBlock;
 struct Client {
   SSL *ssl;
   int connfd;
-  uint32_t id;
+  int id;
   time_t connected_at;
   struct Database *database;
   struct Command *command;
@@ -37,7 +37,7 @@ struct Client *get_client(const int input);
 struct Client *get_client_from_id(const uint32_t id);
 
 uint32_t get_last_connection_client_id();
-struct Client **get_clients();
+struct Client *get_clients();
 uint32_t get_client_count();
 uint32_t get_client_capacity();
 

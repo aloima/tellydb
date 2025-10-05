@@ -70,14 +70,14 @@ static bool password_derive(char *value, const size_t value_len, unsigned char *
 }
 
 static inline void remove_password_from_clients(struct Password *password) {
-  struct Client **clients = get_clients();
+  struct Client *clients = get_clients();
   const uint32_t client_capacity = get_client_capacity();
 
   for (uint32_t i = 0; i < client_capacity; ++i) {
     struct Client *client;
 
-    if ((client = clients[i]) && client->password == password) {
-      client->password = get_empty_password();
+    if ((clients[i].id != -1) && clients[i].password == password) {
+      clients[i].password = get_empty_password();
     }
   }
 }
