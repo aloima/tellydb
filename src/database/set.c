@@ -44,7 +44,7 @@ struct KVPair *set_data(struct Database *database, struct KVPair *data, const st
 
         if (current) {
           const uint64_t index = (current->hashed % new_capacity);
-          nd[index] = current;
+          nd[probe(nd, index, new_capacity)] = current;
         }
       }
 
