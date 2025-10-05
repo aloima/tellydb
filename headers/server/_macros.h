@@ -11,11 +11,11 @@
 #include <openssl/ssl.h>
 
 static inline int _read(struct Client *client, char *buf, const size_t nbytes) {
-  return (client->ssl ? SSL_read(client->ssl, buf, nbytes) : read(client->connfd, buf, nbytes));
+  return (!client->ssl ? read(client->connfd, buf, nbytes) : SSL_read(client->ssl, buf, nbytes));
 }
 
 static inline int _write(struct Client *client, char *buf, const size_t nbytes) {
-  return (client->ssl ? SSL_write(client->ssl, buf, nbytes) : write(client->connfd, buf, nbytes));
+  return (!client->ssl ? write(client->connfd, buf, nbytes) : SSL_write(client->ssl, buf, nbytes));
 }
 
 #define RESP_NULL(protover) ({\

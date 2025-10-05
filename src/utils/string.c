@@ -19,7 +19,8 @@ static constexpr char charset[] = (
 void to_uppercase(string_t src, char *dst) {
   for (uint32_t i = 0; i < src.len; ++i) {
     const char c = src.value[i];
-    dst[i] = ((c <= 'Z') ? c : (c - 32));
+    const char mask = ((c >= 'a') && (c <= 'z')) * 32;
+    dst[i] = c ^ mask; // To uppercase, we need to use (c - 32). It is more performant way.
   }
 }
 

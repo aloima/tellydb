@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <inttypes.h>
-#include <ctype.h>
 
 static inline void DATA_ERR(struct Client *client) {
   write_log(LOG_ERR, "Received data from Client #%" PRIu32 " cannot be validated as a RESP data, so it cannot be created as a command.", client->id);
@@ -96,43 +95,49 @@ static inline bool get_resp_command_name(struct Client *client, commandname_t *n
     return false;
   }
 
-  while (true) {
-    TAKE_BYTES(&c, 1, false);
+  TAKE_BYTES(&c, 1, false);
 
-    if (isdigit(c)) {
-      name->len = (name->len * 10) + (c - 48);
-    } else if (c == '\r') {
-      TAKE_BYTES(&c, 1, false);
-
-      if (c != '\n') {
-        DATA_ERR(client);
-        return false;
-      }
-
-      if (name->len > COMMAND_NAME_MAX_LENGTH) {
-        TAKE_BYTES(name->value, COMMAND_NAME_MAX_LENGTH - 1, false);
-        name->value[name->len] = '\0';
-
-        TAKE_BYTES(NULL, name->len - (COMMAND_NAME_MAX_LENGTH - 1), false);
-      } else {
-        TAKE_BYTES(name->value, name->len, false);
-        name->value[name->len] = '\0';
-      }
-
-      char crlf[2];
-      TAKE_BYTES(crlf, 2, false);
-
-      if (VERY_UNLIKELY(crlf[0] != '\r' || crlf[1] != '\n')) {
-        DATA_ERR(client);
-        return false;
-      }
-
-      return true;
-    } else {
-      DATA_ERR(client);
-      return false;
-    }
+  if (VERY_UNLIKELY(!('0' <= c && c <= '9'))) {
+    DATA_ERR(client);
+    return false;
   }
+
+  do {
+    name->len = (name->len * 10) + (c - '0');
+    TAKE_BYTES(&c, 1, false);
+  } while ('0' <= c && c <= '9');
+
+  if (VERY_UNLIKELY(c != '\r')) {
+    DATA_ERR(client);
+    return false;
+  }
+
+  TAKE_BYTES(&c, 1, false);
+
+  if (VERY_UNLIKELY(c != '\n')) {
+    DATA_ERR(client);
+    return false;
+  }
+
+  if (name->len > COMMAND_NAME_MAX_LENGTH) {
+    TAKE_BYTES(name->value, COMMAND_NAME_MAX_LENGTH - 1, false);
+    name->value[name->len] = '\0';
+
+    TAKE_BYTES(NULL, name->len - (COMMAND_NAME_MAX_LENGTH - 1), false);
+  } else {
+    TAKE_BYTES(name->value, name->len, false);
+    name->value[name->len] = '\0';
+  }
+
+  char crlf[2];
+  TAKE_BYTES(crlf, 2, false);
+
+  if (VERY_UNLIKELY(crlf[0] != '\r' || crlf[1] != '\n')) {
+    DATA_ERR(client);
+    return false;
+  }
+
+  return true;
 }
 
 static inline bool get_resp_command_argument(struct Client *client, string_t *argument, char *buf, int32_t *at, int32_t *size) {
@@ -144,104 +149,115 @@ static inline bool get_resp_command_argument(struct Client *client, string_t *ar
     return false;
   }
 
-  while (true) {
-    TAKE_BYTES(&c, 1, false);
+  TAKE_BYTES(&c, 1, false);
 
-    if (isdigit(c)) {
-      argument->len = (argument->len * 10) + (c - '0');
-    } else if (c == '\r') {
-      TAKE_BYTES(&c, 1, false);
-
-      if (VERY_UNLIKELY(c != '\n')) {
-        DATA_ERR(client);
-        return false;
-      }
-
-      argument->value = malloc(argument->len + 1);
-
-      if (VERY_UNLIKELY(argument->value == NULL)) {
-        DATA_ERR(client);
-        return false;
-      }
-
-      TAKE_BYTES(argument->value, argument->len, false);
-      argument->value[argument->len] = '\0';
-
-      char crlf[2];
-      TAKE_BYTES(crlf, 2, false);
-
-      if (VERY_UNLIKELY(crlf[0] != '\r' || crlf[1] != '\n')) {
-        DATA_ERR(client);
-        return false;
-      }
-
-      return true;
-    } else {
-      DATA_ERR(client);
-      return false;
-    }
+  if (VERY_UNLIKELY(!('0' <= c && c <= '9'))) {
+    DATA_ERR(client);
+    return false;
   }
+
+  do {
+    argument->len = (argument->len * 10) + (c - '0');
+    TAKE_BYTES(&c, 1, false);
+  } while ('0' <= c && c <= '9');
+
+  if (VERY_UNLIKELY(c != '\r')) {
+    DATA_ERR(client);
+    return false;
+  }
+
+  TAKE_BYTES(&c, 1, false);
+
+  // better without VERY_UNLIKELY(), why??
+  if (c != '\n') {
+    DATA_ERR(client);
+    return false;
+  }
+
+  if (VERY_UNLIKELY((argument->value = malloc(argument->len + 1)) == NULL)) {
+    DATA_ERR(client);
+    return false;
+  }
+
+  TAKE_BYTES(argument->value, argument->len, false);
+  argument->value[argument->len] = '\0';
+
+  char crlf[2];
+  TAKE_BYTES(crlf, 2, false);
+
+  if (VERY_UNLIKELY(crlf[0] != '\r' || crlf[1] != '\n')) {
+    DATA_ERR(client);
+    return false;
+  }
+
+  return true;
 }
 
 static bool parse_resp_command(struct Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command) {
   command->arg_count = 0;
   command->args = NULL;
 
-  while (true) {
-    char c;
+  char c;
+  TAKE_BYTES(&c, 1, false);
+
+  if (VERY_UNLIKELY(!('0' <= c && c <= '9'))) {
+    DATA_ERR(client);
+    return false;
+  }
+
+  do {
+    command->arg_count = (command->arg_count * 10) + (c - '0');
     TAKE_BYTES(&c, 1, false);
+  } while ('0' <= c && c <= '9');
 
-    if (isdigit(c)) {
-      command->arg_count = (command->arg_count * 10) + (c - '0');
-    } else if (c == '\r') {
-      TAKE_BYTES(&c, 1, false);
+  if (VERY_UNLIKELY(c != '\r')) {
+    DATA_ERR(client);
+    return false;
+  }
 
-      if (c != '\n') {
-        DATA_ERR(client);
-        return false;
-      }
+  TAKE_BYTES(&c, 1, false);
 
-      if (command->arg_count == 0) {
-        write_log(LOG_ERR, "Received data from Client #%u is empty RESP data, so it cannot be created as a command.", client->id);
-        return false;
-      }
+  if (VERY_UNLIKELY(c != '\n')) {
+    DATA_ERR(client);
+    return false;
+  }
 
-      command->name.len = 0;
+  if (command->arg_count == 0) {
+    write_log(LOG_ERR, "Received data from Client #%u is empty RESP data, so it cannot be created as a command.", client->id);
+    return false;
+  }
 
-      if (!get_resp_command_name(client, &command->name, buf, at, size)) {
-        return false;
-      }
+  command->name.len = 0;
 
-      command->arg_count -= 1;
+  if (!get_resp_command_name(client, &command->name, buf, at, size)) {
+    return false;
+  }
 
-      if (command->arg_count != 0) {
-        command->args = malloc(command->arg_count * sizeof(string_t));
+  command->arg_count -= 1;
 
-        for (uint32_t i = 0; i < command->arg_count; ++i) {
-          command->args[i].len = 0;
-          command->args[i].value = NULL;
+  if (command->arg_count != 0) {
+    command->args = malloc(command->arg_count * sizeof(string_t));
 
-          if (VERY_UNLIKELY(!get_resp_command_argument(client, &command->args[i], buf, at, size))) {
-            for (uint32_t j = 0; j < i; ++j) {
-              free(command->args[j].value);
-            }
+    for (uint32_t i = 0; i < command->arg_count; ++i) {
+      command->args[i].len = 0;
+      command->args[i].value = NULL;
 
-            if (command->args[i].value) {
-              free(command->args[i].value);
-            }
-
-            free(command->args);
-            return false;
-          }
+      if (VERY_UNLIKELY(!get_resp_command_argument(client, &command->args[i], buf, at, size))) {
+        for (uint32_t j = 0; j < i; ++j) {
+          free(command->args[j].value);
         }
-      }
 
-      return true;
-    } else {
-      DATA_ERR(client);
-      return false;
+        if (command->args[i].value) {
+          free(command->args[i].value);
+        }
+
+        free(command->args);
+        return false;
+      }
     }
   }
+
+  return true;
 }
 
 bool get_command_data(struct Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command) {
