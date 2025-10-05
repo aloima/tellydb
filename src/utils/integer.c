@@ -41,7 +41,7 @@ bool try_parse_integer(const char *value) {
     }
   }
 
-  while (isdigit(*_value)) {
+  while ('0' <= *_value && *_value <= '9') {
     _value += 1;
   }
 
