@@ -10,6 +10,7 @@
 #include <pthread.h>
 
 struct TransactionBlock *blocks;
+struct Command *commands;
 
 uint64_t processed_transaction_count = 0;
 uint32_t block_count = 0;
@@ -50,7 +51,7 @@ void *transaction_thread(void *arg) {
 
       while (!block->client || block->client->waiting_block) {
         if (block->transaction_count != 0) {
-          const char *name = block->transactions[0].command.name;
+          const char *name = block->transactions[0].command->name;
 
           if (streq(name, "EXEC") || streq(name, "DISCARD") || streq(name, "MULTI")) {
             break;
@@ -102,6 +103,7 @@ void deactive_transaction_thread() {
 
 void create_transaction_thread(struct Configuration *config) {
   conf = config;
+  commands = get_commands();
   blocks = calloc(conf->max_transaction_blocks, sizeof(struct TransactionBlock));
   buffer = malloc(MAX_RESPONSE_SIZE);
 
@@ -135,11 +137,13 @@ void release_queued_transaction_block(struct Client *client) {
   block_count += 1;
 }
 
-bool add_transaction(struct Client *client, struct Command command, commanddata_t data) {
+bool add_transaction(struct Client *client, const uint64_t command_idx, commanddata_t data) {
   struct Transaction *transaction;
+  const char *name = commands[command_idx].name;
+
   pthread_mutex_lock(&mutex);
 
-  if (client->waiting_block == NULL || streq(command.name, "EXEC") || streq(command.name, "DISCARD") || streq(command.name, "MULTI")) {
+  if (client->waiting_block == NULL || streq(name, "EXEC") || streq(name, "DISCARD") || streq(name, "MULTI")) {
     struct TransactionBlock *block = reserve_transaction_block(client, false);
 
     if (!block) {
@@ -150,6 +154,7 @@ bool add_transaction(struct Client *client, struct Command command, commanddata_
     block->transactions = malloc(sizeof(struct Transaction));
     transaction = &block->transactions[0];
   } else {
+    puts("a");
     struct TransactionBlock *block = client->waiting_block;
     block->transaction_count += 1;
     block->transactions = realloc(block->transactions, sizeof(struct Transaction) * block->transaction_count);
@@ -157,7 +162,7 @@ bool add_transaction(struct Client *client, struct Command command, commanddata_
   }
 
   __builtin_prefetch(transaction, 1, 3);
-  transaction->command = command;
+  transaction->command = &commands[command_idx];
   transaction->data = data;
   transaction->database = client->database;
 
@@ -208,15 +213,15 @@ void execute_transaction_block(struct TransactionBlock *block) {
 
   if (block->transaction_count == 1) {
     struct Transaction transaction = block->transactions[0];
-    struct Command command = transaction.command;
+    struct Command *command = transaction.command;
     struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction.data, transaction.database, password, buffer);
 
-    if ((password->permissions & command.permissions) != command.permissions) {
+    if ((password->permissions & command->permissions) != command->permissions) {
       WRITE_ERROR_MESSAGE(client, "No permissions to execute this command");
       return;
     }
 
-    string_t response = command.run(entry);
+    string_t response = command->run(entry);
 
     if (response.len != 0) {
       _write(client, response.value, response.len);
@@ -231,15 +236,15 @@ void execute_transaction_block(struct TransactionBlock *block) {
 
   for (uint32_t i = 0; i < block->transaction_count; ++i) {
     struct Transaction transaction = block->transactions[i];
-    struct Command command = transaction.command;
+    struct Command *command = transaction.command;
     struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction.data, transaction.database, password, buffer);
 
-    if ((password->permissions & command.permissions) != command.permissions) {
+    if ((password->permissions & command->permissions) != command->permissions) {
       WRITE_ERROR_MESSAGE(client, "No permissions to execute this command");
       return;
     }
 
-    string_t result = command.run(entry);
+    string_t result = command->run(entry);
 
     if (result.len == 0) {
       continue;

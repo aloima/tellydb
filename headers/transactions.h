@@ -14,7 +14,7 @@
 
 struct Transaction {
   commanddata_t data;
-  struct Command command;
+  struct Command *command;
   struct Database *database;
 };
 
@@ -31,7 +31,7 @@ void deactive_transaction_thread();
 uint64_t get_processed_transaction_count();
 uint32_t get_transaction_count();
 void release_queued_transaction_block(struct Client *client);
-bool add_transaction(struct Client *client, struct Command command, commanddata_t data);
+bool add_transaction(struct Client *client, const uint64_t command_idx, commanddata_t data);
 struct TransactionBlock *reserve_transaction_block(struct Client *client, bool as_queued);
 void remove_transaction_block(struct TransactionBlock *block, const bool processed);
 void free_transactions();

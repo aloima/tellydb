@@ -158,7 +158,7 @@ void handle_events(struct Configuration *conf, SSL_CTX *ctx, const int sockfd, s
         struct Command command = commands[command_index->idx];
         client->command = &command;
 
-        if (!add_transaction(client, command, data)) {
+        if (!add_transaction(client, command_index->idx, data)) {
           free_command_data(data);
           WRITE_ERROR_MESSAGE(client, "Transaction cannot be enqueued because of server settings");
           write_log(LOG_WARN, "Transaction count reached their limit, so next transactions cannot be added.");
