@@ -24,9 +24,9 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(PkgConfig REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(Threads REQUIRED)
-pkg_check_modules(GMP REQUIRED gmp)
-pkg_check_modules(JEMALLOC REQUIRED jemalloc)
-pkg_check_modules(HIREDIS REQUIRED hiredis)
+pkg_check_modules(GMP REQUIRED QUIET gmp)
+pkg_check_modules(JEMALLOC REQUIRED QUIET jemalloc)
+pkg_check_modules(HIREDIS QUIET hiredis)
 
 
 execute_process(
@@ -97,26 +97,34 @@ install(TARGETS telly)
 
 
 # For testing
-add_executable(tests utils/tests.c)
+if(NOT HIREDIS_FOUND)
+  message(WARNING "hiredis could not find, so \"tests\" target cannot be created.")
+else()
+  add_executable(tests utils/tests.c)
 
-target_include_directories(tests PRIVATE
-  ${HIREDIS_INCLUDE_DIRS}
-)
+  target_include_directories(tests PRIVATE
+    ${HIREDIS_INCLUDE_DIRS}
+  )
 
-target_link_libraries(tests
-  Threads::Threads
-  ${HIREDIS_LINK_LIBRARIES}
-)
+  target_link_libraries(tests
+    Threads::Threads
+    ${HIREDIS_LINK_LIBRARIES}
+  )
+endif()
 
 
 # For benchmarking
-add_executable(benchmark utils/benchmark.c)
+if(NOT HIREDIS_FOUND)
+  message(WARNING "hiredis could not find, so \"benchmark\" target cannot be created.")
+else()
+  add_executable(benchmark utils/benchmark.c)
 
-target_include_directories(benchmark PRIVATE
-  ${HIREDIS_INCLUDE_DIRS}
-)
+  target_include_directories(benchmark PRIVATE
+    ${HIREDIS_INCLUDE_DIRS}
+  )
 
-target_link_libraries(benchmark
-  Threads::Threads
-  ${HIREDIS_LINK_LIBRARIES}
-)
+  target_link_libraries(benchmark
+    Threads::Threads
+    ${HIREDIS_LINK_LIBRARIES}
+  )
+endif()
