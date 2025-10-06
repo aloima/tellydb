@@ -10,7 +10,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Dependencies
-      run: sudo apt-get install libhiredis1.1.0 libhiredis-dev gperf libjemalloc2 libjemalloc-dev
+      run: sudo apt-get install gperf libjemalloc2 libjemalloc-dev
 
     - name: Create build directory
       run: mkdir build
@@ -38,7 +38,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Dependencies
-      run: brew install hiredis gperf jemalloc
+      run: brew install gperf jemalloc
 
     - name: Create build directory
       run: mkdir build
