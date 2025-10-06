@@ -1,3 +1,4 @@
+#include <stdatomic.h>
 #include <telly.h>
 
 // For EBUSY enum
@@ -8,19 +9,17 @@
 #include <signal.h>
 
 #include <pthread.h>
+#include <unistd.h>
 
 struct TransactionBlock *blocks;
 struct Command *commands;
 
 uint64_t processed_transaction_count = 0;
-uint32_t block_count = 0;
-uint32_t at = 0;
-uint32_t end = 0;
+_Atomic uint32_t at = 0; // Accessed by reserve_transaction_method, this method is accessed by process and client.
+_Atomic uint32_t end = 0; // Accessed by reserve_transaction_method, this method is accessed by process and client.
 struct Configuration *conf;
 
 pthread_t thread;
-pthread_cond_t cond;
-pthread_mutex_t mutex;
 char *buffer;
 
 void *transaction_thread(void *arg) {
@@ -31,22 +30,24 @@ void *transaction_thread(void *arg) {
   pthread_sigmask(SIG_BLOCK, &set, NULL);
 
   while (true) {
-    pthread_mutex_lock(&mutex);
+    uint32_t current_at = atomic_load_explicit(&at, memory_order_acquire);
+    const uint32_t current_end = atomic_load_explicit(&end, memory_order_relaxed);
 
-    while (block_count == 0) {
-      pthread_cond_wait(&cond, &mutex);
+    if (current_at == current_end) {
+      usleep(1);
+      continue;
     }
 
-    struct TransactionBlock *block = &blocks[at];
+    struct TransactionBlock *block = &blocks[current_at];
 
     if (!block->client) {
-      at += 1;
-      pthread_mutex_unlock(&mutex);
+      const uint32_t next_at = ((current_at + 1) % conf->max_transaction_blocks);
+      atomic_store_explicit(&at, next_at, memory_order_release);
       continue;
     }
 
     if (block->client->waiting_block) {
-      uint32_t _at = ((at + 1) % conf->max_transaction_blocks);
+      uint32_t _at = ((current_at + 1) % conf->max_transaction_blocks);
       block = &blocks[_at];
 
       while (!block->client || block->client->waiting_block) {
@@ -62,23 +63,23 @@ void *transaction_thread(void *arg) {
         block = &blocks[_at];
       }
     } else {
-      at = ((at + 1) % conf->max_transaction_blocks);
+      const uint32_t next_at = ((current_at + 1) % conf->max_transaction_blocks);
+      atomic_store_explicit(&at, next_at, memory_order_release);
     }
 
     execute_transaction_block(block);
     remove_transaction_block(block, true);
-
-    pthread_mutex_unlock(&mutex);
   }
 
   return NULL;
 }
 
 uint32_t get_transaction_count() {
+  const uint32_t current_end = atomic_load(&end);
+  uint32_t idx = atomic_load(&at);
   uint64_t transaction_count = 0;
-  uint32_t idx = at;
 
-  for (uint32_t i = 0; i < block_count; ++i) {
+  while (idx != current_end) {
     transaction_count += blocks[idx].transaction_count;
     idx = ((idx + 1) % conf->max_transaction_blocks);
   }
@@ -91,14 +92,8 @@ uint64_t get_processed_transaction_count() {
 }
 
 void deactive_transaction_thread() {
-  while (pthread_mutex_trylock(&mutex) != EBUSY) {
-    pthread_mutex_unlock(&mutex);
-    pthread_cancel(thread);
-    pthread_cond_destroy(&cond);
-    pthread_mutex_destroy(&mutex);
-    free(buffer);
-    return;
-  }
+  pthread_cancel(thread);
+  free(buffer);
 }
 
 void create_transaction_thread(struct Configuration *config) {
@@ -107,41 +102,40 @@ void create_transaction_thread(struct Configuration *config) {
   blocks = calloc(conf->max_transaction_blocks, sizeof(struct TransactionBlock));
   buffer = malloc(MAX_RESPONSE_SIZE);
 
-  pthread_mutex_init(&mutex, NULL);
-  pthread_cond_init(&cond, NULL);
   pthread_create(&thread, NULL, transaction_thread, NULL);
   pthread_detach(thread);
 }
 
 struct TransactionBlock *reserve_transaction_block(struct Client *client, bool as_queued) {
-  if (block_count == conf->max_transaction_blocks) {
-    return NULL;
-  }
+  const uint32_t current_at = atomic_load(&at);
+  uint32_t current_end;
+  uint32_t next_end;
 
-  struct TransactionBlock *block = &blocks[end];
+  do {
+    current_end = atomic_load(&end);
+    next_end = ((current_end + 1) % conf->max_transaction_blocks);
+
+    if (VERY_UNLIKELY(current_at == next_end)) {
+      return NULL;
+    }
+  } while (!atomic_compare_exchange_weak_explicit(&end, &current_end, next_end, memory_order_release, memory_order_relaxed));
+
+  struct TransactionBlock *block = &blocks[current_end];
   block->client = client;
   block->password = client->password;
   block->transactions = NULL;
   block->transaction_count = 0;
 
-  if (!as_queued) {
-    block_count += 1;
-  }
-
-  end = ((end + 1) % conf->max_transaction_blocks);
   return block;
 }
 
 void release_queued_transaction_block(struct Client *client) {
   client->waiting_block = NULL;
-  block_count += 1;
 }
 
 bool add_transaction(struct Client *client, const uint64_t command_idx, commanddata_t data) {
   struct Transaction *transaction;
   const char *name = commands[command_idx].name;
-
-  pthread_mutex_lock(&mutex);
 
   if (client->waiting_block == NULL || streq(name, "EXEC") || streq(name, "DISCARD") || streq(name, "MULTI")) {
     struct TransactionBlock *block = reserve_transaction_block(client, false);
@@ -154,7 +148,6 @@ bool add_transaction(struct Client *client, const uint64_t command_idx, commandd
     block->transactions = malloc(sizeof(struct Transaction));
     transaction = &block->transactions[0];
   } else {
-    puts("a");
     struct TransactionBlock *block = client->waiting_block;
     block->transaction_count += 1;
     block->transactions = realloc(block->transactions, sizeof(struct Transaction) * block->transaction_count);
@@ -166,16 +159,12 @@ bool add_transaction(struct Client *client, const uint64_t command_idx, commandd
   transaction->data = data;
   transaction->database = client->database;
 
-  pthread_cond_signal(&cond);
-  pthread_mutex_unlock(&mutex);
-
   return true;
 }
 
 // Run by thread, no need mutex
 void remove_transaction_block(struct TransactionBlock *block, const bool processed) {
   if (processed) {
-    block_count -= 1;
     processed_transaction_count += block->transaction_count;
   }
 
@@ -192,14 +181,15 @@ void remove_transaction_block(struct TransactionBlock *block, const bool process
 }
 
 void free_transactions() {
-  uint32_t idx = at;
+  const uint32_t current_end = atomic_load(&end);
+  uint32_t idx = atomic_load(&at);
 
-  for (uint32_t i = 0; i < block_count; ++i) {
+  while (idx != current_end) {
     struct TransactionBlock block = blocks[idx];
     idx = ((idx + 1) % conf->max_transaction_blocks);
 
-    for (uint32_t j = 0; j < block.transaction_count; ++j) {
-      struct Transaction transaction = block.transactions[j];
+    for (uint32_t i = 0; i < block.transaction_count; ++i) {
+      struct Transaction transaction = block.transactions[i];
       free_command_data(transaction.data);
     }
   }
