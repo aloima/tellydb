@@ -1,4 +1,3 @@
-#include <stdatomic.h>
 #include <telly.h>
 
 // For EBUSY enum
@@ -7,6 +6,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <signal.h>
+#include <stdatomic.h>
 
 #include <pthread.h>
 #include <unistd.h>
@@ -15,12 +15,21 @@ struct TransactionBlock *blocks;
 struct Command *commands;
 
 uint64_t processed_transaction_count = 0;
-_Atomic uint32_t at = 0; // Accessed by reserve_transaction_method, this method is accessed by process and client.
-_Atomic uint32_t end = 0; // Accessed by reserve_transaction_method, this method is accessed by process and client.
+_Atomic uint32_t at = 0; // Accessed by reserve_transaction_block method, this method is accessed by process and client.
+_Atomic uint32_t end = 0; // Accessed by reserve_transaction_block method, this method is accessed by process and client.
+uint32_t waiting_blocks = 0; // Accessed by methods from thread.
 struct Configuration *conf;
 
 pthread_t thread;
 char *buffer;
+
+static inline uint32_t calculate_block_count(const uint32_t current_at, const uint32_t current_end) {
+  if (current_end >= current_at) {
+    return (current_end - current_at);
+  } else {
+    return (current_end + (conf->max_transaction_blocks - current_at));
+  }
+}
 
 void *transaction_thread(void *arg) {
   sigset_t set;
@@ -33,23 +42,18 @@ void *transaction_thread(void *arg) {
     uint32_t current_at = atomic_load_explicit(&at, memory_order_acquire);
     const uint32_t current_end = atomic_load_explicit(&end, memory_order_relaxed);
 
-    if (current_at == current_end) {
+    if (calculate_block_count(current_at, current_end) == waiting_blocks) {
       usleep(1);
       continue;
     }
 
     struct TransactionBlock *block = &blocks[current_at];
 
-    if (!block->client) {
-      const uint32_t next_at = ((current_at + 1) % conf->max_transaction_blocks);
-      atomic_store_explicit(&at, next_at, memory_order_release);
-      continue;
-    }
-
-    if (block->client->waiting_block) {
+    if (waiting_blocks != 0) {
       uint32_t _at = ((current_at + 1) % conf->max_transaction_blocks);
       block = &blocks[_at];
 
+      // (if block does not have client but transactions, it needs to be passed) || (if block is queued/waiting block)
       while (!block->client || block->client->waiting_block) {
         if (block->transaction_count != 0) {
           const char *name = block->transactions[0].command->name;
@@ -67,8 +71,10 @@ void *transaction_thread(void *arg) {
       atomic_store_explicit(&at, next_at, memory_order_release);
     }
 
-    execute_transaction_block(block);
-    remove_transaction_block(block, true);
+    if (block->transaction_count != 0) {
+      execute_transaction_block(block);
+      remove_transaction_block(block, true);
+    }
   }
 
   return NULL;
@@ -106,7 +112,7 @@ void create_transaction_thread(struct Configuration *config) {
   pthread_detach(thread);
 }
 
-struct TransactionBlock *reserve_transaction_block(struct Client *client, bool as_queued) {
+struct TransactionBlock *reserve_transaction_block(struct Client *client, const bool as_queued) {
   const uint32_t current_at = atomic_load(&at);
   uint32_t current_end;
   uint32_t next_end;
@@ -126,11 +132,16 @@ struct TransactionBlock *reserve_transaction_block(struct Client *client, bool a
   block->transactions = NULL;
   block->transaction_count = 0;
 
+  if (as_queued) {
+    waiting_blocks += 1;
+  }
+
   return block;
 }
 
 void release_queued_transaction_block(struct Client *client) {
   client->waiting_block = NULL;
+  waiting_blocks -= 1;
 }
 
 bool add_transaction(struct Client *client, const uint64_t command_idx, commanddata_t data) {
