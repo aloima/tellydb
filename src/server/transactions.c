@@ -15,9 +15,9 @@ struct TransactionBlock *blocks;
 struct Command *commands;
 
 uint64_t processed_transaction_count = 0;
-_Atomic uint32_t at = 0; // Accessed by reserve_transaction_block method, this method is accessed by process and client.
-_Atomic uint32_t end = 0; // Accessed by reserve_transaction_block method, this method is accessed by process and client.
-uint32_t waiting_blocks = 0; // Accessed by methods from thread.
+_Atomic uint32_t at = 0; // Accessed by reserve_transaction_block method.
+_Atomic uint32_t end = 0; // Accessed by reserve_transaction_block method.
+_Atomic uint32_t waiting_blocks = 0; // Accessed by reserve_transaction_block method.
 struct Configuration *conf;
 
 pthread_t thread;
@@ -39,51 +39,61 @@ void *transaction_thread(void *arg) {
   pthread_sigmask(SIG_BLOCK, &set, NULL);
 
   while (true) {
-    uint32_t current_at = atomic_load_explicit(&at, memory_order_acquire);
-    const uint32_t current_end = atomic_load_explicit(&end, memory_order_relaxed);
+    const uint32_t current_at = atomic_load_explicit(&at, memory_order_acquire);
+    const uint32_t current_end = atomic_load_explicit(&end, memory_order_acquire);
+    const uint32_t current_waiting_blocks = atomic_load_explicit(&waiting_blocks, memory_order_acquire);
 
-    if (calculate_block_count(current_at, current_end) == waiting_blocks) {
+    if (calculate_block_count(current_at, current_end) == current_waiting_blocks) {
       usleep(1);
       continue;
     }
 
     struct TransactionBlock *block = &blocks[current_at];
 
-    if (waiting_blocks != 0) {
-      uint32_t _at = ((current_at + 1) % conf->max_transaction_blocks);
-      block = &blocks[_at];
-
-      // (if block does not have client but transactions, it needs to be passed) || (if block is queued/waiting block)
-      while (!block->client || block->client->waiting_block) {
-        if (block->transaction_count != 0) {
-          const char *name = block->transactions[0].command->name;
-
-          if (streq(name, "EXEC") || streq(name, "DISCARD") || streq(name, "MULTI")) {
-            break;
-          }
-        }
-
-        _at = (_at + 1) % conf->max_transaction_blocks;
-        block = &blocks[_at];
-      }
-    } else {
+    if (block->transaction_count == 0) {
       const uint32_t next_at = ((current_at + 1) % conf->max_transaction_blocks);
       atomic_store_explicit(&at, next_at, memory_order_release);
+      continue;
     }
 
-    if (block->transaction_count != 0) {
+    if (current_waiting_blocks == 0) {
       execute_transaction_block(block);
       remove_transaction_block(block, true);
+
+      const uint32_t next_at = ((current_at + 1) % conf->max_transaction_blocks);
+      atomic_store_explicit(&at, next_at, memory_order_release);
+      continue;
     }
+
+    uint32_t _at = ((current_at + 1) % conf->max_transaction_blocks);
+    block = &blocks[_at];
+
+    // (if block does not have client but transactions, it needs to be passed) || (if block is queued/waiting block)
+    while (!block->client || block->client->waiting_block) {
+      if (block->transaction_count != 0) {
+        const char *name = block->transactions[0].command->name;
+
+        if (streq(name, "EXEC") || streq(name, "DISCARD") || streq(name, "MULTI")) {
+          break;
+        }
+      }
+
+      _at = (_at + 1) % conf->max_transaction_blocks;
+      block = &blocks[_at];
+    }
+
+    execute_transaction_block(block);
+    remove_transaction_block(block, true);
   }
 
   return NULL;
 }
 
+// Accessed by thread
 uint32_t get_transaction_count() {
   const uint32_t current_end = atomic_load(&end);
   uint32_t idx = atomic_load(&at);
-  uint64_t transaction_count = 0;
+  uint32_t transaction_count = 0;
 
   while (idx != current_end) {
     transaction_count += blocks[idx].transaction_count;
@@ -93,15 +103,18 @@ uint32_t get_transaction_count() {
   return transaction_count;
 }
 
+// Accessed by thread
 uint64_t get_processed_transaction_count() {
   return processed_transaction_count;
 }
 
+// Accessed by process
 void deactive_transaction_thread() {
   pthread_cancel(thread);
   free(buffer);
 }
 
+// Accessed by process
 void create_transaction_thread(struct Configuration *config) {
   conf = config;
   commands = get_commands();
@@ -112,19 +125,15 @@ void create_transaction_thread(struct Configuration *config) {
   pthread_detach(thread);
 }
 
-struct TransactionBlock *reserve_transaction_block(struct Client *client, const bool as_queued) {
-  const uint32_t current_at = atomic_load(&at);
-  uint32_t current_end;
-  uint32_t next_end;
+// Accessed by thread and process
+struct TransactionBlock *prereserve_transaction_block(struct Client *client, const bool as_queued) {
+  const uint32_t current_at = atomic_load_explicit(&at, memory_order_acquire);
+  const uint32_t current_end = atomic_load_explicit(&end, memory_order_acquire);
+  const uint32_t next_end = ((current_end + 1) % conf->max_transaction_blocks);
 
-  do {
-    current_end = atomic_load(&end);
-    next_end = ((current_end + 1) % conf->max_transaction_blocks);
-
-    if (VERY_UNLIKELY(current_at == next_end)) {
-      return NULL;
-    }
-  } while (!atomic_compare_exchange_weak_explicit(&end, &current_end, next_end, memory_order_release, memory_order_relaxed));
+  if (VERY_UNLIKELY(current_at == next_end)) {
+    return NULL;
+  }
 
   struct TransactionBlock *block = &blocks[current_end];
   block->client = client;
@@ -133,23 +142,31 @@ struct TransactionBlock *reserve_transaction_block(struct Client *client, const 
   block->transaction_count = 0;
 
   if (as_queued) {
-    waiting_blocks += 1;
+    atomic_fetch_add_explicit(&waiting_blocks, 1, memory_order_relaxed);
   }
 
   return block;
 }
 
-void release_queued_transaction_block(struct Client *client) {
-  client->waiting_block = NULL;
-  waiting_blocks -= 1;
+void reserve_transaction_block() {
+  const uint32_t current_end = atomic_load_explicit(&end, memory_order_acquire);
+  const uint32_t next_end = ((current_end + 1) % conf->max_transaction_blocks);
+  atomic_store_explicit(&end, next_end, memory_order_release);
 }
 
+// Accessed by thread
+void release_queued_transaction_block(struct Client *client) {
+  client->waiting_block = NULL;
+  atomic_fetch_sub_explicit(&waiting_blocks, 1, memory_order_relaxed);
+}
+
+// Accessed by process
 bool add_transaction(struct Client *client, const uint64_t command_idx, commanddata_t data) {
   struct Transaction *transaction;
   const char *name = commands[command_idx].name;
 
   if (client->waiting_block == NULL || streq(name, "EXEC") || streq(name, "DISCARD") || streq(name, "MULTI")) {
-    struct TransactionBlock *block = reserve_transaction_block(client, false);
+    struct TransactionBlock *block = prereserve_transaction_block(client, false);
 
     if (!block) {
       return false;
@@ -170,10 +187,11 @@ bool add_transaction(struct Client *client, const uint64_t command_idx, commandd
   transaction->data = data;
   transaction->database = client->database;
 
+  reserve_transaction_block();
   return true;
 }
 
-// Run by thread, no need mutex
+// Accessed by thread
 void remove_transaction_block(struct TransactionBlock *block, const bool processed) {
   if (processed) {
     processed_transaction_count += block->transaction_count;
@@ -191,6 +209,7 @@ void remove_transaction_block(struct TransactionBlock *block, const bool process
   block->transaction_count = 0;
 }
 
+// Accessed by process
 void free_transactions() {
   const uint32_t current_end = atomic_load(&end);
   uint32_t idx = atomic_load(&at);
@@ -208,12 +227,14 @@ void free_transactions() {
   free(blocks);
 }
 
+// Accessed by thread
 void execute_transaction_block(struct TransactionBlock *block) {
   struct Client *client = block->client;
+  const struct Transaction *transactions = block->transactions;
   struct Password *password = block->password;
 
   if (block->transaction_count == 1) {
-    struct Transaction transaction = block->transactions[0];
+    struct Transaction transaction = transactions[0];
     struct Command *command = transaction.command;
     struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction.data, transaction.database, password, buffer);
 
@@ -231,12 +252,13 @@ void execute_transaction_block(struct TransactionBlock *block) {
     return;
   }
 
-  string_t results[block->transaction_count];
+  const uint32_t transaction_count = block->transaction_count;
+  string_t results[transaction_count];
   uint64_t result_count = 0;
   uint64_t length = 0;
 
-  for (uint32_t i = 0; i < block->transaction_count; ++i) {
-    struct Transaction transaction = block->transactions[i];
+  for (uint32_t i = 0; i < transaction_count; ++i) {
+    struct Transaction transaction = transactions[i];
     struct Command *command = transaction.command;
     struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction.data, transaction.database, password, buffer);
 

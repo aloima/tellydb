@@ -19,7 +19,7 @@ struct Transaction {
 };
 
 struct TransactionBlock {
-  struct Client *client;
+  struct Client *client; // TODO: May be removed by process on disconnection, but it will not be NULL on disconnection.
   struct Password *password;
   struct Transaction *transactions;
   uint64_t transaction_count;
@@ -32,7 +32,8 @@ uint64_t get_processed_transaction_count();
 uint32_t get_transaction_count();
 void release_queued_transaction_block(struct Client *client);
 bool add_transaction(struct Client *client, const uint64_t command_idx, commanddata_t data);
-struct TransactionBlock *reserve_transaction_block(struct Client *client, const bool as_queued);
+struct TransactionBlock *prereserve_transaction_block(struct Client *client, const bool as_queued);
+void reserve_transaction_block();
 void remove_transaction_block(struct TransactionBlock *block, const bool processed);
 void free_transactions();
 

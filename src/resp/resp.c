@@ -3,7 +3,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <inttypes.h>
+
+// TODO: add inline command support like "PING test"
 
 static inline void DATA_ERR(struct Client *client) {
   write_log(LOG_ERR, "Received data from Client #%" PRIu32 " cannot be validated as a RESP data, so it cannot be created as a command.", client->id);
