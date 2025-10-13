@@ -11,8 +11,7 @@ RUN apk add --no-cache \
     gcc make cmake \
     gperf git \
     gmp gmp-dev \
-    jemalloc jemalloc-dev \
-    hiredis hiredis-dev
+    jemalloc jemalloc-dev
 
 COPY . .
 RUN mkdir -p build && \
