@@ -4,87 +4,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-// TODO: add inline command support like "PING test"
+static inline bool check_crlf(struct Client *client, char *buf, int32_t *at, int32_t *size) {
+  char crlf[2];
+  TAKE_BYTES(crlf, 2, false);
 
-static inline void DATA_ERR(struct Client *client) {
-  write_log(LOG_ERR, "Received data from Client #%" PRIu32 " cannot be validated as a RESP data, so it cannot be created as a command.", client->id);
-}
-
-#define TAKE_BYTES(value, n, return_value) \
-  if (VERY_UNLIKELY(take_n_bytes(client, buf, at, value, n, size) != n)) { \
-    DATA_ERR(client); \
-    return return_value; \
-  }
-
-static inline int take_n_bytes(struct Client *client, char *buf, int32_t *at, void *data, const uint32_t n, int32_t *size) {
-  const uint32_t remaining = (RESP_BUF_SIZE - *at);
-
-  if (VERY_LIKELY(n < remaining)) {
-    if (data != NULL) { 
-      memcpy_aligned(data, buf + *at, n);
-    }
-
-    *at += n;
-    return n;
-  }
-
-  if (data != NULL) {
-    memcpy_aligned(data, buf + *at, remaining);
-
-    if (_read(client, data + remaining, n - remaining) <= 0) {
-      return remaining;
-    }
-
-    // Needs to read buffer, because the process may be interrupted in the middle of getting command data
-    *size = _read(client, buf, RESP_BUF_SIZE);
-
-    if (*size == -1) {
-      return -1;
-    }
-  } else {
-    char dummy[128];
-    const uint32_t length = (n - remaining);
-    const uint32_t quotient = (length / sizeof(dummy));
-    const uint32_t rest = (length % sizeof(dummy));
-    uint32_t total = remaining;
-
-    for (uint32_t i = 0; i < quotient; ++i) {
-      int got = _read(client, dummy, sizeof(dummy));
-
-      if (got <= 0) {
-        return total + (got > 0 ? got : 0);
-      }
-
-      total += got;
-
-      if ((uint32_t) got < sizeof(dummy)) {
-        return total;
-      }
-    }
-
-    if (rest > 0) {
-      int got = _read(client, dummy, rest);
-
-      if (got <= 0) {
-        return total + (got > 0 ? got : 0);
-      }
-
-      total += got;
-
-      if ((uint32_t) got < rest) {
-        return total;
-      }
-    }
-
-    *size = _read(client, buf, RESP_BUF_SIZE);
-
-    if (*size <= 0) {
-      return total;
-    }
-  }
-
-  *at = 0;
-  return n;
+  return !VERY_UNLIKELY(crlf[0] != '\r' || crlf[1] != '\n');
 }
 
 static inline bool get_resp_command_name(struct Client *client, commandname_t *name, char *buf, int32_t *at, int32_t *size) {
@@ -92,14 +16,14 @@ static inline bool get_resp_command_name(struct Client *client, commandname_t *n
   TAKE_BYTES(&c, 1, false);
 
   if (VERY_UNLIKELY(c != RDT_BSTRING)) {
-    DATA_ERR(client);
+    throw_resp_error(client->id);
     return false;
   }
 
   TAKE_BYTES(&c, 1, false);
 
   if (VERY_UNLIKELY(!('0' <= c && c <= '9'))) {
-    DATA_ERR(client);
+    throw_resp_error(client->id);
     return false;
   }
 
@@ -109,14 +33,14 @@ static inline bool get_resp_command_name(struct Client *client, commandname_t *n
   } while ('0' <= c && c <= '9');
 
   if (VERY_UNLIKELY(c != '\r')) {
-    DATA_ERR(client);
+    throw_resp_error(client->id);
     return false;
   }
 
   TAKE_BYTES(&c, 1, false);
 
   if (VERY_UNLIKELY(c != '\n')) {
-    DATA_ERR(client);
+    throw_resp_error(client->id);
     return false;
   }
 
@@ -130,11 +54,8 @@ static inline bool get_resp_command_name(struct Client *client, commandname_t *n
     name->value[name->len] = '\0';
   }
 
-  char crlf[2];
-  TAKE_BYTES(crlf, 2, false);
-
-  if (VERY_UNLIKELY(crlf[0] != '\r' || crlf[1] != '\n')) {
-    DATA_ERR(client);
+  if (!check_crlf(client, buf, at, size)) {
+    throw_resp_error(client->id);
     return false;
   }
 
@@ -146,14 +67,14 @@ static inline bool get_resp_command_argument(struct Client *client, string_t *ar
   TAKE_BYTES(&c, 1, false);
 
   if (VERY_UNLIKELY(c != RDT_BSTRING)) {
-    DATA_ERR(client);
+    throw_resp_error(client->id);
     return false;
   }
 
   TAKE_BYTES(&c, 1, false);
 
   if (VERY_UNLIKELY(!('0' <= c && c <= '9'))) {
-    DATA_ERR(client);
+    throw_resp_error(client->id);
     return false;
   }
 
@@ -163,7 +84,7 @@ static inline bool get_resp_command_argument(struct Client *client, string_t *ar
   } while ('0' <= c && c <= '9');
 
   if (VERY_UNLIKELY(c != '\r')) {
-    DATA_ERR(client);
+    throw_resp_error(client->id);
     return false;
   }
 
@@ -171,30 +92,27 @@ static inline bool get_resp_command_argument(struct Client *client, string_t *ar
 
   // better without VERY_UNLIKELY(), why??
   if (c != '\n') {
-    DATA_ERR(client);
+    throw_resp_error(client->id);
     return false;
   }
 
   if (VERY_UNLIKELY((argument->value = malloc(argument->len + 1)) == NULL)) {
-    DATA_ERR(client);
+    throw_resp_error(client->id);
     return false;
   }
 
   TAKE_BYTES(argument->value, argument->len, false);
   argument->value[argument->len] = '\0';
 
-  char crlf[2];
-  TAKE_BYTES(crlf, 2, false);
-
-  if (VERY_UNLIKELY(crlf[0] != '\r' || crlf[1] != '\n')) {
-    DATA_ERR(client);
+  if (!check_crlf(client, buf, at, size)) {
+    throw_resp_error(client->id);
     return false;
   }
 
   return true;
 }
 
-static bool parse_resp_command(struct Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command) {
+bool parse_resp_command(struct Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command) {
   command->arg_count = 0;
   command->args = NULL;
 
@@ -202,7 +120,7 @@ static bool parse_resp_command(struct Client *client, char *buf, int32_t *at, in
   TAKE_BYTES(&c, 1, false);
 
   if (VERY_UNLIKELY(!('0' <= c && c <= '9'))) {
-    DATA_ERR(client);
+    throw_resp_error(client->id);
     return false;
   }
 
@@ -212,14 +130,14 @@ static bool parse_resp_command(struct Client *client, char *buf, int32_t *at, in
   } while ('0' <= c && c <= '9');
 
   if (VERY_UNLIKELY(c != '\r')) {
-    DATA_ERR(client);
+    throw_resp_error(client->id);
     return false;
   }
 
   TAKE_BYTES(&c, 1, false);
 
   if (VERY_UNLIKELY(c != '\n')) {
-    DATA_ERR(client);
+    throw_resp_error(client->id);
     return false;
   }
 
@@ -259,30 +177,4 @@ static bool parse_resp_command(struct Client *client, char *buf, int32_t *at, in
   }
 
   return true;
-}
-
-bool get_command_data(struct Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command) {
-  uint8_t type;
-  TAKE_BYTES(&type, 1, false);
-
-  if (VERY_LIKELY(type == RDT_ARRAY)) {
-    if (parse_resp_command(client, buf, at, size, command)) {
-      return true;
-    }
-
-    return false;
-  } else {
-    write_log(LOG_ERR, "Received data from Client #%u is not RESP array, so it cannot be read as a command.", client->id);
-    return false;
-  }
-}
-
-void free_command_data(commanddata_t command) {
-  if (command.arg_count != 0) {
-    for (uint32_t i = 0; i < command.arg_count; ++i) {
-      free(command.args[i].value);
-    }
-
-    free(command.args);
-  }
 }
