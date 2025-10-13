@@ -89,6 +89,8 @@ static inline void unknown_command(struct Client *client, commandname_t name) {
   free(buf);
 }
 
+
+// TODO: no client disconnection on using inline commands
 void handle_events(struct Configuration *conf, SSL_CTX *ctx, const int sockfd, struct Command *commands, const int eventfd) {
   event_t events[32];
   char buf[RESP_BUF_SIZE];

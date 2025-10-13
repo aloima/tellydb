@@ -59,6 +59,7 @@ static inline void throw_resp_error(const int client_id) {
   }
 
 bool parse_resp_command(struct Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command);
+bool parse_inline_command(struct Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command, char c);
 
 bool get_command_data(struct Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command);
 void free_command_data(commanddata_t data);

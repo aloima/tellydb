@@ -11,8 +11,7 @@ bool get_command_data(struct Client *client, char *buf, int32_t *at, int32_t *si
   if (VERY_LIKELY(type == RDT_ARRAY)) {
     return parse_resp_command(client, buf, at, size, command);
   } else {
-    write_log(LOG_ERR, "Received data from Client #%u is not RESP array, so it cannot be read as a command.", client->id);
-    return false;
+    return parse_inline_command(client, buf, at, size, command, type);
   }
 }
 
