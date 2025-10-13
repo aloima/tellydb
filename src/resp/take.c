@@ -4,9 +4,9 @@
 #include <inttypes.h>
 
 int32_t take_n_bytes_from_socket(struct Client *client, char *buf, int32_t *at, void *data, const uint32_t n, int32_t *size) {
-  const uint32_t remaining = (RESP_BUF_SIZE - *at);
+  const uint32_t remaining = (*size - *at);
 
-  if (VERY_LIKELY(n < remaining)) {
+  if (VERY_LIKELY(n <= remaining)) {
     if (data != NULL) { 
       memcpy_aligned(data, buf + *at, n);
     }
