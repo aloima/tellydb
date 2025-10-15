@@ -52,12 +52,12 @@ static inline int accept_client(const int sockfd, struct Configuration *conf, SS
 
   event_t event;
 #if defined(__linux__)
-  event.events = (EPOLLIN | EPOLLET);
+  event.events = (EPOLLIN | EPOLLET | EPOLLHUP | EPOLLRDHUP);
   event.data.fd = connfd;
 
   if ((epoll_ctl(eventfd, EPOLL_CTL_ADD, connfd, &event)) == -1) {
 #elif defined(__APPLE__)
-  EV_SET(&event, connfd, EVFILT_READ, EV_ADD, 0, 0, NULL);
+  EV_SET(&event, connfd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, NULL);
 
   if ((kevent(eventfd, &event, 1, NULL, 0, NULL)) == -1) {
 #endif
@@ -89,8 +89,7 @@ static inline void unknown_command(struct Client *client, commandname_t name) {
   free(buf);
 }
 
-
-// TODO: no client disconnection on using inline commands
+// TODO: thread-race for transactions, some executions will not be executed for inline commands
 void handle_events(struct Configuration *conf, SSL_CTX *ctx, const int sockfd, struct Command *commands, const int eventfd) {
   event_t events[32];
   char buf[RESP_BUF_SIZE];
@@ -170,6 +169,15 @@ void handle_events(struct Configuration *conf, SSL_CTX *ctx, const int sockfd, s
         if (client->waiting_block && !streq(command.name, "EXEC") && !streq(command.name, "DISCARD") && !streq(command.name, "MULTI")) {
           _write(client, "+QUEUED\r\n", 9);
         }
+      }
+
+#if defined(__linux__)
+      if (fd != sockfd && (events[i].events & (EPOLLRDHUP | EPOLLHUP))) {
+#elif defined(__APPLE__)
+      if (fd != sockfd && (events[i].flags & EV_EOF)) {
+#endif
+        terminate_connection(fd);
+        continue;
       }
     }
   }
