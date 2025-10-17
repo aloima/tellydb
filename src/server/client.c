@@ -91,7 +91,7 @@ struct Client *get_client(const int input) {
 
 struct Client *get_client_from_id(const uint32_t id) {
   const uint32_t start = (id % client_capacity);
-  uint32_t at = at;
+  uint32_t at = start;
 
   while (clients[at].id != -1) {
     if (clients[at].id == id) {
