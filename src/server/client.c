@@ -141,8 +141,6 @@ bool initialize_client_maps() {
     return false;
   }
 
-  const int64_t val = -1;
-
   for (uint32_t i = 0; i < client_capacity; ++i) {
     clients[i].id = -1;
     connfd_client_pos[i] = -1;
@@ -195,8 +193,6 @@ static inline bool resize_client_maps() {
     write_log(LOG_ERR, "Cannot resize a map for storing clients, out of memory.");
     return false;
   }
-
-  const int64_t val = -1;
 
   for (uint32_t i = 0; i < client_capacity; ++i) {
     clients[i].id = -1;
