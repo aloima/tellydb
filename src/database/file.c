@@ -182,7 +182,7 @@ static inline void generate_integer_value(char **data, off_t *len, mpz_t *number
 
 static inline void generate_double_value(char **data, off_t *len, mpf_t *number) {
   mp_exp_t exp;
-  char *hex = mpf_get_str(NULL, &exp, 16, 0, *number);
+  char *hex = mpf_get_str(NULL, &exp, 16, (FLOAT_PRECISION / 8) * 2, *number);
   const uint64_t size = strlen(hex);
   const bool negative = (hex[0] == '-');
 

@@ -2,7 +2,6 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <ctype.h>
 
 // log10(2) * 1024 = 308.25 ~ 308
 #define LOG10_2_X_1024 308

@@ -11,8 +11,6 @@
 
 #include <gmp.h>
 
-// TODO: better getting double values
-
 static void collect_bytes(const int fd, char *block, const uint16_t block_size, uint16_t *at, const uint32_t count, void *data) {
   uint32_t remaining = count;
 
