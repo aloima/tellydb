@@ -32,7 +32,7 @@ pkg_check_modules(HIREDIS QUIET hiredis)
 
 
 execute_process(
-  COMMAND gperf -L ANSI-C command_hash.gperf
+  COMMAND gperf -L ANSI-C --ignore-case command_hash.gperf
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/utils
   OUTPUT_FILE ${CMAKE_SOURCE_DIR}/src/utils/command_hash.c
 )
