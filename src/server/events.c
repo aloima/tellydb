@@ -40,7 +40,7 @@ static inline int accept_client(const int sockfd, struct Configuration *conf, SS
   struct Client *client = add_client(connfd);
 
   if (!client) {
-    terminate_connection(client->connfd);
+    close(connfd);
     return -1;
   }
 
