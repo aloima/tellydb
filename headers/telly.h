@@ -5,12 +5,12 @@
 
 #define FLOAT_PRECISION 1024
 
-#include "auth.h"              // IWYU pragma: export
-#include "commands/commands.h" // IWYU pragma: export
-#include "config.h"            // IWYU pragma: export
-#include "database/database.h" // IWYU pragma: export
-#include "hashtable.h"         // IWYU pragma: export
-#include "resp.h"              // IWYU pragma: export
-#include "server/server.h"     // IWYU pragma: export
-#include "transactions.h"      // IWYU pragma: export
-#include "utils.h"             // IWYU pragma: export
+#include "auth.h"                 // IWYU pragma: export
+#include "commands/commands.h"    // IWYU pragma: export
+#include "config.h"               // IWYU pragma: export
+#include "database/database.h"    // IWYU pragma: export
+#include "hashtable.h"            // IWYU pragma: export
+#include "resp.h"                 // IWYU pragma: export
+#include "server/server.h"        // IWYU pragma: export
+#include "transactions/public.h"  // IWYU pragma: export
+#include "utils.h"                // IWYU pragma: export
