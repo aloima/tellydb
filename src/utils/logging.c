@@ -21,8 +21,8 @@ static uint16_t block_size = 4096;
 char **lines;
 static int32_t log_lines = 0;
 
-bool initialize_logs(struct Configuration *config) {
-  _conf = config;
+bool initialize_logs() {
+  _conf = get_server_configuration();
   if ((fd = open_file(_conf->log_file, 0)) == -1) return false;
 
   struct stat sostat;

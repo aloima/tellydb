@@ -15,8 +15,8 @@ static uint64_t processed_transaction_count = 0;
 static uint64_t block_idx[3];
 
 // Private method, accessed by create_transaction_thread method once.
-void initialize_transactions(struct Configuration *config) {
-  conf = config;
+void initialize_transactions() {
+  conf = get_server_configuration();
   variables = get_transaction_variables();
   block_idx[0] = get_command_index("EXEC", 4)->idx;
   block_idx[1] = get_command_index("DISCARD", 7)->idx;

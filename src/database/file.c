@@ -20,7 +20,9 @@ static int fd = -1;
 static bool saving = false;
 static uint16_t block_size;
 
-const bool open_database_fd(struct Configuration *conf, uint32_t *server_age) {
+bool open_database_fd(uint32_t *server_age) {
+  struct Configuration *conf = get_server_configuration();
+
   if ((fd = open_file(conf->data_file, 0)) == -1) {
     return false;
   }
@@ -54,7 +56,7 @@ const bool open_database_fd(struct Configuration *conf, uint32_t *server_age) {
       memcpy(server_age, block + 2, 8);
 
       const uint16_t filled_block_size = get_authorization_from_file(fd, block, block_size);
-      const size_t data_count = get_all_data_from_file(conf, fd, file_size, block, block_size, filled_block_size);
+      const size_t data_count = get_all_data_from_file(fd, file_size, block, block_size, filled_block_size);
       write_log(LOG_INFO,
         "Read database file in %.3f seconds. Loaded password count: %u, loaded data count: %d",
         ((float) clock() - start) / CLOCKS_PER_SEC, get_password_count(), data_count
@@ -71,7 +73,7 @@ const bool open_database_fd(struct Configuration *conf, uint32_t *server_age) {
   return true;
 }
 
-const bool close_database_fd() {
+bool close_database_fd() {
   while (saving) {
     usleep(100);
   }
@@ -360,7 +362,7 @@ static inline void generate_headers(char *headers, const uint32_t server_age) {
   memcpy(headers + 2, &server_age, sizeof(uint32_t));
 }
 
-const bool save_data(const uint32_t server_age) {
+bool save_data(const uint32_t server_age) {
   if (saving) {
     return false;
   }
@@ -539,7 +541,7 @@ void *save_thread(void *arg) {
   pthread_exit(NULL);
 }
 
-const bool bg_save(const uint32_t server_age) {
+bool bg_save(const uint32_t server_age) {
   if (saving) {
     return false;
   }

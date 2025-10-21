@@ -89,11 +89,11 @@ void deactive_transaction_thread() {
 }
 
 // Accessed by process
-void create_transaction_thread(struct Configuration *config) {
+void create_transaction_thread() {
+  conf = get_server_configuration();
   variables = get_transaction_variables();
-  initialize_transactions(config);
+  initialize_transactions();
 
-  conf = config;
   *variables.commands = get_commands();
   *variables.blocks = calloc(conf->max_transaction_blocks, sizeof(struct TransactionBlock));
   *variables.buffer = malloc(MAX_RESPONSE_SIZE);

@@ -34,7 +34,7 @@ struct TransactionVariables {
   struct Command **commands;
 };
 
-void create_transaction_thread(struct Configuration *config);
+void create_transaction_thread();
 void deactive_transaction_thread();
 
 uint64_t get_processed_transaction_count();

@@ -238,7 +238,7 @@ static int initialize_authorization() {
 void start_server(struct Configuration *config) {
   conf = config;
 
-  if (!initialize_logs(conf)) {
+  if (!initialize_logs()) {
     write_log(LOG_ERR, "Cannot initialized logs.");
     write_log(LOG_INFO, "Initialized configuration.");
   } else {
@@ -258,7 +258,7 @@ void start_server(struct Configuration *config) {
   commands = load_commands();
   write_log(LOG_INFO, "Loaded commands.");
 
-  create_transaction_thread(config);
+  create_transaction_thread();
   write_log(LOG_INFO, "Created transaction thread.");
 
   signal(SIGTERM, close_signal);
@@ -272,7 +272,7 @@ void start_server(struct Configuration *config) {
     return;
   }
 
-  if (!open_database_fd(conf, &age)) {
+  if (!open_database_fd(&age)) {
     FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);
     FREE_CONF_LOGS(conf);
     return;

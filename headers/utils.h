@@ -47,7 +47,7 @@ enum LogLevel {
   LOG_ERR  = 0b100,
 };
 
-bool initialize_logs(struct Configuration *config);
+bool initialize_logs();
 void write_log(enum LogLevel level, const char *fmt, ...);
 void save_and_close_logs();
 
