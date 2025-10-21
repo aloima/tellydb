@@ -122,8 +122,8 @@ static inline string_t subcommand_list(struct CommandEntry entry) {
     return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_CLIENT");
   }
 
+  const struct Configuration *conf = get_server_configuration();
   struct Client *clients = get_clients();
-  const uint32_t client_capacity = get_client_capacity();
   uint64_t at = 1;
 
   entry.buffer[0] = RDT_ARRAY;
@@ -131,7 +131,7 @@ static inline string_t subcommand_list(struct CommandEntry entry) {
   entry.buffer[at++] = '\r';
   entry.buffer[at++] = '\n';
 
-  for (uint32_t i = 0; i < client_capacity; ++i) {
+  for (uint32_t i = 0; i < conf->max_clients; ++i) {
     if (clients[i].id != -1) {
       entry.buffer[at++] = RDT_SSTRING;
       at += ltoa(clients[i].id, entry.buffer + at);

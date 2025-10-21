@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../config.h"
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <time.h>
@@ -38,8 +40,7 @@ struct Client *get_client_from_id(const uint32_t id);
 
 uint32_t get_last_connection_client_id();
 struct Client *get_clients();
-uint32_t get_client_count();
-uint32_t get_client_capacity();
+uint16_t get_client_count();
 
 struct Client *add_client(const int connfd);
 bool remove_client(const int connfd);
