@@ -5,52 +5,56 @@
 #include <stdlib.h>
 
 static inline bool check_crlf(struct Client *client, char *buf, int32_t *at, int32_t *size) {
-  char crlf[2];
+  char *crlf;
   TAKE_BYTES(crlf, 2, false);
 
   return !VERY_UNLIKELY(crlf[0] != '\r' || crlf[1] != '\n');
 }
 
 static inline bool get_resp_command_name(struct Client *client, commandname_t *name, char *buf, int32_t *at, int32_t *size) {
-  char c;
-  TAKE_BYTES(&c, 1, false);
+  char *c;
+  TAKE_BYTES(c, 1, false);
 
-  if (VERY_UNLIKELY(c != RDT_BSTRING)) {
+  if (VERY_UNLIKELY(*c != RDT_BSTRING)) {
     throw_resp_error(client->id);
     return false;
   }
 
-  TAKE_BYTES(&c, 1, false);
+  TAKE_BYTES(c, 1, false);
 
-  if (VERY_UNLIKELY(!('0' <= c && c <= '9'))) {
+  if (VERY_UNLIKELY(!('0' <= *c && *c <= '9'))) {
     throw_resp_error(client->id);
     return false;
   }
 
   do {
-    name->len = (name->len * 10) + (c - '0');
-    TAKE_BYTES(&c, 1, false);
-  } while ('0' <= c && c <= '9');
+    name->len = (name->len * 10) + (*c - '0');
+    TAKE_BYTES(c, 1, false);
+  } while ('0' <= *c && *c <= '9');
 
-  if (VERY_UNLIKELY(c != '\r')) {
+  if (VERY_UNLIKELY(*c != '\r')) {
     throw_resp_error(client->id);
     return false;
   }
 
-  TAKE_BYTES(&c, 1, false);
+  TAKE_BYTES(c, 1, false);
 
-  if (VERY_UNLIKELY(c != '\n')) {
+  if (VERY_UNLIKELY(*c != '\n')) {
     throw_resp_error(client->id);
     return false;
   }
+
+  char *name_raw;
 
   if (name->len > COMMAND_NAME_MAX_LENGTH) {
-    TAKE_BYTES(name->value, COMMAND_NAME_MAX_LENGTH - 1, false);
-    name->value[name->len] = '\0';
+    TAKE_BYTES(name_raw, COMMAND_NAME_MAX_LENGTH - 1, false);
+    memcpy_aligned(name->value, name_raw, COMMAND_NAME_MAX_LENGTH - 1);
+    name->value[COMMAND_NAME_MAX_LENGTH - 1] = '\0';
 
-    TAKE_BYTES(NULL, name->len - (COMMAND_NAME_MAX_LENGTH - 1), false);
+    TAKE_DUMMY_BYTES(name->len - (COMMAND_NAME_MAX_LENGTH - 1), false);
   } else {
-    TAKE_BYTES(name->value, name->len, false);
+    TAKE_BYTES(name_raw, name->len, false);
+    memcpy_aligned(name->value, name_raw, name->len);
     name->value[name->len] = '\0';
   }
 
@@ -63,35 +67,35 @@ static inline bool get_resp_command_name(struct Client *client, commandname_t *n
 }
 
 static inline bool get_resp_command_argument(struct Client *client, string_t *argument, char *buf, int32_t *at, int32_t *size) {
-  char c;
-  TAKE_BYTES(&c, 1, false);
+  char *c;
+  TAKE_BYTES(c, 1, false);
 
-  if (VERY_UNLIKELY(c != RDT_BSTRING)) {
+  if (VERY_UNLIKELY(*c != RDT_BSTRING)) {
     throw_resp_error(client->id);
     return false;
   }
 
-  TAKE_BYTES(&c, 1, false);
+  TAKE_BYTES(c, 1, false);
 
-  if (VERY_UNLIKELY(!('0' <= c && c <= '9'))) {
+  if (VERY_UNLIKELY(!('0' <= *c && *c <= '9'))) {
     throw_resp_error(client->id);
     return false;
   }
 
   do {
-    argument->len = (argument->len * 10) + (c - '0');
-    TAKE_BYTES(&c, 1, false);
-  } while ('0' <= c && c <= '9');
+    argument->len = (argument->len * 10) + (*c - '0');
+    TAKE_BYTES(c, 1, false);
+  } while ('0' <= *c && *c <= '9');
 
-  if (VERY_UNLIKELY(c != '\r')) {
+  if (VERY_UNLIKELY(*c != '\r')) {
     throw_resp_error(client->id);
     return false;
   }
 
-  TAKE_BYTES(&c, 1, false);
+  TAKE_BYTES(c, 1, false);
 
   // better without VERY_UNLIKELY(), why??
-  if (c != '\n') {
+  if (*c != '\n') {
     throw_resp_error(client->id);
     return false;
   }
@@ -101,7 +105,9 @@ static inline bool get_resp_command_argument(struct Client *client, string_t *ar
     return false;
   }
 
-  TAKE_BYTES(argument->value, argument->len, false);
+  char *argument_raw;
+  TAKE_BYTES(argument_raw, argument->len, false);
+  memcpy_aligned(argument->value, argument_raw, argument->len);
   argument->value[argument->len] = '\0';
 
   if (!check_crlf(client, buf, at, size)) {
@@ -116,27 +122,27 @@ bool parse_resp_command(struct Client *client, char *buf, int32_t *at, int32_t *
   command->arg_count = 0;
   command->args = NULL;
 
-  char c;
-  TAKE_BYTES(&c, 1, false);
+  char *c;
+  TAKE_BYTES(c, 1, false);
 
-  if (VERY_UNLIKELY(!('0' <= c && c <= '9'))) {
+  if (VERY_UNLIKELY(!('0' <= *c && *c <= '9'))) {
     throw_resp_error(client->id);
     return false;
   }
 
   do {
-    command->arg_count = (command->arg_count * 10) + (c - '0');
-    TAKE_BYTES(&c, 1, false);
-  } while ('0' <= c && c <= '9');
+    command->arg_count = (command->arg_count * 10) + (*c - '0');
+    TAKE_BYTES(c, 1, false);
+  } while ('0' <= *c && *c <= '9');
 
-  if (VERY_UNLIKELY(c != '\r')) {
+  if (VERY_UNLIKELY(*c != '\r')) {
     throw_resp_error(client->id);
     return false;
   }
 
-  TAKE_BYTES(&c, 1, false);
+  TAKE_BYTES(c, 1, false);
 
-  if (VERY_UNLIKELY(c != '\n')) {
+  if (VERY_UNLIKELY(*c != '\n')) {
     throw_resp_error(client->id);
     return false;
   }

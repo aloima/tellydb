@@ -3,12 +3,12 @@
 #include <stdint.h>
 #include <inttypes.h>
 
-int32_t take_n_bytes_from_socket(struct Client *client, char *buf, int32_t *at, void *data, const uint32_t n, int32_t *size) {
+int32_t take_n_bytes_from_socket(struct Client *client, char *buf, int32_t *at, char **data, const uint32_t n, int32_t *size) {
   const uint32_t remaining = (*size - *at);
 
   if (VERY_LIKELY(n <= remaining)) {
-    if (data != NULL) { 
-      memcpy_aligned(data, buf + *at, n);
+    if (data != NULL) {
+      *data = (buf + *at);
     }
 
     *at += n;
@@ -16,9 +16,9 @@ int32_t take_n_bytes_from_socket(struct Client *client, char *buf, int32_t *at, 
   }
 
   if (data != NULL) {
-    memcpy_aligned(data, buf + *at, remaining);
+    *data = (buf + *at);
 
-    if (_read(client, data + remaining, n - remaining) <= 0) {
+    if (_read(client, *data + remaining, n - remaining) <= 0) {
       return remaining;
     }
 

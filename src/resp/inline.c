@@ -13,7 +13,7 @@ static inline bool parse_name(struct Client *client, char *buf, int32_t *at, int
   do {
     command->name.value[idx] = *c;
 
-    if (take_n_bytes_from_socket(client, buf, at, c, 1, size) != 1) {
+    if (take_n_bytes_from_socket(client, buf, at, &c, 1, size) != 1) {
       idx += 1;
       command->name.value[idx] = '\0';
       command->name.len = idx;
@@ -68,7 +68,7 @@ static inline bool parse_arguments(struct Client *client, char *buf, int32_t *at
       TAKE_BYTES(c, 1, false);
 
       if (*c == '\r') {
-        TAKE_BYTES(NULL, 1, false);
+        TAKE_DUMMY_BYTES(1, false);
         retrieving = false;
         break;
       }
@@ -110,7 +110,7 @@ bool parse_inline_command(struct Client *client, char *buf, int32_t *at, int32_t
   }
 
   if (c == '\r') {
-    TAKE_BYTES(NULL, 1, false);
+    TAKE_DUMMY_BYTES(1, false);
     return true;
   }
 

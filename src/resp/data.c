@@ -5,13 +5,13 @@
 #include <stdlib.h>
 
 bool get_command_data(struct Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command) {
-  uint8_t type;
-  TAKE_BYTES(&type, 1, false);
+  char *type;
+  TAKE_BYTES(type, 1, false);
 
-  if (VERY_LIKELY(type == RDT_ARRAY)) {
+  if (VERY_LIKELY(type[0] == RDT_ARRAY)) {
     return parse_resp_command(client, buf, at, size, command);
   } else {
-    return parse_inline_command(client, buf, at, size, command, type);
+    return parse_inline_command(client, buf, at, size, command, *type);
   }
 }
 

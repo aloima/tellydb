@@ -46,14 +46,20 @@ typedef struct CommandData {
   uint32_t arg_count;
 } commanddata_t;
 
-int32_t take_n_bytes_from_socket(struct Client *client, char *buf, int32_t *at, void *data, const uint32_t n, int32_t *size);
+int32_t take_n_bytes_from_socket(struct Client *client, char *buf, int32_t *at, char **data, const uint32_t n, int32_t *size);
 
 static inline void throw_resp_error(const int client_id) {
   write_log(LOG_ERR, "Received data from Client #%" PRIu32 " cannot be validated as a RESP data.", client_id);
 }
 
 #define TAKE_BYTES(value, n, return_value) \
-  if (VERY_UNLIKELY(take_n_bytes_from_socket(client, buf, at, value, n, size) != n)) { \
+  if (VERY_UNLIKELY(take_n_bytes_from_socket(client, buf, at, (char **) &value, n, size) != n)) { \
+    throw_resp_error(client->id); \
+    return return_value; \
+  }
+
+#define TAKE_DUMMY_BYTES(n, return_value) \
+  if (VERY_UNLIKELY(take_n_bytes_from_socket(client, buf, at, NULL, n, size) != n)) { \
     throw_resp_error(client->id); \
     return return_value; \
   }
