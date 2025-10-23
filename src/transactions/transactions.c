@@ -148,11 +148,11 @@ void free_transactions() {
 
 // Accessed by thread
 void execute_transaction_block(struct TransactionBlock *block, struct Client *client) {
-  const struct Transaction *transactions = block->transactions;
+  __builtin_prefetch(block->transactions, 0, 3);
   struct Password *password = block->password;
 
   if (block->transaction_count == 1) {
-    struct Transaction transaction = transactions[0];
+    struct Transaction transaction = block->transactions[0];
     struct Command *command = transaction.command;
     struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction.data, transaction.database, password, *variables.buffer);
 
@@ -176,7 +176,7 @@ void execute_transaction_block(struct TransactionBlock *block, struct Client *cl
   uint64_t length = 0;
 
   for (uint32_t i = 0; i < transaction_count; ++i) {
-    struct Transaction transaction = transactions[i];
+    struct Transaction transaction = block->transactions[i];
     struct Command *command = transaction.command;
     struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction.data, transaction.database, password, *variables.buffer);
 

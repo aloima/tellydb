@@ -33,7 +33,7 @@ void *transaction_thread(void *arg) {
     const uint32_t current_waiting_blocks = atomic_load_explicit(variables.waiting_blocks, memory_order_relaxed);
 
     if (calculate_block_count(current_at, current_end) == current_waiting_blocks) {
-      usleep(0);
+      usleep(0); // TODO: highly consuming CPU, change efficient pthread conditions
       continue;
     }
 
@@ -95,7 +95,12 @@ void create_transaction_thread() {
   initialize_transactions();
 
   *variables.commands = get_commands();
-  *variables.blocks = calloc(conf->max_transaction_blocks, sizeof(struct TransactionBlock));
+  
+  if (posix_memalign((void **) variables.blocks, 64, sizeof(struct TransactionBlock) * conf->max_transaction_blocks) != 0) {
+    write_log(LOG_ERR, "Cannot allocate transaction blocks, out of memory.");
+  }
+
+  memset(*variables.blocks, 0, sizeof(struct TransactionBlock) * conf->max_transaction_blocks);
   *variables.buffer = malloc(MAX_RESPONSE_SIZE);
 
   pthread_create(&thread, NULL, transaction_thread, NULL);

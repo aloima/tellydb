@@ -3,7 +3,6 @@
 #include "commands/_commands.h"
 #include "database/database.h"
 #include "server/server.h"
-#include "config.h"
 #include "resp.h"
 #include "auth.h"
 
@@ -24,6 +23,8 @@ struct TransactionBlock {
   struct Password *password;
   struct Transaction *transactions;
   uint64_t transaction_count;
+
+  char _pad[32];
 };
 
 struct TransactionVariables {
