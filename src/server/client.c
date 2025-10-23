@@ -133,7 +133,7 @@ bool initialize_client_maps() {
     return false;
   }
 
-  if ((connfd_client_pos = malloc(sizeof(short) * conf->max_clients)) == NULL) {
+  if ((connfd_client_pos = malloc(sizeof(int32_t) * conf->max_clients)) == NULL) {
     write_log(LOG_ERR, "Cannot create a map for storing clients, out of memory.");
     return false;
   }
