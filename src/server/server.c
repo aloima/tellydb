@@ -320,6 +320,8 @@ void start_server(struct Configuration *config) {
     return;
   }
 
+  initialize_io(4);
+
   start_at = time(NULL);
   write_log(LOG_INFO, "Server is listening on %" PRIu16 " port for accepting connections...", conf->port);
 

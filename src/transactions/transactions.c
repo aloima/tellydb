@@ -1,6 +1,7 @@
 #include <telly.h>
 
 #include "../headers/transactions/private.h"
+#include "server/_io.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -164,8 +165,10 @@ void execute_transaction_block(struct TransactionBlock *block, struct Client *cl
 
     const string_t response = command->run(entry);
 
+    // TODO: separate entry.buffer
     if (response.len != 0) {
-      _write(client, response.value, response.len);
+      enqueue_io_request(IO_WRITE, response, client);
+      //_write(client, response.value, response.len);
     }
 
     return;

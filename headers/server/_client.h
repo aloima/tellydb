@@ -1,7 +1,5 @@
 #pragma once
 
-#include "../config.h"
-
 #include <stdint.h>
 #include <stdbool.h>
 #include <time.h>
