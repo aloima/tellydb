@@ -107,6 +107,7 @@ bool add_transaction(struct Client *client, const uint64_t command_idx, commandd
   transaction->database = client->database;
 
   reserve_transaction_block();
+  pthread_cond_signal(variables.cond);
   return true;
 }
 

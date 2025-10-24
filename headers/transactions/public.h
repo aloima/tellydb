@@ -10,6 +10,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include <pthread.h>
+
 #define MAX_RESPONSE_SIZE 262144
 
 struct Transaction {
@@ -33,6 +35,7 @@ struct TransactionVariables {
   char **buffer;
   struct TransactionBlock **blocks;
   struct Command **commands;
+  pthread_cond_t *cond;
 };
 
 void create_transaction_thread();

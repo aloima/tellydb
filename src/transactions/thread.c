@@ -10,6 +10,7 @@
 
 static struct Configuration *conf;
 static pthread_t thread;
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static struct TransactionVariables variables;
 
 static inline uint32_t calculate_block_count(const uint32_t current_at, const uint32_t current_end) {
@@ -33,7 +34,7 @@ void *transaction_thread(void *arg) {
     const uint32_t current_waiting_blocks = atomic_load_explicit(variables.waiting_blocks, memory_order_relaxed);
 
     if (calculate_block_count(current_at, current_end) == current_waiting_blocks) {
-      usleep(0); // TODO: highly consuming CPU, change efficient pthread conditions
+      pthread_cond_wait(variables.cond, &mutex);
       continue;
     }
 
