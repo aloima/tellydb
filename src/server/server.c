@@ -111,6 +111,9 @@ static void close_server() {
     write_log(LOG_ERR, "Database file cannot be closed.");
   }
 
+  destroy_io();
+  write_log(LOG_INFO, "Killed I/O threads and free'd I/O queue.");
+
   FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);
   close(eventfd);
   free_passwords();

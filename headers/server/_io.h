@@ -26,4 +26,5 @@ struct IORequest {
 };
 
 bool initialize_io(const uint32_t count);
+void destroy_io();
 bool enqueue_io_request(const enum IORequestType type, string_t data, struct Client *client);

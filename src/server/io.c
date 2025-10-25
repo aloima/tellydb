@@ -1,5 +1,6 @@
 #include <telly.h>
 
+#include <stdlib.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdatomic.h>
@@ -110,4 +111,13 @@ bool enqueue_io_request(const enum IORequestType type, string_t data, struct Cli
   }
 
   return true;
+}
+
+void destroy_io() {
+  for (uint32_t i = 0; i < pool.count; ++i) {
+    pthread_kill(pool.threads[i], SIGKILL);
+  }
+
+  sem_close(&sem);
+  free(memory);
 }
