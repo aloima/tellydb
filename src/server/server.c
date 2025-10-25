@@ -323,7 +323,15 @@ void start_server(struct Configuration *config) {
     return;
   }
 
-  initialize_io(4);
+  if (!initialize_io(4)) {
+    FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);
+    close_database_fd();
+    close(eventfd);
+    free_client_maps();
+    write_log(LOG_ERR, "Cannot initialize I/O threads and queue, check available memory and openable thread count.");
+    FREE_CONF_LOGS(conf);
+    return;
+  }
 
   start_at = time(NULL);
   write_log(LOG_INFO, "Server is listening on %" PRIu16 " port for accepting connections...", conf->port);
