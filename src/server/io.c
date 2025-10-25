@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdatomic.h>
 
+#include <unistd.h>
 #include <pthread.h>
 #include <semaphore.h>
 
@@ -12,10 +13,15 @@ static struct IOThreadPool pool;
 static struct IORequest *memory = NULL;
 _Atomic(uint64_t) at, end;
 static sem_t sem;
+static bool killed = false;
 
 static void *io_worker(void *_) {
   while (true) {
     sem_wait(&sem);
+
+    if (killed) {
+      return NULL;
+    }
 
     struct IORequest request = memory[atomic_fetch_add_explicit(&at, 1, memory_order_relaxed)];
 
@@ -114,10 +120,13 @@ bool enqueue_io_request(const enum IORequestType type, string_t data, struct Cli
 }
 
 void destroy_io() {
+  killed = true;
+
   for (uint32_t i = 0; i < pool.count; ++i) {
-    pthread_kill(pool.threads[i], SIGKILL);
+    sem_post(&sem);
   }
 
-  sem_close(&sem);
+  usleep(250);
+  sem_destroy(&sem);
   free(memory);
 }
