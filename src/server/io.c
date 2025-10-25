@@ -7,6 +7,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 
+static struct IOThreadPool pool;
 static struct IORequest *memory = NULL;
 _Atomic(uint64_t) at, end;
 static sem_t sem;
@@ -32,10 +33,8 @@ static void *io_worker(void *_) {
 }
 
 static inline bool create_io_threads(const uint32_t count) {
-  struct IOThreadPool pool = {
-    .count = count,
-    .threads = malloc(sizeof(pthread_t) * count)
-  };
+  pool.count = count;
+  pool.threads = malloc(sizeof(pthread_t) * count);
 
   if (pool.threads == NULL) {
     return false;
