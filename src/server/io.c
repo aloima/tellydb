@@ -1,5 +1,6 @@
 #include <telly.h>
 
+#include <signal.h>
 #include <stdbool.h>
 #include <stdatomic.h>
 
@@ -41,11 +42,29 @@ static inline bool create_io_threads(const uint32_t count) {
   }
 
   for (uint32_t i = 0; i < count; ++i) {
-    pthread_create(&pool.threads[i], NULL, io_worker, NULL);
-    pthread_detach(pool.threads[i]);
+    if (pthread_create(&pool.threads[i], NULL, io_worker, NULL) != 0) {
+      for (uint32_t j = 0; j < i; ++j) {
+        pthread_kill(pool.threads[j], SIGINT);
+      }
+
+      return false;
+    }
+
+    if (pthread_detach(pool.threads[i]) != 0) {
+      for (uint32_t j = 0; j < i; ++j) {
+        pthread_kill(pool.threads[j], SIGINT);
+      }
+
+      pthread_kill(pool.threads[i], SIGINT);
+      return false;
+    }
   }
 
   if (sem_init(&sem, 0, 0) != 0) {
+    for (uint32_t i = 0; i < count; ++i) {
+      pthread_kill(pool.threads[i], SIGINT);
+    }
+
     return false;
   }
 
