@@ -83,7 +83,16 @@ static inline bool create_io_queue() {
 }
 
 bool initialize_io(const uint32_t count) {
-  return (create_io_queue() && create_io_threads(count));
+  if (!create_io_queue()) {
+    return false;
+  }
+
+  if (!create_io_threads(count)) {
+    free(memory);
+    return false;
+  }
+
+  return true;
 }
 
 bool enqueue_io_request(const enum IORequestType type, string_t data, struct Client *client) {
