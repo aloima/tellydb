@@ -95,7 +95,11 @@ bool enqueue_io_request(const enum IORequestType type, string_t data, struct Cli
   };
 
   memory[atomic_fetch_add_explicit(&end, 1, memory_order_relaxed)] = request;
-  sem_post(&sem);
+
+  if (sem_post(&sem) != 0) {
+    atomic_fetch_sub_explicit(&end, 1, memory_order_relaxed);
+    return false;
+  }
 
   return true;
 }
