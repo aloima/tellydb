@@ -50,8 +50,5 @@ docker run -d -p 6379:6379 --name telly aloima/tellydb
 
 To get information about cli commands, use `./telly help`.
 
-## Benchmark Results
-Look at [utils/README.md](./utils/README.md).
-
 ## License
 Licensed under [BSD-3 Clause Clear License](./LICENSE).

@@ -9,7 +9,7 @@ RUN apk add --no-cache \
     openssl openssl-dev \
     musl-dev \
     gcc make cmake \
-    gperf git \
+    git \
     gmp gmp-dev \
     jemalloc jemalloc-dev
 

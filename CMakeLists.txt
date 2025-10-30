@@ -28,14 +28,7 @@ find_package(OpenSSL REQUIRED)
 find_package(Threads REQUIRED)
 pkg_check_modules(GMP REQUIRED QUIET gmp)
 pkg_check_modules(JEMALLOC REQUIRED QUIET jemalloc)
-pkg_check_modules(HIREDIS QUIET hiredis)
 
-
-execute_process(
-  COMMAND gperf -L ANSI-C --ignore-case command_hash.gperf
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/utils
-  OUTPUT_FILE ${CMAKE_SOURCE_DIR}/src/utils/command_hash.c
-)
 
 execute_process(
   COMMAND git rev-parse HEAD
@@ -52,25 +45,12 @@ execute_process(
 )
 
 file(GLOB SOURCES "src/**/**/*.c" "src/**/*.c" "src/*.c")
-list(REMOVE_ITEM SOURCES "${CMAKE_SOURCE_DIR}/src/utils/memcpy_aligned.c")
-
 
 # telly target
 add_executable(telly ${SOURCES})
 set_property(TARGET telly PROPERTY C_STANDARD 23)
 set_property(TARGET telly PROPERTY C_STANDARD_REQUIRED ON)
-target_sources(telly PRIVATE src/utils/memcpy_aligned.c)
 target_link_options(telly PRIVATE ${LINK_FLAGS})
-
-include(CheckCCompilerFlag)
-check_c_compiler_flag(-mavx2 COMPILER_SUPPORTS_AVX2)
-check_c_compiler_flag(-msse2 COMPILER_SUPPORTS_SSE2)
-
-if(COMPILER_SUPPORTS_AVX2)
-  set_source_files_properties(src/utils/memcpy_aligned.c PROPERTIES COMPILE_OPTIONS "-mavx2")
-elseif(COMPILER_SUPPORTS_SSE2)
-  set_source_files_properties(src/utils/memcpy_aligned.c PROPERTIES COMPILE_OPTIONS "-msse2")
-endif()
 
 target_include_directories(telly PRIVATE
   ${CMAKE_SOURCE_DIR}/headers
@@ -96,37 +76,3 @@ target_compile_definitions(telly
 )
 
 install(TARGETS telly)
-
-
-# For testing
-if(NOT HIREDIS_FOUND)
-  message(WARNING "hiredis could not find, so \"tests\" target cannot be created.")
-else()
-  add_executable(tests utils/tests.c)
-
-  target_include_directories(tests PRIVATE
-    ${HIREDIS_INCLUDE_DIRS}
-  )
-
-  target_link_libraries(tests
-    Threads::Threads
-    ${HIREDIS_LINK_LIBRARIES}
-  )
-endif()
-
-
-# For benchmarking
-if(NOT HIREDIS_FOUND)
-  message(WARNING "hiredis could not find, so \"benchmark\" target cannot be created.")
-else()
-  add_executable(benchmark utils/benchmark.c)
-
-  target_include_directories(benchmark PRIVATE
-    ${HIREDIS_INCLUDE_DIRS}
-  )
-
-  target_link_libraries(benchmark
-    Threads::Threads
-    ${HIREDIS_LINK_LIBRARIES}
-  )
-endif()
