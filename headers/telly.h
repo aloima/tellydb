@@ -1,16 +1,5 @@
 #pragma once
 
-#define VERY_LIKELY(x) (__builtin_expect_with_probability(!!(x), 1, 0.999))
-#define VERY_UNLIKELY(x) (__builtin_expect_with_probability(!!(x), 0, 0.999))
+#include <string.h> // IWYU: pragma export
 
-#define FLOAT_PRECISION 1024
-
-#include "auth.h"                 // IWYU pragma: export
-#include "commands/commands.h"    // IWYU pragma: export
-#include "config.h"               // IWYU pragma: export
-#include "database/database.h"    // IWYU pragma: export
-#include "hashtable.h"            // IWYU pragma: export
-#include "resp.h"                 // IWYU pragma: export
-#include "server/server.h"        // IWYU pragma: export
-#include "transactions/public.h"  // IWYU pragma: export
-#include "utils.h"                // IWYU pragma: export
+#define STREQ(s1, s2) (strcmp(s1, s2) == 0)

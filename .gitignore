@@ -7,5 +7,3 @@
 # Build directory
 build/
 
-# Auto-generated code
-src/utils/command_hash.c
