@@ -81,8 +81,8 @@ Data value scheme is defined as:
 > [!IMPORTANT]
 > The hash table **allocated** size is a 4-byte value. For example, `32` is represented as `0x20 0x00 0x00 0x00`.  
 > A hash table element is `element type + string length specifier + element key + element value`.  
-> Element values ​​are data values, so their rules are same as data value rules.  
-> Additionally, type of a hash table element should be `TELLY_NULL`, `TELLY_NUM`, `TELLY_STR` or `TELLY_BOOL`.
+> Element values are data values, so their rules are same as data value rules.  
+> Additionally, type of a hash table element should be `TELLY_NULL`, `TELLY_INT`, `TELLY_DOUBLE`, `TELLY_STR` or `TELLY_BOOL`.
 
 
 * For `TELLY_LIST (0x06)` type, data value is `list size (n) + list element 1 + list element 2 ... list element n`.
@@ -90,7 +90,7 @@ Data value scheme is defined as:
 > [!IMPORTANT]
 > The list size is a 4-byte value. For example, `32` is represented as `0x20 0x00 0x00 0x00`.  
 > A list element is `element type + element value` and element values ​​are data values, so their rules are same as data value rules.  
-> Additionally, type of a list element should be `TELLY_NULL`, `TELLY_NUM`, `TELLY_STR` or `TELLY_BOOL`.
+> Additionally, type of a list element should be `TELLY_NULL`, `TELLY_INT`, `TELLY_DOUBLE`, `TELLY_STR` or `TELLY_BOOL`.
 
 ## Configuration file | `.tellyconf`
 It consists of lines that are comments and values. A comment line is as follows:

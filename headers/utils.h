@@ -1,7 +1,5 @@
 #pragma once
 
-#include "config.h"
-
 #include <string.h> // IWYU pragma: keep
 #include <stdint.h>
 #include <stdbool.h>
@@ -37,9 +35,6 @@ enum TellyTypes {
   TELLY_HASHTABLE,
   TELLY_LIST
 };
-
-// will be deleted when complete implementation
-#define TELLY_NUM TELLY_INT
 
 enum LogLevel {
   LOG_INFO = 0b001,
