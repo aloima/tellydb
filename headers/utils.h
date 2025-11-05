@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <time.h>
+#include <stdatomic.h>
 
 #include <sys/syscall.h> // IWYU pragma: keep
 #include <unistd.h> // IWYU pragma: keep
@@ -25,6 +26,23 @@ void to_uppercase(string_t src, char *dst);
 
 #define EMPTY_STRING() ((string_t) {"", 0})
 #define CREATE_STRING(value, len) ((string_t) {value, len})
+
+struct ThreadQueue {
+  _Atomic uint64_t at;
+  _Atomic uint64_t end;
+
+  void *data;
+  uint64_t capacity;
+  uint64_t type;
+};
+
+struct ThreadQueue *create_tqueue(const uint64_t capacity, const uint64_t size);
+void free_tqueue(struct ThreadQueue *queue);
+
+uint64_t calculate_tqueue_size(const struct ThreadQueue *queue);
+bool push_tqueue(struct ThreadQueue *queue, void *value);
+bool pop_tqueue(struct ThreadQueue *queue);
+void *get_tqueue_value(struct ThreadQueue *queue, const uint64_t idx);
 
 enum TellyTypes {
   TELLY_NULL,
