@@ -29,7 +29,6 @@ void to_uppercase(string_t src, char *dst);
 
 enum ThreadQueueState : uint8_t {
   TQ_EMPTY,
-  TQ_STORING,
   TQ_STORED
 };
 

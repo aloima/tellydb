@@ -35,19 +35,15 @@ void free_tqueue(struct ThreadQueue *queue) {
   free(queue);
 }
 
-static uint64_t calculate_size(const uint64_t at, const uint64_t end, const uint64_t capacity) {
-  if (end >= at) {
-    return (end - at);
-  } else {
-    return (end + (capacity - at));
-  }
-}
-
 uint64_t calculate_tqueue_size(const struct ThreadQueue *queue) {
   const uint64_t current_at = atomic_load_explicit(&queue->at, memory_order_acquire);
   const uint64_t current_end = atomic_load_explicit(&queue->end, memory_order_acquire);
 
-  return calculate_size(current_at, current_end, queue->capacity);
+  if (current_end >= current_at) {
+    return (current_end - current_at);
+  } else {
+    return (current_end + (queue->capacity - current_at));
+  }
 }
 
 void *push_tqueue(struct ThreadQueue *queue, void *value) {
@@ -61,7 +57,6 @@ void *push_tqueue(struct ThreadQueue *queue, void *value) {
     if (current_at == next_end) return NULL;
   } while (!atomic_compare_exchange_weak_explicit(&queue->end, &current_end, next_end, memory_order_relaxed, memory_order_relaxed));
 
-  atomic_store_explicit(&queue->states[current_end], TQ_STORING, memory_order_relaxed);
   char *dst = ((char *) queue->data + (current_end * queue->type));
   memcpy(dst, value, queue->type);
   atomic_store_explicit(&queue->states[current_end], TQ_STORED, memory_order_release);
@@ -90,9 +85,6 @@ void *pop_tqueue(struct ThreadQueue *queue) {
 void *get_tqueue_value(struct ThreadQueue *queue, const uint64_t idx) {
   const uint64_t current_at = atomic_load_explicit(&queue->at, memory_order_acquire);
   const uint64_t current_end = atomic_load_explicit(&queue->end, memory_order_relaxed);
-
-  const uint64_t size = calculate_size(current_at, current_end, queue->capacity);
-  if (idx >= size) return NULL;
 
   const uint64_t actual_idx = ((current_at + idx) % queue->capacity);
   if (atomic_load_explicit(&queue->states[actual_idx], memory_order_acquire) != TQ_STORED) return NULL;
