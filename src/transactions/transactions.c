@@ -25,16 +25,7 @@ void initialize_transactions() {
 
 // Accessed by thread
 uint32_t get_transaction_count() {
-  const uint32_t current_end = atomic_load(variables.end);
-  uint32_t idx = atomic_load(variables.at);
-  uint32_t transaction_count = 0;
-
-  while (idx != current_end) {
-    transaction_count += (*variables.blocks)[idx].transaction_count;
-    idx = ((idx + 1) % conf->max_transaction_blocks);
-  }
-
-  return transaction_count;
+  return calculate_tqueue_size(*variables.queue);
 }
 
 // Accessed by thread
@@ -42,72 +33,38 @@ uint64_t get_processed_transaction_count() {
   return processed_transaction_count;
 }
 
-// Accessed by thread and process
-struct TransactionBlock *prereserve_transaction_block(struct Client *client, const bool as_queued) {
-  const uint32_t current_at = atomic_load_explicit(variables.at, memory_order_relaxed);
-  const uint32_t current_end = atomic_load_explicit(variables.end, memory_order_relaxed);
-  const uint32_t next_end = ((current_end + 1) % conf->max_transaction_blocks);
-
-  if (VERY_UNLIKELY(current_at == next_end)) {
-    return NULL;
-  }
-
-  struct TransactionBlock *block = &(*variables.blocks)[current_end];
-  __builtin_prefetch(block, 1, 3);
-  block->client_id = client->id;
-  block->password = client->password;
-  // Already zeroed
-  // block->transactions = NULL;
-  // block->transaction_count = 0;
-
-  if (as_queued) {
-    atomic_fetch_add_explicit(variables.waiting_blocks, 1, memory_order_relaxed);
-  }
-
-  return block;
-}
-
-// Accessed by thread and process.
-void reserve_transaction_block() {
-  const uint32_t current_end = atomic_load_explicit(variables.end, memory_order_relaxed);
-  const uint32_t next_end = ((current_end + 1) % conf->max_transaction_blocks);
-  atomic_store_explicit(variables.end, next_end, memory_order_release);
-}
-
-// Accessed by thread
-void release_queued_transaction_block(struct Client *client) {
-  client->waiting_block = NULL;
-  atomic_fetch_sub_explicit(variables.waiting_blocks, 1, memory_order_relaxed);
+struct TransactionBlock *add_transaction_block(struct TransactionBlock *block) {
+  return push_tqueue(*variables.queue, block);
 }
 
 // Accessed by process
 bool add_transaction(struct Client *client, const uint64_t command_idx, commanddata_t data) {
-  struct Transaction *transaction;
+  struct Transaction transaction;
+  transaction.command = &(*variables.commands)[command_idx];
+  transaction.data = data;
+  transaction.database = client->database;
 
   if (client->waiting_block == NULL || command_idx == block_idx[0] || command_idx == block_idx[1] || command_idx == block_idx[2]) {
-    struct TransactionBlock *block = prereserve_transaction_block(client, false);
+    struct TransactionBlock block;
+    block.client_id = client->id;
+    block.password = client->password;
+    block.transaction_count = 1;
+    block.transactions = malloc(sizeof(struct Transaction));
+    block.waiting = false;
 
-    if (!block) {
-      return false;
-    }
+    memcpy(&block.transactions[0], &transaction, sizeof(struct Transaction));
+    push_tqueue(*variables.queue, &block);
 
-    block->transaction_count = 1;
-    block->transactions = malloc(sizeof(struct Transaction));
-    transaction = &block->transactions[0];
+    pthread_mutex_lock(variables.mutex);
+    pthread_cond_signal(variables.cond);
+    pthread_mutex_unlock(variables.mutex);
   } else {
     struct TransactionBlock *block = client->waiting_block;
     block->transaction_count += 1;
     block->transactions = realloc(block->transactions, sizeof(struct Transaction) * block->transaction_count);
-    transaction = &block->transactions[block->transaction_count - 1];
+    memcpy(&block->transactions[block->transaction_count - 1], &transaction, sizeof(struct Transaction));
   }
 
-  __builtin_prefetch(transaction, 1, 3);
-  transaction->command = &(*variables.commands)[command_idx];
-  transaction->data = data;
-  transaction->database = client->database;
-
-  reserve_transaction_block();
-  pthread_cond_signal(variables.cond);
   return true;
 }
 
@@ -127,24 +84,23 @@ void remove_transaction_block(struct TransactionBlock *block, const bool process
   block->password = NULL;
   block->transactions = NULL;
   block->transaction_count = 0;
+  block->waiting = false;
 }
 
 // Accessed by process
 void free_transactions() {
-  const uint32_t current_end = atomic_load(variables.end);
-  uint32_t idx = atomic_load(variables.at);
+  struct ThreadQueue *queue = *variables.queue;
 
-  while (idx != current_end) {
-    struct TransactionBlock block = (*variables.blocks)[idx];
-    idx = ((idx + 1) % conf->max_transaction_blocks);
+  while (calculate_tqueue_size(queue) != 0) {
+    struct TransactionBlock *block = get_tqueue_value(queue, 0);
 
-    for (uint32_t i = 0; i < block.transaction_count; ++i) {
-      struct Transaction transaction = block.transactions[i];
+    for (uint32_t i = 0; i < block->transaction_count; ++i) {
+      struct Transaction transaction = block->transactions[i];
       free_command_data(transaction.data);
     }
   }
 
-  free(*variables.blocks);
+  free_tqueue(queue);
 }
 
 // Accessed by thread

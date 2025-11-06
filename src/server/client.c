@@ -7,6 +7,7 @@
 
 #include <openssl/ssl.h>
 
+// TODO: make thread-safe
 static struct Configuration *conf = NULL;
 static struct Client *clients = NULL;
 static int32_t *connfd_client_pos = NULL; // connfd => client index on `clients`

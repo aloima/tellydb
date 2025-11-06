@@ -10,10 +10,16 @@ static string_t run(struct CommandEntry entry) {
     return RESP_ERROR_MESSAGE("Already started a transaction block, cannot create one without executing before");
   }
 
-  entry.client->waiting_block = prereserve_transaction_block(entry.client, true);
-  reserve_transaction_block();
+  struct TransactionBlock block;
+  block.client_id = entry.client->id;
+  block.password = entry.password;
+  block.transactions = NULL;
+  block.transaction_count = 0;
+  block.waiting = true;
 
-  if (!entry.client->waiting_block) {
+  entry.client->waiting_block = add_transaction_block(&block);
+
+  if (entry.client->waiting_block == NULL) {
     return RESP_ERROR_MESSAGE("Cannot create a transaction block because of configuration limit");
   }
 
