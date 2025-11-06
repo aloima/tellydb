@@ -78,7 +78,6 @@ void *pop_tqueue(struct ThreadQueue *queue) {
   char *src = ((char *) queue->data + (current_at * queue->type));
   atomic_store_explicit(&queue->states[current_at], TQ_EMPTY, memory_order_release);
 
-  atomic_thread_fence(memory_order_release);
   return src;
 }
 
