@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.10)
 project(tellydb C)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS yes)
-set(CMAKE_BUILD_TYPE Release)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(CMAKE_OSX_ARCHITECTURES ${CMAKE_SYSTEM_PROCESSOR}
