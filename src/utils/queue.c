@@ -64,7 +64,6 @@ void *push_tqueue(struct ThreadQueue *queue, void *value) {
   atomic_store_explicit(&queue->states[current_end], TQ_STORING, memory_order_relaxed);
   char *dst = ((char *) queue->data + (current_end * queue->type));
   memcpy(dst, value, queue->type);
-  queue->states[current_end] = TQ_STORED;
   atomic_store_explicit(&queue->states[current_end], TQ_STORED, memory_order_release);
 
   return dst;
