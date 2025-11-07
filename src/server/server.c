@@ -1,4 +1,3 @@
-#include "server/_client.h"
 #include <telly.h>
 
 #include <stdint.h>
@@ -22,56 +21,49 @@
 #include <openssl/ssl.h>
 #include <openssl/crypto.h>
 
-#define FREE_CONF_LOGS(conf) {\
+#define FREE_CONF_LOGS(server) {\
   save_and_close_logs();\
-  free_configuration(conf);\
+  free_configuration(server->conf);\
 }
 
-#define FREE_CTX_THREAD_CMD(ctx) {\
-  if (ctx) SSL_CTX_free(ctx);\
+#define FREE_CTX_THREAD_CMD(server) {\
+  if (server->ctx) SSL_CTX_free((server)->ctx);\
   deactive_transaction_thread();\
   usleep(15);\
   free_commands();\
 }
 
-#define FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd) {\
-  FREE_CTX_THREAD_CMD(ctx);\
-  close(sockfd);\
+#define FREE_CTX_THREAD_CMD_SOCKET(server) {\
+  FREE_CTX_THREAD_CMD(server);\
+  close((server)->sockfd);\
 }
 
-#define FREE_CTX_THREAD_CMD_SOCKET_PASS(ctx, sockfd) {\
-  FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);\
+#define FREE_CTX_THREAD_CMD_SOCKET_PASS(server) {\
+  FREE_CTX_THREAD_CMD_SOCKET(server);\
   free_constant_passwords();\
 }
 
-#define FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd) {\
-  FREE_CTX_THREAD_CMD_SOCKET_PASS(ctx, sockfd);\
+#define FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(server) {\
+  FREE_CTX_THREAD_CMD_SOCKET_PASS(server);\
   free_kdf();\
 }
 
-static int eventfd;
-static int sockfd;
-static SSL_CTX *ctx = NULL;
-static struct Configuration *conf;
-static time_t start_at;
-static uint32_t age;
-
-static struct Command *commands;
+static struct Server *server;
 
 struct Configuration *get_server_configuration() {
-  return conf;
+  return server->conf;
 }
 
 void get_server_time(time_t *server_start_at, uint32_t *server_age) {
-  *server_start_at = start_at;
-  *server_age = age;
+  *server_start_at = server->start_at;
+  *server_age = server->age;
 }
 
 void terminate_connection(const int connfd) {
   const struct Client *client = get_client(connfd);
 
 #if defined(__linux__)
-  if (epoll_ctl(eventfd, EPOLL_CTL_DEL, connfd, NULL) == -1) {
+  if (epoll_ctl(server->eventfd, EPOLL_CTL_DEL, connfd, NULL) == -1) {
 #elif defined(__APPLE__)
   struct kevent ev;
   EV_SET(&ev, connfd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
@@ -84,7 +76,7 @@ void terminate_connection(const int connfd) {
 
   write_log(LOG_INFO, "Client #%" PRIu32 " is disconnected.", client->id);
 
-  if (conf->tls) {
+  if (server->conf->tls) {
     SSL_shutdown(client->ssl);
   }
 
@@ -96,7 +88,7 @@ static void close_server() {
   free_client_maps();
   write_log(LOG_INFO, "Terminated all clients.");
 
-  const uint32_t server_age = age + difftime(time(NULL), start_at);
+  const uint32_t server_age = server->age + difftime(time(NULL), server->start_at);
   const clock_t start = clock();
 
   if (save_data(server_age)) {
@@ -111,16 +103,17 @@ static void close_server() {
     write_log(LOG_ERR, "Database file cannot be closed.");
   }
 
-  FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);
-  close(eventfd);
+  FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(server);
+  close(server->eventfd);
   free_passwords();
   free_transactions();
   free_databases();
   write_log(LOG_INFO, "Free'd all memory blocks and closed the server.");
 
   write_log(LOG_INFO, "Closing log file, free'ing configuration and exiting the process...");
-  FREE_CONF_LOGS(conf);
+  FREE_CONF_LOGS(server);
 
+  free(server);
   exit(EXIT_SUCCESS);
 }
 
@@ -135,29 +128,32 @@ static void close_signal(int arg) {
       break;
   }
 
-  close_server();
+  server->closed = true;
 }
 
 static int initialize_server_ssl() {
-  ctx = SSL_CTX_new(TLS_server_method());
+  server->ctx = SSL_CTX_new(TLS_server_method());
 
-  if (!ctx) {
+  if (!server->ctx) {
     write_log(LOG_ERR, "Cannot open SSL context, safely exiting...");
-    FREE_CONF_LOGS(conf);
+    FREE_CONF_LOGS(server);
+    free(server);
     return -1;
   }
 
-  if (SSL_CTX_use_certificate_file(ctx, conf->cert, SSL_FILETYPE_PEM) <= 0) {
+  if (SSL_CTX_use_certificate_file(server->ctx, server->conf->cert, SSL_FILETYPE_PEM) <= 0) {
     write_log(LOG_ERR, "Server certificate file cannot be used.");
-    SSL_CTX_free(ctx);
-    FREE_CONF_LOGS(conf);
+    SSL_CTX_free(server->ctx);
+    FREE_CONF_LOGS(server);
+    free(server);
     return -1;
   }
 
-  if (SSL_CTX_use_PrivateKey_file(ctx, conf->private_key, SSL_FILETYPE_PEM) <= 0 ) {
+  if (SSL_CTX_use_PrivateKey_file(server->ctx, server->conf->private_key, SSL_FILETYPE_PEM) <= 0 ) {
     write_log(LOG_ERR, "Server private key cannot be used.");
-    SSL_CTX_free(ctx);
-    FREE_CONF_LOGS(conf);
+    SSL_CTX_free(server->ctx);
+    FREE_CONF_LOGS(server);
+    free(server);
     return -1;
   }
 
@@ -166,52 +162,58 @@ static int initialize_server_ssl() {
 }
 
 static int initialize_socket() {
-  if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-    FREE_CTX_THREAD_CMD(ctx);
+  if ((server->sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+    FREE_CTX_THREAD_CMD(server);
     write_log(LOG_ERR, "Cannot open socket, safely exiting...");
-    FREE_CONF_LOGS(conf);
+    FREE_CONF_LOGS(server);
+    free(server);
     return -1;
   }
 
-  if (fcntl(sockfd, F_SETFL, fcntl(sockfd, F_GETFL, 0) | O_NONBLOCK) == -1) {
-    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
+  if (fcntl(server->sockfd, F_SETFL, fcntl(server->sockfd, F_GETFL, 0) | O_NONBLOCK) == -1) {
+    FREE_CTX_THREAD_CMD_SOCKET(server);
     write_log(LOG_ERR, "Cannot set non-blocking socket, safely exiting...");
-    FREE_CONF_LOGS(conf);
+    FREE_CONF_LOGS(server);
+    free(server);
     return -1;
   }
 
   const int flag = 1;
 
-  if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) == -1) {
-    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
+  if (setsockopt(server->sockfd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) == -1) {
+    FREE_CTX_THREAD_CMD_SOCKET(server);
     write_log(LOG_ERR, "Cannot set no-delay socket, safely exiting...");
-    FREE_CONF_LOGS(conf);
+    FREE_CONF_LOGS(server);
+    free(server);
     return -1;
   }
 
-  if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) == -1) {
-    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
+  if (setsockopt(server->sockfd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) == -1) {
+    FREE_CTX_THREAD_CMD_SOCKET(server);
     write_log(LOG_ERR, "Cannot set reusable socket, safely exiting...");
-    FREE_CONF_LOGS(conf);
+    FREE_CONF_LOGS(server);
+    free(server);
     return -1;
   }
 
   struct sockaddr_in servaddr;
   servaddr.sin_family = AF_INET;
-  servaddr.sin_port = htons(conf->port);
+  servaddr.sin_port = htons(server->conf->port);
   servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-  if ((bind(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr))) != 0) {
-    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
+  if ((bind(server->sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr))) != 0) {
+    FREE_CTX_THREAD_CMD_SOCKET(server);
     write_log(LOG_ERR, "Cannot bind socket and address.");
-    FREE_CONF_LOGS(conf);
+    FREE_CONF_LOGS(server);
+    free(server);
     return -1;
   }
 
-  if (listen(sockfd, conf->max_clients) != 0) {
-    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
+  if (listen(server->sockfd, server->conf->max_clients) != 0) {
+    FREE_CTX_THREAD_CMD_SOCKET(server);
     write_log(LOG_ERR, "Cannot listen socket.");
-    FREE_CONF_LOGS(conf);
+    FREE_CONF_LOGS(server);
+    free(server);
     return -1;
   }
 
@@ -220,14 +222,16 @@ static int initialize_socket() {
 
 static int initialize_authorization() {
   if (!create_constant_passwords()) {
-    FREE_CTX_THREAD_CMD_SOCKET(ctx, sockfd);
-    FREE_CONF_LOGS(conf);
+    FREE_CTX_THREAD_CMD_SOCKET(server);
+    FREE_CONF_LOGS(server);
+    free(server);
     return -1;
   }
 
   if (!initialize_kdf()) {
-    FREE_CTX_THREAD_CMD_SOCKET_PASS(ctx, sockfd);
-    FREE_CONF_LOGS(conf);
+    FREE_CTX_THREAD_CMD_SOCKET_PASS(server);
+    FREE_CONF_LOGS(server);
+    free(server);
     return -1;
   }
 
@@ -236,7 +240,8 @@ static int initialize_authorization() {
 }
 
 void start_server(struct Configuration *config) {
-  conf = config;
+  server = malloc(sizeof(struct Server));
+  server->conf = config;
 
   if (!initialize_logs()) {
     write_log(LOG_ERR, "Cannot initialized logs.");
@@ -247,15 +252,16 @@ void start_server(struct Configuration *config) {
 
   write_log(LOG_INFO, "version=" VERSION ", commit hash=" GIT_HASH);
 
-  if (conf->default_conf) {
+  if (server->conf->default_conf) {
     write_log(LOG_WARN, "No configuration file. To specify, create .tellyconf or use `telly config /path/to/file`.");
   }
 
-  if (conf->tls && (initialize_server_ssl() == -1)) {
+  if (server->conf->tls && (initialize_server_ssl() == -1)) {
+    free(server);
     return;
   }
 
-  commands = load_commands();
+  server->commands = load_commands();
   write_log(LOG_INFO, "Loaded commands.");
 
   create_transaction_thread();
@@ -272,23 +278,25 @@ void start_server(struct Configuration *config) {
     return;
   }
 
-  if (!open_database_fd(&age)) {
-    FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);
-    FREE_CONF_LOGS(conf);
+  if (!open_database_fd(&server->age)) {
+    FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(server);
+    FREE_CONF_LOGS(server);
+    free(server);
     return;
   }
 
-  write_log(LOG_INFO, "tellydb server age: %" PRIu32 " seconds", age);
+  write_log(LOG_INFO, "tellydb server age: %" PRIu32 " seconds", server->age);
 
 #if defined(__linux__)
-  if ((eventfd = epoll_create1(0)) == -1) {
+  if ((server->eventfd = epoll_create1(0)) == -1) {
 #elif defined(__APPLE__)
-  if ((eventfd = kqueue()) == -1) {
+  if ((server->eventfd = kqueue()) == -1) {
 #endif
-    FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);
+    FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(server);
     close_database_fd();
 		write_log(LOG_ERR, "Cannot create epoll instance.");
-    FREE_CONF_LOGS(conf);
+    FREE_CONF_LOGS(server);
+    free(server);
     return;
   }
 
@@ -296,33 +304,35 @@ void start_server(struct Configuration *config) {
 
 #if defined(__linux__)
   event.events = EPOLLIN;
-  event.data.fd = sockfd;
+  event.data.fd = server->sockfd;
 
-  if (epoll_ctl(eventfd, EPOLL_CTL_ADD, sockfd, &event) == -1) {
+  if (epoll_ctl(server->eventfd, EPOLL_CTL_ADD, server->sockfd, &event) == -1) {
 #elif defined(__APPLE__)
-  EV_SET(&event, sockfd, EVFILT_READ, EV_ADD, 0, 0, NULL);
+  EV_SET(&event, server->sockfd, EVFILT_READ, EV_ADD, 0, 0, NULL);
 
-  if (kevent(eventfd, &event, 1, NULL, 0, NULL) == -1) {
+  if (kevent(server->eventfd, &event, 1, NULL, 0, NULL) == -1) {
 #endif
-    FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);
+    FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(server);
     close_database_fd();
-    close(eventfd);
+    close(server->eventfd);
     write_log(LOG_ERR, "Cannot add server to event instance.");
-    FREE_CONF_LOGS(conf);
+    FREE_CONF_LOGS(server);
+    free(server);
     return;
   }
 
   if (!initialize_client_maps()) {
-    FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(ctx, sockfd);
+    FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(server);
     close_database_fd();
-    close(eventfd);
-    FREE_CONF_LOGS(conf);
+    close(server->eventfd);
+    FREE_CONF_LOGS(server);
+    free(server);
     return;
   }
 
-  start_at = time(NULL);
-  write_log(LOG_INFO, "Server is listening on %" PRIu16 " port for accepting connections...", conf->port);
+  server->start_at = time(NULL);
+  write_log(LOG_INFO, "Server is listening on %" PRIu16 " port for accepting connections...", server->conf->port);
 
-  handle_events(conf, ctx, sockfd, commands, eventfd);
+  handle_events(server);
   close_server();
 }

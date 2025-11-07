@@ -26,11 +26,11 @@ static inline void read_client(struct Client *client, char *buf, int32_t *size, 
   *at = 0;
 }
 
-static inline int accept_client(const int sockfd, struct Configuration *conf, SSL_CTX *ctx, const int eventfd) {
+static inline int accept_client(struct Server *server) {
   struct sockaddr_in addr;
   socklen_t addr_len = sizeof(addr);
 
-  const int connfd = accept(sockfd, (struct sockaddr *) &addr, &addr_len);
+  const int connfd = accept(server->sockfd, (struct sockaddr *) &addr, &addr_len);
 
   if (connfd == -1) {
     write_log(LOG_WARN, "Cannot accept a connection because of sockets.");
@@ -55,19 +55,19 @@ static inline int accept_client(const int sockfd, struct Configuration *conf, SS
   event.events = (EPOLLIN | EPOLLET | EPOLLHUP | EPOLLRDHUP);
   event.data.fd = connfd;
 
-  if ((epoll_ctl(eventfd, EPOLL_CTL_ADD, connfd, &event)) == -1) {
+  if ((epoll_ctl(server->eventfd, EPOLL_CTL_ADD, connfd, &event)) == -1) {
 #elif defined(__APPLE__)
   EV_SET(&event, connfd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, NULL);
 
-  if ((kevent(eventfd, &event, 1, NULL, 0, NULL)) == -1) {
+  if ((kevent(server->eventfd, &event, 1, NULL, 0, NULL)) == -1) {
 #endif
     write_log(LOG_WARN, "Cannot accept Client #%" PRIu32 ", because cannot add it to multiplexing queue.", client->id);
     terminate_connection(client->connfd);
     return -1;
   }
 
-  if (conf->tls) {
-    client->ssl = SSL_new(ctx);
+  if (server->conf->tls) {
+    client->ssl = SSL_new(server->ctx);
     SSL_set_fd(client->ssl, client->connfd);
 
     if (SSL_accept(client->ssl) <= 0) {
@@ -90,11 +90,15 @@ static inline void unknown_command(struct Client *client, commandname_t name) {
 }
 
 // TODO: thread-race for transactions, some executions will not be executed for inline commands
-void handle_events(struct Configuration *conf, SSL_CTX *ctx, const int sockfd, struct Command *commands, const int eventfd) {
+void handle_events(struct Server *server) {
   event_t events[32];
   char buf[RESP_BUF_SIZE];
 
-  while (true) {
+  const int sockfd = server->sockfd;
+  const int eventfd = server->eventfd;
+  struct Command *commands = server->commands;
+
+  while (!server->closed) {
 #if defined(__linux__)
     const int nfds = epoll_wait(eventfd, events, 32, -1);
 
@@ -114,7 +118,7 @@ void handle_events(struct Configuration *conf, SSL_CTX *ctx, const int sockfd, s
         }
 
         // If client cannot be accepted, it continues already. No need condition.
-        accept_client(sockfd, conf, ctx, eventfd);
+        accept_client(server);
         continue;
       }
 
