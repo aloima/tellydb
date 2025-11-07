@@ -44,11 +44,13 @@ static inline void number_pad(char *res, const uint32_t value) {
 }
 
 void generate_date_string(char *text, const time_t value) {
-  const struct tm *tm = localtime(&value);
-  const char *month = months[tm->tm_mon];
+  struct tm tm;
+  struct tm *_ = localtime_r(&value, &tm);
+
+  const char *month = months[tm.tm_mon];
 
   // 01 Jan 1970 00:00:00
-  number_pad(text, tm->tm_mday); // 01
+  number_pad(text, tm.tm_mday); // 01
   text[2] = ' ';
 
   // Jan
@@ -57,12 +59,12 @@ void generate_date_string(char *text, const time_t value) {
   text[5] = month[2];
 
   text[6] = ' ';
-  ltoa(1900 + tm->tm_year, text + 7); // 1970
+  ltoa(1900 + tm.tm_year, text + 7); // 1970
   text[11] = ' ';
-  number_pad(text + 12, tm->tm_hour); // 00
+  number_pad(text + 12, tm.tm_hour); // 00
   text[14] = ':';
-  number_pad(text + 15, tm->tm_min); // 00
+  number_pad(text + 15, tm.tm_min); // 00
   text[17] = ':';
-  number_pad(text + 18, tm->tm_sec); // 00
+  number_pad(text + 18, tm.tm_sec); // 00
   text[20] = '\0';
 }
