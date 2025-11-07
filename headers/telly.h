@@ -13,4 +13,5 @@
 #include "resp.h"                 // IWYU pragma: export
 #include "server/server.h"        // IWYU pragma: export
 #include "transactions/public.h"  // IWYU pragma: export
+#include "thread/thread.h"        // IWYU pragma: export
 #include "utils.h"                // IWYU pragma: export

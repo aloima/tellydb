@@ -1,5 +1,6 @@
 #include <telly.h>
 
+#include <string.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdatomic.h>
@@ -55,7 +56,7 @@ void *push_tqueue(struct ThreadQueue *queue, void *value) {
     next_end = ((current_end + 1) % queue->capacity);
 
     if (current_at == next_end) return NULL;
-  } while (!atomic_compare_exchange_weak_explicit(&queue->end, &current_end, next_end, memory_order_relaxed, memory_order_relaxed));
+  } while (!atomic_compare_exchange_weak_explicit(&queue->end, &current_end, next_end, memory_order_release, memory_order_relaxed));
 
   char *dst = ((char *) queue->data + (current_end * queue->type));
   memcpy(dst, value, queue->type);
@@ -68,15 +69,15 @@ void *pop_tqueue(struct ThreadQueue *queue) {
   uint64_t current_at, next_at, current_end;
 
   do {
-    current_end = atomic_load_explicit(&queue->end, memory_order_relaxed);
+    current_end = atomic_load_explicit(&queue->end, memory_order_acquire);
     current_at = atomic_load_explicit(&queue->at, memory_order_relaxed);
     if (current_end == current_at) return NULL;
 
     next_at = ((current_at + 1) % queue->capacity);
-  } while (!atomic_compare_exchange_weak_explicit(&queue->at, &current_at, next_at, memory_order_relaxed, memory_order_relaxed));
+  } while (!atomic_compare_exchange_weak_explicit(&queue->at, &current_at, next_at, memory_order_release, memory_order_relaxed));
 
   char *src = ((char *) queue->data + (current_at * queue->type));
-  atomic_store_explicit(&queue->states[current_at], TQ_EMPTY, memory_order_release);
+  atomic_store_explicit(&queue->states[current_at], TQ_EMPTY, memory_order_relaxed);
 
   return src;
 }
