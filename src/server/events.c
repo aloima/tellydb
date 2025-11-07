@@ -94,13 +94,6 @@ void handle_events(struct Configuration *conf, SSL_CTX *ctx, const int sockfd, s
   event_t events[32];
   char buf[RESP_BUF_SIZE];
 
-  // Command indexes related to waiting blocks
-  const uint64_t block_idx[3] = {
-    get_command_index("EXEC", 4)->idx,
-    get_command_index("DISCARD", 7)->idx,
-    get_command_index("MULTI", 5)->idx
-  };
-
   while (true) {
 #if defined(__linux__)
     const int nfds = epoll_wait(eventfd, events, 32, -1);
@@ -172,7 +165,7 @@ void handle_events(struct Configuration *conf, SSL_CTX *ctx, const int sockfd, s
           continue;
         }
 
-        if (client->waiting_block && command_idx != block_idx[0] && command_idx != block_idx[1] && command_idx != block_idx[2]) {
+        if (client->waiting_block && !IS_RELATED_TO_WAITING_TX(command_idx)) {
           _write(client, "+QUEUED\r\n", 9);
         }
       }

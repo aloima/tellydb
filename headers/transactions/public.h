@@ -13,6 +13,11 @@
 
 #define MAX_RESPONSE_SIZE 262144
 
+#define IS_RELATED_TO_WAITING_TX(command_idx) ({ \
+  /* DISCARD || MULTI || EXEC */ \
+  ((command_idx) == 9 || (command_idx) == 10 || (command_idx) == 13); \
+})
+
 struct Transaction {
   commanddata_t data;
   struct Command *command;

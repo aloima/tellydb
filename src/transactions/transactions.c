@@ -11,16 +11,10 @@ static struct Configuration *conf;
 static struct TransactionVariables variables;
 static uint64_t processed_transaction_count = 0;
 
-// Command indexes related to waiting blocks
-static uint64_t block_idx[3];
-
 // Private method, accessed by create_transaction_thread method once.
 void initialize_transactions() {
   conf = get_server_configuration();
   variables = get_transaction_variables();
-  block_idx[0] = get_command_index("EXEC", 4)->idx;
-  block_idx[1] = get_command_index("DISCARD", 7)->idx;
-  block_idx[2] = get_command_index("MULTI", 5)->idx;
 }
 
 // Accessed by thread
@@ -44,7 +38,7 @@ bool add_transaction(struct Client *client, const uint64_t command_idx, commandd
   transaction.data = data;
   transaction.database = client->database;
 
-  if (client->waiting_block == NULL || command_idx == block_idx[0] || command_idx == block_idx[1] || command_idx == block_idx[2]) {
+  if (client->waiting_block == NULL || IS_RELATED_TO_WAITING_TX(command_idx)) {
     struct TransactionBlock block;
     block.client_id = client->id;
     block.password = client->password;
