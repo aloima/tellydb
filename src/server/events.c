@@ -91,7 +91,7 @@ static inline void unknown_command(struct Client *client, commandname_t name) {
 
 // TODO: thread-race for transactions, some executions will not be executed for inline commands
 void handle_events(struct Server *server) {
-  event_t events[32];
+  event_t events[512];
   char buf[RESP_BUF_SIZE];
 
   const int sockfd = server->sockfd;
@@ -100,7 +100,7 @@ void handle_events(struct Server *server) {
 
   while (!server->closed) {
 #if defined(__linux__)
-    const int nfds = epoll_wait(eventfd, events, 32, -1);
+    const int nfds = epoll_wait(eventfd, events, 512, -1);
 
     for (int i = 0; i < nfds; ++i) {
       const int fd = events[i].data.fd;
