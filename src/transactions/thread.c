@@ -79,6 +79,7 @@ void create_transaction_thread() {
   *variables.queue = create_tqueue(conf->max_transaction_blocks, sizeof(struct TransactionBlock), _Alignof(struct TransactionBlock));
   if (*variables.queue == NULL) return write_log(LOG_ERR, "Cannot allocate transaction blocks, out of memory.");
 
+  atomic_init(variables.waiting_count, 0);
   *variables.buffer = malloc(MAX_RESPONSE_SIZE);
 
   atomic_init(&killed, false);

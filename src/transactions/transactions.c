@@ -49,9 +49,11 @@ bool add_transaction(struct Client *client, const uint64_t command_idx, commandd
     memcpy(&block.transactions[0], &transaction, sizeof(struct Transaction));
     push_tqueue(*variables.queue, &block);
 
-    pthread_mutex_lock(variables.mutex);
-    pthread_cond_signal(variables.cond);
-    pthread_mutex_unlock(variables.mutex);
+    if (calculate_tqueue_size(*variables.queue) - atomic_load_explicit(variables.waiting_count, memory_order_relaxed) == 1) {
+      pthread_mutex_lock(variables.mutex);
+      pthread_cond_signal(variables.cond);
+      pthread_mutex_unlock(variables.mutex);
+    }
   } else {
     struct TransactionBlock *block = client->waiting_block;
     block->transaction_count += 1;

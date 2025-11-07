@@ -6,6 +6,8 @@
 #include <stdatomic.h>
 
 static struct ThreadQueue *queue;
+static _Atomic uint64_t waiting_count;
+
 static char *buffer; // Accessed by thread.
 static struct Command *commands; // Accessed by process and thread, but no need atomicity, because it will not be change.
 
@@ -18,7 +20,8 @@ struct TransactionVariables get_transaction_variables() {
     .buffer = &buffer,
     .commands = &commands,
     .cond = &cond,
-    .mutex = &mutex
+    .mutex = &mutex,
+    .waiting_count = &waiting_count
   };
 
   return variables;
