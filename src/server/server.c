@@ -68,7 +68,7 @@ void terminate_connection(const int connfd) {
   struct kevent ev;
   EV_SET(&ev, connfd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
 
-  if (kevent(eventfd, &ev, 1, NULL, 0, NULL) == -1) {
+  if (kevent(server->eventfd, &ev, 1, NULL, 0, NULL) == -1) {
 #endif
     write_log(LOG_ERR, "Cannot remove Client #%" PRIu32 " from multiplexing.", client->id);
     return;
