@@ -12,7 +12,7 @@
 static struct Configuration *conf;
 static pthread_t thread;
 static struct TransactionVariables variables;
-static bool killed = false;
+static _Atomic bool killed;
 
 void *transaction_thread(void *arg) {
   sigset_t set;
@@ -21,7 +21,7 @@ void *transaction_thread(void *arg) {
   sigaddset(&set, SIGTERM);
   pthread_sigmask(SIG_BLOCK, &set, NULL);
 
-  while (!killed) {
+  while (!atomic_load_explicit(&killed, memory_order_acquire)) {
     uint64_t idx = 0;
     struct TransactionBlock *block = get_tqueue_value(*variables.queue, idx);
     bool found = false;
@@ -54,21 +54,19 @@ void *transaction_thread(void *arg) {
     }
   }
 
+  pthread_cond_destroy(variables.cond);
+  pthread_mutex_destroy(variables.mutex);
+  free(*variables.buffer);
+
   return NULL;
 }
 
 // Accessed by process
 void deactive_transaction_thread() {
-  killed = true;
+  atomic_store_explicit(&killed, true, memory_order_release);
   pthread_mutex_lock(variables.mutex);
   pthread_cond_signal(variables.cond);
   pthread_mutex_unlock(variables.mutex);
-  usleep(5);
-
-  pthread_cond_destroy(variables.cond);
-  pthread_mutex_destroy(variables.mutex);
-  pthread_cancel(thread);
-  free(*variables.buffer);
 }
 
 // Accessed by process
@@ -83,6 +81,7 @@ void create_transaction_thread() {
 
   *variables.buffer = malloc(MAX_RESPONSE_SIZE);
 
+  atomic_init(&killed, false);
   pthread_create(&thread, NULL, transaction_thread, NULL);
   pthread_detach(thread);
 }
