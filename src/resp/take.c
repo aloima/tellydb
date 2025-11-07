@@ -4,11 +4,14 @@
 #include <inttypes.h>
 
 int32_t take_n_bytes_from_socket(struct Client *client, char *buf, int32_t *at, char **data, const uint32_t n, int32_t *size) {
-  const uint32_t remaining = (*size - *at);
-  *data = (buf + *at);
+  const int32_t current_at = *at; 
+  const int32_t current_size = *size;
+
+  const uint32_t remaining = (current_size - current_at);
+  *data = (buf + current_at);
 
   if (VERY_LIKELY(n <= remaining)) {
-    *at += n;
+    *at = current_at + n;
     return n;
   }
 
