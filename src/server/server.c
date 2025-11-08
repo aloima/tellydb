@@ -250,7 +250,8 @@ void start_server(struct Configuration *config) {
     write_log(LOG_INFO, "Initialized logs and configuration.");
   }
 
-  write_log(LOG_INFO, "version=" VERSION ", commit hash=" GIT_HASH);
+  pid_t pid = getpid();
+  write_log(LOG_INFO, "version=" VERSION ", commit hash=" GIT_HASH ", process id=%d", pid);
 
   if (server->conf->default_conf) {
     write_log(LOG_WARN, "No configuration file. To specify, create .tellyconf or use `telly config /path/to/file`.");
