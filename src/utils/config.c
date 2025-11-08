@@ -10,7 +10,7 @@ static struct Configuration default_conf = {
   .port = 6379,
   .max_clients = 128,
   .max_transaction_blocks = 262144,
-  .allowed_log_levels = LOG_INFO | LOG_ERR | LOG_WARN,
+  .allowed_log_levels = LOG_INFO | LOG_ERR | LOG_WARN | LOG_DBG,
   .max_log_lines = 128,
   .data_file = ".tellydb",
   .log_file = ".tellylog",
@@ -145,11 +145,16 @@ static void get_allowed_log_levels(char *allowed_log_levels, struct Configuratio
     len += 1;
   }
 
+  if (conf.allowed_log_levels & LOG_DBG) {
+    allowed_log_levels[len] = 'd';
+    len += 1;
+  }
+
   allowed_log_levels[len] = '\0';
 }
 
 size_t get_configuration_string(char *buf, struct Configuration conf) {
-  char allowed_log_levels[4];
+  char allowed_log_levels[5];
   get_allowed_log_levels(allowed_log_levels, conf);
 
   return sprintf(buf, (
@@ -165,7 +170,8 @@ size_t get_configuration_string(char *buf, struct Configuration conf) {
     "# Allowed log levels:\n"
     "# w = warning\n"
     "# i = information\n"
-    "# e = error\n\n"
+    "# e = error\n"
+    "# d = debug\n\n"
     "# Order of keys does not matter\n"
     "ALLOWED_LOG_LEVELS=%s\n\n"
 

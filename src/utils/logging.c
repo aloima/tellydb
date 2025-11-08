@@ -135,6 +135,11 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
       message_len = sprintf(message, "[%s / ERR]  | %s\n", time_text, buf);
       break;
 
+    case LOG_DBG:
+      stream = stdout;
+      message_len = sprintf(message, "[%s / DBG]  | %s\n", time_text, buf);
+      break;
+
     default:
       return;
   }

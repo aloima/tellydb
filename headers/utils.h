@@ -27,7 +27,7 @@ void to_uppercase(string_t src, char *dst);
 #define EMPTY_STRING() ((string_t) {"", 0})
 #define CREATE_STRING(value, len) ((string_t) {value, len})
 
-enum TellyTypes {
+enum TellyTypes : uint8_t {
   TELLY_NULL,
   TELLY_INT,
   TELLY_DOUBLE,
@@ -37,10 +37,11 @@ enum TellyTypes {
   TELLY_LIST
 };
 
-enum LogLevel {
-  LOG_INFO = 0b001,
-  LOG_WARN = 0b010,
-  LOG_ERR  = 0b100,
+enum LogLevel : uint8_t {
+  LOG_INFO = 0b0001,
+  LOG_WARN = 0b0010,
+  LOG_ERR  = 0b0100,
+  LOG_DBG  = 0b1000,
 };
 
 bool initialize_logs();

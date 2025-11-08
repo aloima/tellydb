@@ -74,7 +74,7 @@ void terminate_connection(const int connfd) {
     return;
   }
 
-  write_log(LOG_INFO, "Client #%" PRIu32 " is disconnected.", client->id);
+  write_log(LOG_DBG, "Client #%" PRIu32 " is disconnected.", client->id);
 
   if (server->conf->tls) {
     SSL_shutdown(client->ssl);

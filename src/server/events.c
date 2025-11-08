@@ -77,7 +77,7 @@ static inline int accept_client(struct Server *server) {
     }
   }
 
-  write_log(LOG_INFO, "Client #%" PRIu32 " is connected.", client->id);
+  write_log(LOG_DBG, "Client #%" PRIu32 " is connected.", client->id);
   return 0;
 }
 
