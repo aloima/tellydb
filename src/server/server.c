@@ -257,9 +257,13 @@ void start_server(struct Configuration *config) {
     write_log(LOG_WARN, "No configuration file. To specify, create .tellyconf or use `telly config /path/to/file`.");
   }
 
-  if (server->conf->tls && (initialize_server_ssl() == -1)) {
-    free(server);
-    return;
+  if (server->conf->tls) {
+    if (initialize_server_ssl() == -1) {
+      free(server);
+      return;
+    }
+  } else {
+    server->ctx = NULL;
   }
 
   server->commands = load_commands();
