@@ -178,7 +178,7 @@ uint16_t get_authorization_from_file(const int fd, char *block, const uint16_t b
   return (total % block_size);
 }
 
-int32_t where_password(char *value, const size_t value_len) {
+int where_password(char *value, const size_t value_len) {
   unsigned char derived[48];
   if (!password_derive(value, value_len, derived)) return -1;
 
@@ -190,23 +190,11 @@ int32_t where_password(char *value, const size_t value_len) {
   return -1;
 }
 
-struct Password *get_password(char *value, const size_t value_len) {
-  unsigned char derived[48];
-  if (!password_derive(value, value_len, derived)) return NULL;
-
-  for (uint32_t i = 0; i < password_count; ++i) {
-    struct Password *password = passwords[i];
-    if (memcmp(derived, password->data, 48) == 0) return password;
-  }
-
-  return NULL;
-}
-
 bool edit_password(char *value, const size_t value_len, const uint32_t permissions) {
-  struct Password *password = get_password(value, value_len);
-  if (!password) return false;
+  const int at = where_password(value, value_len);
+  if (at == -1) return false;
 
-  password->permissions = permissions;
+  passwords[at]->permissions = permissions;
   return true;
 }
 
@@ -234,14 +222,10 @@ void add_password(struct Client *client, const string_t data, const uint8_t perm
   }
 }
 
-void free_password(struct Password *password) {
-  free(password);
-}
-
 void free_passwords() {
   if (password_count != 0) {
     for (uint32_t i = 0; i < password_count; ++i) {
-      free_password(passwords[i]);
+      free(passwords[i]);
     }
 
     free(passwords);
@@ -250,26 +234,23 @@ void free_passwords() {
 
 bool remove_password(struct Client *executor, char *value, const size_t value_len) {
   if (password_count == 1) {
-    if (where_password(value, value_len) != 0) return false;
-
-    struct Password *password = passwords[0];
-    remove_password_from_clients(password);
+    const int at = where_password(value, value_len);
+    if (at == -1) return false;
 
     executor->password = get_full_password();
     password_count = 0;
 
-    free_password(password);
+    remove_password_from_clients(passwords[at]);
+    free(passwords[at]);
     free(passwords);
 
     return true;
   } else {
-    const int32_t at = where_password(value, value_len);
+    const int at = where_password(value, value_len);
     if (at == -1) return false;
 
-    struct Password *password = passwords[at];
-    remove_password_from_clients(password);
-
-    free_password(password);
+    remove_password_from_clients(passwords[at]);
+    free(passwords[at]);
     password_count -= 1;
 
     memmove(passwords + at, passwords + at + 1, (password_count - at) * sizeof(struct Password *));

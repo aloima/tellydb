@@ -10,9 +10,9 @@ static string_t run(struct CommandEntry entry) {
   }
 
   const string_t input = entry.data->args[0];
-  struct Password *found = get_password(input.value, input.len);
+  const int target = where_password(input.value, input.len);
 
-  if (!found) {
+  if (target == -1) {
     return RESP_ERROR_MESSAGE("This password does not exist");
   }
 
@@ -28,7 +28,8 @@ static string_t run(struct CommandEntry entry) {
     }
   }
 
-  entry.client->password = found;
+  struct Password **passwords = get_passwords();
+  entry.client->password = passwords[target];
   return RESP_OK();
 }
 

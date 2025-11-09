@@ -83,9 +83,9 @@ static inline string_t edit_pwd(struct CommandEntry entry) {
   const string_t input = entry.data->args[1];
   const char *value = entry.data->args[2].value;
 
-  struct Password *target = get_password(input.value, input.len);
+  const int target = where_password(input.value, input.len);
 
-  if (!target) {
+  if (target == -1) {
     PASS_NO_CLIENT(entry.client);
     return RESP_ERROR_MESSAGE("This password does not exist");
   }
@@ -98,7 +98,8 @@ static inline string_t edit_pwd(struct CommandEntry entry) {
     return RESP_ERROR_MESSAGE("Tried to give permissions your password do not have");
   }
 
-  target->permissions = permissions;
+  struct Password **passwords = get_passwords();
+  passwords[target]->permissions = permissions;
 
   PASS_NO_CLIENT(entry.client);
   return RESP_OK();
