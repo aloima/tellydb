@@ -65,36 +65,36 @@ static inline void shift_others(struct Database *database, struct KVPair *kv, co
   database->data[prev] = NULL;
 }
 
-static string_t run(struct CommandEntry entry) {
-  if (entry.data->arg_count != 2) {
-    PASS_NO_CLIENT(entry.client);
+static string_t run(struct CommandEntry *entry) {
+  if (entry->data->arg_count != 2) {
+    PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("RENAME");
   }
 
-  struct KVPair **data = entry.database->data;
-  const uint64_t capacity = entry.database->size.capacity;
+  struct KVPair **data = entry->database->data;
+  const uint64_t capacity = entry->database->size.capacity;
 
-  const string_t search = entry.data->args[0];
-  const string_t name = entry.data->args[1];
+  const string_t search = entry->data->args[0];
+  const string_t name = entry->data->args[1];
 
-  if (get_data(entry.database, name)) {
-    PASS_NO_CLIENT(entry.client);
+  if (get_data(entry->database, name)) {
+    PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("The new key already exists");
   }
 
   uint64_t at;
-  struct KVPair *kv = search_kv(entry.database, search, capacity, &at);
+  struct KVPair *kv = search_kv(entry->database, search, capacity, &at);
 
   if (!kv) {
-    PASS_NO_CLIENT(entry.client);
-    return RESP_NULL(entry.client->protover);
+    PASS_NO_CLIENT(entry->client);
+    return RESP_NULL(entry->client->protover);
   }
 
-  shift_others(entry.database, kv, at, capacity);
+  shift_others(entry->database, kv, at, capacity);
   change_kv(kv, name);
-  place_kv(entry.database, kv, capacity);
+  place_kv(entry->database, kv, capacity);
 
-  PASS_NO_CLIENT(entry.client);
+  PASS_NO_CLIENT(entry->client);
   return RESP_OK();
 }
 

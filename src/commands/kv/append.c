@@ -4,43 +4,43 @@
 #include <string.h>
 #include <stdlib.h>
 
-static string_t run(struct CommandEntry entry) {
-  if (entry.data->arg_count != 2) {
-    PASS_NO_CLIENT(entry.client);
+static string_t run(struct CommandEntry *entry) {
+  if (entry->data->arg_count != 2) {
+    PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("APPEND");
   }
 
-  const string_t key = entry.data->args[0];
-  const struct KVPair *kv = get_data(entry.database, key);
+  const string_t key = entry->data->args[0];
+  const struct KVPair *kv = get_data(entry->database, key);
 
   if (kv) {
     if (kv->type != TELLY_STR) {
-      PASS_NO_CLIENT(entry.client);
+      PASS_NO_CLIENT(entry->client);
       return INVALID_TYPE_ERROR("APPEND");
     }
 
-    const string_t arg = entry.data->args[1];
+    const string_t arg = entry->data->args[1];
 
     string_t *string = kv->value;
     string->value = realloc(string->value, string->len + arg.len);
     memcpy(string->value + string->len, arg.value, arg.len);
     string->len += arg.len;
 
-    PASS_NO_CLIENT(entry.client);
-    const size_t nbytes = create_resp_integer(entry.buffer, string->len);
-    return CREATE_STRING(entry.buffer, nbytes);
+    PASS_NO_CLIENT(entry->client);
+    const size_t nbytes = create_resp_integer(entry->buffer, string->len);
+    return CREATE_STRING(entry->buffer, nbytes);
   } else {
-    const string_t arg = entry.data->args[1];
+    const string_t arg = entry->data->args[1];
 
     string_t *string = malloc(sizeof(string_t));
     string->len = arg.len;
     string->value = malloc(string->len);
     memcpy(string->value, arg.value, string->len);
-    set_data(entry.database, NULL, key, string, TELLY_STR);
+    set_data(entry->database, NULL, key, string, TELLY_STR);
 
-    PASS_NO_CLIENT(entry.client);
-    const size_t nbytes = create_resp_integer(entry.buffer, string->len);
-    return CREATE_STRING(entry.buffer, nbytes);
+    PASS_NO_CLIENT(entry->client);
+    const size_t nbytes = create_resp_integer(entry->buffer, string->len);
+    return CREATE_STRING(entry->buffer, nbytes);
   }
 }
 

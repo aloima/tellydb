@@ -11,24 +11,24 @@ static inline string_t subcommand_id(struct Client *client, char *buffer) {
   return CREATE_STRING(buffer, nbytes);
 }
 
-static inline string_t subcommand_info(struct CommandEntry entry) {
+static inline string_t subcommand_info(struct CommandEntry *entry) {
   struct Client *client;
 
-  switch (entry.data->arg_count) {
+  switch (entry->data->arg_count) {
     case 1:
-      client = entry.client;
+      client = entry->client;
       break;
 
     case 2:
-      if (!(entry.password->permissions & P_CLIENT)) {
+      if (!(entry->password->permissions & P_CLIENT)) {
         return RESP_ERROR_MESSAGE("Not allowed to use this command with argument, need P_CLIENT");
       }
 
-      if (!try_parse_integer(entry.data->args[1].value)) {
+      if (!try_parse_integer(entry->data->args[1].value)) {
         return RESP_ERROR_MESSAGE("Specified argument must be integer for the ID");
       }
 
-      const int64_t id = strtoll(entry.data->args[1].value, NULL, 10);
+      const int64_t id = strtoll(entry->data->args[1].value, NULL, 10);
 
       if ((id > UINT32_MAX) || (id < 0)) {
         return RESP_ERROR_MESSAGE("Specified ID is out of bounds for uint32_t");
@@ -113,12 +113,12 @@ static inline string_t subcommand_info(struct CommandEntry entry) {
     "Permissions: %.*s\r\n"
   ), client->id, client->connfd, connected_at, latest_command, lib_name, lib_ver, protocol, permissions_len, permissions);
 
-  const size_t nbytes = create_resp_string(entry.buffer, CREATE_STRING(res, res_len));
-  return CREATE_STRING(entry.buffer, nbytes);
+  const size_t nbytes = create_resp_string(entry->buffer, CREATE_STRING(res, res_len));
+  return CREATE_STRING(entry->buffer, nbytes);
 }
 
-static inline string_t subcommand_list(struct CommandEntry entry) {
-  if (!(entry.password->permissions & P_CLIENT)) {
+static inline string_t subcommand_list(struct CommandEntry *entry) {
+  if (!(entry->password->permissions & P_CLIENT)) {
     return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_CLIENT");
   }
 
@@ -126,93 +126,93 @@ static inline string_t subcommand_list(struct CommandEntry entry) {
   struct Client *clients = get_clients();
   uint64_t at = 1;
 
-  entry.buffer[0] = RDT_ARRAY;
-  at += ltoa(get_client_count(), entry.buffer + at);
-  entry.buffer[at++] = '\r';
-  entry.buffer[at++] = '\n';
+  entry->buffer[0] = RDT_ARRAY;
+  at += ltoa(get_client_count(), entry->buffer + at);
+  entry->buffer[at++] = '\r';
+  entry->buffer[at++] = '\n';
 
   for (uint32_t i = 0; i < conf->max_clients; ++i) {
     if (clients[i].id != -1) {
-      entry.buffer[at++] = RDT_SSTRING;
-      at += ltoa(clients[i].id, entry.buffer + at);
-      entry.buffer[at++] = '\r';
-      entry.buffer[at++] = '\n';
+      entry->buffer[at++] = RDT_SSTRING;
+      at += ltoa(clients[i].id, entry->buffer + at);
+      entry->buffer[at++] = '\r';
+      entry->buffer[at++] = '\n';
     }
   }
 
-  return CREATE_STRING(entry.buffer, at);
+  return CREATE_STRING(entry->buffer, at);
 }
 
-static string_t subcommand_lock(struct CommandEntry entry) {
-  if (!(entry.password->permissions & P_CLIENT)) {
-    PASS_NO_CLIENT(entry.client);
+static string_t subcommand_lock(struct CommandEntry *entry) {
+  if (!(entry->password->permissions & P_CLIENT)) {
+    PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_CLIENT");
   }
 
-  if (!try_parse_integer(entry.data->args[1].value)) {
-    PASS_NO_CLIENT(entry.client);
+  if (!try_parse_integer(entry->data->args[1].value)) {
+    PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("Specified argument must be integer for the ID");
   }
 
-  const int64_t id = strtoll(entry.data->args[1].value, NULL, 10);
+  const int64_t id = strtoll(entry->data->args[1].value, NULL, 10);
 
   if ((id > UINT32_MAX) || (id < 0)) {
-    PASS_NO_CLIENT(entry.client);
+    PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("Specified ID is out of bounds for uint32_t");
   }
 
   struct Client *target = get_client_from_id(id);
 
   if (!target) {
-    PASS_NO_CLIENT(entry.client);
-    const size_t nbytes = sprintf(entry.buffer, "-There is no client whose ID is #%" PRIi64 "\r\n", id);
-    return CREATE_STRING(entry.buffer, nbytes);
+    PASS_NO_CLIENT(entry->client);
+    const size_t nbytes = sprintf(entry->buffer, "-There is no client whose ID is #%" PRIi64 "\r\n", id);
+    return CREATE_STRING(entry->buffer, nbytes);
   } else if (target->password->permissions & P_CLIENT) {
-    PASS_NO_CLIENT(entry.client);
-    const size_t nbytes = sprintf(entry.buffer, "-Client #%" PRIi64 " has P_CLIENT, so cannot be locked\r\n", id);
-    return CREATE_STRING(entry.buffer, nbytes);
+    PASS_NO_CLIENT(entry->client);
+    const size_t nbytes = sprintf(entry->buffer, "-Client #%" PRIi64 " has P_CLIENT, so cannot be locked\r\n", id);
+    return CREATE_STRING(entry->buffer, nbytes);
   } else if (target->locked) {
-    PASS_NO_CLIENT(entry.client);
-    const size_t nbytes = sprintf(entry.buffer, "-Client #%" PRIi64 " is locked, so cannot be relocked\r\n", id);
-    return CREATE_STRING(entry.buffer, nbytes);
+    PASS_NO_CLIENT(entry->client);
+    const size_t nbytes = sprintf(entry->buffer, "-Client #%" PRIi64 " is locked, so cannot be relocked\r\n", id);
+    return CREATE_STRING(entry->buffer, nbytes);
   }
 
   target->locked = true;
 
-  PASS_NO_CLIENT(entry.client);
+  PASS_NO_CLIENT(entry->client);
   return RESP_OK();
 }
 
-static inline string_t subcommand_setinfo(struct CommandEntry entry) {
-  if (entry.data->arg_count != 3) {
+static inline string_t subcommand_setinfo(struct CommandEntry *entry) {
+  if (entry->data->arg_count != 3) {
     return WRONG_ARGUMENT_ERROR("CLIENT SETINFO");
   }
 
-  string_t property = entry.data->args[1];
+  string_t property = entry->data->args[1];
   to_uppercase(property, property.value);
 
   if (streq(property.value, "LIB-NAME")) {
-    string_t value = entry.data->args[2];
+    string_t value = entry->data->args[2];
     const uint32_t value_size = value.len + 1;
 
-    if (entry.client->lib_name) {
-      free(entry.client->lib_name);
+    if (entry->client->lib_name) {
+      free(entry->client->lib_name);
     }
 
-    entry.client->lib_name = malloc(value_size);
-    memcpy(entry.client->lib_name, value.value, value_size);
+    entry->client->lib_name = malloc(value_size);
+    memcpy(entry->client->lib_name, value.value, value_size);
 
     return RESP_OK();
   } else if (streq(property.value, "LIB-VERSION")) {
-    string_t value = entry.data->args[2];
+    string_t value = entry->data->args[2];
     const uint32_t value_size = value.len + 1;
 
-    if (entry.client->lib_ver) {
-      free(entry.client->lib_ver);
+    if (entry->client->lib_ver) {
+      free(entry->client->lib_ver);
     }
 
-    entry.client->lib_ver = malloc(value_size);
-    memcpy(entry.client->lib_ver, value.value, value_size);
+    entry->client->lib_ver = malloc(value_size);
+    memcpy(entry->client->lib_ver, value.value, value_size);
 
     return RESP_OK();
   } else {
@@ -220,106 +220,106 @@ static inline string_t subcommand_setinfo(struct CommandEntry entry) {
   }
 }
 
-static inline string_t subcommand_kill(struct CommandEntry entry) {
-  if (!(entry.password->permissions & P_CLIENT)) {
-    PASS_NO_CLIENT(entry.client);
+static inline string_t subcommand_kill(struct CommandEntry *entry) {
+  if (!(entry->password->permissions & P_CLIENT)) {
+    PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_CLIENT");
   }
 
-  if (!try_parse_integer(entry.data->args[1].value)) {
-    PASS_NO_CLIENT(entry.client);
+  if (!try_parse_integer(entry->data->args[1].value)) {
+    PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("Specified argument must be integer for the ID");
   }
 
-  const int64_t id = strtoll(entry.data->args[1].value, NULL, 10);
+  const int64_t id = strtoll(entry->data->args[1].value, NULL, 10);
 
   if ((id > UINT32_MAX) || (id < 0)) {
-    PASS_NO_CLIENT(entry.client);
+    PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("Specified ID is out of bounds for uint32_t");
   }
 
   struct Client *target = get_client_from_id(id);
 
   if (!target) {
-    PASS_NO_CLIENT(entry.client);
-    const size_t nbytes = sprintf(entry.buffer, "-There is no client whose ID is #%" PRIi64 "\r\n", id);
-    return CREATE_STRING(entry.buffer, nbytes);;
+    PASS_NO_CLIENT(entry->client);
+    const size_t nbytes = sprintf(entry->buffer, "-There is no client whose ID is #%" PRIi64 "\r\n", id);
+    return CREATE_STRING(entry->buffer, nbytes);;
   }
 
   if (target->password->permissions & P_CLIENT) {
-    PASS_NO_CLIENT(entry.client);
-    const size_t nbytes = sprintf(entry.buffer, "-Client #%" PRIi64 " has P_CLIENT, so cannot be killed\r\n", id);
-    return CREATE_STRING(entry.buffer, nbytes);
+    PASS_NO_CLIENT(entry->client);
+    const size_t nbytes = sprintf(entry->buffer, "-Client #%" PRIi64 " has P_CLIENT, so cannot be killed\r\n", id);
+    return CREATE_STRING(entry->buffer, nbytes);
   }
 
   terminate_connection(target->connfd);
 
-  PASS_NO_CLIENT(entry.client);
+  PASS_NO_CLIENT(entry->client);
   return RESP_OK();
 }
 
-static inline string_t subcommand_unlock(struct CommandEntry entry) {
-  if (!(entry.password->permissions & P_CLIENT)) {
-    PASS_NO_CLIENT(entry.client);
+static inline string_t subcommand_unlock(struct CommandEntry *entry) {
+  if (!(entry->password->permissions & P_CLIENT)) {
+    PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_CLIENT");
   }
 
-  if (!try_parse_integer(entry.data->args[1].value)) {
-    PASS_NO_CLIENT(entry.client);
+  if (!try_parse_integer(entry->data->args[1].value)) {
+    PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("Specified argument must be integer for the ID");
   }
 
-  const int64_t id = strtoll(entry.data->args[1].value, NULL, 10);
+  const int64_t id = strtoll(entry->data->args[1].value, NULL, 10);
 
   if ((id > UINT32_MAX) || (id < 0)) {
-    PASS_NO_CLIENT(entry.client);
+    PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("Specified ID is out of bounds for uint32_t");
   }
 
   struct Client *target = get_client_from_id(id);
 
   if (!target) {
-    PASS_NO_CLIENT(entry.client);
-    const size_t nbytes = sprintf(entry.buffer, "-There is no client whose ID is #%" PRIi64 "\r\n", id);
-    return CREATE_STRING(entry.buffer, nbytes);
+    PASS_NO_CLIENT(entry->client);
+    const size_t nbytes = sprintf(entry->buffer, "-There is no client whose ID is #%" PRIi64 "\r\n", id);
+    return CREATE_STRING(entry->buffer, nbytes);
   } else if (!target->locked) {
-    PASS_NO_CLIENT(entry.client);
-    const size_t nbytes = sprintf(entry.buffer, "-Client #%" PRIi64 " is not locked, so cannot be unlocked\r\n", id);
-    return CREATE_STRING(entry.buffer, nbytes);
+    PASS_NO_CLIENT(entry->client);
+    const size_t nbytes = sprintf(entry->buffer, "-Client #%" PRIi64 " is not locked, so cannot be unlocked\r\n", id);
+    return CREATE_STRING(entry->buffer, nbytes);
   }
 
   target->locked = false;
 
-  PASS_NO_CLIENT(entry.client);
+  PASS_NO_CLIENT(entry->client);
   return RESP_OK();
 }
 
-static string_t run(struct CommandEntry entry) {
-  if (entry.data->arg_count == 0) {
-    PASS_NO_CLIENT(entry.client);
+static string_t run(struct CommandEntry *entry) {
+  if (entry->data->arg_count == 0) {
+    PASS_NO_CLIENT(entry->client);
     return MISSING_SUBCOMMAND_ERROR("CLIENT");
   }
 
-  const string_t subcommand = entry.data->args[0];
+  const string_t subcommand = entry->data->args[0];
   to_uppercase(subcommand, subcommand.value);
 
   string_t response;
 
-  if (streq("ID", subcommand.value) && entry.client) {
-    response = subcommand_id(entry.client, entry.buffer);
-  } else if (streq("INFO", subcommand.value) && entry.client) {
+  if (streq("ID", subcommand.value) && entry->client) {
+    response = subcommand_id(entry->client, entry->buffer);
+  } else if (streq("INFO", subcommand.value) && entry->client) {
     response = subcommand_info(entry);
-  } else if (streq("LIST", subcommand.value) && entry.client) {
+  } else if (streq("LIST", subcommand.value) && entry->client) {
     response = subcommand_list(entry);
   } else if (streq("LOCK", subcommand.value)) {
     response = subcommand_lock(entry);
-  } else if (streq("SETINFO", subcommand.value) && entry.client) {
+  } else if (streq("SETINFO", subcommand.value) && entry->client) {
     response = subcommand_setinfo(entry);
   } else if (streq("KILL", subcommand.value)) {
     response = subcommand_kill(entry);
   } else if (streq("UNLOCK", subcommand.value)) {
     response = subcommand_unlock(entry);
-  } else if (entry.client) {
+  } else if (entry->client) {
     response = INVALID_SUBCOMMAND_ERROR("CLIENT");
   }
 

@@ -14,13 +14,13 @@ static void take_as_string(void **value, const string_t data) {
   memcpy(string->value, data.value, string->len);
 }
 
-static string_t run(struct CommandEntry entry) {
-  if (entry.data->arg_count < 2) {
-    PASS_NO_CLIENT(entry.client);
+static string_t run(struct CommandEntry *entry) {
+  if (entry->data->arg_count < 2) {
+    PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("SET");
   }
 
-  char *value_in = entry.data->args[1].value;
+  char *value_in = entry->data->args[1].value;
   const bool is_true = streq(value_in, "true");
   bool is_integer = false;
   bool is_double = false;
@@ -30,8 +30,8 @@ static string_t run(struct CommandEntry entry) {
 
   enum TellyTypes type;
 
-  for (uint32_t i = 2; i < entry.data->arg_count; ++i) {
-    string_t arg = entry.data->args[i];
+  for (uint32_t i = 2; i < entry->data->arg_count; ++i) {
+    string_t arg = entry->data->args[i];
     to_uppercase(arg, arg.value);
 
     if (streq(arg.value, "GET")) {
@@ -43,9 +43,9 @@ static string_t run(struct CommandEntry entry) {
     } else if (streq(arg.value, "AS")) {
       as = true;
 
-      if ((i + 1) < entry.data->arg_count) {
+      if ((i + 1) < entry->data->arg_count) {
         i += 1;
-        string_t name = entry.data->args[i];
+        string_t name = entry->data->args[i];
         to_uppercase(name, name.value);
 
         if (streq(name.value, "STRING") || streq(name.value, "STR")) {
@@ -70,33 +70,33 @@ static string_t run(struct CommandEntry entry) {
         } else if (streq(name.value, "NULL")) {
           type = TELLY_NULL;
         } else {
-          PASS_NO_CLIENT(entry.client);
+          PASS_NO_CLIENT(entry->client);
           return RESP_ERROR_MESSAGE("'AS' argument must be followed by a valid type name for 'SET' command");;
         }
       }
     } else {
-      PASS_NO_CLIENT(entry.client);
+      PASS_NO_CLIENT(entry->client);
       return RESP_ERROR_MESSAGE("Invalid argument(s) for 'SET' command");;
     }
   }
 
   if (nx && xx) {
-    PASS_NO_CLIENT(entry.client);
+    PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("XX and NX arguments cannot be specified simultaneously for 'SET' command");
   }
 
-  const string_t key = entry.data->args[0];
+  const string_t key = entry->data->args[0];
   void *value;
-  struct KVPair *res = get_data(entry.database, key);
+  struct KVPair *res = get_data(entry->database, key);
 
   if (nx && res) {
-    PASS_NO_CLIENT(entry.client);
-    return RESP_NULL(entry.client->protover);
+    PASS_NO_CLIENT(entry->client);
+    return RESP_NULL(entry->client->protover);
   }
 
   if (xx && !res) {
-    PASS_NO_CLIENT(entry.client);
-    return RESP_NULL(entry.client->protover);
+    PASS_NO_CLIENT(entry->client);
+    return RESP_NULL(entry->client->protover);
   }
 
   if (!as) {
@@ -108,7 +108,7 @@ static string_t run(struct CommandEntry entry) {
     if (!as) {
       type = (is_integer ? TELLY_INT : TELLY_DOUBLE);
     } else if (type != TELLY_INT && type != TELLY_DOUBLE && type != TELLY_STR) {
-      PASS_NO_CLIENT(entry.client);
+      PASS_NO_CLIENT(entry->client);
       return RESP_ERROR_MESSAGE("The type must be string or integer for this value");;
     }
 
@@ -127,7 +127,7 @@ static string_t run(struct CommandEntry entry) {
       }
 
       case TELLY_STR: {
-        take_as_string(&value, entry.data->args[1]);
+        take_as_string(&value, entry->data->args[1]);
         break;
       }
 
@@ -138,7 +138,7 @@ static string_t run(struct CommandEntry entry) {
     if (!as) {
       type = TELLY_BOOL;
     } else if (type != TELLY_BOOL && type != TELLY_STR) {
-      PASS_NO_CLIENT(entry.client);
+      PASS_NO_CLIENT(entry->client);
       return RESP_ERROR_MESSAGE("The type must be string or boolean for this value");;
     }
 
@@ -150,7 +150,7 @@ static string_t run(struct CommandEntry entry) {
       }
 
       case TELLY_STR: {
-        take_as_string(&value, entry.data->args[1]);
+        take_as_string(&value, entry->data->args[1]);
         break;
       }
 
@@ -161,7 +161,7 @@ static string_t run(struct CommandEntry entry) {
     if (!as) {
       type = TELLY_NULL;
     } else if (type != TELLY_NULL && type != TELLY_STR) {
-      PASS_NO_CLIENT(entry.client);
+      PASS_NO_CLIENT(entry->client);
       return RESP_ERROR_MESSAGE("The type must be string or null for this value");
     }
 
@@ -172,7 +172,7 @@ static string_t run(struct CommandEntry entry) {
       }
 
       case TELLY_STR: {
-        take_as_string(&value, entry.data->args[1]);
+        take_as_string(&value, entry->data->args[1]);
         break;
       }
 
@@ -183,32 +183,32 @@ static string_t run(struct CommandEntry entry) {
     if (!as) {
       type = TELLY_STR;
     } else if (type != TELLY_STR) {
-      PASS_NO_CLIENT(entry.client);
+      PASS_NO_CLIENT(entry->client);
       return RESP_ERROR_MESSAGE("The type must be string for this value");
     }
 
-    take_as_string(&value, entry.data->args[1]);
+    take_as_string(&value, entry->data->args[1]);
   }
 
   if (get) {
-    if (entry.password->permissions & P_READ) {
-      set_data(entry.database, res, key, value, type);
+    if (entry->password->permissions & P_READ) {
+      set_data(entry->database, res, key, value, type);
 
       if (res) {
-        if (entry.client) {
-          return write_value(value, type, entry.client->protover, entry.buffer);
+        if (entry->client) {
+          return write_value(value, type, entry->client->protover, entry->buffer);
         }
       }
 
-      PASS_NO_CLIENT(entry.client);
-      return RESP_NULL(entry.client->protover);
+      PASS_NO_CLIENT(entry->client);
+      return RESP_NULL(entry->client->protover);
     } else {
-      PASS_NO_CLIENT(entry.client);
+      PASS_NO_CLIENT(entry->client);
       return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_READ");
     }
   } else {
-    const bool success = set_data(entry.database, res, key, value, type);
-    PASS_NO_CLIENT(entry.client);
+    const bool success = set_data(entry->database, res, key, value, type);
+    PASS_NO_CLIENT(entry->client);
 
     if (success) {
       return RESP_OK();

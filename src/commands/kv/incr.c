@@ -5,37 +5,37 @@
 
 #include <gmp.h>
 
-static string_t run(struct CommandEntry entry) {
-  if (entry.data->arg_count == 0) {
-    PASS_NO_CLIENT(entry.client);
+static string_t run(struct CommandEntry *entry) {
+  if (entry->data->arg_count == 0) {
+    PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("INCR");
   }
 
   uint32_t at;
 
-  if (entry.client) {
-    switch (entry.client->protover) {
+  if (entry->client) {
+    switch (entry->client->protover) {
       case RESP2: {
-        entry.buffer[0] = '*';
-        at = ltoa(entry.data->arg_count * 2, entry.buffer + 1) + 1;
-        entry.buffer[at++] = '\r';
-        entry.buffer[at++] = '\n';
+        entry->buffer[0] = '*';
+        at = ltoa(entry->data->arg_count * 2, entry->buffer + 1) + 1;
+        entry->buffer[at++] = '\r';
+        entry->buffer[at++] = '\n';
         break;
       }
 
       case RESP3:
-        entry.buffer[0] = '%';
-        at = ltoa(entry.data->arg_count, entry.buffer + 1) + 1;
-        entry.buffer[at++] = '\r';
-        entry.buffer[at++] = '\n';
+        entry->buffer[0] = '%';
+        at = ltoa(entry->data->arg_count, entry->buffer + 1) + 1;
+        entry->buffer[at++] = '\r';
+        entry->buffer[at++] = '\n';
         break;
     }
 
-    for (uint32_t i = 0; i < entry.data->arg_count; ++i) {
-      const string_t key = entry.data->args[i];
-      struct KVPair *result = get_data(entry.database, key);
+    for (uint32_t i = 0; i < entry->data->arg_count; ++i) {
+      const string_t key = entry->data->args[i];
+      struct KVPair *result = get_data(entry->database, key);
       void *number;
-      at += create_resp_string(entry.buffer + at, key);
+      at += create_resp_string(entry->buffer + at, key);
 
       if (!result) {
         number = malloc(sizeof(mpz_t));
@@ -43,16 +43,16 @@ static string_t run(struct CommandEntry entry) {
         mpz_t *value = number;
         mpz_init_set_ui(*value, 0);
 
-        const bool success = set_data(entry.database, NULL, key, value, TELLY_INT);
+        const bool success = set_data(entry->database, NULL, key, value, TELLY_INT);
 
         if (!success) {
-          at += create_resp_string(entry.buffer + at, CREATE_STRING("error", 5));
+          at += create_resp_string(entry->buffer + at, CREATE_STRING("error", 5));
           mpz_clear(*value);
           free(number);
           continue;
         }
 
-        at += create_resp_integer_mpz(entry.client->protover, entry.buffer + at, *value);
+        at += create_resp_integer_mpz(entry->client->protover, entry->buffer + at, *value);
       } else {
         switch (result->type) {
           case TELLY_INT: {
@@ -60,7 +60,7 @@ static string_t run(struct CommandEntry entry) {
 
             mpz_t *value = number;
             mpz_add_ui(*value, *value, 1);
-            at += create_resp_integer_mpz(entry.client->protover, entry.buffer + at, *value);
+            at += create_resp_integer_mpz(entry->client->protover, entry->buffer + at, *value);
             break;
           }
 
@@ -69,28 +69,28 @@ static string_t run(struct CommandEntry entry) {
 
             mpf_t *value = number;
             mpf_add_ui(*value, *value, 1);
-            at += create_resp_integer_mpf(entry.client->protover, entry.buffer + at, *value);
+            at += create_resp_integer_mpf(entry->client->protover, entry->buffer + at, *value);
             break;
           }
 
           default:
-            at += create_resp_string(entry.buffer + at, CREATE_STRING("invalid type", 12));
+            at += create_resp_string(entry->buffer + at, CREATE_STRING("invalid type", 12));
             break;
         }
       }
     }
   } else {
-    for (uint32_t i = 0; i < entry.data->arg_count; ++i) {
-      const string_t key = entry.data->args[i];
-      struct KVPair *result = get_data(entry.database, key);
+    for (uint32_t i = 0; i < entry->data->arg_count; ++i) {
+      const string_t key = entry->data->args[i];
+      struct KVPair *result = get_data(entry->database, key);
       void *number;
-      at += create_resp_string(entry.buffer + at, key);
+      at += create_resp_string(entry->buffer + at, key);
 
       if (!result) {
         number = malloc(sizeof(mpz_t));
         mpz_init_set_ui(*((mpz_t *) number), 0);
 
-        const bool success = set_data(entry.database, NULL, key, number, TELLY_INT);
+        const bool success = set_data(entry->database, NULL, key, number, TELLY_INT);
 
         if (!success) {
           mpz_clear(*((mpz_t *) number));
@@ -122,8 +122,8 @@ static string_t run(struct CommandEntry entry) {
     }
   }
 
-  PASS_NO_CLIENT(entry.client);
-  return CREATE_STRING(entry.buffer, at);
+  PASS_NO_CLIENT(entry->client);
+  return CREATE_STRING(entry->buffer, at);
 }
 
 const struct Command cmd_incr = {

@@ -19,30 +19,30 @@ static void inline rpush_to_list(struct List *list, void *value, enum TellyTypes
   }
 }
 
-static string_t run(struct CommandEntry entry) {
-  if (entry.data->arg_count < 2) {
-    PASS_NO_CLIENT(entry.client);
+static string_t run(struct CommandEntry *entry) {
+  if (entry->data->arg_count < 2) {
+    PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("RPUSH");
   }
 
-  const string_t key = entry.data->args[0];
-  struct KVPair *kv = get_data(entry.database, key);
+  const string_t key = entry->data->args[0];
+  struct KVPair *kv = get_data(entry->database, key);
   struct List *list;
 
   if (kv) {
     if (kv->type != TELLY_LIST) {
-      PASS_NO_CLIENT(entry.client);
+      PASS_NO_CLIENT(entry->client);
       return INVALID_TYPE_ERROR("RPUSH");
     }
 
     list = kv->value;
   } else {
     list = create_list();
-    set_data(entry.database, kv, key, list, TELLY_LIST);
+    set_data(entry->database, kv, key, list, TELLY_LIST);
   }
 
-  for (uint32_t i = 1; i < entry.data->arg_count; ++i) {
-    string_t input = entry.data->args[i];
+  for (uint32_t i = 1; i < entry->data->arg_count; ++i) {
+    string_t input = entry->data->args[i];
     bool is_true = streq(input.value, "true");
 
     if (try_parse_integer(input.value)) {
@@ -74,9 +74,9 @@ static string_t run(struct CommandEntry entry) {
     }
   }
 
-  PASS_NO_CLIENT(entry.client);
-  const size_t nbytes = create_resp_integer(entry.buffer, entry.data->arg_count - 1);
-  return CREATE_STRING(entry.buffer, nbytes);
+  PASS_NO_CLIENT(entry->client);
+  const size_t nbytes = create_resp_integer(entry->buffer, entry->data->arg_count - 1);
+  return CREATE_STRING(entry->buffer, nbytes);
 }
 
 const struct Command cmd_rpush = {

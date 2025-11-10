@@ -3,14 +3,14 @@
 #include <stdio.h>
 #include <stdint.h>
 
-static string_t run(struct CommandEntry entry) {
-  PASS_NO_CLIENT(entry.client);
+static string_t run(struct CommandEntry *entry) {
+  PASS_NO_CLIENT(entry->client);
 
-  if (entry.data->arg_count != 1) {
+  if (entry->data->arg_count != 1) {
     return WRONG_ARGUMENT_ERROR("LLEN");
   }
 
-  const struct KVPair *kv = get_data(entry.database, entry.data->args[0]);
+  const struct KVPair *kv = get_data(entry->database, entry->data->args[0]);
 
   if (!kv) {
     return CREATE_STRING(":0\r\n", 4);
@@ -18,8 +18,8 @@ static string_t run(struct CommandEntry entry) {
     return INVALID_TYPE_ERROR("LLEN");
   }
 
-  const size_t nbytes = create_resp_integer(entry.buffer, ((struct List *) kv->value)->size);
-  return CREATE_STRING(entry.buffer, nbytes);
+  const size_t nbytes = create_resp_integer(entry->buffer, ((struct List *) kv->value)->size);
+  return CREATE_STRING(entry->buffer, nbytes);
 }
 
 const struct Command cmd_llen = {

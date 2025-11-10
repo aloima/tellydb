@@ -4,19 +4,19 @@
 #include <stdbool.h>
 #include <inttypes.h>
 
-static string_t run(struct CommandEntry entry) {
-  PASS_NO_CLIENT(entry.client);
+static string_t run(struct CommandEntry *entry) {
+  PASS_NO_CLIENT(entry->client);
 
-  if (!entry.client->waiting_block) {
+  if (!entry->client->waiting_block) {
     return RESP_ERROR_MESSAGE("A transaction block did not started, cannot execute one without starting before");
   }
 
-  const uint64_t count = entry.client->waiting_block->transaction_count;
-  remove_transaction_block(entry.client->waiting_block, false);
-  entry.client->waiting_block = NULL;
+  const uint64_t count = entry->client->waiting_block->transaction_count;
+  remove_transaction_block(entry->client->waiting_block, false);
+  entry->client->waiting_block = NULL;
 
-  const size_t nbytes = create_resp_integer(entry.buffer, count);
-  return CREATE_STRING(entry.buffer, nbytes);
+  const size_t nbytes = create_resp_integer(entry->buffer, count);
+  return CREATE_STRING(entry->buffer, nbytes);
 }
 
 const struct Command cmd_discard = {

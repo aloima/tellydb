@@ -5,17 +5,17 @@
 
 #include <gmp.h>
 
-static string_t run(struct CommandEntry entry) {
-  PASS_NO_CLIENT(entry.client);
+static string_t run(struct CommandEntry *entry) {
+  PASS_NO_CLIENT(entry->client);
 
-  if (entry.data->arg_count != 1) {
+  if (entry->data->arg_count != 1) {
     return WRONG_ARGUMENT_ERROR("HGETALL");
   }
 
-  const struct KVPair *kv = get_data(entry.database, entry.data->args[0]);
+  const struct KVPair *kv = get_data(entry->database, entry->data->args[0]);
 
   if (!kv) {
-    switch (entry.client->protover) {
+    switch (entry->client->protover) {
       case RESP2:
         return CREATE_STRING("*0\r\n", 4);
 
@@ -29,10 +29,10 @@ static string_t run(struct CommandEntry entry) {
   }
 
   const struct HashTable *table = kv->value;
-  char *response = entry.buffer;
+  char *response = entry->buffer;
   uint64_t at;
 
-  switch (entry.client->protover) {
+  switch (entry->client->protover) {
     case RESP2: {
       response[0] = '*';
       at = ltoa(table->size.used * 2, response + 1) + 1;
@@ -52,11 +52,11 @@ static string_t run(struct CommandEntry entry) {
               break;
 
             case TELLY_INT:
-              at += create_resp_integer_mpz(entry.client->protover, response + at, *((mpz_t *) field->value));
+              at += create_resp_integer_mpz(entry->client->protover, response + at, *((mpz_t *) field->value));
               break;
 
             case TELLY_DOUBLE:
-              at += create_resp_integer_mpf(entry.client->protover, response + at, *((mpf_t *) field->value));
+              at += create_resp_integer_mpf(entry->client->protover, response + at, *((mpf_t *) field->value));
               break;
 
             case TELLY_STR:
@@ -101,11 +101,11 @@ static string_t run(struct CommandEntry entry) {
               break;
 
             case TELLY_INT:
-              at += create_resp_integer_mpz(entry.client->protover, response + at, *((mpz_t *) field->value));
+              at += create_resp_integer_mpz(entry->client->protover, response + at, *((mpz_t *) field->value));
               break;
 
             case TELLY_DOUBLE:
-              at += create_resp_integer_mpf(entry.client->protover, response + at, *((mpf_t *) field->value));
+              at += create_resp_integer_mpf(entry->client->protover, response + at, *((mpf_t *) field->value));
               break;
 
             case TELLY_STR: {

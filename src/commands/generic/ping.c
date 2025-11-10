@@ -2,16 +2,16 @@
 
 #include <stddef.h>
 
-static string_t run(struct CommandEntry entry) {
-  PASS_NO_CLIENT(entry.client);
+static string_t run(struct CommandEntry *entry) {
+  PASS_NO_CLIENT(entry->client);
 
-  switch (entry.data->arg_count) {
+  switch (entry->data->arg_count) {
     case 0:
       return RESP_OK_MESSAGE("PONG");
 
     case 1: {
-      const size_t nbytes = create_resp_string(entry.buffer, entry.data->args[0]);
-      return CREATE_STRING(entry.buffer, nbytes);
+      const size_t nbytes = create_resp_string(entry->buffer, entry->data->args[0]);
+      return CREATE_STRING(entry->buffer, nbytes);
     }
 
     default:

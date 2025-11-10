@@ -5,23 +5,23 @@
 
 #include <gmp.h>
 
-static string_t run(struct CommandEntry entry) {
-  if (entry.data->arg_count != 2) {
-    PASS_NO_CLIENT(entry.client);
+static string_t run(struct CommandEntry *entry) {
+  if (entry->data->arg_count != 2) {
+    PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("DECRBY");
   }
 
-  const char *input = entry.data->args[1].value;
+  const char *input = entry->data->args[1].value;
   const bool is_integer = try_parse_integer(input);
   const bool is_double = try_parse_double(input);
 
   if (!is_integer && !is_double) {
-    PASS_NO_CLIENT(entry.client);
+    PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("Second argument must be an integer or double");
   }
 
-  const string_t key = entry.data->args[0];
-  struct KVPair *result = get_data(entry.database, key);
+  const string_t key = entry->data->args[0];
+  struct KVPair *result = get_data(entry->database, key);
 
   if (!result) {
     void *number;
@@ -40,11 +40,11 @@ static string_t run(struct CommandEntry entry) {
       mpf_neg(*raw, *raw);
     }
 
-    result = set_data(entry.database, NULL, key, number, type);
+    result = set_data(entry->database, NULL, key, number, type);
 
     if (!result) {
       free_value(type, number);
-      PASS_NO_CLIENT(entry.client);
+      PASS_NO_CLIENT(entry->client);
       return RESP_ERROR();
     }
   } else {
@@ -94,8 +94,8 @@ static string_t run(struct CommandEntry entry) {
     }
   }
 
-  PASS_NO_CLIENT(entry.client);
-  return write_value(result->value, result->type, entry.client->protover, entry.buffer);
+  PASS_NO_CLIENT(entry->client);
+  return write_value(result->value, result->type, entry->client->protover, entry->buffer);
 }
 
 const struct Command cmd_decrby = {

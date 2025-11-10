@@ -5,10 +5,10 @@
 #include <stdint.h>
 #include <inttypes.h>
 
-static string_t run(struct CommandEntry entry) {
-  PASS_NO_CLIENT(entry.client);
+static string_t run(struct CommandEntry *entry) {
+  PASS_NO_CLIENT(entry->client);
 
-  if (entry.data->arg_count == 0) {
+  if (entry->data->arg_count == 0) {
     return WRONG_ARGUMENT_ERROR("EXISTS");
   }
 
@@ -17,10 +17,10 @@ static string_t run(struct CommandEntry entry) {
   char buf[8192];
   buf[0] = '\0';
 
-  for (uint32_t i = 0; i < entry.data->arg_count; ++i) {
-    const string_t key = entry.data->args[i];
+  for (uint32_t i = 0; i < entry->data->arg_count; ++i) {
+    const string_t key = entry->data->args[i];
 
-    if (get_data(entry.database, key)) {
+    if (get_data(entry->database, key)) {
       existed += 1;
       strcat(buf, "+exists\r\n");
     } else {
@@ -30,14 +30,14 @@ static string_t run(struct CommandEntry entry) {
   }
 
   // calculated length: 85 + (existed * 9) + (not_existed * 12)
-  const size_t nbytes = sprintf(entry.buffer, (
+  const size_t nbytes = sprintf(entry->buffer, (
     "*%" PRIu32 "\r\n"
       "+existed key count is %u\r\n"
       "+not existed key count is %u\r\n"
       "%s"
-  ), entry.data->arg_count + 2, existed, not_existed, buf);
+  ), entry->data->arg_count + 2, existed, not_existed, buf);
 
-  return CREATE_STRING(entry.buffer, nbytes);
+  return CREATE_STRING(entry->buffer, nbytes);
 }
 
 const struct Command cmd_exists = {

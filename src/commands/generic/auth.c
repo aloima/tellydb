@@ -2,26 +2,26 @@
 
 #include <stddef.h>
 
-static string_t run(struct CommandEntry entry) {
-  PASS_NO_CLIENT(entry.client);
+static string_t run(struct CommandEntry *entry) {
+  PASS_NO_CLIENT(entry->client);
 
-  if (entry.data->arg_count != 1 && entry.data->arg_count != 2) {
+  if (entry->data->arg_count != 1 && entry->data->arg_count != 2) {
     return WRONG_ARGUMENT_ERROR("AUTH");
   }
 
-  const string_t input = entry.data->args[0];
+  const string_t input = entry->data->args[0];
   const int target = where_password(input.value, input.len);
 
   if (target == -1) {
     return RESP_ERROR_MESSAGE("This password does not exist");
   }
 
-  if (entry.password && entry.password != get_empty_password()) {
-    if (entry.data->arg_count != 2) {
+  if (entry->password && entry->password != get_empty_password()) {
+    if (entry->data->arg_count != 2) {
       return RESP_OK_MESSAGE("A password already in use for your client. If you sure to change, use command with ok argument");
     }
 
-    const char *ok = entry.data->args[1].value;
+    const char *ok = entry->data->args[1].value;
 
     if (!streq(ok, "ok")) {
       return RESP_OK_MESSAGE("A password already in use for your client. If you sure to change, use command with ok argument");
@@ -29,7 +29,7 @@ static string_t run(struct CommandEntry entry) {
   }
 
   struct Password **passwords = get_passwords();
-  entry.client->password = passwords[target];
+  entry->client->password = passwords[target];
   return RESP_OK();
 }
 

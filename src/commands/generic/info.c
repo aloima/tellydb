@@ -55,19 +55,19 @@ static bool get_section(char *section, const struct Configuration *conf, const c
   return true;
 }
 
-static string_t run(struct CommandEntry entry) {
-  PASS_NO_CLIENT(entry.client);
+static string_t run(struct CommandEntry *entry) {
+  PASS_NO_CLIENT(entry->client);
 
   const struct Configuration *conf = get_server_configuration();
 
   char buf[8192], section[2048];
   buf[0] = '\0';
 
-  if (entry.data->arg_count != 0) {
-    const uint32_t n = entry.data->arg_count - 1;
+  if (entry->data->arg_count != 0) {
+    const uint32_t n = entry->data->arg_count - 1;
 
     for (uint32_t i = 0; i < n; ++i) {
-      char *name = entry.data->args[i].value;
+      char *name = entry->data->args[i].value;
 
       if (!get_section(section, conf, name)) {
         return RESP_ERROR_MESSAGE("Invalid section name");
@@ -77,7 +77,7 @@ static string_t run(struct CommandEntry entry) {
       strcat(buf, "\r\n");
     }
 
-    const char *name = entry.data->args[n].value;
+    const char *name = entry->data->args[n].value;
 
     if (!get_section(section, conf, name)) {
       return RESP_ERROR_MESSAGE("Invalid section name");
@@ -110,8 +110,8 @@ static string_t run(struct CommandEntry entry) {
 
   const uint16_t buf_len = strlen(buf);
 
-  const size_t nbytes = sprintf(entry.buffer, "$%" PRIu16 "\r\n%s\r\n", buf_len, buf);
-  return CREATE_STRING(entry.buffer, nbytes);
+  const size_t nbytes = sprintf(entry->buffer, "$%" PRIu16 "\r\n%s\r\n", buf_len, buf);
+  return CREATE_STRING(entry->buffer, nbytes);
 }
 
 const struct Command cmd_info = {

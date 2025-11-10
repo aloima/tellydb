@@ -3,15 +3,15 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-static string_t run(struct CommandEntry entry) {
-  PASS_NO_CLIENT(entry.client);
+static string_t run(struct CommandEntry *entry) {
+  PASS_NO_CLIENT(entry->client);
 
-  if (!entry.client->waiting_block) {
+  if (!entry->client->waiting_block) {
     return RESP_ERROR_MESSAGE("A transaction block did not started, cannot execute one without starting before");
   }
 
-  entry.client->waiting_block->waiting = false;
-  entry.client->waiting_block = NULL;
+  entry->client->waiting_block->waiting = false;
+  entry->client->waiting_block = NULL;
   PASS_COMMAND();
 }
 

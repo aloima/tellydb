@@ -7,13 +7,11 @@
 #include <stdbool.h>
 #include <stdatomic.h>
 
-static struct Configuration *conf;
 static struct TransactionVariables variables;
 static uint64_t processed_transaction_count = 0;
 
 // Private method, accessed by create_transaction_thread method once.
 void initialize_transactions() {
-  conf = get_server_configuration();
   variables = get_transaction_variables();
 }
 
@@ -31,13 +29,16 @@ struct TransactionBlock *add_transaction_block(struct TransactionBlock *block) {
   return push_tqueue(*variables.queue, block);
 }
 
-// Accessed by process
-bool add_transaction(struct Client *client, const uint64_t command_idx, commanddata_t data) {
-  struct Transaction transaction;
-  transaction.command = &(*variables.commands)[command_idx];
-  transaction.data = data;
-  transaction.database = client->database;
+static inline void prepare_transaction(
+  struct Transaction *transaction, struct Client *client, const uint64_t command_idx, commanddata_t *data
+) {
+  transaction->command = &(*variables.commands)[command_idx];
+  transaction->data = *data;
+  transaction->database = client->database;
+}
 
+// Accessed by process
+bool add_transaction(struct Client *client, const uint64_t command_idx, commanddata_t *data) {
   if (client->waiting_block == NULL || IS_RELATED_TO_WAITING_TX(command_idx)) {
     struct TransactionBlock block;
     block.client_id = client->id;
@@ -46,7 +47,7 @@ bool add_transaction(struct Client *client, const uint64_t command_idx, commandd
     block.transactions = malloc(sizeof(struct Transaction));
     block.waiting = false;
 
-    memcpy(&block.transactions[0], &transaction, sizeof(struct Transaction));
+    prepare_transaction(&block.transactions[0], client, command_idx, data);
     push_tqueue(*variables.queue, &block);
 
     if (calculate_tqueue_size(*variables.queue) - atomic_load_explicit(variables.waiting_count, memory_order_relaxed) == 1) {
@@ -58,7 +59,7 @@ bool add_transaction(struct Client *client, const uint64_t command_idx, commandd
     struct TransactionBlock *block = client->waiting_block;
     block->transaction_count += 1;
     block->transactions = realloc(block->transactions, sizeof(struct Transaction) * block->transaction_count);
-    memcpy(&block->transactions[block->transaction_count - 1], &transaction, sizeof(struct Transaction));
+    prepare_transaction(&block->transactions[block->transaction_count - 1], client, command_idx, data);
   }
 
   return true;
@@ -105,16 +106,16 @@ void execute_transaction_block(struct TransactionBlock *block, struct Client *cl
   struct Password *password = block->password;
 
   if (block->transaction_count == 1) {
-    struct Transaction transaction = block->transactions[0];
-    struct Command *command = transaction.command;
-    struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction.data, transaction.database, password, *variables.buffer);
+    struct Transaction *transaction = &block->transactions[0];
+    struct Command *command = transaction->command;
 
     if ((password->permissions & command->permissions) != command->permissions) {
       WRITE_ERROR_MESSAGE(client, "No permissions to execute this command");
       return;
     }
 
-    const string_t response = command->run(entry);
+    struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction->data, transaction->database, password, *variables.buffer);
+    const string_t response = command->run(&entry);
 
     if (response.len != 0) {
       _write(client, response.value, response.len);
@@ -138,7 +139,7 @@ void execute_transaction_block(struct TransactionBlock *block, struct Client *cl
       return;
     }
 
-    const string_t result = command->run(entry);
+    const string_t result = command->run(&entry);
 
     if (result.len == 0) {
       continue;

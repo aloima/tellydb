@@ -5,8 +5,8 @@
 
 #include <sys/stat.h>
 
-static string_t run(struct CommandEntry entry) {
-  PASS_NO_CLIENT(entry.client);
+static string_t run(struct CommandEntry *entry) {
+  PASS_NO_CLIENT(entry->client);
 
   const struct Configuration *conf = get_server_configuration();
   struct stat res;
@@ -18,8 +18,8 @@ static string_t run(struct CommandEntry entry) {
 
   const uint64_t last_save = res.st_mtime;
 
-  const size_t nbytes = create_resp_integer(entry.buffer, last_save);
-  return CREATE_STRING(entry.buffer, nbytes);
+  const size_t nbytes = create_resp_integer(entry->buffer, last_save);
+  return CREATE_STRING(entry->buffer, nbytes);
 }
 
 const struct Command cmd_lastsave = {

@@ -6,17 +6,17 @@
 
 #include <sys/time.h>
 
-static string_t run(struct CommandEntry entry) {
-  PASS_NO_CLIENT(entry.client);
+static string_t run(struct CommandEntry *entry) {
+  PASS_NO_CLIENT(entry->client);
 
   struct timeval timestamp;
   gettimeofday(&timestamp, NULL);
 
-  const size_t nbytes = sprintf(entry.buffer, "*2\r\n"
+  const size_t nbytes = sprintf(entry->buffer, "*2\r\n"
     ":%" PRIiMAX "\r\n"
     ":%" PRIiMAX "\r\n", (intmax_t) timestamp.tv_sec, (intmax_t) timestamp.tv_usec);
 
-  return CREATE_STRING(entry.buffer, nbytes);
+  return CREATE_STRING(entry->buffer, nbytes);
 }
 
 const struct Command cmd_time = {

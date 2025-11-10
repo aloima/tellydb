@@ -50,20 +50,20 @@ static inline struct ListNode *get_node(const struct List *list, const uint32_t 
   return node;
 }
 
-static string_t run(struct CommandEntry entry) {
-  PASS_NO_CLIENT(entry.client);
+static string_t run(struct CommandEntry *entry) {
+  PASS_NO_CLIENT(entry->client);
 
-  if (entry.data->arg_count != 2) {
+  if (entry->data->arg_count != 2) {
     return WRONG_ARGUMENT_ERROR("LINDEX");
   }
 
-  const struct KVPair *kv = get_data(entry.database, entry.data->args[0]);
+  const struct KVPair *kv = get_data(entry->database, entry->data->args[0]);
 
   if (!kv || kv->type != TELLY_LIST) {
     return INVALID_TYPE_ERROR("LINDEX");
   }
 
-  const char *index_str = entry.data->args[1].value;
+  const char *index_str = entry->data->args[1].value;
 
   if (!try_parse_integer(index_str)) {
     return RESP_ERROR_MESSAGE("Second argument must be an integer");
@@ -91,10 +91,10 @@ static string_t run(struct CommandEntry entry) {
   }
 
   if (!node) {
-    return RESP_NULL(entry.client->protover);
+    return RESP_NULL(entry->client->protover);
   }
 
-  return write_value(node->value, node->type, entry.client->protover, entry.buffer);
+  return write_value(node->value, node->type, entry->client->protover, entry->buffer);
 }
 
 const struct Command cmd_lindex = {

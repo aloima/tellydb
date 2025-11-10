@@ -4,16 +4,16 @@
 #include <stdint.h>
 #include <time.h>
 
-static string_t run(struct CommandEntry entry) {
-  PASS_NO_CLIENT(entry.client);
+static string_t run(struct CommandEntry *entry) {
+  PASS_NO_CLIENT(entry->client);
 
   uint32_t age;
   time_t start_at;
   get_server_time(&start_at, &age);
   age += difftime(time(NULL), start_at);
 
-  const size_t nbytes = create_resp_integer(entry.buffer, age);
-  return CREATE_STRING(entry.buffer, nbytes);
+  const size_t nbytes = create_resp_integer(entry->buffer, age);
+  return CREATE_STRING(entry->buffer, nbytes);
 }
 
 const struct Command cmd_age = {

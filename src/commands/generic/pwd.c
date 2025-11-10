@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-static inline uint8_t read_permissions_value(struct CommandEntry entry, const char *value) {
+static inline uint8_t read_permissions_value(struct CommandEntry *entry, const char *value) {
   uint8_t permissions = 0;
   char *cval = (char *) value;
   char c;
@@ -36,7 +36,7 @@ static inline uint8_t read_permissions_value(struct CommandEntry entry, const ch
         break;
 
       default: {
-        const size_t nbytes = sprintf(entry.buffer, "-Invalid permission: '%c'\r\n", c);
+        const size_t nbytes = sprintf(entry->buffer, "-Invalid permission: '%c'\r\n", c);
         return -1;
       }
     }
@@ -47,98 +47,98 @@ static inline uint8_t read_permissions_value(struct CommandEntry entry, const ch
   return permissions;
 }
 
-static inline string_t add_pwd(struct CommandEntry entry) {
-  if (entry.data->arg_count != 3) {
-    PASS_NO_CLIENT(entry.client);
+static inline string_t add_pwd(struct CommandEntry *entry) {
+  if (entry->data->arg_count != 3) {
+    PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("PWD ADD");
   }
 
   const uint8_t all = get_full_password()->permissions;
-  const string_t data = entry.data->args[1];
-  const char *value = entry.data->args[2].value;
+  const string_t data = entry->data->args[1];
+  const char *value = entry->data->args[2].value;
   const uint8_t permissions = (streq(value, "all") ? all : read_permissions_value(entry, value));
-  const uint8_t not_have = ~entry.password->permissions & permissions;
+  const uint8_t not_have = ~entry->password->permissions & permissions;
 
   if (not_have) {
-    PASS_NO_CLIENT(entry.client);
+    PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("Tried to give permissions your password do not have");
   }
 
   if (where_password(data.value, data.len) == -1) {
-    add_password(entry.client, data, permissions);
+    add_password(entry->client, data, permissions);
 
-    PASS_NO_CLIENT(entry.client);
+    PASS_NO_CLIENT(entry->client);
     return RESP_OK();
   }
 
   return RESP_ERROR_MESSAGE("This password already exists");
 }
 
-static inline string_t edit_pwd(struct CommandEntry entry) {
-  if (entry.data->arg_count != 3) {
-    PASS_NO_CLIENT(entry.client);
+static inline string_t edit_pwd(struct CommandEntry *entry) {
+  if (entry->data->arg_count != 3) {
+    PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("PWD EDIT");
   }
 
-  const string_t input = entry.data->args[1];
-  const char *value = entry.data->args[2].value;
+  const string_t input = entry->data->args[1];
+  const char *value = entry->data->args[2].value;
 
   const int target = where_password(input.value, input.len);
 
   if (target == -1) {
-    PASS_NO_CLIENT(entry.client);
+    PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("This password does not exist");
   }
 
   const uint8_t permissions = read_permissions_value(entry, value);
-  const uint8_t not_have = ~entry.password->permissions & permissions;
+  const uint8_t not_have = ~entry->password->permissions & permissions;
 
   if (not_have) {
-    PASS_NO_CLIENT(entry.client);
+    PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("Tried to give permissions your password do not have");
   }
 
   struct Password **passwords = get_passwords();
   passwords[target]->permissions = permissions;
 
-  PASS_NO_CLIENT(entry.client);
+  PASS_NO_CLIENT(entry->client);
   return RESP_OK();
 }
 
-static inline string_t remove_pwd(struct CommandEntry entry) {
-  if (entry.data->arg_count != 2) {
-    PASS_NO_CLIENT(entry.client);
+static inline string_t remove_pwd(struct CommandEntry *entry) {
+  if (entry->data->arg_count != 2) {
+    PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("PWD REMOVE");
   }
 
-  const string_t input = entry.data->args[1];
+  const string_t input = entry->data->args[1];
 
-  if (remove_password(entry.client, input.value, input.len) && entry.client) {
-    PASS_NO_CLIENT(entry.client);
+  if (remove_password(entry->client, input.value, input.len) && entry->client) {
+    PASS_NO_CLIENT(entry->client);
     return RESP_OK();
   }
 
-  PASS_NO_CLIENT(entry.client);
+  PASS_NO_CLIENT(entry->client);
   return RESP_ERROR_MESSAGE("This password cannot be found");
 }
 
-static inline string_t generate_pwd(struct CommandEntry entry) {
-  PASS_NO_CLIENT(entry.client);
+static inline string_t generate_pwd(struct CommandEntry *entry) {
+  PASS_NO_CLIENT(entry->client);
 
   char value[33];
   generate_random_string(value, 32);
 
-  sprintf(entry.buffer, "$32\r\n%s\r\n", value);
-  return CREATE_STRING(entry.buffer, 39);
+  sprintf(entry->buffer, "$32\r\n%s\r\n", value);
+  return CREATE_STRING(entry->buffer, 39);
 }
 
-static string_t run(struct CommandEntry entry) {
-  if (entry.data->arg_count == 0) {
-    PASS_NO_CLIENT(entry.client);
+static string_t run(struct CommandEntry *entry) {
+  if (entry->data->arg_count == 0) {
+    PASS_NO_CLIENT(entry->client);
     return MISSING_SUBCOMMAND_ERROR("PWD");
   }
 
-  const string_t subcommand = entry.data->args[0];
+  const string_t subcommand = entry->data->args[0];
   to_uppercase(subcommand, subcommand.value);
 
   string_t response;
@@ -152,11 +152,11 @@ static string_t run(struct CommandEntry entry) {
   } else if (streq(subcommand.value, "GENERATE")) {
     response = generate_pwd(entry);
   } else {
-    PASS_NO_CLIENT(entry.client);
+    PASS_NO_CLIENT(entry->client);
     return INVALID_SUBCOMMAND_ERROR("PWD");
   }
 
-  PASS_NO_CLIENT(entry.client);
+  PASS_NO_CLIENT(entry->client);
   return response;
 }
 

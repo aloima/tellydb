@@ -2,22 +2,22 @@
 
 #include <stddef.h>
 
-static string_t run(struct CommandEntry entry) {
-  if (entry.data->arg_count != 1) {
-    PASS_NO_CLIENT(entry.client);
+static string_t run(struct CommandEntry *entry) {
+  if (entry->data->arg_count != 1) {
+    PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("LPOP");
   }
 
-  const string_t key = entry.data->args[0];
-  const struct KVPair *kv = get_data(entry.database, key);
+  const string_t key = entry->data->args[0];
+  const struct KVPair *kv = get_data(entry->database, key);
 
   if (!kv) {
-    PASS_NO_CLIENT(entry.client);
-    return RESP_NULL(entry.client->protover);
+    PASS_NO_CLIENT(entry->client);
+    return RESP_NULL(entry->client->protover);
   }
 
   if (kv->type != TELLY_LIST) {
-    PASS_NO_CLIENT(entry.client);
+    PASS_NO_CLIENT(entry->client);
     return INVALID_TYPE_ERROR("LPOP");
   }
 
@@ -25,12 +25,12 @@ static string_t run(struct CommandEntry entry) {
   struct ListNode *node = list->begin;
   string_t response = EMPTY_STRING();
 
-  if (entry.client) {
-    return write_value(node->value, node->type, entry.client->protover, entry.buffer);
+  if (entry->client) {
+    return write_value(node->value, node->type, entry->client->protover, entry->buffer);
   }
 
   if (list->size == 1) {
-    delete_data(entry.database, key);
+    delete_data(entry->database, key);
   } else {
     list->begin = list->begin->next;
     list->begin->prev = NULL;

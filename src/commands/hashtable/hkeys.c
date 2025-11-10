@@ -3,14 +3,14 @@
 #include <string.h>
 #include <stdint.h>
 
-static string_t run(struct CommandEntry entry) {
-  PASS_NO_CLIENT(entry.client);
+static string_t run(struct CommandEntry *entry) {
+  PASS_NO_CLIENT(entry->client);
 
-  if (entry.data->arg_count != 1) {
+  if (entry->data->arg_count != 1) {
     return WRONG_ARGUMENT_ERROR("HKEYS");
   }
 
-  const struct KVPair *kv = get_data(entry.database, entry.data->args[0]);
+  const struct KVPair *kv = get_data(entry->database, entry->data->args[0]);
 
   if (!kv) {
     return CREATE_STRING("*0\r\n", 4);
@@ -21,7 +21,7 @@ static string_t run(struct CommandEntry entry) {
   }
 
   const struct HashTable *table = kv->value;
-  char *response = entry.buffer;
+  char *response = entry->buffer;
 
   response[0] = '*';
   uint64_t at = ltoa(table->size.used, response + 1) + 1;

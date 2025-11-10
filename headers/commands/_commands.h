@@ -56,7 +56,7 @@ struct Command {
   char *since;
   char *complexity;
   uint64_t permissions;
-  string_t (*run)(struct CommandEntry entry);
+  string_t (*run)(struct CommandEntry *entry);
   struct Subcommand *subcommands;
   uint32_t subcommand_count;
 };

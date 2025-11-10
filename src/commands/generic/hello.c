@@ -3,27 +3,27 @@
 #include <string.h>
 #include <stdint.h>
 
-static string_t run(struct CommandEntry entry) {
-  PASS_NO_CLIENT(entry.client);
+static string_t run(struct CommandEntry *entry) {
+  PASS_NO_CLIENT(entry->client);
 
-  const uint32_t arg_count = entry.data->arg_count;
+  const uint32_t arg_count = entry->data->arg_count;
 
   if (arg_count != 1) {
     return WRONG_ARGUMENT_ERROR("HELLO");
   }
 
-  const char *protover = entry.data->args[0].value;
+  const char *protover = entry->data->args[0].value;
 
   if (streq(protover, "2")) {
-    entry.client->protover = RESP2;
+    entry->client->protover = RESP2;
   } else if (streq(protover, "3")) {
-    entry.client->protover = RESP3;
+    entry->client->protover = RESP3;
   } else {
     return RESP_ERROR_MESSAGE("Invalid protocol version");
   }
 
   char client_id[11];
-  const uint32_t client_id_len = ltoa(entry.client->id, client_id);
+  const uint32_t client_id_len = ltoa(entry->client->id, client_id);
 
   string_t values[4][2] = {
     {{"server",    6}, {"telly",   5}},
@@ -39,16 +39,16 @@ static string_t run(struct CommandEntry entry) {
     {"RESP3", 5}
   };
 
-  if (entry.client->protover < 4) {
-    values[2][1] = protocols[entry.client->protover];
+  if (entry->client->protover < 4) {
+    values[2][1] = protocols[entry->client->protover];
   } else {
     values[2][1] = protocols[0];
   }
 
-  char *buf = entry.buffer;
+  char *buf = entry->buffer;
   uint32_t at;
 
-  switch (entry.client->protover) {
+  switch (entry->client->protover) {
     case RESP2:
       memcpy(buf, "*8\r\n", 4);
       at = 4;

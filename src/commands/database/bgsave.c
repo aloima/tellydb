@@ -3,7 +3,9 @@
 #include <stdint.h>
 #include <time.h>
 
-static string_t run(struct CommandEntry entry) {
+static string_t run(struct CommandEntry *entry) {
+  (void) entry;
+
   uint32_t server_age;
   time_t start_at;
   get_server_time(&start_at, &server_age);
