@@ -37,6 +37,12 @@ static inline int accept_client(struct Server *server) {
     return -1;
   }
 
+  if (get_client_count() == server->conf->max_clients) {
+    write(connfd, "-Server is reached maximum client limit\r\n", 14);
+    close(connfd);
+    return -1;
+  }
+
   struct Client *client = add_client(connfd);
 
   if (!client) {

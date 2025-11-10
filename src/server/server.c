@@ -209,7 +209,7 @@ static int initialize_socket() {
     return -1;
   }
 
-  if (listen(server->sockfd, server->conf->max_clients) != 0) {
+  if (listen(server->sockfd, 64) != 0) {
     FREE_CTX_THREAD_CMD_SOCKET(server);
     write_log(LOG_ERR, "Cannot listen socket.");
     FREE_CONF_LOGS(server);
