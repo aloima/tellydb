@@ -35,12 +35,12 @@ struct TransactionBlock {
 };
 
 struct TransactionVariables {
-  struct ThreadQueue **queue;
-  char **buffer;
-  struct Command **commands;
-  pthread_cond_t *cond;
-  pthread_mutex_t *mutex;
-  _Atomic uint64_t *waiting_count;
+  struct ThreadQueue *queue;
+  char *buffer;
+  struct Command *commands;
+  pthread_cond_t cond;
+  pthread_mutex_t mutex;
+  _Atomic uint64_t waiting_count;
 };
 
 void create_transaction_thread();

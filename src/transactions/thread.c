@@ -11,7 +11,7 @@
 
 static struct Configuration *conf;
 static pthread_t thread;
-static struct TransactionVariables variables;
+static struct TransactionVariables *variables;
 static _Atomic bool killed;
 
 void *transaction_thread(void *arg) {
@@ -23,14 +23,14 @@ void *transaction_thread(void *arg) {
 
   while (!atomic_load_explicit(&killed, memory_order_acquire)) {
     uint64_t idx = 0;
-    struct TransactionBlock *block = get_tqueue_value(*variables.queue, idx);
+    struct TransactionBlock *block = get_tqueue_value(variables->queue, idx);
     bool found = false;
 
     while (block != NULL) {
       found = true;
 
       if (block->client_id == -1) {
-        pop_tqueue(*variables.queue);
+        pop_tqueue(variables->queue);
         break;
       }
 
@@ -39,24 +39,24 @@ void *transaction_thread(void *arg) {
         execute_transaction_block(block, client);
         remove_transaction_block(block, true);
 
-        if (idx == 0) pop_tqueue(*variables.queue);
+        if (idx == 0) pop_tqueue(variables->queue);
         break;
       }
 
       idx += 1;
-      block = get_tqueue_value(*variables.queue, idx);
+      block = get_tqueue_value(variables->queue, idx);
     }
 
     if (!found) {
-      pthread_mutex_lock(variables.mutex);
-      pthread_cond_wait(variables.cond, variables.mutex);
-      pthread_mutex_unlock(variables.mutex);
+      pthread_mutex_lock(&variables->mutex);
+      pthread_cond_wait(&variables->cond, &variables->mutex);
+      pthread_mutex_unlock(&variables->mutex);
     }
   }
 
-  pthread_cond_destroy(variables.cond);
-  pthread_mutex_destroy(variables.mutex);
-  free(*variables.buffer);
+  pthread_cond_destroy(&variables->cond);
+  pthread_mutex_destroy(&variables->mutex);
+  free(variables->buffer);
 
   return NULL;
 }
@@ -64,9 +64,9 @@ void *transaction_thread(void *arg) {
 // Accessed by process
 void deactive_transaction_thread() {
   atomic_store_explicit(&killed, true, memory_order_release);
-  pthread_mutex_lock(variables.mutex);
-  pthread_cond_signal(variables.cond);
-  pthread_mutex_unlock(variables.mutex);
+  pthread_mutex_lock(&variables->mutex);
+  pthread_cond_signal(&variables->cond);
+  pthread_mutex_unlock(&variables->mutex);
 }
 
 // Accessed by process
@@ -75,14 +75,17 @@ void create_transaction_thread() {
   variables = get_transaction_variables();
   initialize_transactions();
 
-  *variables.commands = get_commands();
-  *variables.queue = create_tqueue(conf->max_transaction_blocks, sizeof(struct TransactionBlock), _Alignof(struct TransactionBlock));
-  if (*variables.queue == NULL) return write_log(LOG_ERR, "Cannot allocate transaction blocks, out of memory.");
+  variables->commands = get_commands();
+  variables->queue = create_tqueue(conf->max_transaction_blocks, sizeof(struct TransactionBlock), _Alignof(struct TransactionBlock));
+  if (variables->queue == NULL) return write_log(LOG_ERR, "Cannot allocate transaction blocks, out of memory.");
 
-  atomic_init(variables.waiting_count, 0);
-  *variables.buffer = malloc(MAX_RESPONSE_SIZE);
+  atomic_init(&variables->waiting_count, 0);
+  variables->buffer = malloc(MAX_RESPONSE_SIZE);
 
+  pthread_cond_init(&variables->cond, NULL);
+  pthread_mutex_init(&variables->mutex, NULL);
   atomic_init(&killed, false);
+
   pthread_create(&thread, NULL, transaction_thread, NULL);
   pthread_detach(thread);
 }

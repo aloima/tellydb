@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #include <stdatomic.h>
 
-static struct TransactionVariables variables;
+static struct TransactionVariables *variables;
 static uint64_t processed_transaction_count = 0;
 
 // Private method, accessed by create_transaction_thread method once.
@@ -17,7 +17,7 @@ void initialize_transactions() {
 
 // Accessed by thread
 uint32_t get_transaction_count() {
-  return calculate_tqueue_size(*variables.queue);
+  return calculate_tqueue_size(variables->queue);
 }
 
 // Accessed by thread
@@ -26,13 +26,13 @@ uint64_t get_processed_transaction_count() {
 }
 
 struct TransactionBlock *add_transaction_block(struct TransactionBlock *block) {
-  return push_tqueue(*variables.queue, block);
+  return push_tqueue(variables->queue, block);
 }
 
 static inline void prepare_transaction(
   struct Transaction *transaction, struct Client *client, const uint64_t command_idx, commanddata_t *data
 ) {
-  transaction->command = &(*variables.commands)[command_idx];
+  transaction->command = &variables->commands[command_idx];
   transaction->data = *data;
   transaction->database = client->database;
 }
@@ -48,12 +48,12 @@ bool add_transaction(struct Client *client, const uint64_t command_idx, commandd
     block.waiting = false;
 
     prepare_transaction(&block.transactions[0], client, command_idx, data);
-    push_tqueue(*variables.queue, &block);
+    push_tqueue(variables->queue, &block);
 
-    if (calculate_tqueue_size(*variables.queue) - atomic_load_explicit(variables.waiting_count, memory_order_relaxed) == 1) {
-      pthread_mutex_lock(variables.mutex);
-      pthread_cond_signal(variables.cond);
-      pthread_mutex_unlock(variables.mutex);
+    if (calculate_tqueue_size(variables->queue) - atomic_load_explicit(&variables->waiting_count, memory_order_relaxed) == 1) {
+      pthread_mutex_lock(&variables->mutex);
+      pthread_cond_signal(&variables->cond);
+      pthread_mutex_unlock(&variables->mutex);
     }
   } else {
     struct TransactionBlock *block = client->waiting_block;
@@ -86,7 +86,7 @@ void remove_transaction_block(struct TransactionBlock *block, const bool process
 
 // Accessed by process
 void free_transactions() {
-  struct ThreadQueue *queue = *variables.queue;
+  struct ThreadQueue *queue = variables->queue;
 
   while (calculate_tqueue_size(queue) != 0) {
     struct TransactionBlock *block = get_tqueue_value(queue, 0);
@@ -114,7 +114,7 @@ void execute_transaction_block(struct TransactionBlock *block, struct Client *cl
       return;
     }
 
-    struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction->data, transaction->database, password, *variables.buffer);
+    struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction->data, transaction->database, password, variables->buffer);
     const string_t response = command->run(&entry);
 
     if (response.len != 0) {
@@ -132,7 +132,7 @@ void execute_transaction_block(struct TransactionBlock *block, struct Client *cl
   for (uint32_t i = 0; i < transaction_count; ++i) {
     struct Transaction transaction = block->transactions[i];
     struct Command *command = transaction.command;
-    struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction.data, transaction.database, password, *variables.buffer);
+    struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction.data, transaction.database, password, variables->buffer);
 
     if ((password->permissions & command->permissions) != command->permissions) {
       WRITE_ERROR_MESSAGE(client, "No permissions to execute this command");
