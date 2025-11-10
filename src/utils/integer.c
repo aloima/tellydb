@@ -51,26 +51,43 @@ bool try_parse_double(const char *value) {
 
 uint8_t ltoa(const int64_t value, char *dst) {
   const bool neg = (value < 0);
-  uint64_t uval = (neg ? -value : value);
+  uint64_t uval;
+
+  if (value == INT64_MIN) {
+    uval = 9223372036854775808ULL; // 2^63
+  } else {
+    uval = (neg ? -value : value);
+  }
 
   const uint8_t len = get_digit_count(uval);
   const uint8_t total_len = (len + neg);
   dst[total_len] = '\0';
 
-  uint8_t pos = (total_len - 1);
+  uint8_t pos = total_len;
 
-  while (uval >= 10) {
-    uint64_t q = (uval / 10);
-    dst[pos--] = ('0' + (uval - q * 10));
-    uval = q;
+  while (uval >= 100) {
+    const uint64_t remainder = (uval % 100);
+
+    pos -= 2;
+    *((uint16_t *) (dst + pos)) = *((uint16_t *) (TWO_DIGITS_TABLE + remainder * 2));
+
+    uval /= 100;
   }
 
-  dst[pos] = ('0' + uval);
+  if (uval > 0) {
+    const uint8_t remainder = uval;
+    const uint16_t chars = *((uint16_t*) (TWO_DIGITS_TABLE + remainder * 2));
 
-  if (neg) {
-    dst[0] = '-';
+    if (remainder >= 10) {
+      pos -= 2;
+      *((uint16_t *) (dst + pos)) = chars;
+    } else {
+      pos -= 1;
+      dst[pos] = ('0' + remainder);
+    }
   }
 
+  if (neg) dst[0] = '-';
   return total_len;
 }
 
