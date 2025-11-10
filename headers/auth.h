@@ -3,7 +3,7 @@
 #pragma once
 
 #include "./server/server.h"
-#include "utils.h"
+#include "./utils/utils.h"
 
 #include <stddef.h>
 #include <stdint.h>

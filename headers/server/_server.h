@@ -2,7 +2,7 @@
 
 #include "./_client.h"
 #include "../config.h"
-#include "../utils.h"
+#include "../utils/utils.h"
 
 #include <signal.h>
 #include <stdint.h>

@@ -3,32 +3,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-// log10(2) * 1024 = 308.25 ~ 308
-#define LOG10_2_X_1024 308
-
-static constexpr uint64_t pow10_table[] = {
-  1ULL,
-  10ULL,
-  100ULL,
-  1000ULL,
-  10000ULL,
-  100000ULL,
-  1000000ULL,
-  10000000ULL,
-  100000000ULL,
-  1000000000ULL,
-  10000000000ULL,
-  100000000000ULL,
-  1000000000000ULL,
-  10000000000000ULL,
-  100000000000000ULL,
-  1000000000000000ULL,
-  10000000000000000ULL,
-  100000000000000000ULL,
-  1000000000000000000ULL,
-  10000000000000000000ULL
-};
-
 bool try_parse_integer(const char *value) {
   const char *_value = value;
 
@@ -108,7 +82,7 @@ uint8_t get_digit_count(const uint64_t value) {
   const uint64_t bits = (64 - __builtin_clzll(value));
   const uint64_t approximate_digits = (bits * 308) >> 10;
 
-  return (uint8_t) (approximate_digits + (value >= pow10_table[approximate_digits]));
+  return (uint8_t) (approximate_digits + (value >= POW10_TABLE[approximate_digits]));
 }
 
 uint8_t get_bit_count(const uint64_t value) {

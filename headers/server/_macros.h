@@ -2,7 +2,7 @@
 
 #include "_client.h"
 #include "../resp.h"
-#include "../utils.h" // IWYU pragma: export
+#include "../utils/utils.h" // IWYU pragma: export
 
 #include <stddef.h>
 

@@ -5,16 +5,15 @@
 #include <stdlib.h>
 #include <time.h>
 
-static constexpr char months[12][4] = {
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-};
+uint64_t hash(char *key, uint32_t length) {
+  uint64_t hash = 5381;
 
-static constexpr char charset[] = (
-  "0123456789"
-  "abcdefghijklmnopqrstuvwxyz"
-  "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-);
+  while (length--) {
+    hash = ((hash << 5) + hash) + (*key++);
+  }
+
+  return hash;
+}
 
 void to_uppercase(string_t src, char *dst) {
   for (uint32_t i = 0; i < src.len; ++i) {

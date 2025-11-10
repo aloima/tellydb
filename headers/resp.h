@@ -1,7 +1,7 @@
 #pragma once
 
 #include "server/server.h"
-#include "utils.h"
+#include "utils/utils.h"
 
 #include <stdbool.h>
 #include <stdint.h>
