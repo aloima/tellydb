@@ -21,11 +21,6 @@
 #include <openssl/ssl.h>
 #include <openssl/crypto.h>
 
-static inline void read_client(struct Client *client, char *buf, int32_t *size, int32_t *at) {
-  *size = _read(client, buf, RESP_BUF_SIZE);
-  *at = 0;
-}
-
 static inline int accept_client(struct Server *server) {
   struct sockaddr_in addr;
   socklen_t addr_len = sizeof(addr);
@@ -148,7 +143,8 @@ void handle_events(struct Server *server) {
           if (size != RESP_BUF_SIZE) {
             size = -1;
           } else {
-            read_client(client, buf, &size, &at);
+            size = _read(client, buf, RESP_BUF_SIZE);
+            at = 0;
           }
         }
 
