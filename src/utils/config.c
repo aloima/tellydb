@@ -23,22 +23,43 @@ static struct Configuration default_conf = {
   .default_conf = true
 };
 
-static void pass_line(FILE *file, char c) {
+static inline void pass_line(FILE *file, int c) {
   while (c != EOF && c != '\n') c = fgetc(file);
 }
 
-static void parse_value(FILE *file, char *buf) {
-  char c;
+static inline void parse_value(FILE *file, char *buf) {
+  int c;
 
   while ((c = fgetc(file)) != EOF && c != '\n') {
-    strncat(buf, &c, 1);
+    strncat(buf, (const char *) &c, 1);
+  }
+}
+
+static inline void parse_allowed_log_levels(struct Configuration *conf) {
+  struct LogLevelConfig {
+    char ident;
+    uint8_t value;
+  } levels_map[4] = {
+    {'i', LOG_INFO},
+    {'e', LOG_ERR},
+    {'w', LOG_WARN},
+    {'d', LOG_DBG}
+  };
+
+  char id;
+
+  while (id != '\0') {
+    for (uint32_t j = 0; j < (sizeof(levels_map) / sizeof(levels_map)[0]); ++j) { // Loop unrolling by compiler
+      __auto_type level = levels_map[j];
+      if (level.ident == id) conf->allowed_log_levels |= level.value;
+    }
   }
 }
 
 struct Configuration parse_configuration(FILE *file) {
   struct Configuration conf = {0};
   char buf[49] = {0};
-  char c;
+  int c;
 
   do {
     c = fgetc(file);
@@ -68,24 +89,7 @@ struct Configuration parse_configuration(FILE *file) {
         } else if (streq(buf, "ALLOWED_LOG_LEVELS")) {
           buf[0] = '\0';
           parse_value(file, buf);
-
-          const uint32_t len = strlen(buf);
-
-          for (uint32_t i = 0; i < len; ++i) {
-            switch (buf[i]) {
-              case 'i':
-                conf.allowed_log_levels |= LOG_INFO;
-                break;
-
-              case 'e':
-                conf.allowed_log_levels |= LOG_ERR;
-                break;
-
-              case 'w':
-                conf.allowed_log_levels |= LOG_WARN;
-                break;
-            }
-          }
+          parse_allowed_log_levels(&conf);
         } else if (streq(buf, "MAX_LOG_LINES")) {
           buf[0] = '\0';
           parse_value(file, buf);
@@ -120,7 +124,7 @@ struct Configuration parse_configuration(FILE *file) {
         break;
 
       default:
-        strncat(buf, &c, 1);
+        strncat(buf, (const char *) &c, 1);
     }
   } while (c != EOF);
 
