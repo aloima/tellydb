@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
-static struct Configuration default_conf = {
+static constexpr struct Configuration default_conf = {
   .port = 6379,
   .max_clients = 128,
   .max_transaction_blocks = 262144,
@@ -23,7 +23,20 @@ static struct Configuration default_conf = {
   .default_conf = true
 };
 
-static inline void pass_line(FILE *file, int c) {
+struct LogLevelConfig {
+  char ident;
+  uint8_t value;
+};
+
+static constexpr struct LogLevelConfig log_levels_map[4] = {
+  {'i', LOG_INFO},
+  {'e', LOG_ERR},
+  {'w', LOG_WARN},
+  {'d', LOG_DBG}
+};
+
+static inline void pass_line(FILE *file) {
+  int c;
   while (c != EOF && c != '\n') c = fgetc(file);
 }
 
@@ -36,24 +49,26 @@ static inline void parse_value(FILE *file, char *buf) {
 }
 
 static inline void parse_allowed_log_levels(struct Configuration *conf) {
-  struct LogLevelConfig {
-    char ident;
-    uint8_t value;
-  } levels_map[4] = {
-    {'i', LOG_INFO},
-    {'e', LOG_ERR},
-    {'w', LOG_WARN},
-    {'d', LOG_DBG}
-  };
-
   char id;
 
   while (id != '\0') {
-    for (uint32_t j = 0; j < (sizeof(levels_map) / sizeof(levels_map)[0]); ++j) { // Loop unrolling by compiler
-      __auto_type level = levels_map[j];
+    for (uint32_t j = 0; j < (sizeof(log_levels_map) / sizeof(log_levels_map)[0]); ++j) { // Loop unrolling by compiler
+      const struct LogLevelConfig level = log_levels_map[j];
       if (level.ident == id) conf->allowed_log_levels |= level.value;
     }
   }
+}
+
+static inline void get_allowed_log_levels(char *allowed_log_levels, struct Configuration *conf) {
+  for (uint32_t i = 0; i < (sizeof(log_levels_map) / sizeof(log_levels_map)[0]); ++i) { // Loop unrolling by compiler
+    const struct LogLevelConfig level = log_levels_map[i];
+
+    if (conf->allowed_log_levels & level.value) {
+      *(allowed_log_levels++) = level.ident;
+    }
+  }
+
+  *allowed_log_levels = '\0';
 }
 
 struct Configuration parse_configuration(FILE *file) {
@@ -65,12 +80,8 @@ struct Configuration parse_configuration(FILE *file) {
     c = fgetc(file);
 
     switch (c) {
-      case '#':
-        pass_line(file, c);
-        break;
-
-      case '\n':
-        pass_line(file, c);
+      case '#': case '\n':
+        pass_line(file);
         break;
 
       case '=':
@@ -131,35 +142,9 @@ struct Configuration parse_configuration(FILE *file) {
   return conf;
 }
 
-static void get_allowed_log_levels(char *allowed_log_levels, struct Configuration conf) {
-  uint32_t len = 0;
-
-  if (conf.allowed_log_levels & LOG_ERR) {
-    allowed_log_levels[len] = 'e';
-    len += 1;
-  }
-
-  if (conf.allowed_log_levels & LOG_WARN) {
-    allowed_log_levels[len] = 'w';
-    len += 1;
-  }
-
-  if (conf.allowed_log_levels & LOG_INFO) {
-    allowed_log_levels[len] = 'i';
-    len += 1;
-  }
-
-  if (conf.allowed_log_levels & LOG_DBG) {
-    allowed_log_levels[len] = 'd';
-    len += 1;
-  }
-
-  allowed_log_levels[len] = '\0';
-}
-
 size_t get_configuration_string(char *buf, struct Configuration conf) {
   char allowed_log_levels[5];
-  get_allowed_log_levels(allowed_log_levels, conf);
+  get_allowed_log_levels(allowed_log_levels, &conf);
 
   return sprintf(buf, (
     "# TCP server port\n"
@@ -196,7 +181,10 @@ size_t get_configuration_string(char *buf, struct Configuration conf) {
     "DATABASE_NAME=%s\n\n"
 
     "# Enables/disables creating TLS server\n"
-    "# If it is enabled, CERT specifies certificate file path of TLS server and PRIVATE_KEY specifies private key file path of TLS server\n"
+    "#\n"
+    "# If it is enabled:\n"
+    "# CERT specifies certificate file path of TLS server\n"
+    "# PRIVATE_KEY specifies private key file path of TLS server\n"
     "# TLS value must be true or false\n"
     "# File paths length must be less than or equal to 48\n"
     "TLS=%s\n"
