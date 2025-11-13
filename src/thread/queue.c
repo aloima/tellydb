@@ -84,7 +84,6 @@ void *pop_tqueue(struct ThreadQueue *queue) {
 
 void *get_tqueue_value(struct ThreadQueue *queue, const uint64_t idx) {
   const uint64_t current_at = atomic_load_explicit(&queue->at, memory_order_acquire);
-  const uint64_t current_end = atomic_load_explicit(&queue->end, memory_order_relaxed);
 
   const uint64_t actual_idx = ((current_at + idx) % queue->capacity);
   if (atomic_load_explicit(&queue->states[actual_idx], memory_order_acquire) != TQ_STORED) return NULL;
