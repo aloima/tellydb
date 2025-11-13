@@ -48,14 +48,16 @@ static inline void parse_value(FILE *file, char *buf) {
   }
 }
 
-static inline void parse_allowed_log_levels(struct Configuration *conf) {
-  char id;
+static inline void parse_allowed_log_levels(struct Configuration *conf, char *buf) {
+  char id = *buf;
 
   while (id != '\0') {
     for (uint32_t j = 0; j < (sizeof(log_levels_map) / sizeof(log_levels_map)[0]); ++j) { // Loop unrolling by compiler
       const struct LogLevelConfig level = log_levels_map[j];
       if (level.ident == id) conf->allowed_log_levels |= level.value;
     }
+
+    id = *(++buf);
   }
 }
 
@@ -100,7 +102,7 @@ struct Configuration parse_configuration(FILE *file) {
         } else if (streq(buf, "ALLOWED_LOG_LEVELS")) {
           buf[0] = '\0';
           parse_value(file, buf);
-          parse_allowed_log_levels(&conf);
+          parse_allowed_log_levels(&conf, buf);
         } else if (streq(buf, "MAX_LOG_LINES")) {
           buf[0] = '\0';
           parse_value(file, buf);
