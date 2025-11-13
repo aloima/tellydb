@@ -1,7 +1,15 @@
 #include <telly.h>
 
-#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
 #include <stdbool.h>
+
+static bool check_crlf(struct Client *client, char *buf, int32_t *at, int32_t *size) {
+  char *crlf;
+  TAKE_BYTES(crlf, 2, false);
+
+  return !VERY_UNLIKELY(crlf[0] != '\r' || crlf[1] != '\n');
+}
 
 static inline bool parse_name(struct Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command, char *c) {
   uint8_t idx = 0;
@@ -12,6 +20,10 @@ static inline bool parse_name(struct Client *client, char *buf, int32_t *at, int
 
   do {
     command->name.value[idx] = *c;
+    if ((*at + 2) == *size) {
+      idx += 1;
+      break;
+    }
 
     if (take_n_bytes_from_socket(client, buf, at, &c, 1, size) != 1) {
       idx += 1;
@@ -21,11 +33,13 @@ static inline bool parse_name(struct Client *client, char *buf, int32_t *at, int
     }
 
     idx += 1;
-  } while (*c != ' ' && *c != '\r' && *c != '\n');
+  } while (*c != ' ');
 
   command->name.value[idx] = '\0';
   command->name.len = idx;
-  return true;
+
+  if ((*at + 2) == *size) return check_crlf(client, buf, at, size);
+  else return true;
 }
 
 static inline bool parse_arguments(struct Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command, char *c) {
@@ -35,11 +49,8 @@ static inline bool parse_arguments(struct Client *client, char *buf, int32_t *at
     uint8_t idx = 0;
     command->arg_count += 1;
 
-    if (!command->args) {
-      command->args = calloc(1, sizeof(string_t));
-    } else {
-      command->args = realloc(command->args, sizeof(string_t) * command->arg_count);
-    }
+    if (!command->args) command->args = malloc(sizeof(string_t));
+    else command->args = realloc(command->args, sizeof(string_t) * command->arg_count);
 
     string_t *arg = &command->args[command->arg_count - 1];
     arg->len = 0;
@@ -52,7 +63,7 @@ static inline bool parse_arguments(struct Client *client, char *buf, int32_t *at
       value[idx] = *c;
       idx += 1;
 
-      if (idx == 128) {
+      if (idx == 127) {
         idx = 0;
 
         if (arg->value == NULL) {
@@ -65,18 +76,8 @@ static inline bool parse_arguments(struct Client *client, char *buf, int32_t *at
         memcpy(arg->value, value, 128);
       }
 
+      if ((*at + 2) == *size) break;
       TAKE_BYTES(c, 1, false);
-
-      if (*c == '\r') {
-        TAKE_DUMMY_BYTES(1, false);
-        retrieving = false;
-        break;
-      }
-
-      if (*c == '\n') {
-        retrieving = false;
-        break;
-      }
     }
 
     if (idx != 0) {
@@ -91,6 +92,17 @@ static inline bool parse_arguments(struct Client *client, char *buf, int32_t *at
       arg->value[idx] = '\0';
       arg->len += idx;
     }
+
+    if ((*at + 2) == *size) {
+      if (check_crlf(client, buf, at, size)) break;
+
+      for (uint32_t i = 0; i < command->arg_count; ++i) {
+        free(command->args[i].value);
+      }
+
+      free(command->args);
+      return false;
+    }
   }
 
   return true;
@@ -103,15 +115,6 @@ bool parse_inline_command(struct Client *client, char *buf, int32_t *at, int32_t
   if (!parse_name(client, buf, at, size, command, &c)) {
     throw_resp_error(client->id);
     return false;
-  }
-
-  if (c == '\n') {
-    return true;
-  }
-
-  if (c == '\r') {
-    TAKE_DUMMY_BYTES(1, false);
-    return true;
   }
 
   if (!parse_arguments(client, buf, at, size, command, &c)) {

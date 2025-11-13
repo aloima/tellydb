@@ -139,10 +139,7 @@ void handle_events(struct Server *server) {
 
       while (size != -1) {
         commanddata_t data;
-
-        if (!get_command_data(client, buf, &at, &size, &data)) {
-          continue;
-        }
+        if (!get_command_data(client, buf, &at, &size, &data)) continue;
 
         if (size == at) {
           if (size != RESP_BUF_SIZE) {
@@ -176,9 +173,7 @@ void handle_events(struct Server *server) {
           continue;
         }
 
-        if (client->waiting_block && !IS_RELATED_TO_WAITING_TX(command_idx)) {
-          _write(client, "+QUEUED\r\n", 9);
-        }
+        if (client->waiting_block && !IS_RELATED_TO_WAITING_TX(command_idx)) _write(client, "+QUEUED\r\n", 9);
       }
 
 #if defined(__linux__)
@@ -186,7 +181,7 @@ void handle_events(struct Server *server) {
 #elif defined(__APPLE__)
       if (fd != sockfd && (events[i].flags & EV_EOF)) {
 #endif
-        terminate_connection(fd);
+        terminate_connection(client->connfd);
         continue;
       }
     }
