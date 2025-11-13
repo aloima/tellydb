@@ -54,11 +54,11 @@ static inline int accept_client(struct Server *server) {
   event_t event;
 #if defined(__linux__)
   event.events = (EPOLLIN | EPOLLET | EPOLLHUP | EPOLLRDHUP);
-  event.data.fd = connfd;
+  event.data.ptr = client;
 
   if ((epoll_ctl(server->eventfd, EPOLL_CTL_ADD, connfd, &event)) == -1) {
 #elif defined(__APPLE__)
-  EV_SET(&event, connfd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, NULL);
+  EV_SET(&event, connfd, EVFILT_READ, EV_ADD | EV_ENABLE | EV_CLEAR, 0, 0, client);
 
   if ((kevent(server->eventfd, &event, 1, NULL, 0, NULL)) == -1) {
 #endif
@@ -123,12 +123,17 @@ void handle_events(struct Server *server) {
         continue;
       }
 
-      struct Client *client = get_client(fd);
+#if defined(__linux__)
+      struct Client *client = events[i].data.ptr;
+#elif defined(__APPLE__)
+      struct Client *client = events[i].udata;
+#endif
+
       int32_t at = 0;
       int32_t size = _read(client, buf, RESP_BUF_SIZE);
 
       if (size == 0) {
-        terminate_connection(fd);
+        terminate_connection(client->connfd);
         continue;
       }
 
