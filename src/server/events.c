@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <unistd.h>
 
 #if defined(__linux__)
@@ -47,6 +48,14 @@ static inline int accept_client(struct Server *server) {
 
   if ((fcntl(connfd, F_SETFL, fcntl(connfd, F_GETFL, 0) | O_NONBLOCK)) == -1) {
     write_log(LOG_WARN, "Cannot accept Client #%" PRIu32 ", because cannot set non-blocking file descriptor.", client->id);
+    terminate_connection(client->connfd);
+    return -1;
+  }
+
+  const int flag = 1;
+
+  if (setsockopt(connfd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) == -1) {
+    write_log(LOG_WARN, "Cannot accept Client #%" PRIu32 ", because cannot set no-delay file descriptor.", client->id);
     terminate_connection(client->connfd);
     return -1;
   }
