@@ -36,6 +36,8 @@ void *transaction_thread(void *arg) {
 
       if (!block->waiting) {
         struct Client *client = get_client_from_id(block->client_id);
+        __builtin_prefetch(client, 0, 3); 
+
         execute_transaction_block(block, client);
         remove_transaction_block(block, true);
 
@@ -45,6 +47,10 @@ void *transaction_thread(void *arg) {
 
       idx += 1;
       block = get_tqueue_value(variables->queue, idx);
+
+      if (block != NULL) {
+        __builtin_prefetch(block, 0, 3);
+      }
     }
 
     if (!found) {
