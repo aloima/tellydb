@@ -41,7 +41,7 @@ static inline void prepare_transaction(
 bool add_transaction(struct Client *client, const uint64_t command_idx, commanddata_t *data) {
   if (client->waiting_block == NULL || IS_RELATED_TO_WAITING_TX(command_idx)) {
     struct TransactionBlock block;
-    block.client_id = client->id;
+    block.client = client;
     block.password = client->password;
     block.transaction_count = 1;
     block.transactions = malloc(sizeof(struct Transaction));
@@ -77,7 +77,7 @@ void remove_transaction_block(struct TransactionBlock *block, const bool process
   }
 
   free(block->transactions);
-  block->client_id = -1;
+  block->client = NULL;
   block->password = NULL;
   block->transactions = NULL;
   block->transaction_count = 0;

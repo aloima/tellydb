@@ -11,7 +11,7 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   struct TransactionBlock block;
-  block.client_id = entry->client->id;
+  block.client = entry->client;
   block.password = entry->password;
   block.transactions = NULL;
   block.transaction_count = 0;

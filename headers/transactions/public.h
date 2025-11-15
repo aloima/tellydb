@@ -25,7 +25,7 @@ struct Transaction {
 };
 
 struct TransactionBlock {
-  int client_id;
+  struct Client *client;
   struct Password *password;
   struct Transaction *transactions;
   uint64_t transaction_count;

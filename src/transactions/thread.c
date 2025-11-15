@@ -29,14 +29,15 @@ void *transaction_thread(void *arg) {
     while (block != NULL) {
       found = true;
 
-      if (block->client_id == -1) {
-        pop_tqueue(variables->queue);
-        break;
-      }
-
       if (!block->waiting) {
-        struct Client *client = get_client_from_id(block->client_id);
-        __builtin_prefetch(client, 0, 3); 
+        struct Client *client;
+
+        if (block->client->id != -1) {
+          client = block->client;
+          __builtin_prefetch(client, 0, 3);
+        } else {
+          client = NULL;
+        }
 
         execute_transaction_block(block, client);
         remove_transaction_block(block, true);
@@ -47,10 +48,6 @@ void *transaction_thread(void *arg) {
 
       idx += 1;
       block = get_tqueue_value(variables->queue, idx);
-
-      if (block != NULL) {
-        __builtin_prefetch(block, 0, 3);
-      }
     }
 
     if (!found) {
