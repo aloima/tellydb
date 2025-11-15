@@ -6,7 +6,6 @@
 #include <stdint.h>
 #include <inttypes.h>
 
-#include <fcntl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -17,6 +16,7 @@
 #elif defined(__APPLE__)
 #include <sys/event.h>
 #include <sys/time.h>
+#include <fcntl.h>
 #endif
 
 #include <openssl/ssl.h>
@@ -26,11 +26,36 @@ static inline int accept_client(struct Server *server) {
   struct sockaddr_in addr;
   socklen_t addr_len = sizeof(addr);
 
+#if defined(__linux__)
+  const int connfd = accept4(server->sockfd, (struct sockaddr *) &addr, &addr_len, SOCK_NONBLOCK);
+
+  if (connfd == -1) {
+    write_log(LOG_WARN, "Cannot accept a connection as non-blocking because of sockets.");
+    return -1;
+  }
+#elif defined(__APPLE__)
   const int connfd = accept(server->sockfd, (struct sockaddr *) &addr, &addr_len);
 
   if (connfd == -1) {
     write_log(LOG_WARN, "Cannot accept a connection because of sockets.");
     return -1;
+  }
+
+  if ((fcntl(connfd, F_SETFL, fcntl(connfd, F_GETFL, 0) | O_NONBLOCK)) == -1) {
+    write_log(LOG_WARN, "Cannot accept a connection, because cannot set as non-blocking file descriptor.");
+    close(connfd);
+    return -1;
+  }
+#endif
+
+  {
+    const int flag = 1;
+
+    if (setsockopt(connfd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) == -1) {
+      write_log(LOG_WARN, "Cannot accept a connection, because cannot set as non-delaying file descriptor.");
+      close(connfd);
+      return -1;
+    }
   }
 
   if (get_client_count() == server->conf->max_clients) {
@@ -40,25 +65,6 @@ static inline int accept_client(struct Server *server) {
   }
 
   struct Client *client = add_client(connfd);
-
-  if (!client) {
-    close(connfd);
-    return -1;
-  }
-
-  if ((fcntl(connfd, F_SETFL, fcntl(connfd, F_GETFL, 0) | O_NONBLOCK)) == -1) {
-    write_log(LOG_WARN, "Cannot accept Client #%" PRIu32 ", because cannot set non-blocking file descriptor.", client->id);
-    terminate_connection(client->connfd);
-    return -1;
-  }
-
-  const int flag = 1;
-
-  if (setsockopt(connfd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) == -1) {
-    write_log(LOG_WARN, "Cannot accept Client #%" PRIu32 ", because cannot set no-delay file descriptor.", client->id);
-    terminate_connection(client->connfd);
-    return -1;
-  }
 
   event_t event;
 #if defined(__linux__)

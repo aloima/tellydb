@@ -130,8 +130,8 @@ bool initialize_client_maps() {
   return true;
 }
 
-static inline struct Client *insert_client(struct Client client) {
-  uint16_t at = (client.id % conf->max_clients);
+static inline struct Client *insert_client(struct Client *client) {
+  uint16_t at = (client->id % conf->max_clients);
 
   while (clients[at].id != -1) {
     at += 1;
@@ -141,10 +141,10 @@ static inline struct Client *insert_client(struct Client client) {
     }
   }
 
-  clients[at] = client;
+  clients[at] = *client;
 
   const uint16_t idx_of_client = at;
-  at = (client.connfd % conf->max_clients);
+  at = (client->connfd % conf->max_clients);
 
   while (connfd_client_pos[at] != -1) {
     at += 1;
@@ -182,7 +182,7 @@ struct Client *add_client(const int connfd) {
     client.password = empty_password;
   }
 
-  return insert_client(client);
+  return insert_client(&client);
 }
 
 bool remove_client(const int connfd) {
