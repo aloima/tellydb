@@ -30,7 +30,7 @@ bool open_database_fd(uint32_t *server_age) {
   struct stat sostat;
   stat(conf->data_file, &sostat);
 
-  const off_t file_size = sostat.st_size;;
+  const off_t file_size = sostat.st_size;
   block_size = sostat.st_blksize;
 
   if (file_size != 0) {
