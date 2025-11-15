@@ -5,6 +5,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#define CHECK_ERROR(ERROR_CODE, message, ...) \
+  case (ERROR_CODE): \
+    write_log(LOG_ERR, (message), ##__VA_ARGS__); \
+    break
+
 int open_file(const char *file, int flags) {
   int fd;
 
@@ -14,23 +19,12 @@ int open_file(const char *file, int flags) {
   if ((fd = open(file, (O_RDWR | O_CREAT | flags), (S_IRUSR | S_IWUSR))) == -1) {
 #endif
     switch (errno) {
-    #if defined(__linux__)
-      case EINVAL:
-        write_log(LOG_ERR, "Direct I/O does not be supported by your file system, cannot open file.");
-        break;
-    #endif
-
-      case EISDIR:
-        write_log(LOG_ERR, "Specified file is a directory, cannot open file.");
-        break;
-
-      case ENOMEM:
-        write_log(LOG_ERR, "No available memory to create/open file.");
-        break;
-
-      case EROFS:
-        write_log(LOG_ERR, "Your file system is read-only, cannot open file for writing.");
-        break;
+#if defined(__linux__)
+      CHECK_ERROR(EINVAL, "Direct I/O does not be supported by your file system, cannot open file.");
+#endif
+      CHECK_ERROR(EISDIR, "Specified file is a directory, cannot open file.");
+      CHECK_ERROR(ENOMEM, "No available memory to create/open file.");
+      CHECK_ERROR(EROFS,  "Your file system is read-only, cannot open file for writing.");
 
       default:
         write_log(LOG_ERR, "File cannot be opened or created.");
@@ -42,9 +36,7 @@ int open_file(const char *file, int flags) {
 #if defined(__APPLE__)
   if ((fcntl(fd, F_NOCACHE, 1)) == -1) {
     switch (errno) {
-      case EACCES:
-        write_log(LOG_ERR, "File descriptor is not accessible to set for no kernel caching mode.");
-        break;
+      CHECK_ERROR(EACCES,  "File descriptor is not accessible to set for no kernel caching mode.");
 
       default:
         write_log(LOG_ERR, "File descriptor cannot be set for no kernel caching mode.");
@@ -67,13 +59,8 @@ int open_file(const char *file, int flags) {
   } else {
     if (lockf(fd, F_LOCK, 0) == -1) {
       switch (errno) {
-        case EDEADLK:
-          write_log(LOG_ERR, "%s file cannot be locked, because a deadlock is detected.", file);
-          break;
-
-        case EINTR:
-          write_log(LOG_ERR, "Locking operation of %s file is interrupted.", file);
-          break;
+        CHECK_ERROR(EDEADLK, "%s file cannot be locked, because a deadlock is detected.", file);
+        CHECK_ERROR(EINTR,   "Locking operation of %s file is interrupted.", file);
       }
 
       close(fd);
