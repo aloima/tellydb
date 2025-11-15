@@ -59,8 +59,8 @@ void get_server_time(time_t *server_start_at, uint32_t *server_age) {
   *server_age = server->age;
 }
 
-void terminate_connection(const int connfd) {
-  const struct Client *client = get_client(connfd);
+void terminate_connection(struct Client *client) {
+  const int connfd = client->connfd;
 
 #if defined(__linux__)
   if (epoll_ctl(server->eventfd, EPOLL_CTL_DEL, connfd, NULL) == -1) {
@@ -76,10 +76,7 @@ void terminate_connection(const int connfd) {
 
   write_log(LOG_DBG, "Client #%" PRIu32 " is disconnected.", client->id);
 
-  if (server->conf->tls) {
-    SSL_shutdown(client->ssl);
-  }
-
+  if (server->conf->tls) SSL_shutdown(client->ssl);
   close(connfd);
   remove_client(connfd);
 }
@@ -251,7 +248,7 @@ void start_server(struct Configuration *config) {
   }
 
   pid_t pid = getpid();
-  write_log(LOG_INFO, "version=" VERSION ", commit hash=" GIT_HASH ", process id=%d", pid);
+  write_log(LOG_INFO, "version: " VERSION ", commit hash: " GIT_HASH ", process id: %d", pid);
 
   if (server->conf->default_conf) {
     write_log(LOG_WARN, "No configuration file. To specify, create .tellyconf or use `telly config /path/to/file`.");

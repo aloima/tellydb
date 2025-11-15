@@ -23,7 +23,7 @@ struct Server {
   struct Command *commands;
 };
 
-void terminate_connection(const int connfd);
+void terminate_connection(struct Client *client);
 off_t *get_authorization_end_at();
 void get_server_time(time_t *server_start_at, uint32_t *server_age);
 void handle_events(struct Server *server);

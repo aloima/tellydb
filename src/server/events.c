@@ -96,7 +96,7 @@ static inline int accept_client(struct Server *server) {
 
   if (ADD_TO_MULTIPLEXING(server->eventfd, connfd, event) == -1) {
     write_log(LOG_WARN, "Cannot accept Client #%" PRIu32 ", because cannot add it to multiplexing queue.", client->id);
-    terminate_connection(client->connfd);
+    terminate_connection(client);
     return -1;
   }
 
@@ -106,7 +106,7 @@ static inline int accept_client(struct Server *server) {
 
     if (SSL_accept(client->ssl) <= 0) {
       write_log(LOG_WARN, "Cannot accept Client #%" PRIu32 " because of SSL. Please check client authority file.", client->id);
-      terminate_connection(client->connfd);
+      terminate_connection(client);
       return -1;
     }
   }
@@ -155,7 +155,7 @@ void handle_events(struct Server *server) {
       int32_t size = _read(client, buf, RESP_BUF_SIZE);
 
       if (size == 0) {
-        terminate_connection(client->connfd);
+        terminate_connection(client);
         continue;
       }
 
@@ -199,7 +199,7 @@ void handle_events(struct Server *server) {
       }
 
       if (fd != sockfd && IS_CONNECTION_CLOSED(events[i])) {
-        terminate_connection(client->connfd);
+        terminate_connection(client);
         continue;
       }
     }
