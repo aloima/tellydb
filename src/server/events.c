@@ -12,11 +12,36 @@
 #include <unistd.h>
 
 #if defined(__linux__)
-#include <sys/epoll.h>
+  #include <sys/epoll.h>
+
+  #define GET_EVENT_FD(event) (event).data.fd
+  #define WAIT_EVENTS(eventfd, events, count) epoll_wait((eventfd), (events), (count), -1)
+  #define GET_EVENT_DATA(event) (event).data.ptr
+  #define IS_CONNECTION_CLOSED(event) ((event).events & (EPOLLRDHUP | EPOLLHUP))
+  #define ADD_TO_MULTIPLEXING(eventfd, connfd, event) epoll_ctl((eventfd), EPOLL_CTL_ADD, (connfd), &(event))
+
+  #define PREPARE_EVENT(event, client, connfd) do { \
+    (void) connfd; \
+    (event).events = (EPOLLIN | EPOLLET | EPOLLHUP | EPOLLRDHUP); \
+    (event).data.ptr = (client); \
+  } while (0)
 #elif defined(__APPLE__)
-#include <sys/event.h>
-#include <sys/time.h>
-#include <fcntl.h>
+  #include <sys/event.h>
+  #include <sys/time.h>
+  #include <fcntl.h>
+
+  #define GET_EVENT_FD(event) (event).ident
+  #define WAIT_EVENTS(eventfd, events, count) kevent((eventfd), NULL, 0, (events), (count), NULL)
+  #define GET_EVENT_DATA(event) (event).udata
+  #define IS_CONNECTION_CLOSED(event) ((event).flags & EV_EOF)
+
+  #define ADD_TO_MULTIPLEXING(eventfd, connfd, event) do { \
+    (void) connfd; \
+    kevent((eventfd), &(event), 1, NULL, 0, NULL); \
+  } while (0)
+
+  #define PREPARE_EVENT(event, client, connfd) \
+    EV_SET(&(event), (connfd), EVFILT_READ, EV_ADD | EV_ENABLE | EV_CLEAR, 0, 0, (client))
 #endif
 
 #include <openssl/ssl.h>
@@ -67,16 +92,9 @@ static inline int accept_client(struct Server *server) {
   struct Client *client = add_client(connfd);
 
   event_t event;
-#if defined(__linux__)
-  event.events = (EPOLLIN | EPOLLET | EPOLLHUP | EPOLLRDHUP);
-  event.data.ptr = client;
+  PREPARE_EVENT(event, client, connfd);
 
-  if ((epoll_ctl(server->eventfd, EPOLL_CTL_ADD, connfd, &event)) == -1) {
-#elif defined(__APPLE__)
-  EV_SET(&event, connfd, EVFILT_READ, EV_ADD | EV_ENABLE | EV_CLEAR, 0, 0, client);
-
-  if ((kevent(server->eventfd, &event, 1, NULL, 0, NULL)) == -1) {
-#endif
+  if (ADD_TO_MULTIPLEXING(server->eventfd, connfd, event) == -1) {
     write_log(LOG_WARN, "Cannot accept Client #%" PRIu32 ", because cannot add it to multiplexing queue.", client->id);
     terminate_connection(client->connfd);
     return -1;
@@ -115,17 +133,10 @@ void handle_events(struct Server *server) {
   struct Command *commands = server->commands;
 
   while (!server->closed) {
-#if defined(__linux__)
-    const int nfds = epoll_wait(eventfd, events, 512, -1);
+    const int nfds = WAIT_EVENTS(eventfd, events, 512);
 
     for (int i = 0; i < nfds; ++i) {
-      const int fd = events[i].data.fd;
-#elif defined(__APPLE__)
-    const int nfds = kevent(eventfd, NULL, 0, events, 32, NULL);
-
-    for (int i = 0; i < nfds; ++i) {
-      const int fd = events[i].ident;
-#endif
+      const int fd = GET_EVENT_FD(events[i]);
 
       if (fd == sockfd) {
         if (UINT32_MAX == get_last_connection_client_id()) {
@@ -138,11 +149,7 @@ void handle_events(struct Server *server) {
         continue;
       }
 
-#if defined(__linux__)
-      struct Client *client = events[i].data.ptr;
-#elif defined(__APPLE__)
-      struct Client *client = events[i].udata;
-#endif
+      struct Client *client = GET_EVENT_DATA(events[i]);
 
       int32_t at = 0;
       int32_t size = _read(client, buf, RESP_BUF_SIZE);
@@ -191,11 +198,7 @@ void handle_events(struct Server *server) {
         if (client->waiting_block && !IS_RELATED_TO_WAITING_TX(command_idx)) _write(client, "+QUEUED\r\n", 9);
       }
 
-#if defined(__linux__)
-      if (fd != sockfd && (events[i].events & (EPOLLRDHUP | EPOLLHUP))) {
-#elif defined(__APPLE__)
-      if (fd != sockfd && (events[i].flags & EV_EOF)) {
-#endif
+      if (fd != sockfd && IS_CONNECTION_CLOSED(events[i])) {
         terminate_connection(client->connfd);
         continue;
       }
