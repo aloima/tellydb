@@ -8,7 +8,7 @@
 #include <openssl/ssl.h>
 
 // TODO: make thread-safe
-static struct Configuration *conf = NULL;
+static struct Configuration *conf;
 static struct Client *clients = NULL;
 static int32_t *connfd_client_pos = NULL; // connfd => client index on `clients`
 static uint16_t client_count = 0;
@@ -60,10 +60,7 @@ struct Client *get_client(const int input) {
     }
 
     at += 1;
-
-    if (at == conf->max_clients) {
-      at = 0;
-    }
+    if (at == conf->max_clients) at = 0;
 
     if (at == start) {
       return NULL;
@@ -78,15 +75,10 @@ struct Client *get_client_from_id(const uint32_t id) {
   uint32_t at = start;
 
   while (clients[at].id != -1) {
-    if (clients[at].id == id) {
-      return &clients[at];
-    }
+    if (clients[at].id == id) return &clients[at];
 
     at += 1;
-
-    if (at == conf->max_clients) {
-      at = 0;
-    }
+    if (at == conf->max_clients) at = 0;
 
     if (at == start) {
       return NULL;
@@ -230,17 +222,9 @@ bool remove_client(const int connfd) {
     SSL_free(client.ssl);
   }
 
-  if (client.lib_name) {
-    free(client.lib_name);
-  }
-
-  if (client.lib_ver) {
-    free(client.lib_ver);
-  }
-
-  if (client.waiting_block) {
-    remove_transaction_block(client.waiting_block, false);
-  }
+  if (client.lib_name) free(client.lib_name);
+  if (client.lib_ver) free(client.lib_ver);
+  if (client.waiting_block) remove_transaction_block(client.waiting_block, false);
 
   return true;
 }
