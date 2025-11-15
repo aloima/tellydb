@@ -252,7 +252,7 @@ static inline string_t subcommand_kill(struct CommandEntry *entry) {
     return CREATE_STRING(entry->buffer, nbytes);
   }
 
-  terminate_connection(target->connfd);
+  terminate_connection(target);
 
   PASS_NO_CLIENT(entry->client);
   return RESP_OK();
