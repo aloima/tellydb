@@ -35,10 +35,7 @@
   #define GET_EVENT_DATA(event) (event).udata
   #define IS_CONNECTION_CLOSED(event) ((event).flags & EV_EOF)
 
-  #define ADD_TO_MULTIPLEXING(eventfd, connfd, event) do { \
-    (void) connfd; \
-    kevent((eventfd), &(event), 1, NULL, 0, NULL); \
-  } while (0)
+  #define ADD_TO_MULTIPLEXING(eventfd, connfd, event) kevent((eventfd), &(event), 1, NULL, 0, NULL)
 
   #define PREPARE_EVENT(event, client, connfd) \
     EV_SET(&(event), (connfd), EVFILT_READ, EV_ADD | EV_ENABLE | EV_CLEAR, 0, 0, (client))
