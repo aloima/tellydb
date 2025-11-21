@@ -12,6 +12,7 @@ enum ProtocolVersion {
 };
 
 struct TransactionBlock;
+#define RESP_BUF_SIZE 4096
 
 struct Client {
   SSL *ssl;
@@ -28,6 +29,8 @@ struct Client {
 
   bool locked;
   struct TransactionBlock *waiting_block;
+
+  char read_buf[RESP_BUF_SIZE];
 };
 
 bool initialize_client_maps();

@@ -31,7 +31,6 @@
 #define RDT_ERR '-'
 #define RDT_ERR_SL "-"
 
-#define RESP_BUF_SIZE 4096
 #define COMMAND_NAME_MAX_LENGTH 64
 
 typedef struct {
