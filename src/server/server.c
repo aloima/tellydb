@@ -78,7 +78,7 @@ void terminate_connection(struct Client *client) {
 
   if (server->conf->tls) SSL_shutdown(client->ssl);
   close(connfd);
-  remove_client(connfd);
+  remove_client(client->id);
 }
 
 static void close_server() {

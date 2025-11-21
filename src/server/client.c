@@ -10,7 +10,6 @@
 // TODO: make thread-safe
 static struct Configuration *conf;
 static struct Client *clients = NULL;
-static int32_t *connfd_client_pos = NULL; // connfd => client index on `clients`
 static uint16_t client_count = 0;
 
 static uint32_t last_connection_client_id = 0;
@@ -50,27 +49,7 @@ struct Password *get_full_password() {
   return full_password;
 }
 
-struct Client *get_client(const int input) {
-  const uint32_t start = (input % conf->max_clients);
-  uint32_t at = start;
-
-  while (connfd_client_pos[at] != -1) {
-    if (clients[connfd_client_pos[at]].connfd == input) {
-      return &clients[connfd_client_pos[at]];
-    }
-
-    at += 1;
-    if (at == conf->max_clients) at = 0;
-
-    if (at == start) {
-      return NULL;
-    }
-  }
-
-  return NULL;
-}
-
-struct Client *get_client_from_id(const uint32_t id) {
+struct Client *get_client(const uint32_t id) {
   const uint32_t start = (id % conf->max_clients);
   uint32_t at = start;
 
@@ -109,14 +88,8 @@ bool initialize_client_maps() {
     return false;
   }
 
-  if ((connfd_client_pos = malloc(sizeof(int32_t) * conf->max_clients)) == NULL) {
-    write_log(LOG_ERR, "Cannot create a map for storing clients, out of memory.");
-    return false;
-  }
-
   for (uint32_t i = 0; i < conf->max_clients; ++i) {
     clients[i].id = -1;
-    connfd_client_pos[i] = -1;
   }
 
   return true;
@@ -134,20 +107,7 @@ static inline struct Client *insert_client(struct Client *client) {
   }
 
   clients[at] = *client;
-
-  const uint16_t idx_of_client = at;
-  at = (client->connfd % conf->max_clients);
-
-  while (connfd_client_pos[at] != -1) {
-    at += 1;
-
-    if (at == conf->max_clients) {
-      at = 0;
-    }
-  }
-
-  connfd_client_pos[at] = idx_of_client;
-  return &clients[idx_of_client];
+  return &clients[at];
 }
 
 struct Client *add_client(const int connfd) {
@@ -177,36 +137,11 @@ struct Client *add_client(const int connfd) {
   return insert_client(&client);
 }
 
-bool remove_client(const int connfd) {
-  uint16_t at = (connfd % conf->max_clients);
+bool remove_client(const int id) {
+  uint16_t at = (id % conf->max_clients);
+  struct Client *client;
 
-  if (connfd_client_pos[at] == -1) {
-    return false;
-  }
-
-  struct Client client = clients[connfd_client_pos[at]];
-
-  while (client.connfd != connfd) {
-    at += 1;
-
-    if (at == conf->max_clients) {
-      at = 0;
-    }
-
-    client = clients[connfd_client_pos[at]];
-
-    if (connfd_client_pos[at] == -1) {
-      return false;
-    }
-  }
-
-  connfd_client_pos[at] = -1;
-
-  const uint16_t id = client.id;
-  at = (client.id % conf->max_clients);
-  client = clients[at];
-
-  while (clients[at].id != id) {
+  while ((client = &clients[at])->id != id) {
     at += 1;
 
     if (at == conf->max_clients) {
@@ -214,17 +149,17 @@ bool remove_client(const int connfd) {
     }
   }
 
-  clients[at].id = -1;
+  client->id = -1;
   client_count -= 1;
 
-  if (client.ssl) {
-    SSL_shutdown(client.ssl);
-    SSL_free(client.ssl);
+  if (client->ssl) {
+    SSL_shutdown(client->ssl);
+    SSL_free(client->ssl);
   }
 
-  if (client.lib_name) free(client.lib_name);
-  if (client.lib_ver) free(client.lib_ver);
-  if (client.waiting_block) remove_transaction_block(client.waiting_block, false);
+  if (client->lib_name) free(client->lib_name);
+  if (client->lib_ver) free(client->lib_ver);
+  if (client->waiting_block) remove_transaction_block(client->waiting_block, false);
 
   return true;
 }
@@ -236,6 +171,5 @@ void free_client_maps() {
     }
   }
 
-  free(connfd_client_pos);
   free(clients);
 }

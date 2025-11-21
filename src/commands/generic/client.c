@@ -34,7 +34,7 @@ static inline string_t subcommand_info(struct CommandEntry *entry) {
         return RESP_ERROR_MESSAGE("Specified ID is out of bounds for uint32_t");
       }
 
-      if (!(client = get_client_from_id(id))) {
+      if (!(client = get_client(id))) {
         return RESP_ERROR_MESSAGE("The client does not exist");
       }
 
@@ -161,7 +161,7 @@ static string_t subcommand_lock(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("Specified ID is out of bounds for uint32_t");
   }
 
-  struct Client *target = get_client_from_id(id);
+  struct Client *target = get_client(id);
 
   if (!target) {
     PASS_NO_CLIENT(entry->client);
@@ -238,7 +238,7 @@ static inline string_t subcommand_kill(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("Specified ID is out of bounds for uint32_t");
   }
 
-  struct Client *target = get_client_from_id(id);
+  struct Client *target = get_client(id);
 
   if (!target) {
     PASS_NO_CLIENT(entry->client);
@@ -276,7 +276,7 @@ static inline string_t subcommand_unlock(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("Specified ID is out of bounds for uint32_t");
   }
 
-  struct Client *target = get_client_from_id(id);
+  struct Client *target = get_client(id);
 
   if (!target) {
     PASS_NO_CLIENT(entry->client);
