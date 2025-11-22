@@ -5,6 +5,8 @@
 
 enum ThreadQueueState : uint8_t {
   TQ_EMPTY,
+  TQ_RETRIEVING,
+  TQ_STORING,
   TQ_STORED
 };
 
@@ -23,5 +25,4 @@ void free_tqueue(struct ThreadQueue *queue);
 
 uint64_t calculate_tqueue_size(const struct ThreadQueue *queue);
 void *push_tqueue(struct ThreadQueue *queue, void *value);
-void *pop_tqueue(struct ThreadQueue *queue);
-void *get_tqueue_value(struct ThreadQueue *queue, const uint64_t idx);
+bool pop_tqueue(struct ThreadQueue *queue, void *dest);

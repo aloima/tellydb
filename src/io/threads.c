@@ -92,14 +92,12 @@ void *handle_io_requests(void *arg) {
   });
 
   while (atomic_load_explicit(&thread->status, memory_order_acquire) == ACTIVE) {
-    struct IOOperation *area = pop_tqueue(queue);
+    struct IOOperation op;
 
-    if (area == NULL) {
+    if (!pop_tqueue(queue, &op)) {
       usleep(1);
       continue;
     }
-
-    struct IOOperation op = *area;
 
     switch (op.type) {
       case IOOP_GET_COMMAND:

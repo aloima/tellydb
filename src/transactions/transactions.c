@@ -89,10 +89,11 @@ void free_transactions() {
   struct ThreadQueue *queue = variables->queue;
 
   while (calculate_tqueue_size(queue) != 0) {
-    struct TransactionBlock *block = get_tqueue_value(queue, 0);
+    struct TransactionBlock block;
+    pop_tqueue(queue, &block);
 
-    for (uint32_t i = 0; i < block->transaction_count; ++i) {
-      struct Transaction transaction = block->transactions[i];
+    for (uint32_t i = 0; i < block.transaction_count; ++i) {
+      struct Transaction transaction = block.transactions[i];
       free_command_data(transaction.data);
     }
   }
