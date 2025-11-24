@@ -118,18 +118,39 @@ void add_io_request(const enum IOOpType type, struct Client *client) {
   push_tqueue(queue, &op);
 }
 
-void create_io_threads(const uint32_t count) {
+bool create_io_threads(const uint32_t count) {
+  bool success = false;
+
   queue = create_tqueue(128, sizeof(struct IOThread), _Alignof(struct IOThread));
+  if (queue == NULL) goto cleanup;
+
   threads = malloc(count * sizeof(struct IOThread));
+  if (threads == NULL) goto cleanup;
+
   thread_count = count;
 
   for (uint32_t i = 0; i < count; ++i) {
-    threads[i].id = i;
-    atomic_init(&threads[i].status, ACTIVE);
-    pthread_create(&threads[i].thread, NULL, handle_io_requests, &threads[i].id);
-    pthread_detach(threads[i].thread);
+    struct IOThread *thread = &threads[i];
+    thread->id = i;
+    atomic_init(&thread->status, ACTIVE);
+
+    int created = pthread_create(&thread->thread, NULL, handle_io_requests, &thread->id);
+    if (created != 0) goto cleanup;
+
+    int detached = pthread_detach(thread->thread);
+    if (detached != 0) goto cleanup;
   }
 
+  success = true;
+
+cleanup:
+  if (!success) {
+    for (uint32_t i = 0; i < count; ++i) atomic_store_explicit(&threads[i].status, PASSIVE, memory_order_release);
+    if (queue) free_tqueue(queue);
+    if (threads) free(threads);
+  }
+
+  return success;
 }
 
 void destroy_io_threads() {
