@@ -83,7 +83,7 @@ static inline void remove_password_from_clients(struct Password *password) {
   }
 }
 
-static struct Password **passwords;
+static struct Password **passwords = NULL;
 static uint32_t password_count = 0;
 
 struct Password **get_passwords() {
@@ -203,30 +203,34 @@ bool edit_password(char *value, const size_t value_len, const uint32_t permissio
 
 void add_password(struct Client *client, const string_t data, const uint8_t permissions) {
   struct Password *password;
-
-  if (posix_memalign((void **) &password, 8, sizeof(struct Password)) == 0) {
-    password_count += 1;
-
-    if (password_count == 1) {
-      passwords = malloc(sizeof(struct Password *));
-      passwords[0] = password;
-
-      client->password->permissions = 0; // Resets all client permissions via reference
-      client->password = get_full_password(); // Give full permissions to client which added first password
-    } else {
-      passwords = realloc(passwords, password_count * sizeof(struct Password *));
-      passwords[password_count - 1] = password;
-    }
-
-    password_derive(data.value, data.len, password->data);
-    password->permissions = permissions;
-  } else {
+  if (posix_memalign((void **) &password, 8, sizeof(struct Password)) != 0) {
     write_log(LOG_ERR, "Cannot create a password, out of memory.");
+    return;
   }
+
+  password_count += 1;
+
+  if (password_count == 1) {
+    passwords = malloc(sizeof(struct Password *));
+  } else {
+    passwords = realloc(passwords, password_count * sizeof(struct Password *));
+  }
+
+  if (passwords == NULL) {
+    write_log(LOG_ERR, "Cannot create a password, out of memory.");
+    return;
+  } else if (password_count == 1) {
+    client->password->permissions = 0; // Resets all client permissions via reference
+    client->password = get_full_password(); // Give full permissions to client which added first password
+  }
+
+  password_derive(data.value, data.len, password->data);
+  password->permissions = permissions;
+  passwords[password_count - 1] = password;
 }
 
 void free_passwords() {
-  if (password_count != 0) {
+  if (password_count != 0 && passwords) {
     for (uint32_t i = 0; i < password_count; ++i) {
       free(passwords[i]);
     }
