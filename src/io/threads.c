@@ -24,8 +24,8 @@ struct IOThread {
   _Atomic enum IOThreadStatus status;
 };
 
-static struct IOThread *threads;
-static struct ThreadQueue *queue;
+static struct IOThread *threads = NULL;
+static struct ThreadQueue *queue = NULL;
 static uint32_t thread_count = 0;
 
 static inline void unknown_command(struct Client *client, commandname_t name) {
@@ -146,14 +146,27 @@ bool create_io_threads(const uint32_t count) {
 cleanup:
   if (!success) {
     for (uint32_t i = 0; i < count; ++i) atomic_store_explicit(&threads[i].status, PASSIVE, memory_order_release);
-    if (queue) free_tqueue(queue);
-    if (threads) free(threads);
+
+    if (queue) {
+      free_tqueue(queue);
+      queue = NULL;
+    }
+
+    if (threads) {
+      free(threads);
+      threads = NULL;
+    }
   }
 
   return success;
 }
 
 void destroy_io_threads() {
+  if (!threads && queue) {
+    free_tqueue(queue);
+    return;
+  }
+
   for (uint32_t i = 0; i < thread_count; ++i) {
     atomic_store_explicit(&threads[i].status, PASSIVE, memory_order_release);
   }
