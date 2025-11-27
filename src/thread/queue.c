@@ -69,13 +69,13 @@ void *push_tqueue(struct ThreadQueue *queue, void *value) {
     
     const enum ThreadQueueState state = atomic_load_explicit(&queue->states[current_end], memory_order_acquire);
     if (state != TQ_EMPTY) {
-      __builtin_ia32_pause();
+      usleep(1);
       continue;
     }
   } while (!atomic_compare_exchange_weak_explicit(&queue->end, &current_end, next_end, memory_order_acq_rel, memory_order_relaxed));
 
   while (atomic_load_explicit(&queue->states[current_end], memory_order_acquire) != TQ_EMPTY) {
-    __builtin_ia32_pause();
+    usleep(1);
   }
 
   atomic_store_explicit(&queue->states[current_end], TQ_STORING, memory_order_release);
@@ -98,13 +98,13 @@ bool pop_tqueue(struct ThreadQueue *queue, void *dest) {
 
     const enum ThreadQueueState state = atomic_load_explicit(&queue->states[current_at], memory_order_acquire);
     if (state != TQ_STORED) {
-      __builtin_ia32_pause();
+      usleep(1);
       continue;
     }
   } while (!atomic_compare_exchange_weak_explicit(&queue->at, &current_at, next_at, memory_order_acq_rel, memory_order_relaxed));
 
   while (atomic_load_explicit(&queue->states[current_at], memory_order_acquire) != TQ_STORED) {
-    __builtin_ia32_pause();
+    usleep(1);
   }
 
   atomic_store_explicit(&queue->states[current_at], TQ_RETRIEVING, memory_order_release);
