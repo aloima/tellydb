@@ -14,7 +14,9 @@ static uint16_t client_count = 0;
 
 static uint32_t last_connection_client_id = 0;
 
-struct Password *default_password = NULL, *empty_password = NULL, *full_password = NULL;
+struct Password *default_password = NULL,
+                *empty_password = NULL,
+                *full_password = NULL;
 
 static bool create_constant_password(struct Password **password, uint64_t permissions) {
   if (posix_memalign((void **) password, 64, sizeof(struct Password)) != 0) {

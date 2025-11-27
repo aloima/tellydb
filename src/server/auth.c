@@ -14,9 +14,9 @@
 #include <openssl/params.h>
 #include <openssl/core_names.h>
 
-static OSSL_LIB_CTX *libctx;
-static OSSL_PROVIDER *prov; 
-static EVP_KDF_CTX *ctx;
+static OSSL_LIB_CTX *libctx = NULL;
+static OSSL_PROVIDER *prov = NULL;
+static EVP_KDF_CTX *ctx = NULL;
 static OSSL_PARAM params[5];
 
 bool initialize_kdf() {
@@ -26,12 +26,14 @@ bool initialize_kdf() {
   }
 
   if ((prov = OSSL_PROVIDER_load(libctx, "default")) == NULL) {
+    OSSL_LIB_CTX_free(libctx);
     write_log(LOG_ERR, "Cannot load KDF provider, because an error occured.");
     return false;;
   }
 
   EVP_KDF *kdf;
   if ((kdf = EVP_KDF_fetch(libctx, "HKDF", NULL)) == NULL) {
+    OSSL_PROVIDER_unload(prov);
     OSSL_LIB_CTX_free(libctx);
     write_log(LOG_ERR, "Cannot fetch HKDF for deriving passwords, because allocation is failed.");
     return false;
@@ -40,6 +42,7 @@ bool initialize_kdf() {
   if ((ctx = EVP_KDF_CTX_new(kdf)) == NULL) {
     OSSL_PROVIDER_unload(prov);
     OSSL_LIB_CTX_free(libctx);
+    EVP_KDF_free(kdf);
     write_log(LOG_ERR, "Cannot create KDF context, because an error occured.");
     return false;
   }
@@ -55,9 +58,9 @@ bool initialize_kdf() {
 }
 
 void free_kdf() {
-  EVP_KDF_CTX_free(ctx);
-  OSSL_PROVIDER_unload(prov);
-  OSSL_LIB_CTX_free(libctx);
+  if (ctx) EVP_KDF_CTX_free(ctx);
+  if (prov) OSSL_PROVIDER_unload(prov);
+  if (libctx) OSSL_LIB_CTX_free(libctx);
 }
 
 static bool password_derive(char *value, const size_t value_len, unsigned char *out) {

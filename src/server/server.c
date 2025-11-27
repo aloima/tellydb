@@ -7,11 +7,16 @@
 #include <time.h>
 
 #if defined(__linux__)
-#include <sys/epoll.h>
+  #include <sys/epoll.h>
+
+  #define CREATE_EVENTFD() epoll_create1(0)
 #elif defined(__APPLE__)
-#include <sys/event.h>
-#include <sys/time.h>
+  #include <sys/event.h>
+  #include <sys/time.h>
+
+  #define CREATE_EVENTFD() kqueue()
 #endif
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -20,33 +25,6 @@
 
 #include <openssl/ssl.h>
 #include <openssl/crypto.h>
-
-#define FREE_CONF_LOGS(server) {\
-  save_and_close_logs();\
-  free_configuration(server->conf);\
-}
-
-#define FREE_CTX_THREAD_CMD(server) {\
-  if (server->ctx) SSL_CTX_free((server)->ctx);\
-  deactive_transaction_thread();\
-  usleep(15);\
-  free_commands();\
-}
-
-#define FREE_CTX_THREAD_CMD_SOCKET(server) {\
-  FREE_CTX_THREAD_CMD(server);\
-  close((server)->sockfd);\
-}
-
-#define FREE_CTX_THREAD_CMD_SOCKET_PASS(server) {\
-  FREE_CTX_THREAD_CMD_SOCKET(server);\
-  free_constant_passwords();\
-}
-
-#define FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(server) {\
-  FREE_CTX_THREAD_CMD_SOCKET_PASS(server);\
-  free_kdf();\
-}
 
 static struct Server *server;
 
@@ -70,7 +48,7 @@ void terminate_connection(struct Client *client) {
 
   if (kevent(server->eventfd, &ev, 1, NULL, 0, NULL) == -1) {
 #endif
-    write_log(LOG_ERR, "Cannot remove Client #%" PRIu32 " from multiplexing.", client->id);
+    write_log(LOG_ERR, "Cannot remove Client #%" PRIi32 " from multiplexing.", client->id);
     return;
   }
 
@@ -81,10 +59,30 @@ void terminate_connection(struct Client *client) {
   remove_client(client->id);
 }
 
-static void close_server() {
+static inline void cleanup() {
   free_client_maps();
-  write_log(LOG_INFO, "Terminated all clients.");
+  if (server->ctx) SSL_CTX_free(server->ctx);
+  deactive_transaction_thread();
+  usleep(15);
+  free_commands();
+  close(server->sockfd);
+  free_constant_passwords();
+  free_kdf();
+  close(server->eventfd);
+  free_passwords();
+  free_transactions();
+  free_databases();
+  destroy_io_threads();
 
+  write_log(LOG_INFO, "Free'd all memory blocks and exiting the process...");
+  save_and_close_logs();
+  free_configuration(server->conf);
+
+  free(server);
+  exit(EXIT_SUCCESS);
+}
+
+static inline void close_server() {
   const uint32_t server_age = server->age + difftime(time(NULL), server->start_at);
   const clock_t start = clock();
 
@@ -100,19 +98,7 @@ static void close_server() {
     write_log(LOG_ERR, "Database file cannot be closed.");
   }
 
-  FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(server);
-  close(server->eventfd);
-  free_passwords();
-  free_transactions();
-  free_databases();
-  destroy_io_threads();
-  write_log(LOG_INFO, "Free'd all memory blocks and closed the server.");
-
-  write_log(LOG_INFO, "Closing log file, free'ing configuration and exiting the process...");
-  FREE_CONF_LOGS(server);
-
-  free(server);
-  exit(EXIT_SUCCESS);
+  cleanup();
 }
 
 static void close_signal(int arg) {
@@ -134,24 +120,16 @@ static int initialize_server_ssl() {
 
   if (!server->ctx) {
     write_log(LOG_ERR, "Cannot open SSL context, safely exiting...");
-    FREE_CONF_LOGS(server);
-    free(server);
     return -1;
   }
 
   if (SSL_CTX_use_certificate_file(server->ctx, server->conf->cert, SSL_FILETYPE_PEM) <= 0) {
     write_log(LOG_ERR, "Server certificate file cannot be used.");
-    SSL_CTX_free(server->ctx);
-    FREE_CONF_LOGS(server);
-    free(server);
     return -1;
   }
 
   if (SSL_CTX_use_PrivateKey_file(server->ctx, server->conf->private_key, SSL_FILETYPE_PEM) <= 0 ) {
     write_log(LOG_ERR, "Server private key cannot be used.");
-    SSL_CTX_free(server->ctx);
-    FREE_CONF_LOGS(server);
-    free(server);
     return -1;
   }
 
@@ -161,36 +139,24 @@ static int initialize_server_ssl() {
 
 static int initialize_socket() {
   if ((server->sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-    FREE_CTX_THREAD_CMD(server);
     write_log(LOG_ERR, "Cannot open socket, safely exiting...");
-    FREE_CONF_LOGS(server);
-    free(server);
     return -1;
   }
 
   if (fcntl(server->sockfd, F_SETFL, fcntl(server->sockfd, F_GETFL, 0) | O_NONBLOCK) == -1) {
-    FREE_CTX_THREAD_CMD_SOCKET(server);
     write_log(LOG_ERR, "Cannot set non-blocking socket, safely exiting...");
-    FREE_CONF_LOGS(server);
-    free(server);
     return -1;
   }
 
   const int flag = 1;
 
   if (setsockopt(server->sockfd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) == -1) {
-    FREE_CTX_THREAD_CMD_SOCKET(server);
     write_log(LOG_ERR, "Cannot set no-delay socket, safely exiting...");
-    FREE_CONF_LOGS(server);
-    free(server);
     return -1;
   }
 
   if (setsockopt(server->sockfd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) == -1) {
-    FREE_CTX_THREAD_CMD_SOCKET(server);
     write_log(LOG_ERR, "Cannot set reusable socket, safely exiting...");
-    FREE_CONF_LOGS(server);
-    free(server);
     return -1;
   }
 
@@ -200,18 +166,12 @@ static int initialize_socket() {
   servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 
   if ((bind(server->sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr))) != 0) {
-    FREE_CTX_THREAD_CMD_SOCKET(server);
     write_log(LOG_ERR, "Cannot bind socket and address.");
-    FREE_CONF_LOGS(server);
-    free(server);
     return -1;
   }
 
   if (listen(server->sockfd, 64) != 0) {
-    FREE_CTX_THREAD_CMD_SOCKET(server);
     write_log(LOG_ERR, "Cannot listen socket.");
-    FREE_CONF_LOGS(server);
-    free(server);
     return -1;
   }
 
@@ -220,16 +180,12 @@ static int initialize_socket() {
 
 static int initialize_authorization() {
   if (!create_constant_passwords()) {
-    FREE_CTX_THREAD_CMD_SOCKET(server);
-    FREE_CONF_LOGS(server);
-    free(server);
+    cleanup();
     return -1;
   }
 
   if (!initialize_kdf()) {
-    FREE_CTX_THREAD_CMD_SOCKET_PASS(server);
-    FREE_CONF_LOGS(server);
-    free(server);
+    cleanup();
     return -1;
   }
 
@@ -248,7 +204,7 @@ void start_server(struct Configuration *config) {
     write_log(LOG_INFO, "Initialized logs and configuration.");
   }
 
-  pid_t pid = getpid();
+  const pid_t pid = getpid();
   write_log(LOG_INFO, "version: " VERSION ", commit hash: " GIT_HASH ", process id: %d", pid);
 
   if (server->conf->default_conf) {
@@ -257,7 +213,7 @@ void start_server(struct Configuration *config) {
 
   if (server->conf->tls) {
     if (initialize_server_ssl() == -1) {
-      free(server);
+      cleanup();
       return;
     }
   } else {
@@ -277,32 +233,25 @@ void start_server(struct Configuration *config) {
   signal(SIGINT, close_signal);
 
   if (initialize_socket() == -1) {
+    cleanup();
     return;
   }
 
   if (initialize_authorization() == -1) {
+    cleanup();
     return;
   }
 
   if (!open_database_fd(&server->age)) {
-    FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(server);
-    FREE_CONF_LOGS(server);
-    free(server);
+    cleanup();
     return;
   }
 
   write_log(LOG_INFO, "tellydb server age: %" PRIu32 " seconds", server->age);
 
-#if defined(__linux__)
-  if ((server->eventfd = epoll_create1(0)) == -1) {
-#elif defined(__APPLE__)
-  if ((server->eventfd = kqueue()) == -1) {
-#endif
-    FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(server);
-    close_database_fd();
+  if ((server->eventfd = CREATE_EVENTFD()) == -1) {
 		write_log(LOG_ERR, "Cannot create epoll instance.");
-    FREE_CONF_LOGS(server);
-    free(server);
+    cleanup();
     return;
   }
 
@@ -318,21 +267,13 @@ void start_server(struct Configuration *config) {
 
   if (kevent(server->eventfd, &event, 1, NULL, 0, NULL) == -1) {
 #endif
-    FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(server);
-    close_database_fd();
-    close(server->eventfd);
     write_log(LOG_ERR, "Cannot add server to event instance.");
-    FREE_CONF_LOGS(server);
-    free(server);
+    cleanup();
     return;
   }
 
   if (!initialize_client_maps()) {
-    FREE_CTX_THREAD_CMD_SOCKET_PASS_KDF(server);
-    close_database_fd();
-    close(server->eventfd);
-    FREE_CONF_LOGS(server);
-    free(server);
+    cleanup();
     return;
   }
 

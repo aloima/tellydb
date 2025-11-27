@@ -4,8 +4,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-static struct Command *commands;
-static uint32_t command_count;
+static struct Command *commands = NULL;
+static uint32_t command_count = 0;
 
 struct Command *load_commands() {
   const struct Command command_list[] = {
@@ -80,7 +80,7 @@ struct Command *load_commands() {
 }
 
 void free_commands() {
-  free(commands);
+  if (commands) free(commands);
 }
 
 struct Command *get_commands() {
