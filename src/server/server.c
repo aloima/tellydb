@@ -10,11 +10,26 @@
   #include <sys/epoll.h>
 
   #define CREATE_EVENTFD() epoll_create1(0)
+
+  #define CREATE_EVENT(event, sockfd) do { \
+    (event).events = EPOLLIN; \
+    (event).data.fd = (sockfd); \
+  } while (0)
+
+  #define ADD_EVENT(eventfd, sockfd, event) epoll_ctl((eventfd), EPOLL_CTL_ADD, (sockfd), &(event))
+
+  #define REMOVE_EVENT(eventfd, connfd) epoll_ctl((eventfd), EPOLL_CTL_DEL, (connfd), NULL)
+  #define PREPARE_REMOVING_EVENT(ev, connfd) (void) ev, (void) connfd
 #elif defined(__APPLE__)
   #include <sys/event.h>
   #include <sys/time.h>
 
   #define CREATE_EVENTFD() kqueue()
+  #define CREATE_EVENT(event, sockfd) EV_SET(&(event), (sockfd), EVFILT_READ, EV_ADD, 0, 0, NULL)
+  #define ADD_EVENT(eventfd, sockfd, event) kevent((eventfd), &(event), 1, NULL, 0, NULL)
+
+  #define REMOVE_EVENT(eventfd, connfd) kevent(server->eventfd, &ev, 1, NULL, 0, NULL)
+  #define PREPARE_REMOVING_EVENT(ev, connfd) EV_SET(&(ev), (connfd), EVFILT_READ, EV_DELETE, 0, 0, NULL)
 #endif
 
 #include <sys/socket.h>
@@ -28,6 +43,31 @@
 
 static struct Server *server;
 
+#define CLEANUP_RETURN_IF(condition) do { \
+  if (condition) { \
+    cleanup(); \
+    return; \
+  } \
+} while (0)
+
+#define CLEANUP_RETURN_LOG_IF(condition, fmt, ...) do { \
+  if (condition) { \
+    write_log(LOG_ERR, (fmt), ##__VA_ARGS__); \
+    cleanup(); \
+    return; \
+  } \
+} while (0)
+
+#define LOG_RETURN(value, fmt, ...) do { \
+  write_log(LOG_ERR, (fmt), ##__VA_ARGS__); \
+  return (value); \
+} while (0)
+
+#define LOG_NO_RETURN_VALUE(fmt, ...) do { \
+  write_log(LOG_ERR, (fmt), ##__VA_ARGS__); \
+  return; \
+} while (0)
+
 struct Configuration *get_server_configuration() {
   return server->conf;
 }
@@ -39,22 +79,14 @@ void get_server_time(time_t *server_start_at, uint32_t *server_age) {
 
 void terminate_connection(struct Client *client) {
   const int connfd = client->connfd;
+  event_t ev;
+  PREPARE_REMOVING_EVENT(ev, connfd);
 
-#if defined(__linux__)
-  if (epoll_ctl(server->eventfd, EPOLL_CTL_DEL, connfd, NULL) == -1) {
-#elif defined(__APPLE__)
-  struct kevent ev;
-  EV_SET(&ev, connfd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+  if (REMOVE_EVENT(server->eventfd, connfd) == -1)
+    LOG_NO_RETURN_VALUE("Cannot remove Client #%" PRIi32 " from multiplexing.", client->id);
 
-  if (kevent(server->eventfd, &ev, 1, NULL, 0, NULL) == -1) {
-#endif
-    write_log(LOG_ERR, "Cannot remove Client #%" PRIi32 " from multiplexing.", client->id);
-    return;
-  }
+  write_log(LOG_DBG, "Client #%" PRIi32 " is disconnected.", client->id);
 
-  write_log(LOG_DBG, "Client #%" PRIu32 " is disconnected.", client->id);
-
-  if (server->conf->tls) SSL_shutdown(client->ssl);
   close(connfd);
   remove_client(client->id);
 }
@@ -117,47 +149,32 @@ static void close_signal(int arg) {
 
 static int initialize_server_ssl() {
   server->ctx = SSL_CTX_new(TLS_server_method());
+  if (!server->ctx) LOG_RETURN(-1, "Cannot open SSL context for server.");
 
-  if (!server->ctx) {
-    write_log(LOG_ERR, "Cannot open SSL context, safely exiting...");
-    return -1;
-  }
+  if (SSL_CTX_use_certificate_file(server->ctx, server->conf->cert, SSL_FILETYPE_PEM) <= 0)
+    LOG_RETURN(-1, "Server certificate file is malformed.");
 
-  if (SSL_CTX_use_certificate_file(server->ctx, server->conf->cert, SSL_FILETYPE_PEM) <= 0) {
-    write_log(LOG_ERR, "Server certificate file cannot be used.");
-    return -1;
-  }
-
-  if (SSL_CTX_use_PrivateKey_file(server->ctx, server->conf->private_key, SSL_FILETYPE_PEM) <= 0 ) {
-    write_log(LOG_ERR, "Server private key cannot be used.");
-    return -1;
-  }
+  if (SSL_CTX_use_PrivateKey_file(server->ctx, server->conf->private_key, SSL_FILETYPE_PEM) <= 0)
+    LOG_RETURN(-1, "Server private key is malformed.");
 
   write_log(LOG_INFO, "Created SSL context.");
   return 0;
 }
 
 static int initialize_socket() {
-  if ((server->sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-    write_log(LOG_ERR, "Cannot open socket, safely exiting...");
-    return -1;
+  if ((server->sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) LOG_RETURN(-1, "Cannot open socket.");
+  const int sockfd = server->sockfd;
+
+  if (fcntl(sockfd, F_SETFL, fcntl(server->sockfd, F_GETFL, 0) | O_NONBLOCK) == -1) LOG_RETURN(-1, "Cannot set non-blocking socket.");
+
+  { // Flags needs to be defined as independently, it may be change.
+    const int flag = 1;
+    if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) == -1) LOG_RETURN(-1, "Cannot set no-delay socket.");
   }
 
-  if (fcntl(server->sockfd, F_SETFL, fcntl(server->sockfd, F_GETFL, 0) | O_NONBLOCK) == -1) {
-    write_log(LOG_ERR, "Cannot set non-blocking socket, safely exiting...");
-    return -1;
-  }
-
-  const int flag = 1;
-
-  if (setsockopt(server->sockfd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) == -1) {
-    write_log(LOG_ERR, "Cannot set no-delay socket, safely exiting...");
-    return -1;
-  }
-
-  if (setsockopt(server->sockfd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) == -1) {
-    write_log(LOG_ERR, "Cannot set reusable socket, safely exiting...");
-    return -1;
+  {
+    const int flag = 1;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) == -1) LOG_RETURN(-1, "Cannot set reusable socket.");
   }
 
   struct sockaddr_in servaddr;
@@ -165,29 +182,15 @@ static int initialize_socket() {
   servaddr.sin_port = htons(server->conf->port);
   servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-  if ((bind(server->sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr))) != 0) {
-    write_log(LOG_ERR, "Cannot bind socket and address.");
-    return -1;
-  }
-
-  if (listen(server->sockfd, 64) != 0) {
-    write_log(LOG_ERR, "Cannot listen socket.");
-    return -1;
-  }
+  if ((bind(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr))) != 0) LOG_RETURN(-1, "Cannot bind socket and address.");
+  if (listen(sockfd, 64) != 0) LOG_RETURN(-1, "Cannot listen socket.");
 
   return 0;
 }
 
 static int initialize_authorization() {
-  if (!create_constant_passwords()) {
-    cleanup();
-    return -1;
-  }
-
-  if (!initialize_kdf()) {
-    cleanup();
-    return -1;
-  }
+  if (!create_constant_passwords()) return -1;
+  if (!initialize_kdf()) return -1;
 
   write_log(LOG_INFO, "Created constant passwords and key deriving algorithm.");
   return 0;
@@ -211,12 +214,8 @@ void start_server(struct Configuration *config) {
     write_log(LOG_WARN, "No configuration file. To specify, create .tellyconf or use `telly config /path/to/file`.");
   }
 
-  if (server->conf->tls) {
-    if (initialize_server_ssl() == -1) {
-      cleanup();
-      return;
-    }
-  } else {
+  if (server->conf->tls) CLEANUP_RETURN_IF(initialize_server_ssl() == -1);
+  else {
     server->ctx = NULL;
   }
 
@@ -226,56 +225,26 @@ void start_server(struct Configuration *config) {
   create_transaction_thread();
   write_log(LOG_INFO, "Created transaction thread.");
 
-  create_io_threads(4);
+  CLEANUP_RETURN_LOG_IF(!create_io_threads(4), "Cannot create I/O threads.");
   write_log(LOG_INFO, "Created I/O thread.");
 
   signal(SIGTERM, close_signal);
   signal(SIGINT, close_signal);
 
-  if (initialize_socket() == -1) {
-    cleanup();
-    return;
-  }
-
-  if (initialize_authorization() == -1) {
-    cleanup();
-    return;
-  }
-
-  if (!open_database_fd(&server->age)) {
-    cleanup();
-    return;
-  }
+  CLEANUP_RETURN_IF(initialize_socket() == -1);
+  CLEANUP_RETURN_IF(initialize_authorization() == -1);
+  CLEANUP_RETURN_IF(!open_database_fd(&server->age));
 
   write_log(LOG_INFO, "tellydb server age: %" PRIu32 " seconds", server->age);
 
-  if ((server->eventfd = CREATE_EVENTFD()) == -1) {
-		write_log(LOG_ERR, "Cannot create epoll instance.");
-    cleanup();
-    return;
-  }
+  server->eventfd = CREATE_EVENTFD();
+  CLEANUP_RETURN_LOG_IF(server->eventfd == -1, "Cannot create epoll instance.");
 
   event_t event;
+  CREATE_EVENT(event, server->sockfd);
+  CLEANUP_RETURN_LOG_IF(ADD_EVENT(server->eventfd, server->sockfd, event) == -1, "Cannot create epoll instance.");
 
-#if defined(__linux__)
-  event.events = EPOLLIN;
-  event.data.fd = server->sockfd;
-
-  if (epoll_ctl(server->eventfd, EPOLL_CTL_ADD, server->sockfd, &event) == -1) {
-#elif defined(__APPLE__)
-  EV_SET(&event, server->sockfd, EVFILT_READ, EV_ADD, 0, 0, NULL);
-
-  if (kevent(server->eventfd, &event, 1, NULL, 0, NULL) == -1) {
-#endif
-    write_log(LOG_ERR, "Cannot add server to event instance.");
-    cleanup();
-    return;
-  }
-
-  if (!initialize_client_maps()) {
-    cleanup();
-    return;
-  }
+  CLEANUP_RETURN_IF(!initialize_client_maps());
 
   server->start_at = time(NULL);
   write_log(LOG_INFO, "Server is listening on %" PRIu16 " port for accepting connections...", server->conf->port);

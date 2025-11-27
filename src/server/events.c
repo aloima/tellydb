@@ -32,7 +32,6 @@
   #define WAIT_EVENTS(eventfd, events, count) kevent((eventfd), NULL, 0, (events), (count), NULL)
   #define GET_EVENT_DATA(event) (event).udata
   #define IS_CONNECTION_CLOSED(event) ((event).flags & EV_EOF)
-
   #define ADD_TO_MULTIPLEXING(eventfd, connfd, event) kevent((eventfd), &(event), 1, NULL, 0, NULL)
 
   #define PREPARE_EVENT(event, client, connfd) \
