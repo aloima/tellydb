@@ -78,7 +78,7 @@ void terminate_connection(struct Client *client) {
 
   if (server->conf->tls) SSL_shutdown(client->ssl);
   close(connfd);
-  remove_client(connfd);
+  remove_client(client->id);
 }
 
 static void close_server() {
@@ -105,6 +105,7 @@ static void close_server() {
   free_passwords();
   free_transactions();
   free_databases();
+  destroy_io_threads();
   write_log(LOG_INFO, "Free'd all memory blocks and closed the server.");
 
   write_log(LOG_INFO, "Closing log file, free'ing configuration and exiting the process...");
@@ -268,6 +269,9 @@ void start_server(struct Configuration *config) {
 
   create_transaction_thread();
   write_log(LOG_INFO, "Created transaction thread.");
+
+  create_io_threads(4);
+  write_log(LOG_INFO, "Created I/O thread.");
 
   signal(SIGTERM, close_signal);
   signal(SIGINT, close_signal);

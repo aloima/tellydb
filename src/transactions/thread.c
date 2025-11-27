@@ -22,32 +22,31 @@ void *transaction_thread(void *arg) {
   pthread_sigmask(SIG_BLOCK, &set, NULL);
 
   while (!atomic_load_explicit(&killed, memory_order_acquire)) {
-    uint64_t idx = 0;
-    struct TransactionBlock *block = get_tqueue_value(variables->queue, idx);
+    //uint64_t idx = 0;
     bool found = false;
+    struct TransactionBlock block;
 
-    while (block != NULL) {
+    while (pop_tqueue(variables->queue, &block)) {
       found = true;
 
-      if (!block->waiting) {
+      if (!block.waiting) {
         struct Client *client;
 
-        if (block->client->id != -1) {
-          client = block->client;
+        if (block.client->id != -1) {
+          client = block.client;
           __builtin_prefetch(client, 0, 3);
         } else {
           client = NULL;
         }
 
-        execute_transaction_block(block, client);
-        remove_transaction_block(block, true);
+        execute_transaction_block(&block, client);
+        remove_transaction_block(&block, true);
 
-        if (idx == 0) pop_tqueue(variables->queue);
         break;
       }
 
-      idx += 1;
-      block = get_tqueue_value(variables->queue, idx);
+      //idx += 1;
+      //block = get_tqueue_value(variables->queue, idx);
     }
 
     if (!found) {

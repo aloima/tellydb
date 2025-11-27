@@ -12,6 +12,7 @@ enum ProtocolVersion {
 };
 
 struct TransactionBlock;
+#define RESP_BUF_SIZE 4096
 
 struct Client {
   SSL *ssl;
@@ -28,17 +29,18 @@ struct Client {
 
   bool locked;
   struct TransactionBlock *waiting_block;
+
+  char read_buf[RESP_BUF_SIZE];
 };
 
 bool initialize_client_maps();
 void free_client_maps();
 
-struct Client *get_client(const int input);
-struct Client *get_client_from_id(const uint32_t id);
+struct Client *get_client(const uint32_t id);
 
 uint32_t get_last_connection_client_id();
 struct Client *get_clients();
 uint16_t get_client_count();
 
 struct Client *add_client(const int connfd);
-bool remove_client(const int connfd);
+bool remove_client(const int id);
