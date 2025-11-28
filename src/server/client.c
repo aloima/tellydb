@@ -78,7 +78,7 @@ uint16_t get_client_count() {
 }
 
 uint32_t get_last_connection_client_id() {
-  return last_connection_client_id;
+  return atomic_load_explicit(&last_connection_client_id, memory_order_relaxed);
 }
 
 bool initialize_client_maps() {
