@@ -97,10 +97,10 @@ static inline void cleanup() {
   deactive_transaction_thread();
   usleep(15);
   free_commands();
-  close(server->sockfd);
+  if (server->sockfd != -1) close(server->sockfd);
   free_constant_passwords();
   free_kdf();
-  close(server->eventfd);
+  if (server->eventfd != -1) close(server->eventfd);
   free_passwords();
   free_transactions();
   free_databases();
@@ -197,8 +197,10 @@ static int initialize_authorization() {
 }
 
 void start_server(struct Configuration *config) {
-  server = malloc(sizeof(struct Server));
+  server = calloc(1, sizeof(struct Server));
   server->conf = config;
+  server->eventfd = -1;
+  server->sockfd = -1;
 
   if (!initialize_logs()) {
     write_log(LOG_ERR, "Cannot initialized logs.");
