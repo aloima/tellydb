@@ -40,8 +40,8 @@ struct Client {
   char read_buf[RESP_BUF_SIZE];
 };
 
-bool initialize_client_maps();
-void free_client_maps();
+bool initialize_clients();
+void free_clients();
 
 struct Client *get_client(const uint32_t id);
 

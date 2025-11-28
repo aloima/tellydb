@@ -98,7 +98,7 @@ void terminate_connection(struct Client *client) {
 }
 
 static inline void cleanup() {
-  free_client_maps();
+  free_clients();
   if (server->ctx) SSL_CTX_free(server->ctx);
   deactive_transaction_thread();
   usleep(15);
@@ -252,7 +252,7 @@ void start_server(struct Configuration *config) {
   CREATE_EVENT(event, server->sockfd);
   CLEANUP_RETURN_LOG_IF(ADD_EVENT(server->eventfd, server->sockfd, event) == -1, "Cannot create epoll instance.");
 
-  CLEANUP_RETURN_IF(!initialize_client_maps());
+  CLEANUP_RETURN_IF(!initialize_clients());
 
   server->start_at = time(NULL);
   write_log(LOG_INFO, "Server is listening on %" PRIu16 " port for accepting connections...", server->conf->port);

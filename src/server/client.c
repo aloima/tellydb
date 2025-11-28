@@ -81,7 +81,7 @@ uint32_t get_last_connection_client_id() {
   return atomic_load_explicit(&last_connection_client_id, memory_order_relaxed);
 }
 
-bool initialize_client_maps() {
+bool initialize_clients() {
   conf = get_server_configuration();
   atomic_init(&client_count, 0);
   atomic_init(&last_connection_client_id, 1);
@@ -169,7 +169,7 @@ bool remove_client(const int id) {
   return true;
 }
 
-void free_client_maps() {
+void free_clients() {
   for (uint16_t i = 0; i < conf->max_clients; ++i) {
     if (clients[i].id != -1) {
       remove_client(clients[i].connfd);
