@@ -28,7 +28,7 @@
   #define CREATE_EVENT(event, sockfd) EV_SET(&(event), (sockfd), EVFILT_READ, EV_ADD, 0, 0, NULL)
   #define ADD_EVENT(eventfd, sockfd, event) kevent((eventfd), &(event), 1, NULL, 0, NULL)
 
-  #define REMOVE_EVENT(eventfd, connfd) kevent(server->eventfd, &ev, 1, NULL, 0, NULL)
+  #define REMOVE_EVENT(eventfd, connfd) kevent((eventfd), &ev, 1, NULL, 0, NULL)
   #define PREPARE_REMOVING_EVENT(ev, connfd) EV_SET(&(ev), (connfd), EVFILT_READ, EV_DELETE, 0, 0, NULL)
 #endif
 
