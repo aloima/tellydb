@@ -22,6 +22,6 @@ struct Configuration {
 };
 
 struct Configuration *get_configuration(const char *filename);
-struct Configuration get_default_configuration();
-size_t get_configuration_string(char *buf, struct Configuration conf);
+struct Configuration *get_default_configuration();
+size_t get_configuration_string(char *buf, struct Configuration *conf);
 void free_configuration(struct Configuration *conf);

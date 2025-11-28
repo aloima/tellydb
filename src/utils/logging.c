@@ -100,8 +100,8 @@ bool initialize_logs() {
 }
 
 void write_log(enum LogLevel level, const char *fmt, ...) {
-  struct Configuration conf = _conf ? *_conf : get_default_configuration();
-  const uint8_t check = (conf.allowed_log_levels & level);
+  struct Configuration *conf = _conf ?: get_default_configuration();
+  const uint8_t check = (conf->allowed_log_levels & level);
 
   char time_text[21];
   generate_date_string(time_text, time(NULL));
@@ -147,7 +147,7 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
   fputs(message, stream);
 
   if (fd != -1) {
-    if (conf.max_log_lines == -1) {
+    if (conf->max_log_lines == -1) {
       log_lines += 1;
 
       if (log_lines != 1) lines = realloc(lines, log_lines * sizeof(char *));
@@ -158,7 +158,7 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
       lines[at] = malloc(size);
       memcpy(lines[at], message, (message_len + 1));
     } else {
-      if (log_lines == conf.max_log_lines) {
+      if (log_lines == conf->max_log_lines) {
         const int32_t at = (log_lines - 1);
         char *line = lines[0];
 

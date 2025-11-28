@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
-static constexpr struct Configuration default_conf = {
+static struct Configuration default_conf = {
   .port = 6379,
   .max_clients = 128,
   .max_transaction_blocks = 262144,
@@ -144,9 +144,9 @@ struct Configuration parse_configuration(FILE *file) {
   return conf;
 }
 
-size_t get_configuration_string(char *buf, struct Configuration conf) {
+size_t get_configuration_string(char *buf, struct Configuration *conf) {
   char allowed_log_levels[5];
-  get_allowed_log_levels(allowed_log_levels, &conf);
+  get_allowed_log_levels(allowed_log_levels, conf);
 
   return sprintf(buf, (
     "# TCP server port\n"
@@ -192,13 +192,13 @@ size_t get_configuration_string(char *buf, struct Configuration conf) {
     "TLS=%s\n"
     "CERT=%s\n"
     "PRIVATE_KEY=%s\n"
-  ), conf.port, conf.max_clients, conf.max_transaction_blocks, allowed_log_levels, conf.max_log_lines, conf.data_file, conf.log_file, conf.database_name,
-     conf.tls ? "true" : "false", conf.cert, conf.private_key
+  ), conf->port, conf->max_clients, conf->max_transaction_blocks, allowed_log_levels, conf->max_log_lines, conf->data_file, conf->log_file, conf->database_name,
+     conf->tls ? "true" : "false", conf->cert, conf->private_key
   );
 }
 
-struct Configuration get_default_configuration() {
-  return default_conf;
+struct Configuration *get_default_configuration() {
+  return &default_conf;
 }
 
 struct Configuration *get_configuration(const char *filename) {
