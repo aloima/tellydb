@@ -41,7 +41,7 @@ static void read_command(struct Client *client) {
   int32_t size = _read(client, client->read_buf, RESP_BUF_SIZE);
 
   if (size == 0) {
-    terminate_connection(client);
+    add_io_request(IOOP_TERMINATE, client);
     return;
   }
 
@@ -102,6 +102,10 @@ void *handle_io_requests(void *arg) {
     switch (op.type) {
       case IOOP_GET_COMMAND:
         read_command(op.client);
+        break;
+
+      case IOOP_TERMINATE:
+        terminate_connection(op.client);
         break;
 
       default:

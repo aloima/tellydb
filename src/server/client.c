@@ -1,3 +1,4 @@
+#include <stdatomic.h>
 #include <telly.h>
 
 #include <stdbool.h>
@@ -7,12 +8,11 @@
 
 #include <openssl/ssl.h>
 
-// TODO: make thread-safe
 static struct Configuration *conf;
-static struct Client *clients = NULL;
-static uint16_t client_count = 0;
 
-static uint32_t last_connection_client_id = 0;
+static struct Client *clients = NULL;
+static _Atomic uint16_t client_count;
+static _Atomic uint32_t last_connection_client_id;
 
 struct Password *default_password = NULL,
                 *empty_password = NULL,
@@ -74,7 +74,7 @@ struct Client *get_clients() {
 }
 
 uint16_t get_client_count() {
-  return client_count;
+  return atomic_load_explicit(&client_count, memory_order_relaxed);
 }
 
 uint32_t get_last_connection_client_id() {
@@ -83,6 +83,9 @@ uint32_t get_last_connection_client_id() {
 
 bool initialize_client_maps() {
   conf = get_server_configuration();
+  atomic_init(&client_count, 0);
+  atomic_init(&last_connection_client_id, 1);
+
   const size_t size = (sizeof(struct Client) * conf->max_clients);
 
   if (posix_memalign((void **) &clients, 16, size) != 0) {
@@ -113,12 +116,10 @@ static inline struct Client *insert_client(struct Client *client) {
 }
 
 struct Client *add_client(const int connfd) {
+  atomic_fetch_add_explicit(&client_count, 1, memory_order_relaxed);
+  
   struct Client client;
-
-  client_count += 1;
-  last_connection_client_id += 1;
-
-  client.id = last_connection_client_id;
+  client.id = atomic_fetch_add_explicit(&last_connection_client_id, 1, memory_order_relaxed);
   client.connfd = connfd;
   time(&client.connected_at);
   client.database = get_main_database();
@@ -129,6 +130,7 @@ struct Client *add_client(const int connfd) {
   client.protover = RESP2;
   client.locked = false;
   client.waiting_block = NULL;
+  atomic_init(&client.state, CLIENT_STATE_ACTIVE);
 
   if (get_password_count() == 0) {
     client.password = default_password;
@@ -152,7 +154,7 @@ bool remove_client(const int id) {
   }
 
   client->id = -1;
-  client_count -= 1;
+  atomic_fetch_sub_explicit(&client_count, 1, memory_order_relaxed);
 
   if (client->ssl) {
     SSL_shutdown(client->ssl);
@@ -162,6 +164,7 @@ bool remove_client(const int id) {
   if (client->lib_name) free(client->lib_name);
   if (client->lib_ver) free(client->lib_ver);
   if (client->waiting_block) remove_transaction_block(client->waiting_block, false);
+  atomic_store_explicit(&client->state, CLIENT_STATE_EMPTY, memory_order_release);
 
   return true;
 }

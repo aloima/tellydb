@@ -2,27 +2,34 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdatomic.h>
 #include <time.h>
 
 #include <openssl/crypto.h>
 
-enum ProtocolVersion {
+struct TransactionBlock;
+#define RESP_BUF_SIZE 4096
+
+enum ProtocolVersion : uint8_t {
   RESP2 = 2,
   RESP3 = 3
 };
 
-struct TransactionBlock;
-#define RESP_BUF_SIZE 4096
+enum ClientState : uint8_t {
+  CLIENT_STATE_ACTIVE,
+  CLIENT_STATE_PASSIVE,
+  CLIENT_STATE_EMPTY
+};
 
 struct Client {
+  _Atomic enum ClientState state;
+  int id, connfd;
   SSL *ssl;
-  int connfd;
-  int id;
+
   time_t connected_at;
   struct Database *database;
   struct Command *command;
-  char *lib_name;
-  char *lib_ver;
+  char *lib_name, *lib_ver;
 
   struct Password *password;
   enum ProtocolVersion protover;

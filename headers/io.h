@@ -8,6 +8,7 @@
 
 enum IOOpType : uint8_t {
   IOOP_GET_COMMAND,
+  IOOP_TERMINATE,
   IOOP_WRITE
 };
 
