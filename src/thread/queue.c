@@ -7,6 +7,12 @@
 #include <stdint.h>
 #include <stdatomic.h>
 
+#if defined(__x86_64__) || defined(__i386__)
+  #define cpu_relax() __asm__ __volatile__("pause\n" ::: "memory")
+#elif defined(__aarch64__)
+  #define cpu_relax() __asm__ __volatile__("yield\n" ::: "memory")
+#endif
+
 struct ThreadQueue *create_tqueue(const uint64_t capacity, const uint64_t size, const uint64_t align) {
   struct ThreadQueue *queue = malloc(sizeof(struct ThreadQueue));
   if (queue == NULL) return NULL;
@@ -18,7 +24,7 @@ struct ThreadQueue *create_tqueue(const uint64_t capacity, const uint64_t size, 
   }
 
   void *states;
-  if (posix_memalign(&states, 8, capacity * sizeof(_Atomic enum ThreadQueueState)) != 0) {
+  if (posix_memalign(&states, 64, capacity * sizeof(queue->states[0])) != 0) {
     free(data);
     free(queue);
     return NULL;
@@ -28,7 +34,7 @@ struct ThreadQueue *create_tqueue(const uint64_t capacity, const uint64_t size, 
   queue->states = states;
 
   for (uint64_t i = 0; i < capacity; ++i) {
-    atomic_init(&queue->states[i], TQ_EMPTY);
+    atomic_init(&queue->states[i].value, TQ_EMPTY);
   }
 
   atomic_init(&queue->at, 0);
@@ -46,7 +52,7 @@ void free_tqueue(struct ThreadQueue *queue) {
   free(queue);
 }
 
-uint64_t calculate_tqueue_size(const struct ThreadQueue *queue) {
+uint64_t estimate_tqueue_size(const struct ThreadQueue *queue) {
   const uint64_t current_at = atomic_load_explicit(&queue->at, memory_order_acquire);
   const uint64_t current_end = atomic_load_explicit(&queue->end, memory_order_acquire);
 
@@ -62,26 +68,20 @@ void *push_tqueue(struct ThreadQueue *queue, void *value) {
 
   do {
     const uint64_t current_at = atomic_load_explicit(&queue->at, memory_order_acquire);
-    current_end = atomic_load_explicit(&queue->end, memory_order_acquire);
+    current_end = atomic_load_explicit(&queue->end, memory_order_relaxed);
     next_end = ((current_end + 1) % queue->capacity);
 
     if (current_at == next_end) return NULL;
-    
-    const enum ThreadQueueState state = atomic_load_explicit(&queue->states[current_end], memory_order_acquire);
-    if (state != TQ_EMPTY) {
-      usleep(1);
-      continue;
-    }
   } while (!atomic_compare_exchange_weak_explicit(&queue->end, &current_end, next_end, memory_order_acq_rel, memory_order_relaxed));
 
-  while (atomic_load_explicit(&queue->states[current_end], memory_order_acquire) != TQ_EMPTY) {
-    usleep(1);
+  while (atomic_load_explicit(&queue->states[current_end].value, memory_order_acquire) != TQ_EMPTY) {
+    cpu_relax();
   }
 
-  atomic_store_explicit(&queue->states[current_end], TQ_STORING, memory_order_release);
+  atomic_store_explicit(&queue->states[current_end].value, TQ_STORING, memory_order_relaxed);
   char *dst = ((char *) queue->data + (current_end * queue->type));
   memcpy(dst, value, queue->type);
-  atomic_store_explicit(&queue->states[current_end], TQ_STORED, memory_order_release);
+  atomic_store_explicit(&queue->states[current_end].value, TQ_STORED, memory_order_release);
 
   return dst;
 }
@@ -95,22 +95,16 @@ bool pop_tqueue(struct ThreadQueue *queue, void *dest) {
     if (current_end == current_at) return false;
 
     next_at = ((current_at + 1) % queue->capacity);
-
-    const enum ThreadQueueState state = atomic_load_explicit(&queue->states[current_at], memory_order_acquire);
-    if (state != TQ_STORED) {
-      usleep(1);
-      continue;
-    }
   } while (!atomic_compare_exchange_weak_explicit(&queue->at, &current_at, next_at, memory_order_acq_rel, memory_order_relaxed));
 
-  while (atomic_load_explicit(&queue->states[current_at], memory_order_acquire) != TQ_STORED) {
-    usleep(1);
+  while (atomic_load_explicit(&queue->states[current_at].value, memory_order_acquire) != TQ_STORED) {
+    cpu_relax();
   }
 
-  atomic_store_explicit(&queue->states[current_at], TQ_RETRIEVING, memory_order_release);
+  atomic_store_explicit(&queue->states[current_at].value, TQ_RETRIEVING, memory_order_relaxed);
   char *src = ((char *) queue->data + (current_at * queue->type));
   memcpy(dest, src, queue->type);
-  atomic_store_explicit(&queue->states[current_at], TQ_EMPTY, memory_order_release);
+  atomic_store_explicit(&queue->states[current_at].value, TQ_EMPTY, memory_order_release);
 
   return true;
 }

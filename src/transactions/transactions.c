@@ -15,12 +15,10 @@ void initialize_transactions() {
   variables = get_transaction_variables();
 }
 
-// Accessed by thread
 uint32_t get_transaction_count() {
-  return calculate_tqueue_size(variables->queue);
+  return estimate_tqueue_size(variables->queue);
 }
 
-// Accessed by thread
 uint64_t get_processed_transaction_count() {
   return processed_transaction_count;
 }
@@ -37,7 +35,6 @@ static inline void prepare_transaction(
   transaction->database = client->database;
 }
 
-// Accessed by process
 bool add_transaction(struct Client *client, const uint64_t command_idx, commanddata_t *data) {
   if (client->waiting_block == NULL || IS_RELATED_TO_WAITING_TX(command_idx)) {
     struct TransactionBlock block;
@@ -50,7 +47,7 @@ bool add_transaction(struct Client *client, const uint64_t command_idx, commandd
     prepare_transaction(&block.transactions[0], client, command_idx, data);
     push_tqueue(variables->queue, &block);
 
-    if (calculate_tqueue_size(variables->queue) - atomic_load_explicit(&variables->waiting_count, memory_order_relaxed) == 1) {
+    if (estimate_tqueue_size(variables->queue) - atomic_load_explicit(&variables->waiting_count, memory_order_relaxed) == 1) {
       pthread_mutex_lock(&variables->mutex);
       pthread_cond_signal(&variables->cond);
       pthread_mutex_unlock(&variables->mutex);
@@ -65,7 +62,6 @@ bool add_transaction(struct Client *client, const uint64_t command_idx, commandd
   return true;
 }
 
-// Accessed by thread
 void remove_transaction_block(struct TransactionBlock *block, const bool processed) {
   if (processed) {
     processed_transaction_count += block->transaction_count;
@@ -84,11 +80,10 @@ void remove_transaction_block(struct TransactionBlock *block, const bool process
   block->waiting = false;
 }
 
-// Accessed by process
 void free_transactions() {
   struct ThreadQueue *queue = variables->queue;
 
-  while (calculate_tqueue_size(queue) != 0) {
+  while (estimate_tqueue_size(queue) != 0) {
     struct TransactionBlock block;
     pop_tqueue(queue, &block);
 
@@ -101,7 +96,6 @@ void free_transactions() {
   free_tqueue(queue);
 }
 
-// Accessed by thread
 void execute_transaction_block(struct TransactionBlock *block, struct Client *client) {
   __builtin_prefetch(block->transactions, 0, 3);
   struct Password *password = block->password;
