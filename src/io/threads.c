@@ -59,7 +59,7 @@ static void read_command(struct Client *client) {
     }
 
     if (client->locked) {
-      free_command_data(data);
+      free_command_data(&data);
       WRITE_ERROR_MESSAGE(client, "Your client is locked, you cannot use any commands until your client is unlocked");
       continue;
     }
@@ -75,7 +75,7 @@ static void read_command(struct Client *client) {
     // client->command = &commands[command_idx];
 
     if (!add_transaction(client, command_idx, &data)) {
-      free_command_data(data);
+      free_command_data(&data);
       WRITE_ERROR_MESSAGE(client, "Transaction cannot be enqueued because of server settings");
       write_log(LOG_WARN, "Transaction count reached their limit, so next transactions cannot be added.");
       return;

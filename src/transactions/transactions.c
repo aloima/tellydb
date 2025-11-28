@@ -68,8 +68,8 @@ void remove_transaction_block(struct TransactionBlock *block, const bool process
   }
 
   for (uint64_t i = 0; i < block->transaction_count; ++i) {
-    struct Transaction transaction = block->transactions[i];
-    free_command_data(transaction.data);
+    struct Transaction *transaction = &block->transactions[i];
+    free_command_data(&transaction->data);
   }
 
   free(block->transactions);
@@ -88,8 +88,8 @@ void free_transactions() {
     pop_tqueue(queue, &block);
 
     for (uint32_t i = 0; i < block.transaction_count; ++i) {
-      struct Transaction transaction = block.transactions[i];
-      free_command_data(transaction.data);
+      struct Transaction *transaction = &block.transactions[i];
+      free_command_data(&transaction->data);
     }
   }
 

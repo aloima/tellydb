@@ -9,7 +9,6 @@
 #include <pthread.h>
 #include <unistd.h>
 
-static struct Configuration *conf;
 static pthread_t thread;
 static struct TransactionVariables *variables;
 static _Atomic bool killed;
@@ -63,7 +62,6 @@ void *transaction_thread(void *arg) {
   return NULL;
 }
 
-// Accessed by process
 void deactive_transaction_thread() {
   atomic_store_explicit(&killed, true, memory_order_release);
   pthread_mutex_lock(&variables->mutex);
@@ -71,12 +69,11 @@ void deactive_transaction_thread() {
   pthread_mutex_unlock(&variables->mutex);
 }
 
-// Accessed by process
 void create_transaction_thread() {
-  conf = get_server_configuration();
   variables = get_transaction_variables();
   initialize_transactions();
 
+  struct Configuration *conf = get_server_configuration();
   variables->commands = get_commands();
   variables->queue = create_tqueue(conf->max_transaction_blocks, sizeof(struct TransactionBlock), _Alignof(struct TransactionBlock));
   if (variables->queue == NULL) return write_log(LOG_ERR, "Cannot allocate transaction blocks, out of memory.");

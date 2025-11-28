@@ -15,12 +15,12 @@ bool get_command_data(struct Client *client, char *buf, int32_t *at, int32_t *si
   }
 }
 
-void free_command_data(commanddata_t command) {
-  if (command.arg_count != 0) {
-    for (uint32_t i = 0; i < command.arg_count; ++i) {
-      free(command.args[i].value);
+void free_command_data(commanddata_t *command) {
+  if (command->arg_count != 0) {
+    for (uint32_t i = 0; i < command->arg_count; ++i) {
+      free(command->args[i].value);
     }
 
-    free(command.args);
+    free(command->args);
   }
 }
