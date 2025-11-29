@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdatomic.h>
 
+#include <semaphore.h>
 #include <pthread.h>
 
 enum IOThreadStatus : uint8_t {
@@ -27,6 +28,8 @@ struct IOThread {
 static struct IOThread *threads = NULL;
 static struct ThreadQueue *queue = NULL;
 static uint32_t thread_count = 0;
+
+static sem_t *sem = NULL;
 
 static inline void unknown_command(struct Client *client, commandname_t name) {
   char buf[COMMAND_NAME_MAX_LENGTH + 22];
@@ -93,10 +96,8 @@ void *handle_io_requests(void *arg) {
   while (atomic_load_explicit(&thread->status, memory_order_acquire) == ACTIVE) {
     struct IOOperation op;
 
-    if (!pop_tqueue(queue, &op)) {
-      usleep(1);
-      continue;
-    }
+    sem_wait(sem);
+    if (!pop_tqueue(queue, &op)) continue;
 
     switch (op.type) {
       case IOOP_GET_COMMAND:
@@ -119,10 +120,14 @@ void *handle_io_requests(void *arg) {
 void add_io_request(const enum IOOpType type, struct Client *client) {
   struct IOOperation op = {type, client};
   push_tqueue(queue, &op);
+  sem_post(sem);
 }
 
 bool create_io_threads(const uint32_t count) {
   bool success = false;
+
+  sem = malloc(sizeof(sem_t));
+  if (sem == NULL || sem_init(sem, 0, 0) != 0) goto cleanup;
 
   queue = create_tqueue(128, sizeof(struct IOThread), _Alignof(struct IOThread));
   if (queue == NULL) goto cleanup;
@@ -144,6 +149,7 @@ bool create_io_threads(const uint32_t count) {
     if (detached != 0) goto cleanup;
   }
 
+
   success = true;
 
 cleanup:
@@ -159,6 +165,13 @@ cleanup:
       free(threads);
       threads = NULL;
     }
+
+    if (sem) {
+      for (uint32_t i = 0; i < count; ++i) sem_post(sem);
+      usleep(5);
+      sem_destroy(sem);
+      free(sem);
+    }
   }
 
   return success;
@@ -172,6 +185,7 @@ void destroy_io_threads() {
 
   for (uint32_t i = 0; i < thread_count; ++i) {
     atomic_store_explicit(&threads[i].status, PASSIVE, memory_order_release);
+    sem_post(sem);
   }
 
   while (true) {
