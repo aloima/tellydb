@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <math.h>
 
 static struct Configuration default_conf = {
   .port = 6379,
@@ -98,7 +99,10 @@ struct Configuration parse_configuration(FILE *file) {
         } else if (streq(buf, "MAX_TRANSACTION_BLOCKS")) {
           buf[0] = '\0';
           parse_value(file, buf);
-          conf.max_transaction_blocks = atoi(buf);
+
+          const int input = atoi(buf);
+          const int value = pow(2, floor(log2(input)));
+          conf.max_transaction_blocks = value;
         } else if (streq(buf, "ALLOWED_LOG_LEVELS")) {
           buf[0] = '\0';
           parse_value(file, buf);
@@ -156,6 +160,7 @@ size_t get_configuration_string(char *buf, struct Configuration *conf) {
     "MAX_CLIENTS=%" PRIu16 "\n\n"
 
     "# Specifies max storable transaction block count, higher values may cause higher resource usage\n"
+    "# 2^n values are possible. If it is not 2^n, it will be rounded down.\n"
     "MAX_TRANSACTION_BLOCKS=%" PRIu32 "\n\n"
 
     "# Allowed log levels:\n"
@@ -192,8 +197,8 @@ size_t get_configuration_string(char *buf, struct Configuration *conf) {
     "TLS=%s\n"
     "CERT=%s\n"
     "PRIVATE_KEY=%s\n"
-  ), conf->port, conf->max_clients, conf->max_transaction_blocks, allowed_log_levels, conf->max_log_lines, conf->data_file, conf->log_file, conf->database_name,
-     conf->tls ? "true" : "false", conf->cert, conf->private_key
+  ), conf->port, conf->max_clients, conf->max_transaction_blocks, allowed_log_levels, conf->max_log_lines, conf->data_file,
+     conf->log_file, conf->database_name, conf->tls ? "true" : "false", conf->cert, conf->private_key
   );
 }
 

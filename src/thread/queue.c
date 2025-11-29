@@ -68,7 +68,7 @@ void *push_tqueue(struct ThreadQueue *queue, void *value) {
   do {
     const uint64_t current_at = atomic_load_explicit(&queue->at, memory_order_acquire);
     current_end = atomic_load_explicit(&queue->end, memory_order_relaxed);
-    next_end = ((current_end + 1) % queue->capacity);
+    next_end = ((current_end + 1) & (queue->capacity - 1));
 
     if (current_at == next_end) return NULL;
   } while (!atomic_compare_exchange_weak_explicit(&queue->end, &current_end, next_end, memory_order_acq_rel, memory_order_relaxed));
@@ -93,7 +93,7 @@ bool pop_tqueue(struct ThreadQueue *queue, void *dest) {
     current_at = atomic_load_explicit(&queue->at, memory_order_relaxed);
     if (current_end == current_at) return false;
 
-    next_at = ((current_at + 1) % queue->capacity);
+    next_at = ((current_at + 1) & (queue->capacity - 1));
   } while (!atomic_compare_exchange_weak_explicit(&queue->at, &current_at, next_at, memory_order_acq_rel, memory_order_relaxed));
 
   while (atomic_load_explicit(&queue->states[current_at].value, memory_order_acquire) != TQ_STORED) {
