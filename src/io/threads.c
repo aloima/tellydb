@@ -29,11 +29,10 @@ static struct ThreadQueue *queue = NULL;
 static uint32_t thread_count = 0;
 
 static inline void unknown_command(struct Client *client, commandname_t name) {
-  char *buf = malloc(name.len + 22);
+  char buf[COMMAND_NAME_MAX_LENGTH + 22];
   const size_t nbytes = sprintf(buf, "-Unknown command '%s'\r\n", name.value);
 
   _write(client, buf, nbytes);
-  free(buf);
 }
 
 static void read_command(struct Client *client) {

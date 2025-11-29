@@ -1,9 +1,9 @@
-#include <stdatomic.h>
 #include <telly.h>
 
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdatomic.h>
 #include <time.h>
 
 #include <openssl/ssl.h>
@@ -29,7 +29,7 @@ static bool create_constant_password(struct Password **password, uint64_t permis
 }
 
 bool create_constant_passwords() {
-  const uint64_t permissions = (P_READ | P_WRITE | P_CLIENT | P_CONFIG | P_AUTH | P_SERVER);
+  constexpr uint64_t permissions = (P_READ | P_WRITE | P_CLIENT | P_CONFIG | P_AUTH | P_SERVER);
   if (!create_constant_password(&default_password, permissions)) return false;
   if (!create_constant_password(&empty_password, 0)) return false;
   if (!create_constant_password(&full_password, permissions)) return false;
