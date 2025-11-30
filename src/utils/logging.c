@@ -5,6 +5,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <assert.h>
 #include <time.h>
 
 #include <fcntl.h>
@@ -18,8 +19,7 @@ static int fd = -1;
 // Also, use it as default maximum log length
 static uint16_t block_size = 4096;
 
-char **lines;
-static int32_t log_lines = 0;
+struct ThreadQueue *lines;
 
 bool initialize_logs() {
   _conf = get_server_configuration();
@@ -31,13 +31,11 @@ bool initialize_logs() {
   const off_t file_size = sostat.st_size;
   block_size = sostat.st_blksize;
 
+  const uint32_t size = (block_size + 41);
+
   if (_conf->max_log_lines != -1) {
     const uint32_t max_log_size = (block_size + 1);
-    lines = malloc(_conf->max_log_lines * sizeof(char *));
-
-    for (int32_t i = 0; i < _conf->max_log_lines; ++i) {
-      lines[i] = malloc(max_log_size);
-    }
+    lines = create_tqueue(_conf->max_log_lines * 2, sizeof(char *), _Alignof(char *));
 
     if (file_size != 0) {
       char *block;
@@ -45,7 +43,7 @@ bool initialize_logs() {
 
       uint16_t latest = 0;
       uint16_t count = 0;
-      char **buf = &lines[0];
+      char *buf = malloc(size);
 
       while ((count = read(fd, block, block_size))) {
         uint32_t i = 0;
@@ -55,11 +53,12 @@ bool initialize_logs() {
           const char c = block[i];
 
           if (c == '\n') {
-            memcpy(*buf, (block + latest), (i - latest + 1));
-            (*buf)[i - latest + 1] = '\0';
-            log_lines += 1;
-            buf = &lines[log_lines];
+            memcpy(buf, (block + latest), (i - latest + 1));
+            buf[i - latest + 1] = '\0';
             latest = i + 1;
+
+            push_tqueue(lines, &buf);
+            buf = malloc(size);
           }
 
           i += 1;
@@ -68,7 +67,7 @@ bool initialize_logs() {
         if (count == latest) {
           latest = 0;
         } else {
-          memcpy(*buf, (block + latest), (count - latest));
+          memcpy(buf, (block + latest), (count - latest));
 
           const uint16_t old_count = count;
           count = read(fd, block, block_size);
@@ -78,10 +77,12 @@ bool initialize_logs() {
             const char c = block[i];
 
             if (c == '\n') {
-              memcpy(*buf + (old_count - latest), block, (i + 1));
-              (*buf)[old_count - latest + i + 1] = '\0';
-              log_lines += 1;
-              buf = &lines[log_lines];
+              memcpy(buf + (old_count - latest), block, (i + 1));
+              buf[old_count - latest + i + 1] = '\0';
+
+              push_tqueue(lines, &buf);
+              buf = malloc(size);
+
               i += 1;
               latest = i;
               goto INSIDE_LOOP;
@@ -145,101 +146,87 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
   }
 
   fputs(message, stream);
+  if (fd == -1) return;
 
-  if (fd != -1) {
-    if (conf->max_log_lines == -1) {
-      log_lines += 1;
+  const uint32_t size = (block_size + 41);
 
-      if (log_lines != 1) lines = realloc(lines, log_lines * sizeof(char *));
-      else lines = malloc(sizeof(char *));
+  if (conf->max_log_lines == -1) {
+    char *line = malloc(size);
+    memcpy(line, message, (message_len + 1));
 
-      const uint32_t size = (block_size + 41);
-      const int32_t at = (log_lines - 1);
-      lines[at] = malloc(size);
-      memcpy(lines[at], message, (message_len + 1));
-    } else {
-      if (log_lines == conf->max_log_lines) {
-        const int32_t at = (log_lines - 1);
-        char *line = lines[0];
-
-        memcpy(lines, lines + 1, (log_lines - 1) * sizeof(char *));
-        memcpy(line, message, (message_len + 1));
-        lines[at] = line;
-      } else {
-        memcpy(lines[log_lines], message, (message_len + 1));
-        log_lines += 1;
-      }
+    push_tqueue(lines, &line);
+  } else {
+    if (estimate_tqueue_size(lines) == conf->max_log_lines) {
+      char *line;
+      pop_tqueue(lines, &line);
+      free(line);
     }
+
+    char *line = malloc(size);
+    memcpy(line, message, (message_len + 1));
+    push_tqueue(lines, &line);
   }
 }
 
 void save_and_close_logs() {
-  int status;
+  int status = 0;
+  if (fd == -1) return;
 
-  if (fd != -1) {
-    char *buf;
+  char *buf;
+  if (posix_memalign((void **) &buf, block_size, block_size) != 0) goto CLEANUP;
+  memset(buf, 0, block_size);
 
-    if (posix_memalign((void **) &buf, block_size, block_size) == 0) {
-      memset(buf, 0, block_size);
+  off_t length = 0;
+  uint16_t at = 0;
+  lseek(fd, 0, SEEK_SET);
 
-      off_t length = 0;
-      uint16_t at = 0;
-      lseek(fd, 0, SEEK_SET);
+  while (estimate_tqueue_size(lines) != 0) {
+    char *line;
+    pop_tqueue(lines, &line);
 
-      for (int32_t i = 0; i < log_lines; ++i) {
-        const char *line = lines[i];
-        const uint32_t len = strlen(line);
+    const uint32_t len = strlen(line);
 
-        if ((at + len) <= block_size) {
-          memcpy(buf + at, line, len);
-          at += len;
-        } else {
-          const uint16_t remaining = (block_size - at);
-          memcpy(buf + at, line, remaining);
-          length += write(fd, buf, block_size);
-
-          memcpy(buf, line + remaining, (at = (len - remaining)));
-        }
-      }
-
-      if (at != 0) {
-        if ((status = write(fd, buf, block_size)) == -1) {
-          free(buf);
-          write_log(LOG_WARN, "There was an error when writing logs to file.");
-          return;
-        }
-
-        free(buf);
-
-        if (status != -1 && (status = ftruncate(fd, length + at)) == -1) {
-          write_log(LOG_WARN, "There was an error when writing logs to file.");
-          return;
-        }
-      } else {
-        if ((status = ftruncate(fd, length)) == -1) {
-          free(buf);
-          write_log(LOG_WARN, "There was an error when writing logs to file.");
-          return;
-        }
-      }
-    }
-
-    if (_conf->max_log_lines != -1) {
-      for (int32_t i = 0; i < _conf->max_log_lines; ++i) {
-        free(lines[i]);
-      }
+    if ((at + len) <= block_size) {
+      memcpy(buf + at, line, len);
+      at += len;
     } else {
-      for (int32_t i = 0; i < log_lines; ++i) {
-        free(lines[i]);
-      }
+      const uint16_t remaining = (block_size - at);
+      memcpy(buf + at, line, remaining);
+      length += write(fd, buf, block_size);
+
+      memcpy(buf, line + remaining, (at = (len - remaining)));
     }
-
-    free(lines);
-
-    if (status != -1 && (status = lockf(fd, F_ULOCK, 0)) == -1) {
-      write_log(LOG_WARN, "There was an error when writing logs to file. The lock cannot be removed.");
-    }
-
-    close(fd);
   }
+
+  if (at != 0) {
+    if ((status = write(fd, buf, block_size)) == -1) {
+      free(buf);
+      write_log(LOG_WARN, "There was an error when writing logs to file.");
+      return;
+    }
+
+    free(buf);
+
+    if (status != -1 && (status = ftruncate(fd, length + at)) == -1) {
+      write_log(LOG_WARN, "There was an error when writing logs to file.");
+      return;
+    }
+  } else {
+    if ((status = ftruncate(fd, length)) == -1) {
+      free(buf);
+      write_log(LOG_WARN, "There was an error when writing logs to file.");
+      return;
+    }
+  }
+
+  assert(estimate_tqueue_size(lines) == 0);
+
+CLEANUP:
+  free_tqueue(lines);
+
+  if (status != -1 && (status = lockf(fd, F_ULOCK, 0)) == -1) {
+    write_log(LOG_WARN, "There was an error when writing logs to file. The lock cannot be removed.");
+  }
+
+  close(fd);
 }
