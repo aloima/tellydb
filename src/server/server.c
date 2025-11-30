@@ -142,11 +142,11 @@ static inline void close_server() {
 static void close_signal(int arg) {
   switch (arg) {
     case SIGINT:
-      write_log(LOG_WARN, "Received SIGINT signal, closing the server...");
+      puts("\n-- Received SIGINT signal, closing the server...");
       break;
 
     case SIGTERM:
-      write_log(LOG_WARN, "Received SIGTERM signal, closing the server...");
+      puts("\n-- Received SIGTERM signal, closing the server...");
       break;
   }
 
