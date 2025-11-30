@@ -100,8 +100,9 @@ bool pop_tqueue(struct ThreadQueue *queue, void *dest) {
     cpu_relax();
   }
 
-  atomic_store_explicit(&queue->states[current_at].value, TQ_RETRIEVING, memory_order_relaxed);
   char *src = ((char *) queue->data + (current_at * queue->type));
+  __builtin_prefetch(src, 0, 0);
+
   memcpy(dest, src, queue->type);
   atomic_store_explicit(&queue->states[current_at].value, TQ_EMPTY, memory_order_release);
 

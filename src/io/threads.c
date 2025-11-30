@@ -149,7 +149,6 @@ bool create_io_threads(const uint32_t count) {
     if (detached != 0) goto cleanup;
   }
 
-
   success = true;
 
 cleanup:

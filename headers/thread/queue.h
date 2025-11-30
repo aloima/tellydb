@@ -5,7 +5,6 @@
 
 enum ThreadQueueState : uint8_t {
   TQ_EMPTY,
-  TQ_RETRIEVING,
   TQ_STORING,
   TQ_STORED
 };
