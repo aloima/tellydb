@@ -5,6 +5,13 @@
 
 #include <gmp.h>
 
+bool check_crlf(struct Client *client, char *buf, int32_t *at, int32_t *size) {
+  char *crlf;
+  TAKE_BYTES(crlf, 2, false);
+
+  return !VERY_UNLIKELY(crlf[0] != '\r' || crlf[1] != '\n');
+}
+
 uint8_t create_resp_integer(char *buf, uint64_t value) {
   *(buf) = RDT_INTEGER;
   const uint64_t nbytes = ltoa(value, buf + 1);

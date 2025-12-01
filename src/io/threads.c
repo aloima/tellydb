@@ -31,9 +31,9 @@ static uint32_t thread_count = 0;
 
 static sem_t *sem = NULL;
 
-static inline void unknown_command(struct Client *client, commandname_t name) {
+static inline void unknown_command(struct Client *client, string_t *name) {
   char buf[COMMAND_NAME_MAX_LENGTH + 22];
-  const size_t nbytes = sprintf(buf, "-Unknown command '%s'\r\n", name.value);
+  const size_t nbytes = sprintf(buf, "-Unknown command '%s'\r\n", name->value);
 
   _write(client, buf, nbytes);
 }
@@ -66,7 +66,7 @@ static void read_command(struct Client *client) {
       continue;
     }
 
-    const struct CommandIndex *command_index = get_command_index(data.name.value, data.name.len);
+    const struct CommandIndex *command_index = get_command_index(data.name->value, data.name->len);
 
     if (!command_index) {
       unknown_command(client, data.name);
