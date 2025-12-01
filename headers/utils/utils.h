@@ -23,4 +23,5 @@ int open_file(const char *file, int flags);
 
 #include "integer.h" // IWYU pragma: export
 #include "string.h"  // IWYU pragma: export
+#include "arena.h"   // IWYU pragma: export
 #include "logging.h" // IWYU pragma: export
