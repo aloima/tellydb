@@ -108,7 +108,7 @@ static inline void cleanup() {
   free_kdf();
   if (server->eventfd != -1) close(server->eventfd);
   free_passwords();
-  free_transactions();
+  free_transaction_blocks();
   free_databases();
   destroy_io_threads();
 

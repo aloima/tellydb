@@ -11,12 +11,21 @@
 
 #include <pthread.h>
 
+#include "../headers/transactions/private.h"
+
 #define MAX_RESPONSE_SIZE 262144
 
 #define IS_RELATED_TO_WAITING_TX(command_idx) ({ \
   /* DISCARD || MULTI || EXEC */ \
   ((command_idx) == 9 || (command_idx) == 10 || (command_idx) == 13); \
 })
+
+enum TransactionBlockType : uint8_t {
+  TX_UNINITIALIZED,
+  TX_DIRECT,
+  TX_WAITING,
+  TX_MULTIPLE
+};
 
 struct Transaction {
   commanddata_t data;
@@ -25,13 +34,14 @@ struct Transaction {
 };
 
 struct TransactionBlock {
+  enum TransactionBlockType type;
   struct Client *client;
   struct Password *password;
-  struct Transaction *transactions;
-  uint64_t transaction_count;
-  bool waiting;
 
-  char _pad[31];
+  union {
+    struct Transaction *transaction;
+    struct MultipleTransactions multiple;
+  } data;
 };
 
 struct TransactionVariables {
@@ -51,6 +61,6 @@ uint32_t get_transaction_count();
 
 struct TransactionBlock *add_transaction_block(struct TransactionBlock *block);
 bool add_transaction(struct Client *client, const uint64_t command_idx, commanddata_t *data);
-void remove_transaction_block(struct TransactionBlock *block, const bool processed);
+void remove_transaction_block(struct TransactionBlock *block);
 
-void free_transactions();
+void free_transaction_blocks();

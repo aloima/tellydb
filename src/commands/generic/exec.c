@@ -10,7 +10,7 @@ static string_t run(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("A transaction block did not started, cannot execute one without starting before");
   }
 
-  entry->client->waiting_block->waiting = false;
+  entry->client->waiting_block->type = TX_MULTIPLE;
   entry->client->waiting_block = NULL;
   PASS_COMMAND();
 }

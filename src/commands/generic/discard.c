@@ -11,8 +11,8 @@ static string_t run(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("A transaction block did not started, cannot execute one without starting before");
   }
 
-  const uint64_t count = entry->client->waiting_block->transaction_count;
-  remove_transaction_block(entry->client->waiting_block, false);
+  const uint64_t count = entry->client->waiting_block->data.multiple.transaction_count;
+  remove_transaction_block(entry->client->waiting_block);
   entry->client->waiting_block = NULL;
 
   const size_t nbytes = create_resp_integer(entry->buffer, count);

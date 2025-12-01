@@ -36,15 +36,16 @@ static inline void prepare_transaction(
 }
 
 bool add_transaction(struct Client *client, const uint64_t command_idx, commanddata_t *data) {
+  struct TransactionBlock block;
+
   if (client->waiting_block == NULL || IS_RELATED_TO_WAITING_TX(command_idx)) {
-    struct TransactionBlock block;
+    block.type = TX_DIRECT;
+
     block.client = client;
     block.password = client->password;
-    block.transaction_count = 1;
-    block.transactions = malloc(sizeof(struct Transaction));
-    block.waiting = false;
+    block.data.transaction = malloc(sizeof(struct Transaction));
 
-    prepare_transaction(&block.transactions[0], client, command_idx, data);
+    prepare_transaction(block.data.transaction, client, command_idx, data);
     push_tqueue(variables->queue, &block);
 
     if (estimate_tqueue_size(variables->queue) - atomic_load_explicit(&variables->waiting_count, memory_order_relaxed) == 1) {
@@ -53,114 +54,122 @@ bool add_transaction(struct Client *client, const uint64_t command_idx, commandd
       pthread_mutex_unlock(&variables->mutex);
     }
   } else {
-    struct TransactionBlock *block = client->waiting_block;
-    block->transaction_count += 1;
-    block->transactions = realloc(block->transactions, sizeof(struct Transaction) * block->transaction_count);
-    prepare_transaction(&block->transactions[block->transaction_count - 1], client, command_idx, data);
+    block.type = TX_WAITING;
+
+    struct MultipleTransactions *multiple = &block.data.multiple;
+    multiple->transaction_count += 1;
+    multiple->transactions = realloc(multiple->transactions, sizeof(struct Transaction) * multiple->transaction_count);
+    prepare_transaction(&multiple->transactions[multiple->transaction_count - 1], client, command_idx, data);
   }
 
   return true;
 }
 
-void remove_transaction_block(struct TransactionBlock *block, const bool processed) {
-  if (processed) {
-    processed_transaction_count += block->transaction_count;
+void remove_transaction_block(struct TransactionBlock *block) {
+  switch (block->type) {
+    case TX_DIRECT: {
+      struct Transaction *transaction = block->data.transaction;
+      processed_transaction_count += 1;
+      free_command_data(&transaction->data);
+      free(transaction);
+      break;
+    }
+
+    case TX_WAITING: case TX_MULTIPLE: {
+      struct MultipleTransactions multiple = block->data.multiple;
+
+      if (block->type == TX_MULTIPLE) {
+        processed_transaction_count += multiple.transaction_count;
+      }
+
+      for (uint64_t i = 0; i < multiple.transaction_count; ++i) {
+        struct Transaction *transaction = &multiple.transactions[i];
+        free_command_data(&transaction->data);
+      }
+
+      free(multiple.transactions);
+      break;
+    };
+
+    default:
+      break;
   }
 
-  for (uint64_t i = 0; i < block->transaction_count; ++i) {
-    struct Transaction *transaction = &block->transactions[i];
-    free_command_data(&transaction->data);
-  }
-
-  free(block->transactions);
-  block->client = NULL;
-  block->password = NULL;
-  block->transactions = NULL;
-  block->transaction_count = 0;
-  block->waiting = false;
+  block->type = TX_UNINITIALIZED;
 }
 
-void free_transactions() {
+void free_transaction_blocks() {
   struct ThreadQueue *queue = variables->queue;
 
   while (estimate_tqueue_size(queue) != 0) {
     struct TransactionBlock block;
     pop_tqueue(queue, &block);
-
-    for (uint32_t i = 0; i < block.transaction_count; ++i) {
-      struct Transaction *transaction = &block.transactions[i];
-      free_command_data(&transaction->data);
-    }
+    remove_transaction_block(&block);
   }
 
   free_tqueue(queue);
 }
 
-void execute_transaction_block(struct TransactionBlock *block, struct Client *client) {
-  __builtin_prefetch(block->transactions, 0, 3);
+static inline string_t execute_transaction(struct Client *client, struct Password *password, struct Transaction *transaction) {
+  struct Command *command = transaction->command;
+  struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction->data, transaction->database, password, variables->buffer);
+
+  if ((password->permissions & command->permissions) != command->permissions) {
+    WRITE_ERROR_MESSAGE(client, "No permissions to execute this command");
+    return EMPTY_STRING();
+  }
+
+  return command->run(&entry);
+}
+
+void execute_transaction_block(struct TransactionBlock *block) {
+  struct Client *client = ((block->client->id != -1) ? block->client : NULL);
   struct Password *password = block->password;
 
-  if (block->transaction_count == 1) {
-    struct Transaction *transaction = &block->transactions[0];
-    struct Command *command = transaction->command;
-
-    if ((password->permissions & command->permissions) != command->permissions) {
-      WRITE_ERROR_MESSAGE(client, "No permissions to execute this command");
-      return;
+  switch (block->type) {
+    case TX_DIRECT: {
+      const string_t response = execute_transaction(client, password, block->data.transaction);
+      if (response.len != 0) _write(client, response.value, response.len);
+      break;
     }
 
-    struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction->data, transaction->database, password, variables->buffer);
-    const string_t response = command->run(&entry);
+    case TX_MULTIPLE: {
+      struct MultipleTransactions multiple = block->data.multiple;
+      string_t results[multiple.transaction_count];
+      uint64_t result_count = 0;
+      uint64_t length = 0;
 
-    if (response.len != 0) {
-      _write(client, response.value, response.len);
+      for (uint32_t i = 0; i < multiple.transaction_count; ++i) {
+        const string_t result = execute_transaction(client, password, &multiple.transactions[i]);
+        if (result.len == 0) continue;
+
+        string_t *area = &results[result_count++];
+        area->value = malloc(result.len);
+        area->len = result.len;
+        memcpy(area->value, result.value, area->len);
+
+        length += area->len;
+      }
+
+      size_t at = get_digit_count(result_count) + 3;
+      length += at;
+
+      char *response = malloc(length + 1);
+      sprintf(response, "*%" PRIu64 "\r\n", result_count);
+
+      for (uint64_t i = 0; i < result_count; ++i) {
+        string_t result = results[i];
+        memcpy(response + at, result.value, result.len);
+        at += result.len;
+        free(result.value);
+      }
+
+      _write(client, response, length);
+      free(response);
+      break;
     }
 
-    return;
+    default:
+      break;
   }
-
-  const uint32_t transaction_count = block->transaction_count;
-  string_t results[transaction_count];
-  uint64_t result_count = 0;
-  uint64_t length = 0;
-
-  for (uint32_t i = 0; i < transaction_count; ++i) {
-    struct Transaction transaction = block->transactions[i];
-    struct Command *command = transaction.command;
-    struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction.data, transaction.database, password, variables->buffer);
-
-    if ((password->permissions & command->permissions) != command->permissions) {
-      WRITE_ERROR_MESSAGE(client, "No permissions to execute this command");
-      return;
-    }
-
-    const string_t result = command->run(&entry);
-
-    if (result.len == 0) {
-      continue;
-    }
-
-    string_t *area = &results[result_count++];
-    area->value = malloc(result.len);
-    area->len = result.len;
-    memcpy(area->value, result.value, area->len);
-
-    length += area->len;
-  }
-
-  size_t at = get_digit_count(result_count) + 3;
-  length += at;
-
-  char *response = malloc(length + 1);
-  sprintf(response, "*%" PRIu64 "\r\n", result_count);
-
-  for (uint64_t i = 0; i < result_count; ++i) {
-    string_t result = results[i];
-    memcpy(response + at, result.value, result.len);
-    at += result.len;
-    free(result.value);
-  }
-
-  _write(client, response, length);
-  free(response);
 }

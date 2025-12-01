@@ -163,7 +163,7 @@ bool remove_client(const int id) {
 
   if (client->lib_name) free(client->lib_name);
   if (client->lib_ver) free(client->lib_ver);
-  if (client->waiting_block) remove_transaction_block(client->waiting_block, false);
+  if (client->waiting_block) remove_transaction_block(client->waiting_block);
   atomic_store_explicit(&client->state, CLIENT_STATE_EMPTY, memory_order_release);
 
   return true;

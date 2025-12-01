@@ -11,11 +11,10 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   struct TransactionBlock block;
+  block.type = TX_WAITING;
   block.client = entry->client;
   block.password = entry->password;
-  block.transactions = NULL;
-  block.transaction_count = 0;
-  block.waiting = true;
+  memset(&block.data, 0, sizeof(block.data));
 
   entry->client->waiting_block = add_transaction_block(&block);
 
