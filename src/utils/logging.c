@@ -48,7 +48,7 @@ bool initialize_logs() {
       while ((count = read(fd, block, block_size))) {
         uint32_t i = 0;
 
-        INSIDE_LOOP:
+INSIDE_LOOP:
         while (i < count) {
           const char c = block[i];
 
@@ -93,6 +93,7 @@ bool initialize_logs() {
         }
       }
 
+      free(buf);
       free(block);
     }
   }
@@ -196,6 +197,8 @@ void save_and_close_logs() {
 
       memcpy(buf, line + remaining, (at = (len - remaining)));
     }
+
+    free(line);
   }
 
   if (at != 0) {
