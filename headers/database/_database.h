@@ -18,7 +18,7 @@ struct Database {
   uint64_t id; // hashed from name
   struct KVPair **data;
   struct DatabaseSize size;
-  /* struct Client *clients;*/
+  /* Client *clients;*/
 };
 
 struct Database *create_database(const string_t name, const uint64_t capacity);

@@ -45,7 +45,7 @@ typedef struct CommandData {
   Arena *arena;
 } commanddata_t;
 
-int32_t take_n_bytes_from_socket(struct Client *client, char *buf, int32_t *at, char **data, const uint32_t n, int32_t *size);
+int32_t take_n_bytes_from_socket(Client *client, char *buf, int32_t *at, char **data, const uint32_t n, int32_t *size);
 
 #define THROW_RESP_ERROR(id) \
   do { \
@@ -59,10 +59,10 @@ int32_t take_n_bytes_from_socket(struct Client *client, char *buf, int32_t *at, 
     return return_value; \
   }
 
-bool parse_resp_command(struct Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command);
-bool parse_inline_command(struct Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command, char c);
+bool parse_resp_command(Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command);
+bool parse_inline_command(Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command, char c);
 
-bool get_command_data(struct Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command);
+bool get_command_data(Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command);
 void free_command_data(commanddata_t *data);
 
 

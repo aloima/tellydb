@@ -10,7 +10,7 @@
 
 static struct Configuration *conf;
 
-static struct Client *clients = NULL;
+static Client *clients = NULL;
 static _Atomic uint16_t client_count;
 static _Atomic uint32_t last_connection_client_id;
 
@@ -51,7 +51,7 @@ struct Password *get_full_password() {
   return full_password;
 }
 
-struct Client *get_client(const uint32_t id) {
+Client *get_client(const uint32_t id) {
   const uint32_t start = (id % conf->max_clients);
   uint32_t at = start;
 
@@ -69,7 +69,7 @@ struct Client *get_client(const uint32_t id) {
   return NULL;
 }
 
-struct Client *get_clients() {
+Client *get_clients() {
   return clients;
 }
 
@@ -86,7 +86,7 @@ bool initialize_clients() {
   atomic_init(&client_count, 0);
   atomic_init(&last_connection_client_id, 1);
 
-  const size_t size = (sizeof(struct Client) * conf->max_clients);
+  const size_t size = (sizeof(Client) * conf->max_clients);
 
   if (posix_memalign((void **) &clients, 16, size) != 0) {
     write_log(LOG_ERR, "Cannot create a map for storing clients, out of memory.");
@@ -100,7 +100,7 @@ bool initialize_clients() {
   return true;
 }
 
-static inline struct Client *insert_client(struct Client *client) {
+static inline Client *insert_client(Client *client) {
   uint16_t at = (client->id % conf->max_clients);
 
   while (clients[at].id != -1) {
@@ -115,10 +115,10 @@ static inline struct Client *insert_client(struct Client *client) {
   return &clients[at];
 }
 
-struct Client *add_client(const int connfd) {
+Client *add_client(const int connfd) {
   atomic_fetch_add_explicit(&client_count, 1, memory_order_relaxed);
   
-  struct Client client;
+  Client client;
   client.id = atomic_fetch_add_explicit(&last_connection_client_id, 1, memory_order_relaxed);
   client.connfd = connfd;
   time(&client.connected_at);
@@ -143,7 +143,7 @@ struct Client *add_client(const int connfd) {
 
 bool remove_client(const int id) {
   uint16_t at = (id % conf->max_clients);
-  struct Client *client;
+  Client *client;
 
   while ((client = &clients[at])->id != id) {
     at += 1;

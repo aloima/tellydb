@@ -16,7 +16,7 @@ enum IOThreadStatus : uint8_t {
 
 struct IOOperation {
   enum IOOpType type;
-  struct Client *client;
+  Client *client;
 };
 
 struct IOThread {
@@ -31,14 +31,14 @@ static uint32_t thread_count = 0;
 
 static sem_t *sem = NULL;
 
-static inline void unknown_command(struct Client *client, string_t *name) {
+static inline void unknown_command(Client *client, string_t *name) {
   char buf[COMMAND_NAME_MAX_LENGTH + 22];
   const size_t nbytes = sprintf(buf, "-Unknown command '%s'\r\n", name->value);
 
   _write(client, buf, nbytes);
 }
 
-static void read_command(struct Client *client) {
+static void read_command(Client *client) {
   int32_t at = 0;
   int32_t size = _read(client, client->read_buf, RESP_BUF_SIZE);
 
@@ -117,7 +117,7 @@ void *handle_io_requests(void *arg) {
   return NULL;
 }
 
-void add_io_request(const enum IOOpType type, struct Client *client) {
+void add_io_request(const enum IOOpType type, Client *client) {
   struct IOOperation op = {type, client};
   push_tqueue(queue, &op);
   sem_post(sem);

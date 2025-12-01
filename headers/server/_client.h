@@ -21,7 +21,7 @@ enum ClientState : uint8_t {
   CLIENT_STATE_EMPTY
 };
 
-struct Client {
+typedef struct {
   _Atomic enum ClientState state;
   int id, connfd;
   SSL *ssl;
@@ -38,16 +38,16 @@ struct Client {
   struct TransactionBlock *waiting_block;
 
   char read_buf[RESP_BUF_SIZE];
-};
+} Client;
 
 bool initialize_clients();
 void free_clients();
 
-struct Client *get_client(const uint32_t id);
+Client *get_client(const uint32_t id);
 
 uint32_t get_last_connection_client_id();
-struct Client *get_clients();
+Client *get_clients();
 uint16_t get_client_count();
 
-struct Client *add_client(const int connfd);
+Client *add_client(const int connfd);
 bool remove_client(const int id);

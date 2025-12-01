@@ -37,7 +37,7 @@ const struct CommandIndex *get_command_index(const char *str, size_t len);
 
 struct CommandEntry {
   struct Database *database;
-  struct Client *client;
+  Client *client;
   struct Password *password;
   commanddata_t *data;
   char *buffer;

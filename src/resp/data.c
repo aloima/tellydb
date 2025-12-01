@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-bool get_command_data(struct Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command) {
+bool get_command_data(Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command) {
   char *type;
   TAKE_BYTES(type, 1, false);
 

@@ -1,12 +1,11 @@
 #include <telly.h>
 
 #include <stdint.h>
-#include <stdlib.h>
 #include <stdbool.h>
 
-extern bool check_crlf(struct Client *client, char *buf, int32_t *at, int32_t *size);
+extern bool check_crlf(Client *client, char *buf, int32_t *at, int32_t *size);
 
-static inline bool parse_name(struct Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command, char *c) {
+static inline bool parse_name(Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command, char *c) {
   if (*c == ' ') return false;
 
   Arena *arena = command->arena;
@@ -39,7 +38,7 @@ static inline bool parse_name(struct Client *client, char *buf, int32_t *at, int
   else return true;
 }
 
-static inline bool parse_arguments(struct Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command, char *c) {
+static inline bool parse_arguments(Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command, char *c) {
   Arena *arena = command->arena;
   bool retrieving = true;
   command->args = arena_alloc(arena, RESP_INLINE_ARGUMENT_COUNT * sizeof(string_t));
@@ -76,7 +75,7 @@ static inline bool parse_arguments(struct Client *client, char *buf, int32_t *at
   return true;
 }
 
-bool parse_inline_command(struct Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command, char c) {
+bool parse_inline_command(Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command, char c) {
   command->arena = arena_create(RESP_ARENA_SIZE);
   command->args = NULL;
   command->arg_count = 0;

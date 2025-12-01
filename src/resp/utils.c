@@ -5,7 +5,7 @@
 
 #include <gmp.h>
 
-bool check_crlf(struct Client *client, char *buf, int32_t *at, int32_t *size) {
+bool check_crlf(Client *client, char *buf, int32_t *at, int32_t *size) {
   char *crlf;
   TAKE_BYTES(crlf, 2, false);
 

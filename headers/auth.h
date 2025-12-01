@@ -37,7 +37,7 @@ uint32_t get_password_count();
 uint16_t get_authorization_from_file(const int fd, char *block, const uint16_t block_size);
 void free_passwords();
 
-void add_password(struct Client *client, const string_t data, const uint8_t permissions);
-bool remove_password(struct Client *executor, char *value, const size_t value_len);
+void add_password(Client *client, const string_t data, const uint8_t permissions);
+bool remove_password(Client *executor, char *value, const size_t value_len);
 int where_password(char *value, const size_t value_len);
 bool edit_password(char *value, const size_t value_len, const uint32_t permissions);

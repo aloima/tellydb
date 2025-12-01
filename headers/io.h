@@ -13,5 +13,5 @@ enum IOOpType : uint8_t {
 };
 
 bool create_io_threads(const uint32_t count);
-void add_io_request(const enum IOOpType type, struct Client *client);
+void add_io_request(const enum IOOpType type, Client *client);
 void destroy_io_threads();

@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 
-int32_t take_n_bytes_from_socket(struct Client *client, char *buf, int32_t *at, char **data, const uint32_t n, int32_t *size) {
+int32_t take_n_bytes_from_socket(Client *client, char *buf, int32_t *at, char **data, const uint32_t n, int32_t *size) {
   const int32_t current_at = *at; 
   const int32_t current_size = *size;
 

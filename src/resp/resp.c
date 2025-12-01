@@ -3,9 +3,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-extern bool check_crlf(struct Client *client, char *buf, int32_t *at, int32_t *size);
+extern bool check_crlf(Client *client, char *buf, int32_t *at, int32_t *size);
 
-static inline bool get_resp_command_name(Arena *arena, struct Client *client, string_t *name, char *buf, int32_t *at, int32_t *size) {
+static inline bool get_resp_command_name(Arena *arena, Client *client, string_t *name, char *buf, int32_t *at, int32_t *size) {
   char *c;
   TAKE_BYTES(c, 1, false);
   if (VERY_UNLIKELY(*c != RDT_BSTRING)) THROW_RESP_ERROR(client->id);
@@ -34,7 +34,7 @@ static inline bool get_resp_command_name(Arena *arena, struct Client *client, st
   return true;
 }
 
-static inline bool get_resp_command_argument(struct Client *client, Arena *arena, string_t *argument, char *buf, int32_t *at, int32_t *size) {
+static inline bool get_resp_command_argument(Client *client, Arena *arena, string_t *argument, char *buf, int32_t *at, int32_t *size) {
   char *c;
   TAKE_BYTES(c, 1, false);
   if (VERY_UNLIKELY(*c != RDT_BSTRING)) THROW_RESP_ERROR(client->id);
@@ -64,7 +64,7 @@ static inline bool get_resp_command_argument(struct Client *client, Arena *arena
   return true;
 }
 
-bool parse_resp_command(struct Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command) {
+bool parse_resp_command(Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command) {
   command->arena = arena_create(RESP_ARENA_SIZE);
   command->arg_count = 0;
   command->args = NULL;

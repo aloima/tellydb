@@ -6,13 +6,13 @@
 #include <stdint.h>
 #include <inttypes.h>
 
-static inline string_t subcommand_id(struct Client *client, char *buffer) {
+static inline string_t subcommand_id(Client *client, char *buffer) {
   const size_t nbytes = create_resp_integer(buffer, client->id);
   return CREATE_STRING(buffer, nbytes);
 }
 
 static inline string_t subcommand_info(struct CommandEntry *entry) {
-  struct Client *client;
+  Client *client;
 
   switch (entry->data->arg_count) {
     case 1:
@@ -123,7 +123,7 @@ static inline string_t subcommand_list(struct CommandEntry *entry) {
   }
 
   const struct Configuration *conf = get_server_configuration();
-  struct Client *clients = get_clients();
+  Client *clients = get_clients();
   uint64_t at = 1;
 
   entry->buffer[0] = RDT_ARRAY;
@@ -161,7 +161,7 @@ static string_t subcommand_lock(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("Specified ID is out of bounds for uint32_t");
   }
 
-  struct Client *target = get_client(id);
+  Client *target = get_client(id);
 
   if (!target) {
     PASS_NO_CLIENT(entry->client);
@@ -238,7 +238,7 @@ static inline string_t subcommand_kill(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("Specified ID is out of bounds for uint32_t");
   }
 
-  struct Client *target = get_client(id);
+  Client *target = get_client(id);
 
   if (!target) {
     PASS_NO_CLIENT(entry->client);
@@ -276,7 +276,7 @@ static inline string_t subcommand_unlock(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("Specified ID is out of bounds for uint32_t");
   }
 
-  struct Client *target = get_client(id);
+  Client *target = get_client(id);
 
   if (!target) {
     PASS_NO_CLIENT(entry->client);

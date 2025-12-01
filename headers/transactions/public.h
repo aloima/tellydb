@@ -35,7 +35,7 @@ struct Transaction {
 
 struct TransactionBlock {
   enum TransactionBlockType type;
-  struct Client *client;
+  Client *client;
   struct Password *password;
 
   union {
@@ -60,7 +60,7 @@ uint64_t get_processed_transaction_count();
 uint32_t get_transaction_count();
 
 struct TransactionBlock *add_transaction_block(struct TransactionBlock *block);
-bool add_transaction(struct Client *client, const uint64_t command_idx, commanddata_t *data);
+bool add_transaction(Client *client, const uint64_t command_idx, commanddata_t *data);
 void remove_transaction_block(struct TransactionBlock *block);
 
 void free_transaction_blocks();

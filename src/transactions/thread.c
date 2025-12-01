@@ -28,21 +28,21 @@ void *transaction_thread(void *arg) {
     while (pop_tqueue(variables->queue, &block)) {
       found = true;
 
-      if (!block.waiting) {
-        struct Client *client;
+      //if (!block.waiting) {
+        /*Client *client;
 
         if (block.client->id != -1) {
           client = block.client;
           __builtin_prefetch(client, 0, 3);
         } else {
           client = NULL;
-        }
+        }*/
 
-        execute_transaction_block(&block, client);
-        remove_transaction_block(&block, true);
+        execute_transaction_block(&block);
+        remove_transaction_block(&block);
 
-        break;
-      }
+        // break;
+      //}
 
       //idx += 1;
       //block = get_tqueue_value(variables->queue, idx);

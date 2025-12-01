@@ -83,7 +83,7 @@ static inline int accept_client(struct Server *server) {
     return -1;
   }
 
-  struct Client *client = add_client(connfd);
+  Client *client = add_client(connfd);
 
   event_t event;
   PREPARE_EVENT(event, client, connfd);
@@ -134,7 +134,7 @@ void handle_events(struct Server *server) {
         continue;
       }
 
-      struct Client *client = GET_EVENT_DATA(events[i]);
+      Client *client = GET_EVENT_DATA(events[i]);
       add_io_request(IOOP_GET_COMMAND, client);
 
       if (IS_CONNECTION_CLOSED(events[i])) add_io_request(IOOP_TERMINATE, client);

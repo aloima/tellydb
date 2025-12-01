@@ -74,7 +74,7 @@ static bool password_derive(char *value, const size_t value_len, unsigned char *
 
 static inline void remove_password_from_clients(struct Password *password) {
   const struct Configuration *conf = get_server_configuration();
-  struct Client *clients = get_clients();
+  Client *clients = get_clients();
 
   for (uint32_t i = 0; i < conf->max_clients; ++i) {
     if ((clients[i].id != -1) && clients[i].password == password) {
@@ -201,7 +201,7 @@ bool edit_password(char *value, const size_t value_len, const uint32_t permissio
   return true;
 }
 
-void add_password(struct Client *client, const string_t data, const uint8_t permissions) {
+void add_password(Client *client, const string_t data, const uint8_t permissions) {
   struct Password *password;
   if (posix_memalign((void **) &password, 8, sizeof(struct Password)) != 0) {
     write_log(LOG_ERR, "Cannot create a password, out of memory.");
@@ -239,7 +239,7 @@ void free_passwords() {
   }
 }
 
-bool remove_password(struct Client *executor, char *value, const size_t value_len) {
+bool remove_password(Client *executor, char *value, const size_t value_len) {
   if (password_count == 1) {
     const int at = where_password(value, value_len);
     if (at == -1) return false;

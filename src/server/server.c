@@ -78,7 +78,7 @@ void get_server_time(time_t *server_start_at, uint32_t *server_age) {
   *server_age = server->age;
 }
 
-void terminate_connection(struct Client *client) {
+void terminate_connection(Client *client) {
   enum ClientState expected_state = CLIENT_STATE_ACTIVE;
   const bool is_active = atomic_compare_exchange_strong_explicit(&client->state, &expected_state, CLIENT_STATE_PASSIVE,
       memory_order_acq_rel, memory_order_relaxed);

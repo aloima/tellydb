@@ -10,11 +10,11 @@
 
 #include <openssl/ssl.h>
 
-static inline int _read(struct Client *client, char *buf, const size_t nbytes) {
+static inline int _read(Client *client, char *buf, const size_t nbytes) {
   return (!client->ssl ? read(client->connfd, buf, nbytes) : SSL_read(client->ssl, buf, nbytes));
 }
 
-static inline int _write(struct Client *client, char *buf, const size_t nbytes) {
+static inline int _write(Client *client, char *buf, const size_t nbytes) {
   return (!client->ssl ? write(client->connfd, buf, nbytes) : SSL_write(client->ssl, buf, nbytes));
 }
 

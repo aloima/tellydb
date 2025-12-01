@@ -28,14 +28,14 @@ struct TransactionBlock *add_transaction_block(struct TransactionBlock *block) {
 }
 
 static inline void prepare_transaction(
-  struct Transaction *transaction, struct Client *client, const uint64_t command_idx, commanddata_t *data
+  struct Transaction *transaction, Client *client, const uint64_t command_idx, commanddata_t *data
 ) {
   transaction->command = &variables->commands[command_idx];
   transaction->data = *data;
   transaction->database = client->database;
 }
 
-bool add_transaction(struct Client *client, const uint64_t command_idx, commanddata_t *data) {
+bool add_transaction(Client *client, const uint64_t command_idx, commanddata_t *data) {
   struct TransactionBlock block;
 
   if (client->waiting_block == NULL || IS_RELATED_TO_WAITING_TX(command_idx)) {
@@ -110,7 +110,7 @@ void free_transaction_blocks() {
   free_tqueue(queue);
 }
 
-static inline string_t execute_transaction(struct Client *client, struct Password *password, struct Transaction *transaction) {
+static inline string_t execute_transaction(Client *client, struct Password *password, struct Transaction *transaction) {
   struct Command *command = transaction->command;
   struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction->data, transaction->database, password, variables->buffer);
 
@@ -123,7 +123,7 @@ static inline string_t execute_transaction(struct Client *client, struct Passwor
 }
 
 void execute_transaction_block(struct TransactionBlock *block) {
-  struct Client *client = ((block->client->id != -1) ? block->client : NULL);
+  Client *client = ((block->client->id != -1) ? block->client : NULL);
   struct Password *password = block->password;
 
   switch (block->type) {
