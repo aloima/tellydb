@@ -23,6 +23,7 @@ struct IOThread {
   uint32_t id;
   pthread_t thread;
   _Atomic enum IOThreadStatus status;
+  Arena *resp_arena;
 };
 
 static struct IOThread *threads = NULL;
@@ -38,7 +39,7 @@ static inline void unknown_command(Client *client, string_t *name) {
   _write(client, buf, nbytes);
 }
 
-static void read_command(Client *client) {
+static void read_command(Arena *arena, Client *client) {
   int32_t at = 0;
   int32_t size = _read(client, client->read_buf, RESP_BUF_SIZE);
 
@@ -49,7 +50,7 @@ static void read_command(Client *client) {
 
   while (size != -1) {
     commanddata_t data;
-    if (!get_command_data(client, client->read_buf, &at, &size, &data)) continue;
+    if (!get_command_data(arena, client, client->read_buf, &at, &size, &data)) continue;
 
     if (size == at) {
       if (size != RESP_BUF_SIZE) {
@@ -61,7 +62,6 @@ static void read_command(Client *client) {
     }
 
     if (client->locked) {
-      free_command_data(&data);
       WRITE_ERROR_MESSAGE(client, "Your client is locked, you cannot use any commands until your client is unlocked");
       continue;
     }
@@ -77,7 +77,6 @@ static void read_command(Client *client) {
     // client->command = &commands[command_idx];
 
     if (!add_transaction(client, command_idx, &data)) {
-      free_command_data(&data);
       WRITE_ERROR_MESSAGE(client, "Transaction cannot be enqueued because of server settings");
       write_log(LOG_WARN, "Transaction count reached their limit, so next transactions cannot be added.");
       return;
@@ -101,7 +100,7 @@ void *handle_io_requests(void *arg) {
 
     switch (op.type) {
       case IOOP_GET_COMMAND:
-        read_command(op.client);
+        read_command(thread->resp_arena, op.client);
         break;
 
       case IOOP_TERMINATE:
@@ -147,13 +146,19 @@ bool create_io_threads(const uint32_t count) {
 
     int detached = pthread_detach(thread->thread);
     if (detached != 0) goto cleanup;
+
+    thread->resp_arena = arena_create(INITIAL_RESP_ARENA_SIZE);
+    if (thread->resp_arena == NULL) goto cleanup;
   }
 
   success = true;
 
 cleanup:
   if (!success) {
-    for (uint32_t i = 0; i < count; ++i) atomic_store_explicit(&threads[i].status, PASSIVE, memory_order_release);
+    for (uint32_t i = 0; i < count; ++i) {
+      atomic_store_explicit(&threads[i].status, PASSIVE, memory_order_release);
+      arena_destroy(threads[i].resp_arena);
+    }
 
     if (queue) {
       free_tqueue(queue);
@@ -188,16 +193,18 @@ void destroy_io_threads() {
   }
 
   while (true) {
-    bool killed = true;
+    uint8_t last_passive = 0;
 
-    for (uint32_t i = 0; i < thread_count; ++i) {
+    for (uint32_t i = last_passive; i < thread_count; ++i) {
       if (atomic_load_explicit(&threads[i].status, memory_order_acquire) != KILLED) {
-        killed = false;
+        last_passive = i;
         break;
       }
+
+      arena_destroy(threads[i].resp_arena);
     }
 
-    if (!killed) {
+    if (last_passive != (thread_count - 1)) {
       usleep(15);
     } else {
       break;

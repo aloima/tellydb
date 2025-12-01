@@ -34,7 +34,7 @@ static inline bool get_resp_command_name(Arena *arena, Client *client, string_t 
   return true;
 }
 
-static inline bool get_resp_command_argument(Client *client, Arena *arena, string_t *argument, char *buf, int32_t *at, int32_t *size) {
+static inline bool get_resp_command_argument(Arena *arena, Client *client, string_t *arg, char *buf, int32_t *at, int32_t *size) {
   char *c;
   TAKE_BYTES(c, 1, false);
   if (VERY_UNLIKELY(*c != RDT_BSTRING)) THROW_RESP_ERROR(client->id);
@@ -43,7 +43,7 @@ static inline bool get_resp_command_argument(Client *client, Arena *arena, strin
   if (VERY_UNLIKELY(!('0' <= *c && *c <= '9'))) THROW_RESP_ERROR(client->id);
 
   do {
-    argument->len = (argument->len * 10) + (*c - '0');
+    arg->len = (arg->len * 10) + (*c - '0');
     TAKE_BYTES(c, 1, false);
   } while ('0' <= *c && *c <= '9');
 
@@ -52,20 +52,19 @@ static inline bool get_resp_command_argument(Client *client, Arena *arena, strin
   TAKE_BYTES(c, 1, false);
   if (*c != '\n') THROW_RESP_ERROR(client->id);
 
-  argument->value = arena_alloc(arena, (argument->len + 1) * sizeof(char));
-  if (VERY_UNLIKELY(argument->value == NULL)) THROW_RESP_ERROR(client->id);
+  arg->value = arena_alloc(arena, (arg->len + 1) * sizeof(char));
+  if (VERY_UNLIKELY(arg->value == NULL)) THROW_RESP_ERROR(client->id);
 
   char *argument_raw;
-  TAKE_BYTES(argument_raw, argument->len, false);
-  memcpy_aligned(argument->value, argument_raw, argument->len);
-  argument->value[argument->len] = '\0';
+  TAKE_BYTES(argument_raw, arg->len, false);
+  memcpy_aligned(arg->value, argument_raw, arg->len);
+  arg->value[arg->len] = '\0';
 
   if (!check_crlf(client, buf, at, size)) THROW_RESP_ERROR(client->id);
   return true;
 }
 
-bool parse_resp_command(Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command) {
-  command->arena = arena_create(RESP_ARENA_SIZE);
+bool parse_resp_command(Arena *arena, Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command) {
   command->arg_count = 0;
   command->args = NULL;
 
@@ -88,22 +87,21 @@ bool parse_resp_command(Client *client, char *buf, int32_t *at, int32_t *size, c
     return false;
   }
 
-  command->name = arena_alloc(command->arena, sizeof(string_t));
+  command->name = arena_alloc(arena, sizeof(string_t));
   command->name->len = 0;
-  if (!get_resp_command_name(command->arena, client, command->name, buf, at, size)) return false;
+  if (!get_resp_command_name(arena, client, command->name, buf, at, size)) return false;
 
   command->arg_count -= 1;
 
   if (command->arg_count != 0) {
-    command->args = arena_alloc(command->arena, command->arg_count * sizeof(string_t));
+    command->args = arena_alloc(arena, command->arg_count * sizeof(string_t));
 
     for (uint32_t i = 0; i < command->arg_count; ++i) {
       command->args[i].len = 0;
       command->args[i].value = NULL;
 
-      if (VERY_UNLIKELY(!get_resp_command_argument(client, command->arena, &command->args[i], buf, at, size))) {
-        return false;
-      }
+      const bool parsed = get_resp_command_argument(arena, client, &command->args[i], buf, at, size);
+      if (VERY_UNLIKELY(!parsed)) return false;
     }
   }
 

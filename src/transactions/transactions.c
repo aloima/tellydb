@@ -70,7 +70,6 @@ void remove_transaction_block(struct TransactionBlock *block) {
     case TX_DIRECT: {
       struct Transaction *transaction = block->data.transaction;
       processed_transaction_count += 1;
-      free_command_data(&transaction->data);
       free(transaction);
       break;
     }
@@ -80,11 +79,6 @@ void remove_transaction_block(struct TransactionBlock *block) {
 
       if (block->type == TX_MULTIPLE) {
         processed_transaction_count += multiple.transaction_count;
-      }
-
-      for (uint64_t i = 0; i < multiple.transaction_count; ++i) {
-        struct Transaction *transaction = &multiple.transactions[i];
-        free_command_data(&transaction->data);
       }
 
       free(multiple.transactions);

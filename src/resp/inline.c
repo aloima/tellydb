@@ -5,17 +5,15 @@
 
 extern bool check_crlf(Client *client, char *buf, int32_t *at, int32_t *size);
 
-static inline bool parse_name(Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command, char *c) {
+static inline bool parse_name(Arena *arena, Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *cmd, char *c) {
   if (*c == ' ') return false;
-
-  Arena *arena = command->arena;
   uint8_t idx = 0;
 
-  command->name = arena_alloc(arena, sizeof(string_t));
-  command->name->value = arena_alloc(arena, RESP_INLINE_BUFFER * sizeof(char));
+  cmd->name = arena_alloc(arena, sizeof(string_t));
+  cmd->name->value = arena_alloc(arena, RESP_INLINE_BUFFER * sizeof(char));
 
   do {
-    command->name->value[idx] = *c;
+    cmd->name->value[idx] = *c;
     if ((*at + 2) == *size) {
       idx += 1;
       break;
@@ -23,31 +21,30 @@ static inline bool parse_name(Client *client, char *buf, int32_t *at, int32_t *s
 
     if (take_n_bytes_from_socket(client, buf, at, &c, 1, size) != 1) {
       idx += 1;
-      command->name->value[idx] = '\0';
-      command->name->len = idx;
+      cmd->name->value[idx] = '\0';
+      cmd->name->len = idx;
       return true;
     }
 
     idx += 1;
   } while (*c != ' ');
 
-  command->name->value[idx] = '\0';
-  command->name->len = idx;
+  cmd->name->value[idx] = '\0';
+  cmd->name->len = idx;
 
   if ((*at + 2) == *size) return check_crlf(client, buf, at, size);
   else return true;
 }
 
-static inline bool parse_arguments(Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command, char *c) {
-  Arena *arena = command->arena;
+static inline bool parse_arguments(Arena *arena, Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *cmd, char *c) {
   bool retrieving = true;
-  command->args = arena_alloc(arena, RESP_INLINE_ARGUMENT_COUNT * sizeof(string_t));
+  cmd->args = arena_alloc(arena, RESP_INLINE_ARGUMENT_COUNT * sizeof(string_t));
 
   while (retrieving) {
-    string_t *arg = &command->args[command->arg_count];
+    string_t *arg = &cmd->args[cmd->arg_count];
     arg->value = arena_alloc(arena, RESP_INLINE_BUFFER * sizeof(char));
     arg->len = 0;
-    command->arg_count += 1;
+    cmd->arg_count += 1;
 
     uint8_t idx = 0;
     char *value = arg->value;
@@ -75,14 +72,13 @@ static inline bool parse_arguments(Client *client, char *buf, int32_t *at, int32
   return true;
 }
 
-bool parse_inline_command(Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command, char c) {
-  command->arena = arena_create(RESP_ARENA_SIZE);
-  command->args = NULL;
-  command->arg_count = 0;
+bool parse_inline_command(Arena *arena, Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *cmd, char c) {
+  cmd->args = NULL;
+  cmd->arg_count = 0;
 
-  if (!parse_name(client, buf, at, size, command, &c)) THROW_RESP_ERROR(client->id);
+  if (!parse_name(arena, client, buf, at, size, cmd, &c)) THROW_RESP_ERROR(client->id);
   if (*at == *size) return true;
 
-  if (!parse_arguments(client, buf, at, size, command, &c)) THROW_RESP_ERROR(client->id);
+  if (!parse_arguments(arena, client, buf, at, size, cmd, &c)) THROW_RESP_ERROR(client->id);
   return true;
 }

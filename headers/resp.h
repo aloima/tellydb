@@ -31,8 +31,9 @@
 #define RDT_ERR '-'
 #define RDT_ERR_SL "-"
 
+#define INITIAL_RESP_ARENA_SIZE 65536
+
 #define COMMAND_NAME_MAX_LENGTH 64
-#define RESP_ARENA_SIZE 4096
 #define RESP_INLINE_BUFFER 128
 #define RESP_INLINE_ARGUMENT_COUNT 32
 
@@ -41,8 +42,6 @@ typedef struct CommandData {
 
   string_t *args;
   uint32_t arg_count;
-
-  Arena *arena;
 } commanddata_t;
 
 int32_t take_n_bytes_from_socket(Client *client, char *buf, int32_t *at, char **data, const uint32_t n, int32_t *size);
@@ -59,12 +58,9 @@ int32_t take_n_bytes_from_socket(Client *client, char *buf, int32_t *at, char **
     return return_value; \
   }
 
-bool parse_resp_command(Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command);
-bool parse_inline_command(Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command, char c);
-
-bool get_command_data(Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command);
-void free_command_data(commanddata_t *data);
-
+bool parse_resp_command(Arena *arena, Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *cmd);
+bool parse_inline_command(Arena *arena, Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *cmd, char c);
+bool get_command_data(Arena *arena, Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command);
 
 uint8_t create_resp_integer(char *buf, uint64_t value);
 uint64_t create_resp_integer_mpf(const enum ProtocolVersion protover, char *buf, mpf_t value);
