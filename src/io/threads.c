@@ -14,19 +14,21 @@ enum IOThreadStatus : uint8_t {
   KILLED
 };
 
-struct IOOperation {
+typedef struct {
   enum IOOpType type;
   Client *client;
-};
+} IOOperation;
 
-struct IOThread {
+typedef struct {
   uint32_t id;
   pthread_t thread;
   _Atomic enum IOThreadStatus status;
-  Arena *resp_arena;
-};
 
-static struct IOThread *threads = NULL;
+  Arena *arena;
+  char *read_buf; // may be initialized as stack if it is not transferred by threads
+} IOThread;
+
+static IOThread *threads = NULL;
 static struct ThreadQueue *queue = NULL;
 static uint32_t thread_count = 0;
 
@@ -39,24 +41,27 @@ static inline void unknown_command(Client *client, string_t *name) {
   _write(client, buf, nbytes);
 }
 
-static void read_command(Arena *arena, Client *client) {
-  int32_t at = 0;
-  int32_t size = _read(client, client->read_buf, RESP_BUF_SIZE);
+static void read_command(const uint32_t thread_id, Client *client) {
+  char *buf = threads[thread_id].read_buf;
+  int32_t size = _read(client, buf, RESP_BUF_SIZE);
 
   if (size == 0) {
     add_io_request(IOOP_TERMINATE, client);
     return;
   }
 
+  Arena *arena = threads[thread_id].arena;
+  int32_t at = 0;
+
   while (size != -1) {
     commanddata_t data;
-    if (!get_command_data(arena, client, client->read_buf, &at, &size, &data)) continue;
+    if (!get_command_data(arena, client, buf, &at, &size, &data)) continue;
 
     if (size == at) {
       if (size != RESP_BUF_SIZE) {
         size = -1;
       } else {
-        size = _read(client, client->read_buf, RESP_BUF_SIZE);
+        size = _read(client, buf, RESP_BUF_SIZE);
         at = 0;
       }
     }
@@ -87,20 +92,17 @@ static void read_command(Arena *arena, Client *client) {
 }
 
 void *handle_io_requests(void *arg) {
-  struct IOThread *thread = ({
-    const uint32_t *id = arg;
-    &threads[*id];
-  });
+  const uint32_t id = *((uint32_t *) arg);
 
-  while (atomic_load_explicit(&thread->status, memory_order_acquire) == ACTIVE) {
-    struct IOOperation op;
+  while (atomic_load_explicit(&threads[id].status, memory_order_acquire) == ACTIVE) {
+    IOOperation op;
 
     sem_wait(sem);
     if (!pop_tqueue(queue, &op)) continue;
 
     switch (op.type) {
       case IOOP_GET_COMMAND:
-        read_command(thread->resp_arena, op.client);
+        read_command(id, op.client);
         break;
 
       case IOOP_TERMINATE:
@@ -112,12 +114,16 @@ void *handle_io_requests(void *arg) {
     }
   }
 
-  atomic_store_explicit(&thread->status, KILLED, memory_order_release);
+  atomic_store_explicit(&threads[id].status, KILLED, memory_order_release);
+
+  if (threads[id].read_buf) free(threads[id].read_buf);
+  if (threads[id].arena) arena_destroy(threads[id].arena);
+
   return NULL;
 }
 
 void add_io_request(const enum IOOpType type, Client *client) {
-  struct IOOperation op = {type, client};
+  IOOperation op = {type, client};
   push_tqueue(queue, &op);
   sem_post(sem);
 }
@@ -126,38 +132,44 @@ bool create_io_threads(const uint32_t count) {
   bool success = false;
 
   sem = malloc(sizeof(sem_t));
-  if (sem == NULL || sem_init(sem, 0, 0) != 0) goto cleanup;
+  if (sem == NULL || sem_init(sem, 0, 0) != 0) goto CLEANUP;
 
-  queue = create_tqueue(128, sizeof(struct IOThread), _Alignof(struct IOThread));
-  if (queue == NULL) goto cleanup;
+  queue = create_tqueue(128, sizeof(IOThread), _Alignof(IOThread));
+  if (queue == NULL) goto CLEANUP;
 
-  threads = malloc(count * sizeof(struct IOThread));
-  if (threads == NULL) goto cleanup;
+  threads = calloc(count, sizeof(IOThread));
+  if (threads == NULL) goto CLEANUP;
 
   thread_count = count;
 
   for (uint32_t i = 0; i < count; ++i) {
-    struct IOThread *thread = &threads[i];
+    IOThread *thread = &threads[i];
     thread->id = i;
     atomic_init(&thread->status, ACTIVE);
 
+    thread->arena = arena_create(INITIAL_RESP_ARENA_SIZE);
+    if (thread->arena == NULL) goto CLEANUP;
+
+    thread->read_buf = malloc(RESP_BUF_SIZE);
+    if (thread->read_buf == NULL) goto CLEANUP;
+
     int created = pthread_create(&thread->thread, NULL, handle_io_requests, &thread->id);
-    if (created != 0) goto cleanup;
+    if (created != 0) goto CLEANUP;
 
     int detached = pthread_detach(thread->thread);
-    if (detached != 0) goto cleanup;
-
-    thread->resp_arena = arena_create(INITIAL_RESP_ARENA_SIZE);
-    if (thread->resp_arena == NULL) goto cleanup;
+    if (detached != 0) goto CLEANUP;
   }
 
   success = true;
 
-cleanup:
+CLEANUP:
   if (!success) {
     for (uint32_t i = 0; i < count; ++i) {
-      atomic_store_explicit(&threads[i].status, PASSIVE, memory_order_release);
-      arena_destroy(threads[i].resp_arena);
+      IOThread *thread = &threads[i];
+      atomic_store_explicit(&thread->status, PASSIVE, memory_order_release);
+
+      if (thread->read_buf) free(thread->read_buf);
+      if (thread->arena) arena_destroy(thread->arena);
     }
 
     if (queue) {
@@ -192,23 +204,15 @@ void destroy_io_threads() {
     sem_post(sem);
   }
 
-  while (true) {
-    uint8_t last_passive = 0;
+  uint32_t i = 0;
 
-    for (uint32_t i = last_passive; i < thread_count; ++i) {
-      if (atomic_load_explicit(&threads[i].status, memory_order_acquire) != KILLED) {
-        last_passive = i;
-        break;
-      }
-
-      arena_destroy(threads[i].resp_arena);
+  while (i < thread_count) {
+    if (atomic_load_explicit(&threads[i].status, memory_order_acquire) != KILLED) {
+      usleep(10);
+      continue;
     }
 
-    if (last_passive != (thread_count - 1)) {
-      usleep(15);
-    } else {
-      break;
-    }
+    i += 1;
   }
 
   free_tqueue(queue);

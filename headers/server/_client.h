@@ -36,8 +36,6 @@ typedef struct {
 
   bool locked;
   struct TransactionBlock *waiting_block;
-
-  char read_buf[RESP_BUF_SIZE];
 } Client;
 
 bool initialize_clients();
