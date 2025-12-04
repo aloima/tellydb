@@ -116,6 +116,8 @@ static inline void cleanup() {
   free_configuration(server->conf);
 
   destroy_io_threads();
+  usleep(10);
+
   free(server);
   exit(EXIT_SUCCESS);
 }
