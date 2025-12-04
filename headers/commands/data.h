@@ -1,6 +1,6 @@
 #pragma once
 
-#include "_commands.h"
+struct Command;
 
 /* DATABASE COMMANDS */
 extern const struct Command cmd_bgsave;

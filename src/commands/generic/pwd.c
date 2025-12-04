@@ -193,6 +193,7 @@ const struct Command cmd_pwd = {
   .since = "0.1.7",
   .complexity = "O(1)",
   .permissions = P_AUTH,
+  .flags = CMD_FLAG_NO_FLAG,
   .subcommands = subcommands,
   .subcommand_count = 0,
   .run = run

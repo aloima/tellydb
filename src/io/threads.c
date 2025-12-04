@@ -28,6 +28,7 @@ typedef struct {
   char *read_buf; // may be initialized as stack if it is not transferred by threads
 } IOThread;
 
+static struct Command *commands;
 static IOThread *threads = NULL;
 static struct ThreadQueue *queue = NULL;
 static uint32_t thread_count = 0;
@@ -87,7 +88,7 @@ static void read_command(IOThread *thread, Client *client) {
       return;
     }
 
-    if (client->waiting_block && !IS_RELATED_TO_WAITING_TX(command_idx)) _write(client, "+QUEUED\r\n", 9);
+    if (client->waiting_block && !IS_RELATED_TO_WAITING_TX(commands, command_idx)) _write(client, "+QUEUED\r\n", 9);
   }
 }
 
@@ -131,6 +132,7 @@ void add_io_request(const enum IOOpType type, Client *client) {
 
 bool create_io_threads(const uint32_t count) {
   bool success = false;
+  commands = get_commands();
 
   sem = malloc(sizeof(sem_t));
   if (sem == NULL || sem_init(sem, 0, 0) != 0) goto CLEANUP;

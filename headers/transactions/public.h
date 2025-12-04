@@ -1,6 +1,6 @@
 #pragma once
 
-#include "commands/_commands.h"
+#include "commands/data.h"
 #include "database/database.h"
 #include "server/server.h"
 #include "resp.h"
@@ -15,10 +15,7 @@
 
 #define MAX_RESPONSE_SIZE 262144
 
-#define IS_RELATED_TO_WAITING_TX(command_idx) ({ \
-  /* DISCARD || MULTI || EXEC */ \
-  ((command_idx) == 9 || (command_idx) == 10 || (command_idx) == 13); \
-})
+#define IS_RELATED_TO_WAITING_TX(commands, command_idx) ((commands)[command_idx].flags & CMD_FLAG_WAITING_TX)
 
 enum TransactionBlockType : uint8_t {
   TX_UNINITIALIZED,

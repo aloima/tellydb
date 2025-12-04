@@ -38,7 +38,7 @@ static inline void prepare_transaction(
 bool add_transaction(Client *client, const uint64_t command_idx, commanddata_t *data) {
   struct TransactionBlock block;
 
-  if (client->waiting_block == NULL || IS_RELATED_TO_WAITING_TX(command_idx)) {
+  if (client->waiting_block == NULL || IS_RELATED_TO_WAITING_TX(variables->commands, command_idx)) {
     block.type = TX_DIRECT;
 
     block.client = client;

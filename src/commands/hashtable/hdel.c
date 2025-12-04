@@ -63,6 +63,7 @@ const struct Command cmd_hdel = {
   .since = "0.1.5",
   .complexity = "O(N) where N is written field name count",
   .permissions = P_WRITE,
+  .flags = CMD_FLAG_DATABASE,
   .subcommands = NULL,
   .subcommand_count = 0,
   .run = run

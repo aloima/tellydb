@@ -31,6 +31,7 @@ const struct Command cmd_multi = {
   .since = "0.2.0",
   .complexity = "O(1)",
   .permissions = P_NONE,
+  .flags = CMD_FLAG_WAITING_TX,
   .subcommands = NULL,
   .subcommand_count = 0,
   .run = run

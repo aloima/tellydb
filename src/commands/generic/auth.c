@@ -39,6 +39,7 @@ const struct Command cmd_auth = {
   .since = "0.1.7",
   .complexity = "O(1)",
   .permissions = P_NONE,
+  .flags = CMD_FLAG_NO_FLAG,
   .subcommands = NULL,
   .subcommand_count = 0,
   .run = run

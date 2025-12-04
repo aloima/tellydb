@@ -132,6 +132,7 @@ const struct Command cmd_incr = {
   .since = "0.1.0",
   .complexity = "O(1)",
   .permissions = (P_READ | P_WRITE),
+  .flags = CMD_FLAG_DATABASE,
   .subcommands = NULL,
   .subcommand_count = 0,
   .run = run

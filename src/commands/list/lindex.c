@@ -103,6 +103,7 @@ const struct Command cmd_lindex = {
   .since = "0.1.4",
   .complexity = "O(N) where N is min(absolute index, list size - absolute index - 1) number",
   .permissions = P_READ,
+  .flags = CMD_FLAG_NO_FLAG,
   .subcommands = NULL,
   .subcommand_count = 0,
   .run = run

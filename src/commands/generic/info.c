@@ -120,6 +120,7 @@ const struct Command cmd_info = {
   .since = "0.1.0",
   .complexity = "O(1)",
   .permissions = P_NONE,
+  .flags = CMD_FLAG_NO_FLAG,
   .subcommands = NULL,
   .subcommand_count = 0,
   .run = run

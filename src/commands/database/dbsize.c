@@ -28,6 +28,7 @@ const struct Command cmd_dbsize = {
   .since = "0.1.6",
   .complexity = "O(1)",
   .permissions = P_READ,
+  .flags = CMD_FLAG_NO_FLAG,
   .subcommands = NULL,
   .subcommand_count = 0,
   .run = run
