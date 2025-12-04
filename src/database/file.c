@@ -20,6 +20,8 @@ static int fd = -1;
 static bool saving = false;
 static uint16_t block_size;
 
+size_t read_file(const int fd, const off_t file_size, char *block, const uint16_t block_size, const uint16_t filled_block_size);
+
 int open_database_fd(uint32_t *server_age) {
   struct Configuration *conf = get_server_configuration();
   if ((fd = open_file(conf->data_file, 0)) == -1) return -1;
@@ -53,7 +55,7 @@ int open_database_fd(uint32_t *server_age) {
       memcpy(server_age, block + 2, 8);
 
       const uint16_t filled_block_size = get_authorization_from_file(fd, block, block_size);
-      const size_t data_count = get_all_data_from_file(fd, file_size, block, block_size, filled_block_size);
+      const size_t data_count = read_file(fd, file_size, block, block_size, filled_block_size);
       write_log(LOG_INFO,
         "Read database file in %.3f seconds. Loaded password count: %u, loaded data count: %d",
         ((float) clock() - start) / CLOCKS_PER_SEC, get_password_count(), data_count
@@ -238,6 +240,26 @@ static void generate_boolean_value(char **data, off_t *len, const bool *boolean)
   *len += 1;
 }
 
+#define GENERATE_PRIMITIVE_VALUES(data, len, value) \
+  case TELLY_NULL: \
+    break; \
+\
+  case TELLY_INT: \
+    generate_integer_value((data), &(len), (value)); \
+    break; \
+\
+  case TELLY_DOUBLE: \
+    generate_double_value((data), &(len), (value)); \
+    break; \
+\
+  case TELLY_STR: \
+    generate_string_value((data), &len, (value)); \
+    break; \
+\
+  case TELLY_BOOL: \
+    generate_boolean_value((data), &len, (value)); \
+    break
+
 static inline off_t generate_value(char **data, struct KVPair *kv) {
   off_t len = 0;
 
@@ -246,24 +268,7 @@ static inline off_t generate_value(char **data, struct KVPair *kv) {
   len += 1;
 
   switch (kv->type) {
-    case TELLY_NULL:
-      break;
-
-    case TELLY_INT:
-      generate_integer_value(data, &len, kv->value);
-      break;
-
-    case TELLY_DOUBLE:
-      generate_double_value(data, &len, kv->value);
-      break;
-
-    case TELLY_STR:
-      generate_string_value(data, &len, kv->value);
-      break;
-
-    case TELLY_BOOL:
-      generate_boolean_value(data, &len, kv->value);
-      break;
+    GENERATE_PRIMITIVE_VALUES(data, len, kv->value);
 
     case TELLY_HASHTABLE: {
       struct HashTable *table = kv->value;
@@ -280,21 +285,7 @@ static inline off_t generate_value(char **data, struct KVPair *kv) {
           generate_string_value(data, &len, &field->name);
 
           switch (field->type) {
-            case TELLY_INT:
-              generate_integer_value(data, &len, field->value);
-              break;
-
-            case TELLY_DOUBLE:
-              generate_double_value(data, &len, field->value);
-              break;
-
-            case TELLY_STR:
-              generate_string_value(data, &len, field->value);
-              break;
-
-            case TELLY_BOOL:
-              generate_boolean_value(data, &len, field->value);
-              break;
+            GENERATE_PRIMITIVE_VALUES(data, len, field->value);
 
             default:
               break;
@@ -320,21 +311,7 @@ static inline off_t generate_value(char **data, struct KVPair *kv) {
         len += 1;
 
         switch (node->type) {
-          case TELLY_INT:
-            generate_integer_value(data, &len, node->value);
-            break;
-
-          case TELLY_DOUBLE:
-            generate_double_value(data, &len, node->value);
-            break;
-
-          case TELLY_STR:
-            generate_string_value(data, &len, node->value);
-            break;
-
-          case TELLY_BOOL:
-            generate_boolean_value(data, &len, node->value);
-            break;
+          GENERATE_PRIMITIVE_VALUES(data, len, node->value);
 
           default:
             break;

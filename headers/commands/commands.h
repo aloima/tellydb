@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../server/_client.h"
-#include "../database/_database.h"
+#include "../database/database.h"
+#include "../server/client.h"
 #include "../resp.h"
 #include "../auth.h"
 
