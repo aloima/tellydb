@@ -223,9 +223,7 @@ void start_server(struct Configuration *config) {
   }
 
   if (server->conf->tls) CLEANUP_RETURN_IF(initialize_server_ssl() == -1);
-  else {
-    server->ctx = NULL;
-  }
+  else server->ctx = NULL;
 
   server->commands = load_commands();
   write_log(LOG_INFO, "Loaded commands.");
@@ -233,7 +231,7 @@ void start_server(struct Configuration *config) {
   create_transaction_thread();
   write_log(LOG_INFO, "Created transaction thread.");
 
-  CLEANUP_RETURN_LOG_IF(!create_io_threads(4), "Cannot create I/O threads.");
+  CLEANUP_RETURN_LOG_IF(!create_io_threads(max(sysconf(_SC_NPROCESSORS_ONLN) - 1, 1)), "Cannot create I/O threads.");
   write_log(LOG_INFO, "Created I/O thread.");
 
   signal(SIGTERM, close_signal);
