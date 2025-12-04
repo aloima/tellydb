@@ -20,12 +20,9 @@ static int fd = -1;
 static bool saving = false;
 static uint16_t block_size;
 
-bool open_database_fd(uint32_t *server_age) {
+int open_database_fd(uint32_t *server_age) {
   struct Configuration *conf = get_server_configuration();
-
-  if ((fd = open_file(conf->data_file, 0)) == -1) {
-    return false;
-  }
+  if ((fd = open_file(conf->data_file, 0)) == -1) return -1;
 
   struct stat sostat;
   stat(conf->data_file, &sostat);
@@ -43,14 +40,14 @@ bool open_database_fd(uint32_t *server_age) {
         close(fd);
         free(block);
         write_log(LOG_ERR, "Cannot read headers because of OS-specific problem");
-        return false;
+        return -1;
       }
 
       if (block[0] != 0x18 || block[1] != 0x10) {
         close(fd);
         free(block);
         write_log(LOG_ERR, "Invalid headers for database file, file is closed.");
-        return false;
+        return -1;
       }
 
       memcpy(server_age, block + 2, 8);
@@ -70,10 +67,10 @@ bool open_database_fd(uint32_t *server_age) {
     *server_age = 0;
   }
 
-  return true;
+  return 0;
 }
 
-bool close_database_fd() {
+int close_database_fd() {
   while (saving) {
     usleep(100);
   }
@@ -82,7 +79,8 @@ bool close_database_fd() {
     write_log(LOG_ERR, "The database file cannot be unlocked because of OS-specific problem.");
   }
 
-  return (close(fd) == 0);
+  if (close(fd) == 0) return 0;
+  else return -1;
 }
 
 static inline off_t get_value_size(const enum TellyTypes type, void *value) {
@@ -362,19 +360,14 @@ static inline void generate_headers(char *headers, const uint32_t server_age) {
   memcpy(headers + 2, &server_age, sizeof(uint32_t));
 }
 
-bool save_data(const uint32_t server_age) {
-  if (saving) {
-    return false;
-  }
+int save_data(const uint32_t server_age) {
+  if (saving) return -1;
 
   saving = true;
   lseek(fd, 0, SEEK_SET);
 
   char *block;
-  
-  if (posix_memalign((void **) &block, block_size, block_size) != 0) {
-    return false;
-  }
+  if (posix_memalign((void **) &block, block_size, block_size) != 0) return -1;
 
   memset(block, 0, block_size);
 
@@ -409,7 +402,7 @@ bool save_data(const uint32_t server_age) {
           free(block);
           close_database_fd();
           write_log(LOG_ERR, "The passwords cannot be written to database file, it is a OS-specific error.");
-          return false;
+          return -1;
         }
 
         const uint32_t remaining = (48 - allowed); // remaining byte count except permissions
@@ -453,10 +446,7 @@ bool save_data(const uint32_t server_age) {
 
       for (uint32_t i = 0; i < capacity; ++i) {
         struct KVPair *kv = database->data[i];
-
-        if (!kv) {
-          continue;
-        }
+        if (!kv) continue;
 
         const off_t kv_size = generate_value(&data, kv);
         const uint32_t block_count = ((length + kv_size + block_size - 1) / block_size);
@@ -473,7 +463,7 @@ bool save_data(const uint32_t server_age) {
             free(block);
             close_database_fd();
             write_log(LOG_ERR, "The data cannot be written to database file, it is a OS-specific error.");
-            return false;
+            return -1;
           }
 
           remaining -= complete;
@@ -488,7 +478,7 @@ bool save_data(const uint32_t server_age) {
                 free(block);
                 close_database_fd();
                 write_log(LOG_ERR, "The data cannot be written to database file, it is a OS-specific error.");
-                return false;
+                return -1;
               }
 
               remaining -= block_size;
@@ -516,7 +506,7 @@ bool save_data(const uint32_t server_age) {
       free(block);
       close_database_fd();
       write_log(LOG_ERR, "The data cannot be written to database file, it is a OS-specific error.");
-      return false;
+      return -1;
     }
   }
 
@@ -525,13 +515,13 @@ bool save_data(const uint32_t server_age) {
     free(block);
     close_database_fd();
     write_log(LOG_ERR, "The data cannot be written to database file, it is a OS-specific error.");
-    return false;
+    return -1;
   }
 
   free(block);
 
   saving = false;
-  return true;
+  return 0;
 }
 
 void *save_thread(void *arg) {

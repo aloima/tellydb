@@ -130,7 +130,7 @@ void add_io_request(const enum IOOpType type, Client *client) {
   sem_post(sem);
 }
 
-bool create_io_threads(const uint32_t count) {
+int create_io_threads(const uint32_t count) {
   bool success = false;
   commands = get_commands();
 
@@ -193,7 +193,7 @@ CLEANUP:
     }
   }
 
-  return success;
+  return (success ? 0 : -1);
 }
 
 void destroy_io_threads() {

@@ -126,13 +126,13 @@ static inline void close_server() {
   const uint32_t server_age = server->age + difftime(time(NULL), server->start_at);
   const clock_t start = clock();
 
-  if (save_data(server_age)) {
+  if (save_data(server_age) == 0) {
     write_log(LOG_INFO, "Saved data in %.3f seconds.", ((float) clock() - start) / CLOCKS_PER_SEC);
   } else {
     write_log(LOG_ERR, "Database cannot be saved to database file, data may be corrupted. Inspect logs for detailed information.");
   }
 
-  if (close_database_fd()) {
+  if (close_database_fd() == 0) {
     write_log(LOG_INFO, "Closed database file.");
   } else {
     write_log(LOG_ERR, "Database file cannot be closed.");
@@ -233,7 +233,8 @@ void start_server(struct Configuration *config) {
   create_transaction_thread();
   write_log(LOG_INFO, "Created transaction thread.");
 
-  CLEANUP_RETURN_LOG_IF(!create_io_threads(max(sysconf(_SC_NPROCESSORS_ONLN) - 1, 1)), "Cannot create I/O threads.");
+  const uint32_t thread_count = max(sysconf(_SC_NPROCESSORS_ONLN) - 1, 1);
+  CLEANUP_RETURN_LOG_IF(create_io_threads(thread_count) == -1, "Cannot create I/O threads.");
   write_log(LOG_INFO, "Created I/O thread.");
 
   signal(SIGTERM, close_signal);
@@ -241,7 +242,7 @@ void start_server(struct Configuration *config) {
 
   CLEANUP_RETURN_IF(initialize_socket() == -1);
   CLEANUP_RETURN_IF(initialize_authorization() == -1);
-  CLEANUP_RETURN_IF(!open_database_fd(&server->age));
+  CLEANUP_RETURN_IF(open_database_fd(&server->age) == -1);
 
   write_log(LOG_INFO, "tellydb server age: %" PRIu32 " seconds", server->age);
 
@@ -252,7 +253,7 @@ void start_server(struct Configuration *config) {
   CREATE_EVENT(event, server->sockfd);
   CLEANUP_RETURN_LOG_IF(ADD_EVENT(server->eventfd, server->sockfd, event) == -1, "Cannot create epoll instance.");
 
-  CLEANUP_RETURN_IF(!initialize_clients());
+  CLEANUP_RETURN_IF(initialize_clients() == -1);
 
   server->start_at = time(NULL);
   write_log(LOG_INFO, "Server is listening on %" PRIu16 " port for accepting connections...", server->conf->port);

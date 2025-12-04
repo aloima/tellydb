@@ -38,7 +38,7 @@ typedef struct {
   struct TransactionBlock *waiting_block;
 } Client;
 
-bool initialize_clients();
+int initialize_clients();
 void free_clients();
 
 Client *get_client(const uint32_t id);

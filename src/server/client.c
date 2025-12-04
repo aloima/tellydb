@@ -81,7 +81,7 @@ uint32_t get_last_connection_client_id() {
   return atomic_load_explicit(&last_connection_client_id, memory_order_relaxed);
 }
 
-bool initialize_clients() {
+int initialize_clients() {
   conf = get_server_configuration();
   atomic_init(&client_count, 0);
   atomic_init(&last_connection_client_id, 1);
@@ -90,14 +90,14 @@ bool initialize_clients() {
 
   if (posix_memalign((void **) &clients, 16, size) != 0) {
     write_log(LOG_ERR, "Cannot create a map for storing clients, out of memory.");
-    return false;
+    return -1;
   }
 
   for (uint32_t i = 0; i < conf->max_clients; ++i) {
     clients[i].id = -1;
   }
 
-  return true;
+  return 0;
 }
 
 static inline Client *insert_client(Client *client) {
