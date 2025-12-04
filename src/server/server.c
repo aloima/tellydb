@@ -110,12 +110,12 @@ static inline void cleanup() {
   free_passwords();
   free_transaction_blocks();
   free_databases();
-  destroy_io_threads();
 
   write_log(LOG_INFO, "Free'd all memory blocks and exiting the process...");
   save_and_close_logs();
   free_configuration(server->conf);
 
+  destroy_io_threads();
   free(server);
   exit(EXIT_SUCCESS);
 }
