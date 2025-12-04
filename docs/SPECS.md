@@ -2,18 +2,21 @@
 This file contains the specifications of tellydb.
 
 ## Process
-tellydb contains a process and a thread:
+tellydb contains a process, a transaction thread, I/O threads and an optional background saving thread:
 * Thread manages sent commands by clients and executes them.
-* Process accepts clients, receives data sent by client, interprets received data as commands and manages the server.
+* Process accepts clients, manages the server and responses to clients.
+* There are `docs(processor count - 1, 1)` I/O threads. They read buffers from socket, interprets them to readable command data and terminates clients.
+* Background saving thread saves the database on the cache tp the persistent database file. It can be opened using [BGSAVE command](./COMMANDS.md#BGSAVE).
 
-tellydb handles received data as follows:
-* Data will be saved to cache.
-* When closing the server, data will be taken from cache and written to database file.
+tellydb handles database as follows:
+* Database will be taken from persistent database file, then be saved to cache.
+* When closing the server, database will be taken from cache and written to persistent database file.
 
 ## Authorization
 To get information, look at [AUTH.md](./AUTH.md).
 
 ## Databases
+* There may be databases more than one, look at [SELECT command](./COMMANDS.md#SELECT).
 * Each database stores the data in a HashMap.
 * The hashmap uses **djb2 hash algorithm** and all hashed values of key-value pairs will be stored in, so there is no re-hashing.
 * If a hash collision occurs, **linear probing scheme** will be executed.
