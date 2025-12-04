@@ -2,6 +2,8 @@
 
 #define VERY_LIKELY(x) (__builtin_expect_with_probability(!!(x), 1, 0.999))
 #define VERY_UNLIKELY(x) (__builtin_expect_with_probability(!!(x), 0, 0.999))
+#define min(a, b) ((a) > (b) ? (b) : (a))
+#define max(a, b) ((a) > (b) ? (a) : (b))
 
 #define FLOAT_PRECISION 1024
 
