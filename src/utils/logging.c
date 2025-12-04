@@ -157,7 +157,7 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
 
     push_tqueue(lines, &line);
   } else {
-    if (estimate_tqueue_size(lines) == conf->max_log_lines) {
+    if (estimate_tqueue_size(lines) >= conf->max_log_lines) {
       char *line;
       pop_tqueue(lines, &line);
       free(line);
