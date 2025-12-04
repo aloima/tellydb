@@ -44,7 +44,7 @@ static inline void number_pad(char *res, const uint32_t value) {
 
 void generate_date_string(char *text, const time_t value) {
   struct tm tm;
-  struct tm *_ = localtime_r(&value, &tm);
+  struct tm *_ = gmtime_r(&value, &tm);
 
   const char *month = months[tm.tm_mon];
 
