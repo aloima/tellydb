@@ -41,8 +41,8 @@ static inline void unknown_command(Client *client, string_t *name) {
   _write(client, buf, nbytes);
 }
 
-static void read_command(const uint32_t thread_id, Client *client) {
-  char *buf = threads[thread_id].read_buf;
+static void read_command(IOThread *thread, Client *client) {
+  char *buf = thread->read_buf;
   int32_t size = _read(client, buf, RESP_BUF_SIZE);
 
   if (size == 0) {
@@ -50,7 +50,7 @@ static void read_command(const uint32_t thread_id, Client *client) {
     return;
   }
 
-  Arena *arena = threads[thread_id].arena;
+  Arena *arena = thread->arena;
   int32_t at = 0;
 
   while (size != -1) {
@@ -92,17 +92,18 @@ static void read_command(const uint32_t thread_id, Client *client) {
 }
 
 void *handle_io_requests(void *arg) {
-  const uint32_t id = *((uint32_t *) arg);
+  IOThread *thread = arg;
 
-  while (atomic_load_explicit(&threads[id].status, memory_order_acquire) == ACTIVE) {
+  while (atomic_load_explicit(&thread->status, memory_order_acquire) == ACTIVE) {
     IOOperation op;
 
     sem_wait(sem);
     if (!pop_tqueue(queue, &op)) continue;
+    thread = arg;
 
     switch (op.type) {
       case IOOP_GET_COMMAND:
-        read_command(id, op.client);
+        read_command(thread, op.client);
         break;
 
       case IOOP_TERMINATE:
@@ -114,10 +115,10 @@ void *handle_io_requests(void *arg) {
     }
   }
 
-  atomic_store_explicit(&threads[id].status, KILLED, memory_order_release);
+  atomic_store_explicit(&thread->status, KILLED, memory_order_release);
 
-  if (threads[id].read_buf) free(threads[id].read_buf);
-  if (threads[id].arena) arena_destroy(threads[id].arena);
+  if (thread->read_buf) free(thread->read_buf);
+  if (thread->arena) arena_destroy(thread->arena);
 
   return NULL;
 }
@@ -153,7 +154,7 @@ bool create_io_threads(const uint32_t count) {
     thread->read_buf = malloc(RESP_BUF_SIZE);
     if (thread->read_buf == NULL) goto CLEANUP;
 
-    int created = pthread_create(&thread->thread, NULL, handle_io_requests, &thread->id);
+    int created = pthread_create(&thread->thread, NULL, handle_io_requests, &threads[i]);
     if (created != 0) goto CLEANUP;
 
     int detached = pthread_detach(thread->thread);
