@@ -7,8 +7,10 @@
 
 #include <openssl/crypto.h>
 
-struct TransactionBlock;
 #define RESP_BUF_SIZE 4096
+
+struct TransactionBlockStruct;
+typedef struct TransactionBlockStruct TransactionBlock;
 
 enum ProtocolVersion : uint8_t {
   RESP2 = 2,
@@ -35,7 +37,7 @@ typedef struct {
   enum ProtocolVersion protover;
 
   bool locked;
-  struct TransactionBlock *waiting_block;
+  TransactionBlock *waiting_block;
 } Client;
 
 int initialize_clients();

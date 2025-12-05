@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #include <stdatomic.h>
 
-static struct TransactionVariables *variables;
+static TransactionVariables *variables;
 static uint64_t processed_transaction_count = 0;
 
 // Private method, accessed by create_transaction_thread method once.
@@ -23,27 +23,25 @@ uint64_t get_processed_transaction_count() {
   return processed_transaction_count;
 }
 
-struct TransactionBlock *add_transaction_block(struct TransactionBlock *block) {
+TransactionBlock *add_transaction_block(TransactionBlock *block) {
   return push_tqueue(variables->queue, block);
 }
 
-static inline void prepare_transaction(
-  struct Transaction *transaction, Client *client, const uint64_t command_idx, commanddata_t *data
-) {
+static inline void prepare_transaction(Transaction *transaction, Client *client, const uint64_t command_idx, commanddata_t *data) {
   transaction->command = &variables->commands[command_idx];
   transaction->data = *data;
   transaction->database = client->database;
 }
 
 bool add_transaction(Client *client, const uint64_t command_idx, commanddata_t *data) {
-  struct TransactionBlock block;
+  TransactionBlock block;
 
   if (client->waiting_block == NULL || IS_RELATED_TO_WAITING_TX(variables->commands, command_idx)) {
     block.type = TX_DIRECT;
 
     block.client = client;
     block.password = client->password;
-    block.data.transaction = malloc(sizeof(struct Transaction));
+    block.data.transaction = malloc(sizeof(Transaction));
 
     prepare_transaction(block.data.transaction, client, command_idx, data);
     push_tqueue(variables->queue, &block);
@@ -56,26 +54,26 @@ bool add_transaction(Client *client, const uint64_t command_idx, commanddata_t *
   } else {
     block.type = TX_WAITING;
 
-    struct MultipleTransactions *multiple = &block.data.multiple;
+    MultipleTransactions *multiple = &block.data.multiple;
     multiple->transaction_count += 1;
-    multiple->transactions = realloc(multiple->transactions, sizeof(struct Transaction) * multiple->transaction_count);
+    multiple->transactions = realloc(multiple->transactions, sizeof(Transaction) * multiple->transaction_count);
     prepare_transaction(&multiple->transactions[multiple->transaction_count - 1], client, command_idx, data);
   }
 
   return true;
 }
 
-void remove_transaction_block(struct TransactionBlock *block) {
+void remove_transaction_block(TransactionBlock *block) {
   switch (block->type) {
     case TX_DIRECT: {
-      struct Transaction *transaction = block->data.transaction;
+      Transaction *transaction = block->data.transaction;
       processed_transaction_count += 1;
       free(transaction);
       break;
     }
 
     case TX_WAITING: case TX_MULTIPLE: {
-      struct MultipleTransactions multiple = block->data.multiple;
+      MultipleTransactions multiple = block->data.multiple;
 
       if (block->type == TX_MULTIPLE) {
         processed_transaction_count += multiple.transaction_count;
@@ -96,7 +94,7 @@ void free_transaction_blocks() {
   struct ThreadQueue *queue = variables->queue;
 
   while (estimate_tqueue_size(queue) != 0) {
-    struct TransactionBlock block;
+    TransactionBlock block;
     pop_tqueue(queue, &block);
     remove_transaction_block(&block);
   }
@@ -104,7 +102,7 @@ void free_transaction_blocks() {
   free_tqueue(queue);
 }
 
-static inline string_t execute_transaction(Client *client, struct Password *password, struct Transaction *transaction) {
+static inline string_t execute_transaction(Client *client, struct Password *password, Transaction *transaction) {
   struct Command *command = transaction->command;
   struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction->data, transaction->database, password, variables->buffer);
 
@@ -116,7 +114,7 @@ static inline string_t execute_transaction(Client *client, struct Password *pass
   return command->run(&entry);
 }
 
-void execute_transaction_block(struct TransactionBlock *block) {
+void execute_transaction_block(TransactionBlock *block) {
   Client *client = ((block->client->id != -1) ? block->client : NULL);
   struct Password *password = block->password;
 
@@ -128,7 +126,7 @@ void execute_transaction_block(struct TransactionBlock *block) {
     }
 
     case TX_MULTIPLE: {
-      struct MultipleTransactions multiple = block->data.multiple;
+      MultipleTransactions multiple = block->data.multiple;
       string_t results[multiple.transaction_count];
       uint64_t result_count = 0;
       uint64_t length = 0;

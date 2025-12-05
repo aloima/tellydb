@@ -10,7 +10,7 @@ static string_t run(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("Already started a transaction block, cannot create one without executing before");
   }
 
-  struct TransactionBlock block;
+  TransactionBlock block;
   block.type = TX_WAITING;
   block.client = entry->client;
   block.password = entry->password;

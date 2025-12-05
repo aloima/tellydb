@@ -10,7 +10,7 @@
 #include <unistd.h>
 
 static pthread_t thread;
-static struct TransactionVariables *variables;
+static TransactionVariables *variables;
 static _Atomic bool killed;
 
 void *transaction_thread(void *arg) {
@@ -21,31 +21,27 @@ void *transaction_thread(void *arg) {
   pthread_sigmask(SIG_BLOCK, &set, NULL);
 
   while (!atomic_load_explicit(&killed, memory_order_acquire)) {
-    //uint64_t idx = 0;
     bool found = false;
-    struct TransactionBlock block;
+    TransactionBlock block;
 
     while (pop_tqueue(variables->queue, &block)) {
       found = true;
 
-      //if (!block.waiting) {
-        /*Client *client;
+      if (block.type == TX_DIRECT) {
+        Client *client;
 
         if (block.client->id != -1) {
           client = block.client;
           __builtin_prefetch(client, 0, 3);
         } else {
           client = NULL;
-        }*/
+        }
 
         execute_transaction_block(&block);
         remove_transaction_block(&block);
 
-        // break;
-      //}
-
-      //idx += 1;
-      //block = get_tqueue_value(variables->queue, idx);
+        break;
+      }
     }
 
     if (!found) {
@@ -75,7 +71,7 @@ void create_transaction_thread() {
 
   struct Configuration *conf = get_server_configuration();
   variables->commands = get_commands();
-  variables->queue = create_tqueue(conf->max_transaction_blocks, sizeof(struct TransactionBlock), _Alignof(struct TransactionBlock));
+  variables->queue = create_tqueue(conf->max_transaction_blocks, sizeof(TransactionBlock), _Alignof(TransactionBlock));
   if (variables->queue == NULL) return write_log(LOG_ERR, "Cannot allocate transaction blocks, out of memory.");
 
   atomic_init(&variables->waiting_count, 0);

@@ -1,7 +1,7 @@
 #include <telly.h>
 
-static struct TransactionVariables variables;
+static TransactionVariables variables;
 
-struct TransactionVariables *get_transaction_variables() {
+TransactionVariables *get_transaction_variables() {
   return &variables;
 }

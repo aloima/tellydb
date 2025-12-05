@@ -24,31 +24,22 @@ enum TransactionBlockType : uint8_t {
   TX_MULTIPLE
 };
 
-struct Transaction {
+typedef struct TransactionStruct {
   commanddata_t data;
   struct Command *command;
   struct Database *database;
-};
+} Transaction;
 
-struct TransactionBlock {
+typedef struct TransactionBlockStruct {
   enum TransactionBlockType type;
   Client *client;
   struct Password *password;
 
   union {
-    struct Transaction *transaction;
-    struct MultipleTransactions multiple;
+    Transaction *transaction;
+    MultipleTransactions multiple;
   } data;
-};
-
-struct TransactionVariables {
-  struct ThreadQueue *queue;
-  char *buffer;
-  struct Command *commands;
-  pthread_cond_t cond;
-  pthread_mutex_t mutex;
-  _Atomic uint64_t waiting_count;
-};
+} TransactionBlock;
 
 void create_transaction_thread();
 void deactive_transaction_thread();
@@ -56,8 +47,8 @@ void deactive_transaction_thread();
 uint64_t get_processed_transaction_count();
 uint32_t get_transaction_count();
 
-struct TransactionBlock *add_transaction_block(struct TransactionBlock *block);
+TransactionBlock *add_transaction_block(TransactionBlock *block);
 bool add_transaction(Client *client, const uint64_t command_idx, commanddata_t *data);
-void remove_transaction_block(struct TransactionBlock *block);
+void remove_transaction_block(TransactionBlock *block);
 
 void free_transaction_blocks();
