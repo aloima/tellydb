@@ -75,8 +75,8 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   PASS_NO_CLIENT(entry->client);
-  const size_t nbytes = create_resp_integer(entry->buffer, entry->data->arg_count - 1);
-  return CREATE_STRING(entry->buffer, nbytes);
+  const size_t nbytes = create_resp_integer(entry->client->write_buf, entry->data->arg_count - 1);
+  return CREATE_STRING(entry->client->write_buf, nbytes);
 }
 
 const struct Command cmd_lpush = {

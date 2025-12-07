@@ -18,8 +18,8 @@ static string_t run(struct CommandEntry *entry) {
     }
   }
 
-  const size_t nbytes = create_resp_integer(entry->buffer, database->size.stored);
-  return CREATE_STRING(entry->buffer, nbytes);
+  const size_t nbytes = create_resp_integer(entry->client->write_buf, database->size.stored);
+  return CREATE_STRING(entry->client->write_buf, nbytes);
 }
 
 const struct Command cmd_dbsize = {

@@ -36,7 +36,7 @@ static inline uint8_t read_permissions_value(struct CommandEntry *entry, const c
         break;
 
       default: {
-        const size_t nbytes = sprintf(entry->buffer, "-Invalid permission: '%c'\r\n", c);
+        const size_t nbytes = sprintf(entry->client->write_buf, "-Invalid permission: '%c'\r\n", c);
         return -1;
       }
     }
@@ -128,8 +128,8 @@ static inline string_t generate_pwd(struct CommandEntry *entry) {
   char value[33];
   generate_random_string(value, 32);
 
-  sprintf(entry->buffer, "$32\r\n%s\r\n", value);
-  return CREATE_STRING(entry->buffer, 39);
+  sprintf(entry->client->write_buf, "$32\r\n%s\r\n", value);
+  return CREATE_STRING(entry->client->write_buf, 39);
 }
 
 static string_t run(struct CommandEntry *entry) {

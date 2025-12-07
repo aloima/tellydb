@@ -18,8 +18,8 @@ static string_t run(struct CommandEntry *entry) {
 
   const uint64_t last_save = res.st_mtime;
 
-  const size_t nbytes = create_resp_integer(entry->buffer, last_save);
-  return CREATE_STRING(entry->buffer, nbytes);
+  const size_t nbytes = create_resp_integer(entry->client->write_buf, last_save);
+  return CREATE_STRING(entry->client->write_buf, nbytes);
 }
 
 const struct Command cmd_lastsave = {

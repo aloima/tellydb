@@ -22,7 +22,7 @@ static string_t run(struct CommandEntry *entry) {
     const struct Command *commands = get_commands();
     const uint32_t command_count = get_command_count();
 
-    char *res = entry->buffer;
+    char *res = entry->client->write_buf;
     uint32_t res_len;
 
     switch (entry->client->protover) {
@@ -95,7 +95,7 @@ static string_t run(struct CommandEntry *entry) {
     const struct Command *commands = get_commands();
     const uint32_t command_count = get_command_count();
 
-    char *res = entry->buffer;
+    char *res = entry->client->write_buf;
     uint32_t res_len = sprintf(res, "*%" PRIu32 "\r\n", command_count);
 
     for (uint32_t i = 0; i < command_count; ++i) {
@@ -106,8 +106,8 @@ static string_t run(struct CommandEntry *entry) {
 
     response = CREATE_STRING(res, res_len);
   } else if (streq("COUNT", subcommand.value)) {
-    const size_t nbytes = sprintf(entry->buffer, ":%" PRIu32 "\r\n", get_command_count());
-    response = CREATE_STRING(entry->buffer, nbytes);
+    const size_t nbytes = sprintf(entry->client->write_buf, ":%" PRIu32 "\r\n", get_command_count());
+    response = CREATE_STRING(entry->client->write_buf, nbytes);
   } else {
     response = INVALID_SUBCOMMAND_ERROR("COMMAND");
   }

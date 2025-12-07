@@ -26,7 +26,6 @@ struct CommandEntry {
   Client *client;
   struct Password *password;
   commanddata_t *data;
-  char *buffer;
 };
 
 struct Subcommand {

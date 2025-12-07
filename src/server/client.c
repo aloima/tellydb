@@ -130,6 +130,7 @@ Client *add_client(const int connfd) {
   client.protover = RESP2;
   client.locked = false;
   client.waiting_block = NULL;
+  client.write_buf = malloc(MAX_RESPONSE_SIZE * sizeof(char));
   atomic_init(&client.state, CLIENT_STATE_ACTIVE);
 
   if (get_password_count() == 0) {
@@ -161,6 +162,7 @@ bool remove_client(const int id) {
     SSL_free(client->ssl);
   }
 
+  free(client->write_buf);
   if (client->lib_name) free(client->lib_name);
   if (client->lib_ver) free(client->lib_ver);
   if (client->waiting_block) remove_transaction_block(client->waiting_block);

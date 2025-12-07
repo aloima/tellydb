@@ -196,7 +196,7 @@ static string_t run(struct CommandEntry *entry) {
 
       if (res) {
         if (entry->client) {
-          return write_value(value, type, entry->client->protover, entry->buffer);
+          return write_value(value, type, entry->client->protover, entry->client->write_buf);
         }
       }
 

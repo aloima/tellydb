@@ -22,7 +22,7 @@ static string_t run(struct CommandEntry *entry) {
   const struct HashTableField *field = get_field_from_hashtable(kv->value, entry->data->args[1]);
 
   if (field) {
-    return write_value(field->value, field->type, entry->client->protover, entry->buffer);
+    return write_value(field->value, field->type, entry->client->protover, entry->client->write_buf);
   } else {
     return RESP_NULL(entry->client->protover);
   }

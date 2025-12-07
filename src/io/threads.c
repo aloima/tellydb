@@ -17,6 +17,7 @@ enum IOThreadStatus : uint8_t {
 typedef struct {
   enum IOOpType type;
   Client *client;
+  string_t write_str;
 } IOOperation;
 
 typedef struct {
@@ -47,7 +48,7 @@ static void read_command(IOThread *thread, Client *client) {
   int32_t size = _read(client, buf, RESP_BUF_SIZE);
 
   if (size == 0) {
-    add_io_request(IOOP_TERMINATE, client);
+    add_io_request(IOOP_TERMINATE, client, EMPTY_STRING());
     return;
   }
 
@@ -111,6 +112,11 @@ void *handle_io_requests(void *arg) {
         terminate_connection(op.client);
         break;
 
+      case IOOP_WRITE: {
+        _write(op.client, op.write_str.value, op.write_str.len);
+        break;
+      }
+
       default:
         break;
     }
@@ -124,9 +130,11 @@ void *handle_io_requests(void *arg) {
   return NULL;
 }
 
-void add_io_request(const enum IOOpType type, Client *client) {
-  IOOperation op = {type, client};
-  push_tqueue(queue, &op);
+void add_io_request(const enum IOOpType type, Client *client, string_t write_str) {
+  IOOperation op = {type, client, write_str};
+
+  // TODO: better waiting
+  while (!push_tqueue(queue, &op)) usleep(5);
   sem_post(sem);
 }
 

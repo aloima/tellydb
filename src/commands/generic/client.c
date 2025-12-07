@@ -113,8 +113,8 @@ static inline string_t subcommand_info(struct CommandEntry *entry) {
     "Permissions: %.*s\r\n"
   ), client->id, client->connfd, connected_at, latest_command, lib_name, lib_ver, protocol, permissions_len, permissions);
 
-  const size_t nbytes = create_resp_string(entry->buffer, CREATE_STRING(res, res_len));
-  return CREATE_STRING(entry->buffer, nbytes);
+  const size_t nbytes = create_resp_string(entry->client->write_buf, CREATE_STRING(res, res_len));
+  return CREATE_STRING(entry->client->write_buf, nbytes);
 }
 
 static inline string_t subcommand_list(struct CommandEntry *entry) {
@@ -126,21 +126,21 @@ static inline string_t subcommand_list(struct CommandEntry *entry) {
   Client *clients = get_clients();
   uint64_t at = 1;
 
-  entry->buffer[0] = RDT_ARRAY;
-  at += ltoa(get_client_count(), entry->buffer + at);
-  entry->buffer[at++] = '\r';
-  entry->buffer[at++] = '\n';
+  entry->client->write_buf[0] = RDT_ARRAY;
+  at += ltoa(get_client_count(), entry->client->write_buf + at);
+  entry->client->write_buf[at++] = '\r';
+  entry->client->write_buf[at++] = '\n';
 
   for (uint32_t i = 0; i < conf->max_clients; ++i) {
     if (clients[i].id != -1) {
-      entry->buffer[at++] = RDT_SSTRING;
-      at += ltoa(clients[i].id, entry->buffer + at);
-      entry->buffer[at++] = '\r';
-      entry->buffer[at++] = '\n';
+      entry->client->write_buf[at++] = RDT_SSTRING;
+      at += ltoa(clients[i].id, entry->client->write_buf + at);
+      entry->client->write_buf[at++] = '\r';
+      entry->client->write_buf[at++] = '\n';
     }
   }
 
-  return CREATE_STRING(entry->buffer, at);
+  return CREATE_STRING(entry->client->write_buf, at);
 }
 
 static string_t subcommand_lock(struct CommandEntry *entry) {
@@ -165,16 +165,16 @@ static string_t subcommand_lock(struct CommandEntry *entry) {
 
   if (!target) {
     PASS_NO_CLIENT(entry->client);
-    const size_t nbytes = sprintf(entry->buffer, "-There is no client whose ID is #%" PRIi64 "\r\n", id);
-    return CREATE_STRING(entry->buffer, nbytes);
+    const size_t nbytes = sprintf(entry->client->write_buf, "-There is no client whose ID is #%" PRIi64 "\r\n", id);
+    return CREATE_STRING(entry->client->write_buf, nbytes);
   } else if (target->password->permissions & P_CLIENT) {
     PASS_NO_CLIENT(entry->client);
-    const size_t nbytes = sprintf(entry->buffer, "-Client #%" PRIi64 " has P_CLIENT, so cannot be locked\r\n", id);
-    return CREATE_STRING(entry->buffer, nbytes);
+    const size_t nbytes = sprintf(entry->client->write_buf, "-Client #%" PRIi64 " has P_CLIENT, so cannot be locked\r\n", id);
+    return CREATE_STRING(entry->client->write_buf, nbytes);
   } else if (target->locked) {
     PASS_NO_CLIENT(entry->client);
-    const size_t nbytes = sprintf(entry->buffer, "-Client #%" PRIi64 " is locked, so cannot be relocked\r\n", id);
-    return CREATE_STRING(entry->buffer, nbytes);
+    const size_t nbytes = sprintf(entry->client->write_buf, "-Client #%" PRIi64 " is locked, so cannot be relocked\r\n", id);
+    return CREATE_STRING(entry->client->write_buf, nbytes);
   }
 
   target->locked = true;
@@ -242,14 +242,14 @@ static inline string_t subcommand_kill(struct CommandEntry *entry) {
 
   if (!target) {
     PASS_NO_CLIENT(entry->client);
-    const size_t nbytes = sprintf(entry->buffer, "-There is no client whose ID is #%" PRIi64 "\r\n", id);
-    return CREATE_STRING(entry->buffer, nbytes);;
+    const size_t nbytes = sprintf(entry->client->write_buf, "-There is no client whose ID is #%" PRIi64 "\r\n", id);
+    return CREATE_STRING(entry->client->write_buf, nbytes);;
   }
 
   if (target->password->permissions & P_CLIENT) {
     PASS_NO_CLIENT(entry->client);
-    const size_t nbytes = sprintf(entry->buffer, "-Client #%" PRIi64 " has P_CLIENT, so cannot be killed\r\n", id);
-    return CREATE_STRING(entry->buffer, nbytes);
+    const size_t nbytes = sprintf(entry->client->write_buf, "-Client #%" PRIi64 " has P_CLIENT, so cannot be killed\r\n", id);
+    return CREATE_STRING(entry->client->write_buf, nbytes);
   }
 
   terminate_connection(target);
@@ -280,12 +280,12 @@ static inline string_t subcommand_unlock(struct CommandEntry *entry) {
 
   if (!target) {
     PASS_NO_CLIENT(entry->client);
-    const size_t nbytes = sprintf(entry->buffer, "-There is no client whose ID is #%" PRIi64 "\r\n", id);
-    return CREATE_STRING(entry->buffer, nbytes);
+    const size_t nbytes = sprintf(entry->client->write_buf, "-There is no client whose ID is #%" PRIi64 "\r\n", id);
+    return CREATE_STRING(entry->client->write_buf, nbytes);
   } else if (!target->locked) {
     PASS_NO_CLIENT(entry->client);
-    const size_t nbytes = sprintf(entry->buffer, "-Client #%" PRIi64 " is not locked, so cannot be unlocked\r\n", id);
-    return CREATE_STRING(entry->buffer, nbytes);
+    const size_t nbytes = sprintf(entry->client->write_buf, "-Client #%" PRIi64 " is not locked, so cannot be unlocked\r\n", id);
+    return CREATE_STRING(entry->client->write_buf, nbytes);
   }
 
   target->locked = false;
@@ -306,7 +306,7 @@ static string_t run(struct CommandEntry *entry) {
   string_t response;
 
   if (streq("ID", subcommand.value) && entry->client) {
-    response = subcommand_id(entry->client, entry->buffer);
+    response = subcommand_id(entry->client, entry->client->write_buf);
   } else if (streq("INFO", subcommand.value) && entry->client) {
     response = subcommand_info(entry);
   } else if (streq("LIST", subcommand.value) && entry->client) {

@@ -95,7 +95,7 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   PASS_NO_CLIENT(entry->client);
-  return write_value(result->value, result->type, entry->client->protover, entry->buffer);
+  return write_value(result->value, result->type, entry->client->protover, entry->client->write_buf);
 }
 
 const struct Command cmd_decrby = {

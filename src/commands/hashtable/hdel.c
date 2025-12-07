@@ -53,8 +53,8 @@ static string_t run(struct CommandEntry *entry) {
     delete_data(entry->database, key);
   }
 
-  const size_t nbytes = create_resp_integer(entry->buffer, old_size - current_size);
-  return CREATE_STRING(entry->buffer, nbytes);
+  const size_t nbytes = create_resp_integer(entry->client->write_buf, old_size - current_size);
+  return CREATE_STRING(entry->client->write_buf, nbytes);
 }
 
 const struct Command cmd_hdel = {

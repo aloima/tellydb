@@ -110,8 +110,8 @@ static string_t run(struct CommandEntry *entry) {
 
   const uint16_t buf_len = strlen(buf);
 
-  const size_t nbytes = sprintf(entry->buffer, "$%" PRIu16 "\r\n%s\r\n", buf_len, buf);
-  return CREATE_STRING(entry->buffer, nbytes);
+  const size_t nbytes = sprintf(entry->client->write_buf, "$%" PRIu16 "\r\n%s\r\n", buf_len, buf);
+  return CREATE_STRING(entry->client->write_buf, nbytes);
 }
 
 const struct Command cmd_info = {

@@ -16,18 +16,18 @@ static string_t run(struct CommandEntry *entry) {
   if (entry->client) {
     switch (entry->client->protover) {
       case RESP2: {
-        entry->buffer[0] = '*';
-        at = ltoa(entry->data->arg_count * 2, entry->buffer + 1) + 1;
-        entry->buffer[at++] = '\r';
-        entry->buffer[at++] = '\n';
+        entry->client->write_buf[0] = '*';
+        at = ltoa(entry->data->arg_count * 2, entry->client->write_buf + 1) + 1;
+        entry->client->write_buf[at++] = '\r';
+        entry->client->write_buf[at++] = '\n';
         break;
       }
 
       case RESP3:
-        entry->buffer[0] = '%';
-        at = ltoa(entry->data->arg_count, entry->buffer + 1) + 1;
-        entry->buffer[at++] = '\r';
-        entry->buffer[at++] = '\n';
+        entry->client->write_buf[0] = '%';
+        at = ltoa(entry->data->arg_count, entry->client->write_buf + 1) + 1;
+        entry->client->write_buf[at++] = '\r';
+        entry->client->write_buf[at++] = '\n';
         break;
     }
 
@@ -35,7 +35,7 @@ static string_t run(struct CommandEntry *entry) {
       const string_t key = entry->data->args[i];
       struct KVPair *result = get_data(entry->database, key);
       void *number;
-      at += create_resp_string(entry->buffer + at, key);
+      at += create_resp_string(entry->client->write_buf + at, key);
 
       if (!result) {
         number = malloc(sizeof(mpz_t));
@@ -46,13 +46,13 @@ static string_t run(struct CommandEntry *entry) {
         const bool success = set_data(entry->database, NULL, key, value, TELLY_INT);
 
         if (!success) {
-          at += create_resp_string(entry->buffer + at, CREATE_STRING("error", 5));
+          at += create_resp_string(entry->client->write_buf + at, CREATE_STRING("error", 5));
           mpz_clear(*value);
           free(number);
           continue;
         }
 
-        at += create_resp_integer_mpz(entry->client->protover, entry->buffer + at, *value);
+        at += create_resp_integer_mpz(entry->client->protover, entry->client->write_buf + at, *value);
       } else {
         switch (result->type) {
           case TELLY_INT: {
@@ -60,7 +60,7 @@ static string_t run(struct CommandEntry *entry) {
 
             mpz_t *value = number;
             mpz_add_ui(*value, *value, 1);
-            at += create_resp_integer_mpz(entry->client->protover, entry->buffer + at, *value);
+            at += create_resp_integer_mpz(entry->client->protover, entry->client->write_buf + at, *value);
             break;
           }
 
@@ -69,12 +69,12 @@ static string_t run(struct CommandEntry *entry) {
 
             mpf_t *value = number;
             mpf_add_ui(*value, *value, 1);
-            at += create_resp_integer_mpf(entry->client->protover, entry->buffer + at, *value);
+            at += create_resp_integer_mpf(entry->client->protover, entry->client->write_buf + at, *value);
             break;
           }
 
           default:
-            at += create_resp_string(entry->buffer + at, CREATE_STRING("invalid type", 12));
+            at += create_resp_string(entry->client->write_buf + at, CREATE_STRING("invalid type", 12));
             break;
         }
       }
@@ -84,7 +84,7 @@ static string_t run(struct CommandEntry *entry) {
       const string_t key = entry->data->args[i];
       struct KVPair *result = get_data(entry->database, key);
       void *number;
-      at += create_resp_string(entry->buffer + at, key);
+      at += create_resp_string(entry->client->write_buf + at, key);
 
       if (!result) {
         number = malloc(sizeof(mpz_t));
@@ -123,7 +123,7 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   PASS_NO_CLIENT(entry->client);
-  return CREATE_STRING(entry->buffer, at);
+  return CREATE_STRING(entry->client->write_buf, at);
 }
 
 const struct Command cmd_incr = {

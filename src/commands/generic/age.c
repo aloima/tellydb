@@ -12,8 +12,8 @@ static string_t run(struct CommandEntry *entry) {
   get_server_time(&start_at, &age);
   age += difftime(time(NULL), start_at);
 
-  const size_t nbytes = create_resp_integer(entry->buffer, age);
-  return CREATE_STRING(entry->buffer, nbytes);
+  const size_t nbytes = create_resp_integer(entry->client->write_buf, age);
+  return CREATE_STRING(entry->client->write_buf, nbytes);
 }
 
 const struct Command cmd_age = {

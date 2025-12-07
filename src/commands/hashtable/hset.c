@@ -70,8 +70,8 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   PASS_NO_CLIENT(entry->client)
-  const size_t buf_len = create_resp_integer(entry->buffer, fv_count);
-  return CREATE_STRING(entry->buffer, buf_len);
+  const size_t buf_len = create_resp_integer(entry->client->write_buf, fv_count);
+  return CREATE_STRING(entry->client->write_buf, buf_len);
 }
 
 const struct Command cmd_hset = {

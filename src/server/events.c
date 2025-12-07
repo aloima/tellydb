@@ -135,9 +135,9 @@ void handle_events(struct Server *server) {
       }
 
       Client *client = GET_EVENT_DATA(events[i]);
-      add_io_request(IOOP_GET_COMMAND, client);
+      add_io_request(IOOP_GET_COMMAND, client, EMPTY_STRING());
 
-      if (IS_CONNECTION_CLOSED(events[i])) add_io_request(IOOP_TERMINATE, client);
+      if (IS_CONNECTION_CLOSED(events[i])) add_io_request(IOOP_TERMINATE, client, EMPTY_STRING());
     }
   }
 }

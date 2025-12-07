@@ -30,14 +30,14 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   // calculated length: 85 + (existed * 9) + (not_existed * 12)
-  const size_t nbytes = sprintf(entry->buffer, (
+  const size_t nbytes = sprintf(entry->client->write_buf, (
     "*%" PRIu32 "\r\n"
       "+existed key count is %u\r\n"
       "+not existed key count is %u\r\n"
       "%s"
   ), entry->data->arg_count + 2, existed, not_existed, buf);
 
-  return CREATE_STRING(entry->buffer, nbytes);
+  return CREATE_STRING(entry->client->write_buf, nbytes);
 }
 
 const struct Command cmd_exists = {

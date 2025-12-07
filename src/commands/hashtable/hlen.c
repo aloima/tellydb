@@ -21,13 +21,13 @@ static string_t run(struct CommandEntry *entry) {
 
   const struct HashTable *table = kv->value;
 
-  const size_t nbytes = sprintf(entry->buffer, (
+  const size_t nbytes = sprintf(entry->client->write_buf, (
     "*3\r\n"
       "+Capacity: %u\r\n"
       "+Used: %u\r\n"
   ), table->size.capacity, table->size.used);
 
-  return CREATE_STRING(entry->buffer, nbytes);
+  return CREATE_STRING(entry->client->write_buf, nbytes);
 }
 
 const struct Command cmd_hlen = {

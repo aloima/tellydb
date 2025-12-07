@@ -29,7 +29,7 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   const struct HashTable *table = kv->value;
-  char *response = entry->buffer;
+  char *response = entry->client->write_buf;
   uint64_t at;
 
   switch (entry->client->protover) {

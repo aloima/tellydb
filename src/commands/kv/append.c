@@ -27,8 +27,8 @@ static string_t run(struct CommandEntry *entry) {
     string->len += arg.len;
 
     PASS_NO_CLIENT(entry->client);
-    const size_t nbytes = create_resp_integer(entry->buffer, string->len);
-    return CREATE_STRING(entry->buffer, nbytes);
+    const size_t nbytes = create_resp_integer(entry->client->write_buf, string->len);
+    return CREATE_STRING(entry->client->write_buf, nbytes);
   } else {
     const string_t arg = entry->data->args[1];
 
@@ -39,8 +39,8 @@ static string_t run(struct CommandEntry *entry) {
     set_data(entry->database, NULL, key, string, TELLY_STR);
 
     PASS_NO_CLIENT(entry->client);
-    const size_t nbytes = create_resp_integer(entry->buffer, string->len);
-    return CREATE_STRING(entry->buffer, nbytes);
+    const size_t nbytes = create_resp_integer(entry->client->write_buf, string->len);
+    return CREATE_STRING(entry->client->write_buf, nbytes);
   }
 }
 

@@ -53,7 +53,6 @@ void *transaction_thread(void *arg) {
 
   pthread_cond_destroy(&variables->cond);
   pthread_mutex_destroy(&variables->mutex);
-  free(variables->buffer);
 
   return NULL;
 }
@@ -75,7 +74,6 @@ void create_transaction_thread() {
   if (variables->queue == NULL) return write_log(LOG_ERR, "Cannot allocate transaction blocks, out of memory.");
 
   atomic_init(&variables->waiting_count, 0);
-  variables->buffer = malloc(MAX_RESPONSE_SIZE);
 
   pthread_cond_init(&variables->cond, NULL);
   pthread_mutex_init(&variables->mutex, NULL);

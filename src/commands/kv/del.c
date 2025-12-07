@@ -16,8 +16,8 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   PASS_NO_CLIENT(entry->client);
-  const size_t res_len = create_resp_integer(entry->buffer, deleted);
-  return CREATE_STRING(entry->buffer, res_len);
+  const size_t res_len = create_resp_integer(entry->client->write_buf, deleted);
+  return CREATE_STRING(entry->client->write_buf, res_len);
 }
 
 const struct Command cmd_del = {

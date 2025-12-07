@@ -21,7 +21,7 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   const struct HashTable *table = kv->value;
-  char *response = entry->buffer;
+  char *response = entry->client->write_buf;
 
   response[0] = '*';
   uint64_t at = ltoa(table->size.used, response + 1) + 1;

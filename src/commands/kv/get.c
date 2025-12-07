@@ -12,7 +12,7 @@ static string_t run(struct CommandEntry *entry) {
   const struct KVPair *kv = get_data(entry->database, entry->data->args[0]);
 
   if (kv) {
-    return write_value(kv->value, kv->type, entry->client->protover, entry->buffer);
+    return write_value(kv->value, kv->type, entry->client->protover, entry->client->write_buf);
   } else {
     return RESP_NULL(entry->client->protover);
   }

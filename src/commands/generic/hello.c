@@ -45,7 +45,7 @@ static string_t run(struct CommandEntry *entry) {
     values[2][1] = protocols[0];
   }
 
-  char *buf = entry->buffer;
+  char *buf = entry->client->write_buf;
   uint32_t at;
 
   switch (entry->client->protover) {

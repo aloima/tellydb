@@ -10,12 +10,11 @@
     PASS_COMMAND(); \
   }
 
-#define CREATE_COMMAND_ENTRY(_client, _data, _database, _password, _buffer) ({\
+#define CREATE_COMMAND_ENTRY(_client, _data, _database, _password) ({\
   (struct CommandEntry) {\
     .client = (_client),\
     .data = (_data),\
     .database = (_database),\
-    .password = (_password),\
-    .buffer = (_buffer)\
+    .password = (_password)\
   };\
 })

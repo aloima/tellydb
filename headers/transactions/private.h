@@ -17,7 +17,6 @@ typedef struct {
 
 typedef struct {
   struct ThreadQueue *queue;
-  char *buffer;
   struct Command *commands;
   pthread_cond_t cond;
   pthread_mutex_t mutex;

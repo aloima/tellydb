@@ -18,8 +18,8 @@ static string_t run(struct CommandEntry *entry) {
     return INVALID_TYPE_ERROR("LLEN");
   }
 
-  const size_t nbytes = create_resp_integer(entry->buffer, ((struct List *) kv->value)->size);
-  return CREATE_STRING(entry->buffer, nbytes);
+  const size_t nbytes = create_resp_integer(entry->client->write_buf, ((struct List *) kv->value)->size);
+  return CREATE_STRING(entry->client->write_buf, nbytes);
 }
 
 const struct Command cmd_llen = {

@@ -38,6 +38,8 @@ typedef struct {
 
   bool locked;
   TransactionBlock *waiting_block;
+
+  char *write_buf;
 } Client;
 
 int initialize_clients();

@@ -10,8 +10,8 @@ static string_t run(struct CommandEntry *entry) {
       return RESP_OK_MESSAGE("PONG");
 
     case 1: {
-      const size_t nbytes = create_resp_string(entry->buffer, entry->data->args[0]);
-      return CREATE_STRING(entry->buffer, nbytes);
+      const size_t nbytes = create_resp_string(entry->client->write_buf, entry->data->args[0]);
+      return CREATE_STRING(entry->client->write_buf, nbytes);
     }
 
     default:

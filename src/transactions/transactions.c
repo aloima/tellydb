@@ -74,10 +74,7 @@ void remove_transaction_block(TransactionBlock *block) {
 
     case TX_WAITING: case TX_MULTIPLE: {
       MultipleTransactions multiple = block->data.multiple;
-
-      if (block->type == TX_MULTIPLE) {
-        processed_transaction_count += multiple.transaction_count;
-      }
+      if (block->type == TX_MULTIPLE) processed_transaction_count += multiple.transaction_count;
 
       free(multiple.transactions);
       break;
@@ -104,7 +101,7 @@ void free_transaction_blocks() {
 
 static inline string_t execute_transaction(Client *client, struct Password *password, Transaction *transaction) {
   struct Command *command = transaction->command;
-  struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction->data, transaction->database, password, variables->buffer);
+  struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction->data, transaction->database, password);
 
   if ((password->permissions & command->permissions) != command->permissions) {
     WRITE_ERROR_MESSAGE(client, "No permissions to execute this command");
@@ -121,10 +118,11 @@ void execute_transaction_block(TransactionBlock *block) {
   switch (block->type) {
     case TX_DIRECT: {
       const string_t response = execute_transaction(client, password, block->data.transaction);
-      if (response.len != 0) _write(client, response.value, response.len);
+      if (response.len != 0) add_io_request(IOOP_WRITE, client, response);
       break;
     }
 
+    // TODO: client->write_buf collision
     case TX_MULTIPLE: {
       MultipleTransactions multiple = block->data.multiple;
       string_t results[multiple.transaction_count];
@@ -146,18 +144,16 @@ void execute_transaction_block(TransactionBlock *block) {
       size_t at = get_digit_count(result_count) + 3;
       length += at;
 
-      char *response = malloc(length + 1);
-      sprintf(response, "*%" PRIu64 "\r\n", result_count);
+      sprintf(client->write_buf, "*%" PRIu64 "\r\n", result_count);
 
       for (uint64_t i = 0; i < result_count; ++i) {
         string_t result = results[i];
-        memcpy(response + at, result.value, result.len);
+        memcpy(client->write_buf + at, result.value, result.len);
         at += result.len;
         free(result.value);
       }
 
-      _write(client, response, length);
-      free(response);
+      add_io_request(IOOP_WRITE, client, CREATE_STRING(client->write_buf, length));
       break;
     }
 
