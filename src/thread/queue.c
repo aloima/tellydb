@@ -70,14 +70,13 @@ void *push_tqueue(struct ThreadQueue *queue, void *value) {
   do {
     const uint64_t at = atomic_load_explicit(&queue->at, memory_order_acquire);
     if ((end - at) >= queue->capacity) return NULL;
-  } while (!atomic_compare_exchange_weak_explicit(&queue->end, &end, end + 1, memory_order_acq_rel, memory_order_relaxed));
+  } while (!ATOMIC_CAS_WEAK(&queue->end, &end, end + 1, memory_order_acq_rel, memory_order_relaxed));
 
   const uint64_t idx = (end & mask);
 
   _Atomic(enum ThreadQueueState) *state = &queue->states[idx].value;
   while (atomic_load_explicit(state, memory_order_acquire) != TQ_EMPTY) cpu_relax();
 
-  atomic_store_explicit(state, TQ_STORING, memory_order_relaxed);
   char *dst = ((char *) queue->data + (idx * queue->type));
   memcpy(dst, value, queue->type);
   atomic_store_explicit(state, TQ_STORED, memory_order_release);
@@ -93,7 +92,7 @@ bool pop_tqueue(struct ThreadQueue *queue, void *dest) {
     at = atomic_load_explicit(&queue->at, memory_order_relaxed);
     const uint64_t end = atomic_load_explicit(&queue->end, memory_order_acquire);
     if (end == at) return false;
-  } while (!atomic_compare_exchange_weak_explicit(&queue->at, &at, at + 1, memory_order_acq_rel, memory_order_relaxed));
+  } while (!ATOMIC_CAS_WEAK(&queue->at, &at, at + 1, memory_order_acq_rel, memory_order_relaxed));
 
   const uint64_t idx = at & mask;
 

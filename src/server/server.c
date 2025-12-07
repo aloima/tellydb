@@ -79,11 +79,6 @@ void get_server_time(time_t *server_start_at, uint32_t *server_age) {
 }
 
 void terminate_connection(Client *client) {
-  enum ClientState expected_state = CLIENT_STATE_ACTIVE;
-  const bool is_active = atomic_compare_exchange_strong_explicit(&client->state, &expected_state, CLIENT_STATE_PASSIVE,
-      memory_order_acq_rel, memory_order_relaxed);
-  if (!is_active) return;
-
   const int connfd = client->connfd;
   event_t ev;
   PREPARE_REMOVING_EVENT(ev, connfd);

@@ -103,16 +103,28 @@ void *handle_io_requests(void *arg) {
     if (!pop_tqueue(queue, &op)) continue;
     thread = arg;
 
+    Client *client = op.client;
+    const bool is_empty = (atomic_load_explicit(&client->state, memory_order_acquire) == CLIENT_STATE_EMPTY);
+    if (is_empty) continue;
+
+    enum ClientState expected = CLIENT_STATE_ACTIVE;
+
+    do {
+      if (expected == CLIENT_STATE_EMPTY) goto TERMINATION;
+    } while (!ATOMIC_CAS_WEAK(&client->state, &expected, CLIENT_STATE_PASSIVE, memory_order_acq_rel, memory_order_relaxed));
+
     switch (op.type) {
       case IOOP_GET_COMMAND:
-        read_command(thread, op.client);
+        read_command(thread, client);
         break;
 
       case IOOP_TERMINATE:
-        terminate_connection(op.client);
+        terminate_connection(client);
+        goto TERMINATION;
         break;
 
       case IOOP_WRITE: {
+        string_t *write_str = &op.write_str;
         _write(op.client, op.write_str.value, op.write_str.len);
         break;
       }
@@ -120,6 +132,11 @@ void *handle_io_requests(void *arg) {
       default:
         break;
     }
+
+    atomic_store_explicit(&client->state, CLIENT_STATE_ACTIVE, memory_order_release);
+
+TERMINATION:
+    (void) NULL;
   }
 
   if (thread->read_buf) free(thread->read_buf);
