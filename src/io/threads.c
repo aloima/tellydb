@@ -122,11 +122,10 @@ void *handle_io_requests(void *arg) {
     }
   }
 
-  atomic_store_explicit(&thread->status, KILLED, memory_order_release);
-
   if (thread->read_buf) free(thread->read_buf);
   if (thread->arena) arena_destroy(thread->arena);
-
+  
+  atomic_store_explicit(&thread->status, KILLED, memory_order_release);
   return NULL;
 }
 
