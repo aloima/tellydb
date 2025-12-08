@@ -20,13 +20,13 @@ void *transaction_thread(void *arg) {
   sigaddset(&set, SIGTERM);
   pthread_sigmask(SIG_BLOCK, &set, NULL);
 
-  while (!atomic_load_explicit(&killed, memory_order_acquire)) {
-    bool found = false;
+  while (true) {
+    sem_wait(variables->sem);
+
     TransactionBlock block;
+    if (atomic_load_explicit(&killed, memory_order_acquire)) break;
 
     while (pop_tqueue(variables->queue, &block)) {
-      found = true;
-
       if (block.type == TX_DIRECT) {
         Client *client;
 
@@ -43,25 +43,20 @@ void *transaction_thread(void *arg) {
         break;
       }
     }
-
-    if (!found) {
-      pthread_mutex_lock(&variables->mutex);
-      pthread_cond_wait(&variables->cond, &variables->mutex);
-      pthread_mutex_unlock(&variables->mutex);
-    }
   }
 
-  pthread_cond_destroy(&variables->cond);
-  pthread_mutex_destroy(&variables->mutex);
-
+  sem_destroy(variables->sem);
   return NULL;
 }
 
 void deactive_transaction_thread() {
   atomic_store_explicit(&killed, true, memory_order_release);
-  pthread_mutex_lock(&variables->mutex);
-  pthread_cond_signal(&variables->cond);
-  pthread_mutex_unlock(&variables->mutex);
+
+  sem_post(variables->sem);
+  usleep(3);
+
+  sem_destroy(variables->sem);
+  free(variables->sem);
 }
 
 void create_transaction_thread() {
@@ -75,8 +70,8 @@ void create_transaction_thread() {
 
   atomic_init(&variables->waiting_count, 0);
 
-  pthread_cond_init(&variables->cond, NULL);
-  pthread_mutex_init(&variables->mutex, NULL);
+  variables->sem = malloc(sizeof(sem_t));
+  sem_init(variables->sem, 0, 0);
   atomic_init(&killed, false);
 
   pthread_create(&thread, NULL, transaction_thread, NULL);

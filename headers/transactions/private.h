@@ -4,6 +4,8 @@
 
 #include <stdint.h>
 
+#include <semaphore.h>
+
 struct TransactionBlockStruct;
 typedef struct TransactionBlockStruct TransactionBlock;
 
@@ -18,8 +20,7 @@ typedef struct {
 typedef struct {
   struct ThreadQueue *queue;
   struct Command *commands;
-  pthread_cond_t cond;
-  pthread_mutex_t mutex;
+  sem_t *sem;
   _Atomic uint64_t waiting_count;
 } TransactionVariables;
 

@@ -7,6 +7,8 @@
 #include <stdbool.h>
 #include <stdatomic.h>
 
+#include <semaphore.h>
+
 static TransactionVariables *variables;
 static uint64_t processed_transaction_count = 0;
 
@@ -46,10 +48,8 @@ bool add_transaction(Client *client, const uint64_t command_idx, commanddata_t *
     prepare_transaction(block.data.transaction, client, command_idx, data);
     push_tqueue(variables->queue, &block);
 
-    if (estimate_tqueue_size(variables->queue) - atomic_load_explicit(&variables->waiting_count, memory_order_relaxed) == 1) {
-      pthread_mutex_lock(&variables->mutex);
-      pthread_cond_signal(&variables->cond);
-      pthread_mutex_unlock(&variables->mutex);
+    if (estimate_tqueue_size(variables->queue) - atomic_load_explicit(&variables->waiting_count, memory_order_relaxed) >= 1) {
+      sem_post(variables->sem);
     }
   } else {
     block.type = TX_WAITING;
