@@ -104,14 +104,12 @@ void *handle_io_requests(void *arg) {
     thread = arg;
 
     Client *client = op.client;
-    const bool is_empty = (atomic_load_explicit(&client->state, memory_order_acquire) == CLIENT_STATE_EMPTY);
-    if (is_empty) continue;
-
     enum ClientState expected = CLIENT_STATE_ACTIVE;
 
-    do {
+    while (!ATOMIC_CAS_WEAK(&client->state, &expected, CLIENT_STATE_PASSIVE, memory_order_acq_rel, memory_order_relaxed)) {
       if (expected == CLIENT_STATE_EMPTY) goto TERMINATION;
-    } while (!ATOMIC_CAS_WEAK(&client->state, &expected, CLIENT_STATE_PASSIVE, memory_order_acq_rel, memory_order_relaxed));
+      expected = CLIENT_STATE_ACTIVE;
+    }
 
     switch (op.type) {
       case IOOP_GET_COMMAND:
@@ -141,7 +139,7 @@ TERMINATION:
 
   if (thread->read_buf) free(thread->read_buf);
   if (thread->arena) arena_destroy(thread->arena);
-  
+
   atomic_store_explicit(&thread->status, KILLED, memory_order_release);
   return NULL;
 }
