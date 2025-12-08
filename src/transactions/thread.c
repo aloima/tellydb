@@ -9,9 +9,16 @@
 #include <pthread.h>
 #include <unistd.h>
 
+enum ThreadStatus {
+  TS_ACTIVE,
+  TS_KILL_PENDING,
+  TS_KILLED
+};
+
 static pthread_t thread;
+static _Atomic(enum ThreadStatus) status;
+
 static TransactionVariables *variables;
-static _Atomic bool killed;
 
 void *transaction_thread(void *arg) {
   sigset_t set;
@@ -24,9 +31,9 @@ void *transaction_thread(void *arg) {
     sem_wait(variables->sem);
 
     TransactionBlock block;
-    if (atomic_load_explicit(&killed, memory_order_acquire)) break;
+    if (atomic_load_explicit(&status, memory_order_acquire) != TS_ACTIVE) break;
 
-    while (pop_tqueue(variables->queue, &block)) {
+    if (pop_tqueue(variables->queue, &block)) {
       if (block.type == TX_DIRECT) {
         Client *client;
 
@@ -39,24 +46,24 @@ void *transaction_thread(void *arg) {
 
         execute_transaction_block(&block);
         remove_transaction_block(&block);
-
-        break;
       }
+    } else {
+      sem_post(variables->sem);
     }
   }
 
   sem_destroy(variables->sem);
+  free(variables->sem);
+
+  atomic_store_explicit(&status, TS_KILLED, memory_order_release);
   return NULL;
 }
 
 void deactive_transaction_thread() {
-  atomic_store_explicit(&killed, true, memory_order_release);
-
+  atomic_store_explicit(&status, TS_KILL_PENDING, memory_order_release);
   sem_post(variables->sem);
-  usleep(3);
 
-  sem_destroy(variables->sem);
-  free(variables->sem);
+  while (atomic_load_explicit(&status, memory_order_acquire) == TS_KILL_PENDING);
 }
 
 void create_transaction_thread() {
@@ -72,7 +79,7 @@ void create_transaction_thread() {
 
   variables->sem = malloc(sizeof(sem_t));
   sem_init(variables->sem, 0, 0);
-  atomic_init(&killed, false);
+  atomic_init(&status, TS_ACTIVE);
 
   pthread_create(&thread, NULL, transaction_thread, NULL);
   pthread_detach(thread);
