@@ -233,7 +233,6 @@ void destroy_io_threads() {
 
   while (i < thread_count) {
     if (atomic_load_explicit(&threads[i].status, memory_order_acquire) != KILLED) {
-      usleep(10);
       continue;
     }
 

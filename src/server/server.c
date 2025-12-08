@@ -93,25 +93,28 @@ void terminate_connection(Client *client) {
 }
 
 static inline void cleanup() {
-  free_clients();
-  if (server->ctx) SSL_CTX_free(server->ctx);
   deactive_transaction_thread();
   usleep(15);
+
+  destroy_io_threads();
+  usleep(10);
+
+  free_transaction_blocks();
   free_commands();
+  free_clients();
+
+  if (server->ctx) SSL_CTX_free(server->ctx);
   if (server->sockfd != -1) close(server->sockfd);
+  if (server->eventfd != -1) close(server->eventfd);
+
   free_constant_passwords();
   free_kdf();
-  if (server->eventfd != -1) close(server->eventfd);
   free_passwords();
-  free_transaction_blocks();
   free_databases();
 
   write_log(LOG_INFO, "Free'd all memory blocks and exiting the process...");
   save_and_close_logs();
   free_configuration(server->conf);
-
-  destroy_io_threads();
-  usleep(10);
 
   free(server);
   exit(EXIT_SUCCESS);
