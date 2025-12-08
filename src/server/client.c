@@ -95,6 +95,7 @@ int initialize_clients() {
 
   for (uint32_t i = 0; i < conf->max_clients; ++i) {
     clients[i].id = -1;
+    atomic_init(&clients[i].state, CLIENT_STATE_EMPTY);
   }
 
   return 0;
@@ -142,6 +143,18 @@ Client *add_client(const int connfd) {
   return insert_client(&client);
 }
 
+static inline void free_client(Client *client) {
+  if (client->ssl) {
+    SSL_shutdown(client->ssl);
+    SSL_free(client->ssl);
+  }
+
+  if (client->write_buf) free(client->write_buf);
+  if (client->lib_name) free(client->lib_name);
+  if (client->lib_ver) free(client->lib_ver);
+  if (client->waiting_block) remove_transaction_block(client->waiting_block);
+}
+
 bool remove_client(const int id) {
   uint16_t at = (id % conf->max_clients);
   Client *client;
@@ -154,28 +167,21 @@ bool remove_client(const int id) {
     }
   }
 
+  if (atomic_load_explicit(&client->state, memory_order_acquire) == CLIENT_STATE_EMPTY) return false;
+
   client->id = -1;
+  free_client(client);
   atomic_fetch_sub_explicit(&client_count, 1, memory_order_relaxed);
 
-  if (client->ssl) {
-    SSL_shutdown(client->ssl);
-    SSL_free(client->ssl);
-  }
-
-  free(client->write_buf);
-  if (client->lib_name) free(client->lib_name);
-  if (client->lib_ver) free(client->lib_ver);
-  if (client->waiting_block) remove_transaction_block(client->waiting_block);
   atomic_store_explicit(&client->state, CLIENT_STATE_EMPTY, memory_order_release);
-
   return true;
 }
 
 void free_clients() {
   for (uint16_t i = 0; i < conf->max_clients; ++i) {
-    if (clients[i].id != -1) {
-      remove_client(clients[i].connfd);
-    }
+    Client *client = &clients[i];
+    if (atomic_load_explicit(&client->state, memory_order_acquire) == CLIENT_STATE_EMPTY) continue;
+    free_client(client);
   }
 
   free(clients);
