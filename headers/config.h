@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-struct Configuration {
+typedef struct {
   uint16_t port;
   uint16_t max_clients;
   uint32_t max_transaction_blocks;
@@ -17,11 +17,9 @@ struct Configuration {
   bool tls;
   char cert[49];
   char private_key[49];
+} Config;
 
-  bool default_conf;
-};
-
-struct Configuration *get_configuration(const char *filename);
-struct Configuration *get_default_configuration();
-size_t get_configuration_string(char *buf, struct Configuration *conf);
-void free_configuration(struct Configuration *conf);
+Config *get_config(const char *filename);
+Config *get_default_config();
+size_t get_config_string(char *buf, Config *conf);
+void free_config(Config *conf);

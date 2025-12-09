@@ -6,8 +6,7 @@
 int main(int argc, char *argv[]) {
   switch (argc) {
     case 1: {
-      struct Configuration *config = get_configuration(NULL);
-      start_server(config);
+      start_server(NULL);
       return EXIT_SUCCESS;
     }
 
@@ -36,19 +35,19 @@ int main(int argc, char *argv[]) {
 
         return EXIT_SUCCESS;
       } else if (streq(arg, "default-config")) {
-        struct Configuration *conf = get_default_configuration();
+        Config *conf = get_default_config();
         char buf[1024];
 
-        get_configuration_string(buf, conf);
+        get_config_string(buf, conf);
         puts(buf);
 
         return EXIT_SUCCESS;
       } else if (streq(arg, "create-config")) {
         FILE *file = fopen(".tellyconf", "w");
-        struct Configuration *conf = get_default_configuration();
+        Config *conf = get_default_config();
         char buf[4096];
 
-        const size_t n = get_configuration_string(buf, conf);
+        const size_t n = get_config_string(buf, conf);
         fwrite(buf, sizeof(char), n, file);
         fclose(file);
 
@@ -61,7 +60,7 @@ int main(int argc, char *argv[]) {
 
     case 3:
       if (streq(argv[1], "config")) {
-        struct Configuration *config = get_configuration(argv[2]);
+        Config *config = get_config(argv[2]);
         start_server(config);
         return EXIT_SUCCESS;
       } else {

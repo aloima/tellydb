@@ -69,7 +69,7 @@ static struct Server *server;
   return; \
 } while (0)
 
-struct Configuration *get_server_configuration() {
+Config *get_server_config() {
   return server->conf;
 }
 
@@ -114,7 +114,7 @@ static inline void cleanup() {
 
   write_log(LOG_INFO, "Free'd all memory blocks and exiting the process...");
   save_and_close_logs();
-  free_configuration(server->conf);
+  free_config(server->conf);
 
   free(server);
   exit(EXIT_SUCCESS);
@@ -202,9 +202,9 @@ static int initialize_authorization() {
   return 0;
 }
 
-void start_server(struct Configuration *config) {
+void start_server(Config *config) {
   server = calloc(1, sizeof(struct Server));
-  server->conf = config;
+  server->conf = config ?: get_default_config();
   server->eventfd = -1;
   server->sockfd = -1;
 
@@ -218,7 +218,7 @@ void start_server(struct Configuration *config) {
   const pid_t pid = getpid();
   write_log(LOG_INFO, "version: " VERSION ", commit hash: " GIT_HASH ", process id: %d", pid);
 
-  if (server->conf->default_conf) {
+  if (config == NULL) {
     write_log(LOG_WARN, "No configuration file. To specify, create .tellyconf or use `telly config /path/to/file`.");
   }
 

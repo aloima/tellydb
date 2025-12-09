@@ -5,9 +5,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <inttypes.h>
-#include <math.h>
 
-static struct Configuration default_conf = {
+static Config default_conf = {
   .port = 6379,
   .max_clients = 128,
   .max_transaction_blocks = 262144,
@@ -19,17 +18,21 @@ static struct Configuration default_conf = {
 
   .tls = false,
   .cert = {0},
-  .private_key = {0},
-
-  .default_conf = true
+  .private_key = {0}
 };
 
-struct LogLevelConfig {
+typedef struct {
   char ident;
   uint8_t value;
-};
+} LogLevelField;
 
-static constexpr struct LogLevelConfig log_levels_map[4] = {
+typedef struct {
+  const char *key;
+  void *value;
+  bool (*setter)(void *value, const char *buf);
+} ConfigEntry;
+
+static constexpr LogLevelField log_levels_map[4] = {
   {'i', LOG_INFO},
   {'e', LOG_ERR},
   {'w', LOG_WARN},
@@ -41,32 +44,19 @@ static inline void pass_line(FILE *file) {
   while (c != EOF && c != '\n') c = fgetc(file);
 }
 
-static inline void parse_value(FILE *file, char *buf) {
+static inline void read_value(FILE *file, char *buf) {
   int c;
 
   while ((c = fgetc(file)) != EOF && c != '\n') {
-    strncat(buf, (const char *) &c, 1);
+    if (c != ' ') strncat(buf, (const char *) &c, 1);
   }
 }
 
-static inline void parse_allowed_log_levels(struct Configuration *conf, char *buf) {
-  char id = *buf;
-
-  while (id != '\0') {
-    for (uint32_t j = 0; j < (sizeof(log_levels_map) / sizeof(log_levels_map)[0]); ++j) { // Loop unrolling by compiler
-      const struct LogLevelConfig level = log_levels_map[j];
-      if (level.ident == id) conf->allowed_log_levels |= level.value;
-    }
-
-    id = *(++buf);
-  }
-}
-
-static inline void get_allowed_log_levels(char *allowed_log_levels, struct Configuration *conf) {
+static inline void get_allowed_log_levels(char *allowed_log_levels, const uint8_t value) {
   for (uint32_t i = 0; i < (sizeof(log_levels_map) / sizeof(log_levels_map)[0]); ++i) { // Loop unrolling by compiler
-    const struct LogLevelConfig level = log_levels_map[i];
+    const LogLevelField level = log_levels_map[i];
 
-    if (conf->allowed_log_levels & level.value) {
+    if (value & level.value) {
       *(allowed_log_levels++) = level.ident;
     }
   }
@@ -74,10 +64,88 @@ static inline void get_allowed_log_levels(char *allowed_log_levels, struct Confi
   *allowed_log_levels = '\0';
 }
 
-struct Configuration parse_configuration(FILE *file) {
-  struct Configuration conf = {0};
+static inline bool set_uint(void *value, const char *buf) {
+  if (buf[0] == '-') return false;
+
+  char *end;
+  *((uint64_t *) value) = strtoull(buf, &end, 10);
+
+  return (*end == '\0');
+}
+
+static inline bool set_int(void *value, const char *buf) {
+  char *end;
+  *((uint64_t *) value) = strtoll(buf, &end, 10);
+
+  return (*end == '\0');
+}
+
+static inline bool set_str(void *value, const char *buf) {
+  strcpy(value, buf);
+  return true;
+}
+
+static inline bool set_bool(void *value, const char *buf) {
+  const bool enabled = streq(buf, "true");
+
+  if (enabled || streq(buf, "false")) {
+    *((bool *) value) = enabled;
+  } else {
+    return false;
+  }
+
+  return true;
+}
+
+static inline bool set_allowed_log_levels(void *value, const char *buf) {
+  uint8_t *log_levels = value;
+  char id = *buf;
+
+  while (id != '\0') {
+    const uint32_t size = (sizeof(log_levels_map) / sizeof(log_levels_map)[0]);
+    uint32_t j = 0;
+
+    while (j < size) {
+      const LogLevelField level = log_levels_map[j];
+
+      if (level.ident == id) {
+        *log_levels |= level.value;
+        break;
+      }
+
+      j += 1;
+    }
+
+    if (j == size) return false;
+    id = *(++buf);
+  }
+
+  return true;
+}
+
+ Config parse_config(FILE *file) {
+  Config conf = {0};
   char buf[49] = {0};
   int c;
+
+  ConfigEntry entries[] = {
+    {"port", &conf.port, set_uint},
+    {"max_clients", &conf.max_clients, set_uint},
+    {"max_transaction_blocks", &conf.max_transaction_blocks, set_uint},
+
+    {"allowed_log_levels", &conf.allowed_log_levels, set_allowed_log_levels},
+    {"max_log_lines", &conf.max_log_lines, set_int},
+    {"log_file", &conf.log_file, set_str},
+
+    {"data_file", &conf.data_file, set_str},
+    {"database_name", &conf.database_name, set_str},
+
+    {"tls", &conf.tls, set_bool},
+    {"cert", &conf.cert, set_str},
+    {"private_key", &conf.private_key, set_str},
+  };
+
+  const uint32_t count = (sizeof(entries) / sizeof(entries[0]));
 
   do {
     c = fgetc(file);
@@ -88,56 +156,34 @@ struct Configuration parse_configuration(FILE *file) {
         break;
 
       case '=':
-        if (streq(buf, "PORT")) {
-          buf[0] = '\0';
-          parse_value(file, buf);
-          conf.port = atoi(buf);
-        } else if (streq(buf, "MAX_CLIENTS")) {
-          buf[0] = '\0';
-          parse_value(file, buf);
-          conf.max_clients = atoi(buf);
-        } else if (streq(buf, "MAX_TRANSACTION_BLOCKS")) {
-          buf[0] = '\0';
-          parse_value(file, buf);
+        uint32_t i = 0;
 
-          const int input = atoi(buf);
-          const int value = pow(2, floor(log2(input)));
-          conf.max_transaction_blocks = value;
-        } else if (streq(buf, "ALLOWED_LOG_LEVELS")) {
-          buf[0] = '\0';
-          parse_value(file, buf);
-          parse_allowed_log_levels(&conf, buf);
-        } else if (streq(buf, "MAX_LOG_LINES")) {
-          buf[0] = '\0';
-          parse_value(file, buf);
-          conf.max_log_lines = atoi(buf);
-        } else if (streq(buf, "DATA_FILE")) {
-          parse_value(file, conf.data_file);
-        } else if (streq(buf, "LOG_FILE")) {
-          parse_value(file, conf.log_file);
-        } else if (streq(buf, "DATABASE_NAME")) {
-          parse_value(file, conf.database_name);
-        } else if (streq(buf, "TLS")) {
-          buf[0] = '\0';
-          parse_value(file, buf);
+        while (i < count) {
+          const ConfigEntry *entry = &entries[i];
+          if (streq(buf, entry->key)) break;
 
-          const bool enabled = streq(buf, "true");
+          i += 1;
+        }
 
-          if (enabled || streq(buf, "false")) {
-            conf.tls = enabled;
-          } else {
-            write_log(LOG_ERR, "Cannot parse TLS value of configuration, %s is not a valid value.");
-            return conf;
-          }
-        } else if (streq(buf, "CERT")) {
-          parse_value(file, conf.cert);
-        } else if (streq(buf, "PRIVATE_KEY")) {
-          parse_value(file, conf.private_key);
-        } else {
-          return conf;
+        if (i == count) {
+          write_log(LOG_ERR, "Cannot parse configuration, invalid key: '%s'", buf);
+          exit(EXIT_FAILURE);
         }
 
         buf[0] = '\0';
+        read_value(file, buf);
+
+        const ConfigEntry *entry = &entries[i];
+        const bool res = entry->setter(entry->value, buf);
+        if (!res) {
+          write_log(LOG_ERR, "Cannot parse configuration, invalid value for '%s'.", entry->key);
+          exit(EXIT_FAILURE);
+        }
+
+        buf[0] = '\0';
+        break;
+
+      case ' ':
         break;
 
       default:
@@ -145,23 +191,34 @@ struct Configuration parse_configuration(FILE *file) {
     }
   } while (c != EOF);
 
+  if (conf.max_clients > UINT16_MAX) {
+    write_log(LOG_ERR, "'MAX_CLIENTS' in configuration violates limitations: value <= %u", UINT16_MAX);
+    exit(EXIT_FAILURE);
+  } else if (conf.max_transaction_blocks > UINT32_MAX) {
+    write_log(LOG_ERR, "'MAX_TRANSACTION_BLOCKS' in configuration violates limitations: value <= %u", UINT32_MAX);
+    exit(EXIT_FAILURE);
+  } else if (conf.max_log_lines > INT32_MAX || conf.max_log_lines <= 0) {
+    write_log(LOG_ERR, "'MAX_TRANSACTION_BLOCKS' in configuration violates limitations: 0 < value <= %d", INT32_MAX);
+    exit(EXIT_FAILURE);
+  }
+
   return conf;
 }
 
-size_t get_configuration_string(char *buf, struct Configuration *conf) {
+size_t get_config_string(char *buf, Config *conf) {
   char allowed_log_levels[5];
-  get_allowed_log_levels(allowed_log_levels, conf);
+  get_allowed_log_levels(allowed_log_levels, conf->allowed_log_levels);
 
   return sprintf(buf, (
     "# TCP server port\n"
-    "PORT=%" PRIu16 "\n\n"
+    "port = %" PRIu16 "\n\n"
 
     "# Specifies max connectable client count, higher values may cause higher resource usage\n"
-    "MAX_CLIENTS=%" PRIu16 "\n\n"
+    "max_clients = %" PRIu16 "\n\n"
 
     "# Specifies max storable transaction block count, higher values may cause higher resource usage\n"
     "# 2^n values are possible. If it is not 2^n, it will be rounded down.\n"
-    "MAX_TRANSACTION_BLOCKS=%" PRIu32 "\n\n"
+    "max_transaction_blocks = %" PRIu32 "\n\n"
 
     "# Allowed log levels:\n"
     "# w = warning\n"
@@ -169,23 +226,23 @@ size_t get_configuration_string(char *buf, struct Configuration *conf) {
     "# e = error\n"
     "# d = debug\n\n"
     "# Order of keys does not matter\n"
-    "ALLOWED_LOG_LEVELS=%s\n\n"
+    "allowed_log_levels = %s\n\n"
 
     "# Specifies maximum line count of logs will be saved to log file, to make undetermined, change it to -1.\n"
     "# If the log file contains more log lines than this value, will not be deleted old logs and will not be saved new logs.\n"
     "# MAX_LOG_LINES * (FILE BLOCK SIZE [512, 4096 or a power of 2] + 1) bytes will be allocated, so be careful\n"
-    "MAX_LOG_LINES=%" PRIi32 "\n\n"
+    "max_log_lines = %" PRIi32 "\n\n"
 
     "# Specifies database file where data will be saved\n"
-    "DATA_FILE=%s\n\n"
+    "data_file = %s\n\n"
 
     "# Specifies log file where logs will be saved\n"
-    "LOG_FILE=%s\n\n"
+    "log_file = %s\n\n"
 
     "# Specifies default database name, it will be created on first startup of server and deletion of all databases\n"
     "# On a client connection to the server, the client will be paired with this database\n"
     "# This length must be less than or equal to 64\n"
-    "DATABASE_NAME=%s\n\n"
+    "database_name = %s\n\n"
 
     "# Enables/disables creating TLS server\n"
     "#\n"
@@ -194,30 +251,30 @@ size_t get_configuration_string(char *buf, struct Configuration *conf) {
     "# PRIVATE_KEY specifies private key file path of TLS server\n"
     "# TLS value must be true or false\n"
     "# File paths length must be less than or equal to 48\n"
-    "TLS=%s\n"
-    "CERT=%s\n"
-    "PRIVATE_KEY=%s\n"
+    "tls = %s\n"
+    "cert = %s\n"
+    "private_key = %s\n"
   ), conf->port, conf->max_clients, conf->max_transaction_blocks, allowed_log_levels, conf->max_log_lines, conf->data_file,
      conf->log_file, conf->database_name, conf->tls ? "true" : "false", conf->cert, conf->private_key
   );
 }
 
-struct Configuration *get_default_configuration() {
+Config *get_default_config() {
   return &default_conf;
 }
 
-struct Configuration *get_configuration(const char *filename) {
-  struct Configuration *conf = malloc(sizeof(struct Configuration));
+Config *get_config(const char *filename) {
+  Config *conf = malloc(sizeof(Config));
 
   if (filename == NULL) {
     FILE *file = fopen(".tellyconf", "r");
 
     if (file) {
-      const struct Configuration data = parse_configuration(file);
-      memcpy(conf, &data, sizeof(struct Configuration));
+      const Config data = parse_config(file);
+      memcpy(conf, &data, sizeof(Config));
       fclose(file);
     } else {
-      memcpy(conf, &default_conf, sizeof(struct Configuration));
+      memcpy(conf, &default_conf, sizeof(Config));
     }
 
     return conf;
@@ -225,17 +282,17 @@ struct Configuration *get_configuration(const char *filename) {
     FILE *file = fopen(filename, "r");
 
     if (file) {
-      const struct Configuration data = parse_configuration(file);
-      memcpy(conf, &data, sizeof(struct Configuration));
+      const Config data = parse_config(file);
+      memcpy(conf, &data, sizeof(Config));
       fclose(file);
 
       return conf;
     } else {
-      return get_configuration(NULL);
+      return get_config(NULL);
     }
   }
 }
 
-void free_configuration(struct Configuration *conf) {
+void free_config(Config *conf) {
   free(conf);
 }

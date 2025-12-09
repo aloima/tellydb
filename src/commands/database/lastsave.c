@@ -8,7 +8,7 @@
 static string_t run(struct CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
-  const struct Configuration *conf = get_server_configuration();
+  const Config *conf = get_server_config();
   struct stat res;
 
   if (stat(conf->data_file, &res) == -1) {

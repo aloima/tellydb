@@ -329,7 +329,7 @@ static size_t collect_database(struct Database **database, const int fd, char *b
 }
 
 size_t read_file(const int fd, const off_t file_size, char *block, const uint16_t block_size, const uint16_t filled_block_size) {
-  struct Configuration *conf = get_server_configuration();
+  Config *conf = get_server_config();
   size_t loaded_count = 0;
   uint16_t at = filled_block_size;
   const string_t database_name = CREATE_STRING(conf->database_name, strlen(conf->database_name));

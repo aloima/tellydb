@@ -8,7 +8,7 @@
 
 #include <openssl/ssl.h>
 
-static struct Configuration *conf;
+static Config *conf;
 
 static Client *clients = NULL;
 static _Atomic uint16_t client_count;
@@ -82,7 +82,7 @@ uint32_t get_last_connection_client_id() {
 }
 
 int initialize_clients() {
-  conf = get_server_configuration();
+  conf = get_server_config();
   atomic_init(&client_count, 0);
   atomic_init(&last_connection_client_id, 1);
 

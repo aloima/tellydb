@@ -13,7 +13,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-static struct Configuration *_conf = NULL;
+static Config *_conf = NULL;
 static int fd = -1;
 
 // Also, use it as default maximum log length
@@ -22,7 +22,7 @@ static uint16_t block_size = 4096;
 struct ThreadQueue *lines;
 
 bool initialize_logs() {
-  _conf = get_server_configuration();
+  _conf = get_server_config();
   if ((fd = open_file(_conf->log_file, 0)) == -1) return false;
 
   struct stat sostat;
@@ -102,7 +102,7 @@ INSIDE_LOOP:
 }
 
 void write_log(enum LogLevel level, const char *fmt, ...) {
-  struct Configuration *conf = _conf ?: get_default_configuration();
+  Config *conf = _conf ?: get_default_config();
   const uint8_t check = (conf->allowed_log_levels & level);
 
   char time_text[21];

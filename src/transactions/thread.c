@@ -70,7 +70,7 @@ void create_transaction_thread() {
   variables = get_transaction_variables();
   initialize_transactions();
 
-  struct Configuration *conf = get_server_configuration();
+  Config *conf = get_server_config();
   variables->commands = get_commands();
   variables->queue = create_tqueue(conf->max_transaction_blocks, sizeof(TransactionBlock), _Alignof(TransactionBlock));
   if (variables->queue == NULL) return write_log(LOG_ERR, "Cannot allocate transaction blocks, out of memory.");

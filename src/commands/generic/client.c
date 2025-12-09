@@ -122,7 +122,7 @@ static inline string_t subcommand_list(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_CLIENT");
   }
 
-  const struct Configuration *conf = get_server_configuration();
+  const Config *conf = get_server_config();
   Client *clients = get_clients();
   uint64_t at = 1;
 

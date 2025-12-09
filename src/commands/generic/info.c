@@ -9,7 +9,7 @@
 
 #include <unistd.h>
 
-static bool get_section(char *section, const struct Configuration *conf, const char *name) {
+static bool get_section(char *section, const Config *conf, const char *name) {
   if (streq(name, "server")) {
     char gcc_version[16];
     sprintf(gcc_version, "%d.%d.%d", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
@@ -58,7 +58,7 @@ static bool get_section(char *section, const struct Configuration *conf, const c
 static string_t run(struct CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
-  const struct Configuration *conf = get_server_configuration();
+  const Config *conf = get_server_config();
 
   char buf[8192], section[2048];
   buf[0] = '\0';

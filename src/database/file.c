@@ -23,7 +23,7 @@ static uint16_t block_size;
 size_t read_file(const int fd, const off_t file_size, char *block, const uint16_t block_size, const uint16_t filled_block_size);
 
 int open_database_fd(uint32_t *server_age) {
-  struct Configuration *conf = get_server_configuration();
+  Config *conf = get_server_config();
   if ((fd = open_file(conf->data_file, 0)) == -1) return -1;
 
   struct stat sostat;
