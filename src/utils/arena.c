@@ -38,7 +38,7 @@ void *arena_alloc_aligned(Arena *arena, const uint64_t size, const uint64_t alig
     arena->size *= 2;
     arena->region = realloc(arena->region, arena->size);
 
-    if (arena->region) {
+    if (arena->region == NULL) {
       arena->size /= 2;
       return NULL;
     }
