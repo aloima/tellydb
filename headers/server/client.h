@@ -12,6 +12,9 @@
 struct TransactionBlockStruct;
 typedef struct TransactionBlockStruct TransactionBlock;
 
+struct Password;
+typedef struct Password Password;
+
 enum ProtocolVersion : uint8_t {
   RESP2 = 2,
   RESP3 = 3
@@ -33,7 +36,7 @@ typedef struct {
   struct Command *command;
   char *lib_name, *lib_ver;
 
-  struct Password *password;
+  Password *password;
   enum ProtocolVersion protover;
 
   bool locked;

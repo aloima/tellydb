@@ -72,7 +72,7 @@ static bool password_derive(char *value, const size_t value_len, unsigned char *
   return false;
 }
 
-static inline void remove_password_from_clients(struct Password *password) {
+static inline void remove_password_from_clients(Password *password) {
   const Config *conf = get_server_config();
   Client *clients = get_clients();
 
@@ -83,10 +83,10 @@ static inline void remove_password_from_clients(struct Password *password) {
   }
 }
 
-static struct Password **passwords = NULL;
+static Password **passwords = NULL;
 static uint32_t password_count = 0;
 
-struct Password **get_passwords() {
+Password **get_passwords() {
   return passwords;
 }
 
@@ -102,7 +102,7 @@ uint16_t get_authorization_from_file(const int fd, char *block, const uint16_t b
   off_t total = 0;
 
   if (password_count != 0) {
-    struct Password *password;
+    Password *password;
     uint32_t password_at = 0;
     passwords = malloc(password_count * sizeof(struct Password *));
 
@@ -140,7 +140,7 @@ uint16_t get_authorization_from_file(const int fd, char *block, const uint16_t b
       while (password_at != password_count) {
         {
           if (op < 1) {
-            password = (passwords[password_at] = malloc(sizeof(struct Password)));
+            password = (passwords[password_at] = malloc(sizeof(Password)));
 
             if ((at + 48) > block_size) {
               const uint32_t remaining = (block_size - at);
@@ -186,7 +186,7 @@ int where_password(char *value, const size_t value_len) {
   if (!password_derive(value, value_len, derived)) return -1;
 
   for (uint32_t i = 0; i < password_count; ++i) {
-    struct Password *password = passwords[i];
+    Password *password = passwords[i];
     if (memcmp(derived, password->data, 48) == 0) return i;
   }
 
@@ -202,8 +202,8 @@ bool edit_password(char *value, const size_t value_len, const uint32_t permissio
 }
 
 void add_password(Client *client, const string_t data, const uint8_t permissions) {
-  struct Password *password;
-  if (posix_memalign((void **) &password, 8, sizeof(struct Password)) != 0) {
+  Password *password;
+  if (posix_memalign((void **) &password, 8, sizeof(Password)) != 0) {
     write_log(LOG_ERR, "Cannot create a password, out of memory.");
     return;
   }
@@ -260,8 +260,8 @@ bool remove_password(Client *executor, char *value, const size_t value_len) {
     free(passwords[at]);
     password_count -= 1;
 
-    memmove(passwords + at, passwords + at + 1, (password_count - at) * sizeof(struct Password *));
-    passwords = realloc(passwords, password_count * sizeof(struct Password));
+    memmove(passwords + at, passwords + at + 1, (password_count - at) * sizeof(Password *));
+    passwords = realloc(passwords, password_count * sizeof(Password));
 
     return true;
   }

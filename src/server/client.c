@@ -14,43 +14,6 @@ static Client *clients = NULL;
 static _Atomic uint16_t client_count;
 static _Atomic uint32_t last_connection_client_id;
 
-struct Password *default_password = NULL,
-                *empty_password = NULL,
-                *full_password = NULL;
-
-static bool create_constant_password(struct Password **password, uint64_t permissions) {
-  if (posix_memalign((void **) password, 64, sizeof(struct Password)) != 0) {
-    write_log(LOG_ERR, "Cannot create constant passwords, out of memory.");
-    return false;
-  }
-
-  (*password)->permissions = permissions;
-  return true;
-}
-
-bool create_constant_passwords() {
-  constexpr uint64_t permissions = (P_READ | P_WRITE | P_CLIENT | P_CONFIG | P_AUTH | P_SERVER);
-  if (!create_constant_password(&default_password, permissions)) return false;
-  if (!create_constant_password(&empty_password, 0)) return false;
-  if (!create_constant_password(&full_password, permissions)) return false;
-
-  return true;
-}
-
-void free_constant_passwords() {
-  if (default_password) free(default_password);
-  if (empty_password) free(empty_password);
-  if (full_password) free(full_password);
-}
-
-struct Password *get_empty_password() {
-  return empty_password;
-}
-
-struct Password *get_full_password() {
-  return full_password;
-}
-
 Client *get_client(const uint32_t id) {
   const uint32_t start = (id % conf->max_clients);
   uint32_t at = start;
@@ -135,9 +98,9 @@ Client *add_client(const int connfd) {
   atomic_init(&client.state, CLIENT_STATE_ACTIVE);
 
   if (get_password_count() == 0) {
-    client.password = default_password;
+    client.password = get_default_password();
   } else {
-    client.password = empty_password;
+    client.password = get_empty_password();
   }
 
   return insert_client(&client);

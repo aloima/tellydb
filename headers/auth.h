@@ -19,20 +19,21 @@ enum Permissions {
   P_SERVER = 0b00100000,
 };
 
-struct Password {
+typedef struct Password {
   unsigned char data[48];
   uint32_t permissions;
-};
+} Password;
 
 bool create_constant_passwords();
 void free_constant_passwords();
-struct Password *get_full_password();
-struct Password *get_empty_password();
+Password *get_default_password();
+Password *get_full_password();
+Password *get_empty_password();
 
 bool initialize_kdf();
 void free_kdf();
 
-struct Password **get_passwords();
+Password **get_passwords();
 uint32_t get_password_count();
 uint16_t get_authorization_from_file(const int fd, char *block, const uint16_t block_size);
 void free_passwords();
