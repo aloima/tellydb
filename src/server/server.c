@@ -93,7 +93,7 @@ void terminate_connection(Client *client) {
 }
 
 static inline void cleanup() {
-  deactive_transaction_thread();
+  destroy_transaction_thread();
   usleep(15);
 
   destroy_io_threads();

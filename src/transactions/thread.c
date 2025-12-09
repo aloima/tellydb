@@ -6,17 +6,14 @@
 #include <stdatomic.h>
 #include <stdbool.h>
 
+#include <semaphore.h>
 #include <pthread.h>
 #include <unistd.h>
 
-enum ThreadStatus {
-  TS_ACTIVE,
-  TS_KILL_PENDING,
-  TS_KILLED
-};
-
 static pthread_t thread;
-static _Atomic(enum ThreadStatus) status;
+
+static sem_t kill_sem;
+static bool kill_pending = false;
 
 static TransactionVariables *variables;
 
@@ -31,8 +28,6 @@ void *transaction_thread(void *arg) {
     sem_wait(variables->sem);
 
     TransactionBlock block;
-    if (atomic_load_explicit(&status, memory_order_acquire) != TS_ACTIVE) break;
-
     if (pop_tqueue(variables->queue, &block)) {
       if (block.type == TX_DIRECT) {
         Client *client;
@@ -48,6 +43,8 @@ void *transaction_thread(void *arg) {
         remove_transaction_block(&block);
       }
     } else {
+      // May be data race, does not matter. If there is, a transaction will be executed. It is acceptable behavior.
+      if (kill_pending) break;
       sem_post(variables->sem);
     }
   }
@@ -55,15 +52,16 @@ void *transaction_thread(void *arg) {
   sem_destroy(variables->sem);
   free(variables->sem);
 
-  atomic_store_explicit(&status, TS_KILLED, memory_order_release);
+  sem_post(&kill_sem);
   return NULL;
 }
 
-void deactive_transaction_thread() {
-  atomic_store_explicit(&status, TS_KILL_PENDING, memory_order_release);
-  sem_post(variables->sem);
+void destroy_transaction_thread() {
+  kill_pending = true;
+  sem_post(variables->sem); // run transaction loop once
 
-  while (atomic_load_explicit(&status, memory_order_acquire) == TS_KILL_PENDING);
+  sem_wait(&kill_sem); // wait until killed
+  sem_destroy(&kill_sem);
 }
 
 void create_transaction_thread() {
@@ -79,7 +77,7 @@ void create_transaction_thread() {
 
   variables->sem = malloc(sizeof(sem_t));
   sem_init(variables->sem, 0, 0);
-  atomic_init(&status, TS_ACTIVE);
+  sem_init(&kill_sem, 0, 0);
 
   pthread_create(&thread, NULL, transaction_thread, NULL);
   pthread_detach(thread);

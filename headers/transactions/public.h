@@ -42,7 +42,7 @@ typedef struct TransactionBlockStruct {
 } TransactionBlock;
 
 void create_transaction_thread();
-void deactive_transaction_thread();
+void destroy_transaction_thread();
 
 uint64_t get_processed_transaction_count();
 uint32_t get_transaction_count();
