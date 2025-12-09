@@ -294,5 +294,5 @@ Config *get_config(const char *filename) {
 }
 
 void free_config(Config *conf) {
-  free(conf);
+  if (conf != &default_conf) free(conf);
 }
