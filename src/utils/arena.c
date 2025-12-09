@@ -5,7 +5,14 @@
 
 Arena *arena_create(const uint64_t size) {
   Arena *arena = malloc(sizeof(Arena));
+  if (arena == NULL) return NULL;
+
   arena->region = malloc(size);
+  if (arena->region == NULL) {
+    free(arena);
+    return NULL;
+  }
+
   arena->index = 0;
   arena->size = size;
 
@@ -30,6 +37,11 @@ void *arena_alloc_aligned(Arena *arena, const uint64_t size, const uint64_t alig
   if ((size + (arena->index + offset)) > arena->size) {
     arena->size *= 2;
     arena->region = realloc(arena->region, arena->size);
+
+    if (arena->region) {
+      arena->size /= 2;
+      return NULL;
+    }
   }
 
   arena->index += size;
