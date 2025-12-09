@@ -85,6 +85,12 @@ static inline int accept_client(struct Server *server) {
 
   Client *client = add_client(connfd);
 
+  if (client == NULL) {
+    write_log(LOG_WARN, "Cannot accept a client, out of memory.");
+    close(connfd);
+    return -1;
+  }
+
   event_t event;
   PREPARE_EVENT(event, client, connfd);
 

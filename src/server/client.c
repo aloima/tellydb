@@ -13,6 +13,7 @@ static Config *conf;
 static Client *clients = NULL;
 static _Atomic uint16_t client_count;
 static _Atomic uint32_t last_connection_client_id;
+static Arena *write_arena = NULL;
 
 Client *get_client(const uint32_t id) {
   const uint32_t start = (id % conf->max_clients);
@@ -46,6 +47,7 @@ uint32_t get_last_connection_client_id() {
 
 int initialize_clients() {
   conf = get_server_config();
+  write_arena = arena_create((conf->max_clients / 4) * MAX_RESPONSE_SIZE * sizeof(char));
   atomic_init(&client_count, 0);
   atomic_init(&last_connection_client_id, 1);
 
@@ -80,10 +82,8 @@ static inline Client *insert_client(Client *client) {
 }
 
 Client *add_client(const int connfd) {
-  atomic_fetch_add_explicit(&client_count, 1, memory_order_relaxed);
-  
   Client client;
-  client.id = atomic_fetch_add_explicit(&last_connection_client_id, 1, memory_order_relaxed);
+  client.id = atomic_load_explicit(&last_connection_client_id, memory_order_relaxed);
   client.connfd = connfd;
   time(&client.connected_at);
   client.database = get_main_database();
@@ -94,14 +94,19 @@ Client *add_client(const int connfd) {
   client.protover = RESP2;
   client.locked = false;
   client.waiting_block = NULL;
-  client.write_buf = malloc(MAX_RESPONSE_SIZE * sizeof(char));
-  atomic_init(&client.state, CLIENT_STATE_ACTIVE);
+
+  client.write_buf = arena_alloc(write_arena, MAX_RESPONSE_SIZE * sizeof(char));
+  if (client.write_buf == NULL) return NULL;
 
   if (get_password_count() == 0) {
     client.password = get_default_password();
   } else {
     client.password = get_empty_password();
   }
+
+  atomic_init(&client.state, CLIENT_STATE_ACTIVE);
+  atomic_fetch_add_explicit(&client_count, 1, memory_order_relaxed);
+  atomic_fetch_add_explicit(&last_connection_client_id, 1, memory_order_relaxed);
 
   return insert_client(&client);
 }
@@ -112,7 +117,6 @@ static inline void free_client(Client *client) {
     SSL_free(client->ssl);
   }
 
-  if (client->write_buf) free(client->write_buf);
   if (client->lib_name) free(client->lib_name);
   if (client->lib_ver) free(client->lib_ver);
   if (client->waiting_block) remove_transaction_block(client->waiting_block);
@@ -147,5 +151,6 @@ void free_clients() {
     free_client(client);
   }
 
+  arena_destroy(write_arena);
   free(clients);
 }
