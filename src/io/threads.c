@@ -140,8 +140,8 @@ TERMINATION:
   if (thread->read_buf) free(thread->read_buf);
   if (thread->arena) arena_destroy(thread->arena);
 
-  sem_post(&kill_sem);
   atomic_store_explicit(&thread->status, KILLED, memory_order_release);
+  sem_post(&kill_sem);
   return NULL;
 }
 
@@ -160,7 +160,7 @@ int create_io_threads(const uint32_t count) {
   sem = malloc(sizeof(sem_t));
   if (sem == NULL || sem_init(sem, 0, 0) != 0) goto CLEANUP;
 
-  queue = create_tqueue(128, sizeof(IOThread), _Alignof(IOThread));
+  queue = create_tqueue(128, sizeof(IOThread), alignof(IOThread));
   if (queue == NULL) goto CLEANUP;
 
   threads = calloc(count, sizeof(IOThread));
