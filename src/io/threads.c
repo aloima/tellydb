@@ -34,7 +34,7 @@ static IOThread *threads = NULL;
 static struct ThreadQueue *queue = NULL;
 static uint32_t thread_count = 0;
 
-static sem_t *sem = NULL;
+static sem_t kill_sem, *sem = NULL;
 
 static inline void unknown_command(Client *client, string_t *name) {
   char buf[COMMAND_NAME_MAX_LENGTH + 22];
@@ -140,6 +140,7 @@ TERMINATION:
   if (thread->read_buf) free(thread->read_buf);
   if (thread->arena) arena_destroy(thread->arena);
 
+  sem_post(&kill_sem);
   atomic_store_explicit(&thread->status, KILLED, memory_order_release);
   return NULL;
 }
@@ -226,18 +227,19 @@ void destroy_io_threads() {
 
   for (uint32_t i = 0; i < thread_count; ++i) {
     atomic_store_explicit(&threads[i].status, PASSIVE, memory_order_release);
+  }
+
+  for (uint32_t i = 0; i < thread_count; ++i) {
     sem_post(sem);
   }
 
-  uint32_t i = 0;
-
-  while (i < thread_count) {
-    if (atomic_load_explicit(&threads[i].status, memory_order_acquire) != KILLED) {
-      continue;
-    }
-
-    i += 1;
+  for (uint32_t i = 0; i < thread_count; ++i) {
+    sem_wait(&kill_sem); // wait until killed
   }
+
+  sem_destroy(&kill_sem);
+  sem_destroy(sem);
+  free(sem);
 
   free_tqueue(queue);
   free(threads);
