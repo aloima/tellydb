@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdalign.h>
 #include <stdatomic.h>
 
 #if defined(__x86_64__) || defined(__i386__)
@@ -28,18 +29,16 @@ struct ThreadQueue *create_tqueue(const uint64_t capacity, const uint64_t size, 
   }
 
   void *states;
-  if (posix_memalign(&states, 64, capacity * sizeof(queue->states[0])) != 0) {
+  if (posix_memalign(&states, alignof(typeof(queue->states[0])), capacity * sizeof(queue->states[0])) != 0) {
     free(data);
     free(queue);
     return NULL;
   }
 
-  queue->data = data;
+  // Better than individually atomic_init usage. TQ_EMPTY = 0, so it is legal.
+  memset(states, 0, capacity * sizeof(queue->states[0]));
   queue->states = states;
-
-  for (uint64_t i = 0; i < capacity; ++i) {
-    atomic_init(&queue->states[i].value, TQ_EMPTY);
-  }
+  queue->data = data;
 
   atomic_init(&queue->at, 0);
   atomic_init(&queue->end, 0);

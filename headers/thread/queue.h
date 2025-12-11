@@ -4,13 +4,13 @@
 #include <stdatomic.h>
 
 enum ThreadQueueState : uint8_t {
-  TQ_EMPTY,
+  TQ_EMPTY = 0,
   TQ_STORING,
   TQ_STORED
 };
 
 struct ThreadQueueStateValue {
-  alignas(64) _Atomic enum ThreadQueueState value;
+  alignas(8) _Atomic enum ThreadQueueState value;
 };
 
 struct ThreadQueue {
