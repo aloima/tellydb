@@ -48,14 +48,14 @@ static inline uint8_t read_permissions_value(struct CommandEntry *entry, const c
 }
 
 static inline string_t add_pwd(struct CommandEntry *entry) {
-  if (entry->data->arg_count != 3) {
+  if (entry->args->count != 3) {
     PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("PWD ADD");
   }
 
   const uint8_t all = get_full_password()->permissions;
-  const string_t data = entry->data->args[1];
-  const char *value = entry->data->args[2].value;
+  const string_t data = entry->args->data[1];
+  const char *value = entry->args->data[2].value;
   const uint8_t permissions = (streq(value, "all") ? all : read_permissions_value(entry, value));
   const uint8_t not_have = ~entry->password->permissions & permissions;
 
@@ -75,13 +75,13 @@ static inline string_t add_pwd(struct CommandEntry *entry) {
 }
 
 static inline string_t edit_pwd(struct CommandEntry *entry) {
-  if (entry->data->arg_count != 3) {
+  if (entry->args->count != 3) {
     PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("PWD EDIT");
   }
 
-  const string_t input = entry->data->args[1];
-  const char *value = entry->data->args[2].value;
+  const string_t input = entry->args->data[1];
+  const char *value = entry->args->data[2].value;
 
   const int target = where_password(input.value, input.len);
 
@@ -106,12 +106,12 @@ static inline string_t edit_pwd(struct CommandEntry *entry) {
 }
 
 static inline string_t remove_pwd(struct CommandEntry *entry) {
-  if (entry->data->arg_count != 2) {
+  if (entry->args->count != 2) {
     PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("PWD REMOVE");
   }
 
-  const string_t input = entry->data->args[1];
+  const string_t input = entry->args->data[1];
 
   if (remove_password(entry->client, input.value, input.len) && entry->client) {
     PASS_NO_CLIENT(entry->client);
@@ -133,12 +133,12 @@ static inline string_t generate_pwd(struct CommandEntry *entry) {
 }
 
 static string_t run(struct CommandEntry *entry) {
-  if (entry->data->arg_count == 0) {
+  if (entry->args->count == 0) {
     PASS_NO_CLIENT(entry->client);
     return MISSING_SUBCOMMAND_ERROR("PWD");
   }
 
-  const string_t subcommand = entry->data->args[0];
+  const string_t subcommand = entry->args->data[0];
   to_uppercase(subcommand, subcommand.value);
 
   string_t response;

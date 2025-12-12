@@ -24,13 +24,13 @@ enum TransactionBlockType : uint8_t {
   TX_MULTIPLE
 };
 
-typedef struct TransactionStruct {
-  commanddata_t data;
+typedef struct Transaction {
+  commandargs_t args;
   struct Command *command;
   struct Database *database;
 } Transaction;
 
-typedef struct TransactionBlockStruct {
+typedef struct TransactionBlock {
   enum TransactionBlockType type;
   Client *client;
   struct Password *password;

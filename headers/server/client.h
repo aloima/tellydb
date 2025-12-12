@@ -9,8 +9,8 @@
 
 #define RESP_BUF_SIZE 4096
 
-struct TransactionBlockStruct;
-typedef struct TransactionBlockStruct TransactionBlock;
+struct TransactionBlock;
+typedef struct TransactionBlock TransactionBlock;
 
 struct Password;
 typedef struct Password Password;

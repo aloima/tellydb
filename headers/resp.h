@@ -37,11 +37,14 @@
 #define RESP_INLINE_BUFFER 128
 #define RESP_INLINE_ARGUMENT_COUNT 32
 
+typedef struct CommandArgs {
+  string_t *data;
+  uint32_t count;
+} commandargs_t;
+
 typedef struct CommandData {
   string_t *name;
-
-  string_t *args;
-  uint32_t arg_count;
+  commandargs_t args;
 } commanddata_t;
 
 int32_t take_n_bytes_from_socket(Client *client, char *buf, int32_t *at, char **data, const uint32_t n, int32_t *size);

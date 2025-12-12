@@ -9,11 +9,11 @@
 static string_t run(struct CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
-  if (entry->data->arg_count == 0) {
+  if (entry->args->count == 0) {
     return MISSING_SUBCOMMAND_ERROR("COMMAND");
   }
 
-  const string_t subcommand = entry->data->args[0];
+  const string_t subcommand = entry->args->data[0];
   to_uppercase(subcommand, subcommand.value);
 
   string_t response;

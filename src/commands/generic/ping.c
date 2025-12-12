@@ -5,12 +5,12 @@
 static string_t run(struct CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
-  switch (entry->data->arg_count) {
+  switch (entry->args->count) {
     case 0:
       return RESP_OK_MESSAGE("PONG");
 
     case 1: {
-      const size_t nbytes = create_resp_string(entry->client->write_buf, entry->data->args[0]);
+      const size_t nbytes = create_resp_string(entry->client->write_buf, entry->args->data[0]);
       return CREATE_STRING(entry->client->write_buf, nbytes);
     }
 

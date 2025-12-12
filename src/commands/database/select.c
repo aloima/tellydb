@@ -6,12 +6,12 @@
 static string_t run(struct CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
-  if (entry->data->arg_count != 1) {
+  if (entry->args->count != 1) {
     return WRONG_ARGUMENT_ERROR("SELECT");
   }
 
   struct LinkedListNode *node = get_database_node();
-  const uint64_t target = hash(entry->data->args[0].value, entry->data->args[0].len);
+  const uint64_t target = hash(entry->args->data[0].value, entry->args->data[0].len);
 
   while (node) {
     struct Database *database = node->data;
@@ -24,7 +24,7 @@ static string_t run(struct CommandEntry *entry) {
     node = node->next;
   }
 
-  entry->client->database = create_database(entry->data->args[0], DATABASE_INITIAL_SIZE);
+  entry->client->database = create_database(entry->args->data[0], DATABASE_INITIAL_SIZE);
   return RESP_OK();
 }
 

@@ -4,15 +4,15 @@
 #include <stdint.h>
 
 static string_t run(struct CommandEntry *entry) {
-  if (entry->data->arg_count == 0) {
+  if (entry->args->count == 0) {
     PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("DEL");
   }
 
   uint32_t deleted = 0;
 
-  for (uint32_t i = 0; i < entry->data->arg_count; ++i) {
-    deleted += delete_data(entry->database, entry->data->args[i]);
+  for (uint32_t i = 0; i < entry->args->count; ++i) {
+    deleted += delete_data(entry->database, entry->args->data[i]);
   }
 
   PASS_NO_CLIENT(entry->client);

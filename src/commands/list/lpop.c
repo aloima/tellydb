@@ -3,12 +3,12 @@
 #include <stddef.h>
 
 static string_t run(struct CommandEntry *entry) {
-  if (entry->data->arg_count != 1) {
+  if (entry->args->count != 1) {
     PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("LPOP");
   }
 
-  const string_t key = entry->data->args[0];
+  const string_t key = entry->args->data[0];
   const struct KVPair *kv = get_data(entry->database, key);
 
   if (!kv) {

@@ -6,7 +6,7 @@
 #include <gmp.h>
 
 static string_t run(struct CommandEntry *entry) {
-  if (entry->data->arg_count == 0) {
+  if (entry->args->count == 0) {
     PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("INCR");
   }
@@ -17,7 +17,7 @@ static string_t run(struct CommandEntry *entry) {
     switch (entry->client->protover) {
       case RESP2: {
         entry->client->write_buf[0] = '*';
-        at = ltoa(entry->data->arg_count * 2, entry->client->write_buf + 1) + 1;
+        at = ltoa(entry->args->count * 2, entry->client->write_buf + 1) + 1;
         entry->client->write_buf[at++] = '\r';
         entry->client->write_buf[at++] = '\n';
         break;
@@ -25,14 +25,14 @@ static string_t run(struct CommandEntry *entry) {
 
       case RESP3:
         entry->client->write_buf[0] = '%';
-        at = ltoa(entry->data->arg_count, entry->client->write_buf + 1) + 1;
+        at = ltoa(entry->args->count, entry->client->write_buf + 1) + 1;
         entry->client->write_buf[at++] = '\r';
         entry->client->write_buf[at++] = '\n';
         break;
     }
 
-    for (uint32_t i = 0; i < entry->data->arg_count; ++i) {
-      const string_t key = entry->data->args[i];
+    for (uint32_t i = 0; i < entry->args->count; ++i) {
+      const string_t key = entry->args->data[i];
       struct KVPair *result = get_data(entry->database, key);
       void *number;
       at += create_resp_string(entry->client->write_buf + at, key);
@@ -80,8 +80,8 @@ static string_t run(struct CommandEntry *entry) {
       }
     }
   } else {
-    for (uint32_t i = 0; i < entry->data->arg_count; ++i) {
-      const string_t key = entry->data->args[i];
+    for (uint32_t i = 0; i < entry->args->count; ++i) {
+      const string_t key = entry->args->data[i];
       struct KVPair *result = get_data(entry->database, key);
       void *number;
       at += create_resp_string(entry->client->write_buf + at, key);

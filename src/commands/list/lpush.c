@@ -20,12 +20,12 @@ static void inline lpush_to_list(struct List *list, void *value, enum TellyTypes
 }
 
 static string_t run(struct CommandEntry *entry) {
-  if (entry->data->arg_count < 2) {
+  if (entry->args->count < 2) {
     PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("LPUSH");
   }
 
-  const string_t key = entry->data->args[0];
+  const string_t key = entry->args->data[0];
   struct KVPair *kv = get_data(entry->database, key);
   struct List *list;
 
@@ -41,8 +41,8 @@ static string_t run(struct CommandEntry *entry) {
     set_data(entry->database, kv, key, list, TELLY_LIST);
   }
 
-  for (uint32_t i = 1; i < entry->data->arg_count; ++i) {
-    string_t input = entry->data->args[i];
+  for (uint32_t i = 1; i < entry->args->count; ++i) {
+    string_t input = entry->args->data[i];
     bool is_true = streq(input.value, "true");
 
     if (try_parse_integer(input.value)) {
@@ -75,7 +75,7 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   PASS_NO_CLIENT(entry->client);
-  const size_t nbytes = create_resp_integer(entry->client->write_buf, entry->data->arg_count - 1);
+  const size_t nbytes = create_resp_integer(entry->client->write_buf, entry->args->count - 1);
   return CREATE_STRING(entry->client->write_buf, nbytes);
 }
 

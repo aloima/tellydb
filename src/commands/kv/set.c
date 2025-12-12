@@ -15,12 +15,12 @@ static void take_as_string(void **value, const string_t data) {
 }
 
 static string_t run(struct CommandEntry *entry) {
-  if (entry->data->arg_count < 2) {
+  if (entry->args->count < 2) {
     PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("SET");
   }
 
-  char *value_in = entry->data->args[1].value;
+  char *value_in = entry->args->data[1].value;
   const bool is_true = streq(value_in, "true");
   bool is_integer = false;
   bool is_double = false;
@@ -30,8 +30,8 @@ static string_t run(struct CommandEntry *entry) {
 
   enum TellyTypes type;
 
-  for (uint32_t i = 2; i < entry->data->arg_count; ++i) {
-    string_t arg = entry->data->args[i];
+  for (uint32_t i = 2; i < entry->args->count; ++i) {
+    string_t arg = entry->args->data[i];
     to_uppercase(arg, arg.value);
 
     if (streq(arg.value, "GET")) {
@@ -43,9 +43,9 @@ static string_t run(struct CommandEntry *entry) {
     } else if (streq(arg.value, "AS")) {
       as = true;
 
-      if ((i + 1) < entry->data->arg_count) {
+      if ((i + 1) < entry->args->count) {
         i += 1;
-        string_t name = entry->data->args[i];
+        string_t name = entry->args->data[i];
         to_uppercase(name, name.value);
 
         if (streq(name.value, "STRING") || streq(name.value, "STR")) {
@@ -85,7 +85,7 @@ static string_t run(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("XX and NX arguments cannot be specified simultaneously for 'SET' command");
   }
 
-  const string_t key = entry->data->args[0];
+  const string_t key = entry->args->data[0];
   void *value;
   struct KVPair *res = get_data(entry->database, key);
 
@@ -127,7 +127,7 @@ static string_t run(struct CommandEntry *entry) {
       }
 
       case TELLY_STR: {
-        take_as_string(&value, entry->data->args[1]);
+        take_as_string(&value, entry->args->data[1]);
         break;
       }
 
@@ -150,7 +150,7 @@ static string_t run(struct CommandEntry *entry) {
       }
 
       case TELLY_STR: {
-        take_as_string(&value, entry->data->args[1]);
+        take_as_string(&value, entry->args->data[1]);
         break;
       }
 
@@ -172,7 +172,7 @@ static string_t run(struct CommandEntry *entry) {
       }
 
       case TELLY_STR: {
-        take_as_string(&value, entry->data->args[1]);
+        take_as_string(&value, entry->args->data[1]);
         break;
       }
 
@@ -187,7 +187,7 @@ static string_t run(struct CommandEntry *entry) {
       return RESP_ERROR_MESSAGE("The type must be string for this value");
     }
 
-    take_as_string(&value, entry->data->args[1]);
+    take_as_string(&value, entry->args->data[1]);
   }
 
   if (get) {

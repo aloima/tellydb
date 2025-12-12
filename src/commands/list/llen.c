@@ -6,11 +6,11 @@
 static string_t run(struct CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
-  if (entry->data->arg_count != 1) {
+  if (entry->args->count != 1) {
     return WRONG_ARGUMENT_ERROR("LLEN");
   }
 
-  const struct KVPair *kv = get_data(entry->database, entry->data->args[0]);
+  const struct KVPair *kv = get_data(entry->database, entry->args->data[0]);
 
   if (!kv) {
     return CREATE_STRING(":0\r\n", 4);

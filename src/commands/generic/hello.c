@@ -6,13 +6,13 @@
 static string_t run(struct CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
-  const uint32_t arg_count = entry->data->arg_count;
+  const uint32_t arg_count = entry->args->count;
 
   if (arg_count != 1) {
     return WRONG_ARGUMENT_ERROR("HELLO");
   }
 
-  const char *protover = entry->data->args[0].value;
+  const char *protover = entry->args->data[0].value;
 
   if (streq(protover, "2")) {
     entry->client->protover = RESP2;

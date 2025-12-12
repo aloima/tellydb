@@ -63,11 +63,11 @@ static string_t run(struct CommandEntry *entry) {
   char buf[8192], section[2048];
   buf[0] = '\0';
 
-  if (entry->data->arg_count != 0) {
-    const uint32_t n = entry->data->arg_count - 1;
+  if (entry->args->count != 0) {
+    const uint32_t n = entry->args->count - 1;
 
     for (uint32_t i = 0; i < n; ++i) {
-      char *name = entry->data->args[i].value;
+      char *name = entry->args->data[i].value;
 
       if (!get_section(section, conf, name)) {
         return RESP_ERROR_MESSAGE("Invalid section name");
@@ -77,7 +77,7 @@ static string_t run(struct CommandEntry *entry) {
       strcat(buf, "\r\n");
     }
 
-    const char *name = entry->data->args[n].value;
+    const char *name = entry->args->data[n].value;
 
     if (!get_section(section, conf, name)) {
       return RESP_ERROR_MESSAGE("Invalid section name");

@@ -31,7 +31,7 @@ TransactionBlock *add_transaction_block(TransactionBlock *block) {
 
 static inline void prepare_transaction(Transaction *transaction, Client *client, const uint64_t command_idx, commanddata_t *data) {
   transaction->command = &variables->commands[command_idx];
-  transaction->data = *data;
+  transaction->args = data->args;
   transaction->database = client->database;
 }
 
@@ -48,9 +48,9 @@ bool add_transaction(Client *client, const uint64_t command_idx, commanddata_t *
     prepare_transaction(block.data.transaction, client, command_idx, data);
     push_tqueue(variables->queue, &block);
 
-    if (estimate_tqueue_size(variables->queue) - atomic_load_explicit(&variables->waiting_count, memory_order_relaxed) >= 1) {
+    // if (estimate_tqueue_size(variables->queue) - atomic_load_explicit(&variables->waiting_count, memory_order_relaxed) >= 1) {
       sem_post(variables->sem);
-    }
+    // }
   } else {
     block.type = TX_WAITING;
 
@@ -101,7 +101,7 @@ void free_transaction_blocks() {
 
 static inline string_t execute_transaction(Client *client, struct Password *password, Transaction *transaction) {
   struct Command *command = transaction->command;
-  struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction->data, transaction->database, password);
+  struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction->args, transaction->database, password);
 
   if ((password->permissions & command->permissions) != command->permissions) {
     WRITE_ERROR_MESSAGE(client, "No permissions to execute this command");

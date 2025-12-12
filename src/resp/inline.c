@@ -38,13 +38,13 @@ static inline bool parse_name(Arena *arena, Client *client, char *buf, int32_t *
 
 static inline bool parse_arguments(Arena *arena, Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *cmd, char *c) {
   bool retrieving = true;
-  cmd->args = arena_alloc(arena, RESP_INLINE_ARGUMENT_COUNT * sizeof(string_t));
+  cmd->args.data = arena_alloc(arena, RESP_INLINE_ARGUMENT_COUNT * sizeof(string_t));
 
   while (retrieving) {
-    string_t *arg = &cmd->args[cmd->arg_count];
+    string_t *arg = &cmd->args.data[cmd->args.count];
     arg->value = arena_alloc(arena, RESP_INLINE_BUFFER * sizeof(char));
     arg->len = 0;
-    cmd->arg_count += 1;
+    cmd->args.count += 1;
 
     uint8_t idx = 0;
     char *value = arg->value;
@@ -73,8 +73,8 @@ static inline bool parse_arguments(Arena *arena, Client *client, char *buf, int3
 }
 
 bool parse_inline_command(Arena *arena, Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *cmd, char c) {
-  cmd->args = NULL;
-  cmd->arg_count = 0;
+  cmd->args.data = NULL;
+  cmd->args.count = 0;
 
   if (!parse_name(arena, client, buf, at, size, cmd, &c)) THROW_RESP_ERROR(client->id);
   if (*at == *size) return true;

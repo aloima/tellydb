@@ -5,11 +5,11 @@
 static string_t run(struct CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
-  if (entry->data->arg_count != 1 && entry->data->arg_count != 2) {
+  if (entry->args->count != 1 && entry->args->count != 2) {
     return WRONG_ARGUMENT_ERROR("AUTH");
   }
 
-  const string_t input = entry->data->args[0];
+  const string_t input = entry->args->data[0];
   const int target = where_password(input.value, input.len);
 
   if (target == -1) {
@@ -17,11 +17,11 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   if (entry->password && entry->password != get_empty_password()) {
-    if (entry->data->arg_count != 2) {
+    if (entry->args->count != 2) {
       return RESP_OK_MESSAGE("A password already in use for your client. If you sure to change, use command with ok argument");
     }
 
-    const char *ok = entry->data->args[1].value;
+    const char *ok = entry->args->data[1].value;
 
     if (!streq(ok, "ok")) {
       return RESP_OK_MESSAGE("A password already in use for your client. If you sure to change, use command with ok argument");

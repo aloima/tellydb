@@ -14,7 +14,7 @@ static inline string_t subcommand_id(Client *client, char *buffer) {
 static inline string_t subcommand_info(struct CommandEntry *entry) {
   Client *client;
 
-  switch (entry->data->arg_count) {
+  switch (entry->args->count) {
     case 1:
       client = entry->client;
       break;
@@ -24,11 +24,11 @@ static inline string_t subcommand_info(struct CommandEntry *entry) {
         return RESP_ERROR_MESSAGE("Not allowed to use this command with argument, need P_CLIENT");
       }
 
-      if (!try_parse_integer(entry->data->args[1].value)) {
+      if (!try_parse_integer(entry->args->data[1].value)) {
         return RESP_ERROR_MESSAGE("Specified argument must be integer for the ID");
       }
 
-      const int64_t id = strtoll(entry->data->args[1].value, NULL, 10);
+      const int64_t id = strtoll(entry->args->data[1].value, NULL, 10);
 
       if ((id > UINT32_MAX) || (id < 0)) {
         return RESP_ERROR_MESSAGE("Specified ID is out of bounds for uint32_t");
@@ -149,12 +149,12 @@ static string_t subcommand_lock(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_CLIENT");
   }
 
-  if (!try_parse_integer(entry->data->args[1].value)) {
+  if (!try_parse_integer(entry->args->data[1].value)) {
     PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("Specified argument must be integer for the ID");
   }
 
-  const int64_t id = strtoll(entry->data->args[1].value, NULL, 10);
+  const int64_t id = strtoll(entry->args->data[1].value, NULL, 10);
 
   if ((id > UINT32_MAX) || (id < 0)) {
     PASS_NO_CLIENT(entry->client);
@@ -184,15 +184,15 @@ static string_t subcommand_lock(struct CommandEntry *entry) {
 }
 
 static inline string_t subcommand_setinfo(struct CommandEntry *entry) {
-  if (entry->data->arg_count != 3) {
+  if (entry->args->count != 3) {
     return WRONG_ARGUMENT_ERROR("CLIENT SETINFO");
   }
 
-  string_t property = entry->data->args[1];
+  string_t property = entry->args->data[1];
   to_uppercase(property, property.value);
 
   if (streq(property.value, "LIB-NAME")) {
-    string_t value = entry->data->args[2];
+    string_t value = entry->args->data[2];
     const uint32_t value_size = value.len + 1;
 
     if (entry->client->lib_name) {
@@ -204,7 +204,7 @@ static inline string_t subcommand_setinfo(struct CommandEntry *entry) {
 
     return RESP_OK();
   } else if (streq(property.value, "LIB-VERSION")) {
-    string_t value = entry->data->args[2];
+    string_t value = entry->args->data[2];
     const uint32_t value_size = value.len + 1;
 
     if (entry->client->lib_ver) {
@@ -226,12 +226,12 @@ static inline string_t subcommand_kill(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_CLIENT");
   }
 
-  if (!try_parse_integer(entry->data->args[1].value)) {
+  if (!try_parse_integer(entry->args->data[1].value)) {
     PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("Specified argument must be integer for the ID");
   }
 
-  const int64_t id = strtoll(entry->data->args[1].value, NULL, 10);
+  const int64_t id = strtoll(entry->args->data[1].value, NULL, 10);
 
   if ((id > UINT32_MAX) || (id < 0)) {
     PASS_NO_CLIENT(entry->client);
@@ -264,12 +264,12 @@ static inline string_t subcommand_unlock(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_CLIENT");
   }
 
-  if (!try_parse_integer(entry->data->args[1].value)) {
+  if (!try_parse_integer(entry->args->data[1].value)) {
     PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("Specified argument must be integer for the ID");
   }
 
-  const int64_t id = strtoll(entry->data->args[1].value, NULL, 10);
+  const int64_t id = strtoll(entry->args->data[1].value, NULL, 10);
 
   if ((id > UINT32_MAX) || (id < 0)) {
     PASS_NO_CLIENT(entry->client);
@@ -295,12 +295,12 @@ static inline string_t subcommand_unlock(struct CommandEntry *entry) {
 }
 
 static string_t run(struct CommandEntry *entry) {
-  if (entry->data->arg_count == 0) {
+  if (entry->args->count == 0) {
     PASS_NO_CLIENT(entry->client);
     return MISSING_SUBCOMMAND_ERROR("CLIENT");
   }
 
-  const string_t subcommand = entry->data->args[0];
+  const string_t subcommand = entry->args->data[0];
   to_uppercase(subcommand, subcommand.value);
 
   string_t response;

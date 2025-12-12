@@ -6,11 +6,11 @@
 
 #include <semaphore.h>
 
-struct TransactionBlockStruct;
-typedef struct TransactionBlockStruct TransactionBlock;
+struct TransactionBlock;
+typedef struct TransactionBlock TransactionBlock;
 
-struct TransactionStruct;
-typedef struct TransactionStruct Transaction;
+struct Transaction;
+typedef struct Transaction Transaction;
 
 typedef struct {
   Transaction *transactions;

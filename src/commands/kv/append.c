@@ -5,12 +5,12 @@
 #include <stdlib.h>
 
 static string_t run(struct CommandEntry *entry) {
-  if (entry->data->arg_count != 2) {
+  if (entry->args->count != 2) {
     PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("APPEND");
   }
 
-  const string_t key = entry->data->args[0];
+  const string_t key = entry->args->data[0];
   const struct KVPair *kv = get_data(entry->database, key);
 
   if (kv) {
@@ -19,7 +19,7 @@ static string_t run(struct CommandEntry *entry) {
       return INVALID_TYPE_ERROR("APPEND");
     }
 
-    const string_t arg = entry->data->args[1];
+    const string_t arg = entry->args->data[1];
 
     string_t *string = kv->value;
     string->value = realloc(string->value, string->len + arg.len);
@@ -30,7 +30,7 @@ static string_t run(struct CommandEntry *entry) {
     const size_t nbytes = create_resp_integer(entry->client->write_buf, string->len);
     return CREATE_STRING(entry->client->write_buf, nbytes);
   } else {
-    const string_t arg = entry->data->args[1];
+    const string_t arg = entry->args->data[1];
 
     string_t *string = malloc(sizeof(string_t));
     string->len = arg.len;

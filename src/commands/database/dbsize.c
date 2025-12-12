@@ -8,10 +8,10 @@ static string_t run(struct CommandEntry *entry) {
 
   struct Database *database;
 
-  if (entry->data->arg_count != 1) {
+  if (entry->args->count != 1) {
     database = entry->database;
   } else {
-    database = get_database(entry->data->args[0]);
+    database = get_database(entry->args->data[0]);
 
     if (!database) {
       return RESP_ERROR_MESSAGE("Database cannot be found");

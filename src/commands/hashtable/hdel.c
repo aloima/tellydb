@@ -4,12 +4,12 @@
 #include <stdint.h>
 
 static string_t run(struct CommandEntry *entry) {
-  if (entry->data->arg_count < 2) {
+  if (entry->args->count < 2) {
     PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("HDEL");
   }
 
-  const string_t key = entry->data->args[0];
+  const string_t key = entry->args->data[0];
   struct KVPair *kv = get_data(entry->database, key);
   struct HashTable *table;
 
@@ -26,8 +26,8 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   if (!entry->client) {
-    for (uint32_t i = 1; i < entry->data->arg_count; ++i) {
-      del_field_from_hashtable(table, entry->data->args[i]);
+    for (uint32_t i = 1; i < entry->args->count; ++i) {
+      del_field_from_hashtable(table, entry->args->data[i]);
     }
 
     if (table->size.used == 0) {
@@ -43,8 +43,8 @@ static string_t run(struct CommandEntry *entry) {
 
   const uint32_t old_size = table->size.used;
 
-  for (uint32_t i = 1; i < entry->data->arg_count; ++i) {
-    del_field_from_hashtable(table, entry->data->args[i]);
+  for (uint32_t i = 1; i < entry->args->count; ++i) {
+    del_field_from_hashtable(table, entry->args->data[i]);
   }
 
   const uint32_t current_size = table->size.used;

@@ -65,15 +65,15 @@ static inline bool get_resp_command_argument(Arena *arena, Client *client, strin
 }
 
 bool parse_resp_command(Arena *arena, Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command) {
-  command->arg_count = 0;
-  command->args = NULL;
+  command->args.count = 0;
+  command->args.data = NULL;
 
   char *c;
   TAKE_BYTES(c, 1, false);
   if (VERY_UNLIKELY(!('0' <= *c && *c <= '9'))) THROW_RESP_ERROR(client->id);
 
   do {
-    command->arg_count = (command->arg_count * 10) + (*c - '0');
+    command->args.count = (command->args.count * 10) + (*c - '0');
     TAKE_BYTES(c, 1, false);
   } while ('0' <= *c && *c <= '9');
 
@@ -82,7 +82,7 @@ bool parse_resp_command(Arena *arena, Client *client, char *buf, int32_t *at, in
   TAKE_BYTES(c, 1, false);
   if (VERY_UNLIKELY(*c != '\n')) THROW_RESP_ERROR(client->id);
 
-  if (command->arg_count == 0) {
+  if (command->args.count == 0) {
     write_log(LOG_ERR, "Received data from Client #%u is empty RESP data, so it cannot be created as a command.", client->id);
     return false;
   }
@@ -91,16 +91,16 @@ bool parse_resp_command(Arena *arena, Client *client, char *buf, int32_t *at, in
   command->name->len = 0;
   if (!get_resp_command_name(arena, client, command->name, buf, at, size)) return false;
 
-  command->arg_count -= 1;
+  command->args.count -= 1;
 
-  if (command->arg_count != 0) {
-    command->args = arena_alloc(arena, command->arg_count * sizeof(string_t));
+  if (command->args.count != 0) {
+    command->args.data = arena_alloc(arena, command->args.count * sizeof(string_t));
 
-    for (uint32_t i = 0; i < command->arg_count; ++i) {
-      command->args[i].len = 0;
-      command->args[i].value = NULL;
+    for (uint32_t i = 0; i < command->args.count; ++i) {
+      command->args.data[i].len = 0;
+      command->args.data[i].value = NULL;
 
-      const bool parsed = get_resp_command_argument(arena, client, &command->args[i], buf, at, size);
+      const bool parsed = get_resp_command_argument(arena, client, &command->args.data[i], buf, at, size);
       if (VERY_UNLIKELY(!parsed)) return false;
     }
   }

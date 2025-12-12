@@ -6,12 +6,12 @@
 #include <gmp.h>
 
 static string_t run(struct CommandEntry *entry) {
-  if (entry->data->arg_count != 2) {
+  if (entry->args->count != 2) {
     PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("INCRBY");
   }
 
-  const char *input = entry->data->args[1].value;
+  const char *input = entry->args->data[1].value;
   const bool is_integer = try_parse_integer(input);
   const bool is_double = try_parse_double(input);
 
@@ -20,7 +20,7 @@ static string_t run(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("Second argument must be an integer or double");
   }
 
-  const string_t key = entry->data->args[0];
+  const string_t key = entry->args->data[0];
   struct KVPair *result = get_data(entry->database, key);
 
   if (!result) {

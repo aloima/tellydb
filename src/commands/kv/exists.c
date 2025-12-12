@@ -8,7 +8,7 @@
 static string_t run(struct CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
-  if (entry->data->arg_count == 0) {
+  if (entry->args->count == 0) {
     return WRONG_ARGUMENT_ERROR("EXISTS");
   }
 
@@ -17,8 +17,8 @@ static string_t run(struct CommandEntry *entry) {
   char buf[8192];
   buf[0] = '\0';
 
-  for (uint32_t i = 0; i < entry->data->arg_count; ++i) {
-    const string_t key = entry->data->args[i];
+  for (uint32_t i = 0; i < entry->args->count; ++i) {
+    const string_t key = entry->args->data[i];
 
     if (get_data(entry->database, key)) {
       existed += 1;
@@ -35,7 +35,7 @@ static string_t run(struct CommandEntry *entry) {
       "+existed key count is %u\r\n"
       "+not existed key count is %u\r\n"
       "%s"
-  ), entry->data->arg_count + 2, existed, not_existed, buf);
+  ), entry->args->count + 2, existed, not_existed, buf);
 
   return CREATE_STRING(entry->client->write_buf, nbytes);
 }

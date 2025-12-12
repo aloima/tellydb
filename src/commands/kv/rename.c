@@ -66,7 +66,7 @@ static inline void shift_others(struct Database *database, struct KVPair *kv, co
 }
 
 static string_t run(struct CommandEntry *entry) {
-  if (entry->data->arg_count != 2) {
+  if (entry->args->count != 2) {
     PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("RENAME");
   }
@@ -74,8 +74,8 @@ static string_t run(struct CommandEntry *entry) {
   struct KVPair **data = entry->database->data;
   const uint64_t capacity = entry->database->size.capacity;
 
-  const string_t search = entry->data->args[0];
-  const string_t name = entry->data->args[1];
+  const string_t search = entry->args->data[0];
+  const string_t name = entry->args->data[1];
 
   if (get_data(entry->database, name)) {
     PASS_NO_CLIENT(entry->client);

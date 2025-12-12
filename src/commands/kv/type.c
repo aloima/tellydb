@@ -5,11 +5,11 @@
 static string_t run(struct CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
-  if (entry->data->arg_count != 1) {
+  if (entry->args->count != 1) {
     return WRONG_ARGUMENT_ERROR("TYPE");
   }
 
-  struct KVPair *res = get_data(entry->database, entry->data->args[0]);
+  struct KVPair *res = get_data(entry->database, entry->args->data[0]);
 
   if (!res) {
     return RESP_NULL(entry->client->protover);
