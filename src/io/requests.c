@@ -24,6 +24,8 @@ void *handle_io_requests(void *arg) {
     Client *client = op.client;
     enum ClientState expected = CLIENT_STATE_ACTIVE;
 
+    __builtin_prefetch(client, 1, 3);
+
     while (!ATOMIC_CAS_WEAK(&client->state, &expected, CLIENT_STATE_PASSIVE, memory_order_acq_rel, memory_order_relaxed)) {
       if (expected == CLIENT_STATE_EMPTY) goto TERMINATION;
       expected = CLIENT_STATE_ACTIVE;

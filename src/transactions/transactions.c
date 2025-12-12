@@ -78,7 +78,7 @@ void remove_transaction_block(TransactionBlock *block) {
 
       free(multiple.transactions);
       break;
-    };
+    }
 
     default:
       break;
