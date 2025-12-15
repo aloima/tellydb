@@ -13,6 +13,9 @@ static inline void unknown_command(Client *client, string_t *name) {
 
 void read_command(IOThread *thread, Client *client) {
   char *buf = thread->read_buf;
+  __builtin_prefetch(buf, 0, 3);
+  __builtin_prefetch(buf, 1, 3);
+
   int32_t size = _read(client, buf, RESP_BUF_SIZE);
 
   if (size == 0) {
@@ -21,6 +24,9 @@ void read_command(IOThread *thread, Client *client) {
   }
 
   Arena *arena = thread->arena;
+  __builtin_prefetch(arena, 0, 3);
+  __builtin_prefetch(arena, 1, 3);
+
   int32_t at = 0;
 
   while (size != -1) {

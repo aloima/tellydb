@@ -63,18 +63,24 @@ uint64_t estimate_tqueue_size(const struct ThreadQueue *queue) {
 }
 
 void *push_tqueue(struct ThreadQueue *queue, void *value) {
-  const uint64_t mask = (queue->capacity - 1);
-  uint64_t end = atomic_load_explicit(&queue->end, memory_order_relaxed);
+  _Atomic(uint64_t) *qat = &queue->at;
+  _Atomic(uint64_t) *qend = &queue->end;
+  const uint64_t capacity = queue->capacity;
+
+  const uint64_t mask = (capacity - 1);
+  uint64_t end = atomic_load_explicit(qend, memory_order_relaxed);
 
   do {
-    const uint64_t at = atomic_load_explicit(&queue->at, memory_order_acquire);
-    if ((end - at) >= queue->capacity) return NULL;
-  } while (!ATOMIC_CAS_WEAK(&queue->end, &end, end + 1, memory_order_acq_rel, memory_order_relaxed));
+    const uint64_t at = atomic_load_explicit(qat, memory_order_acquire);
+    if ((end - at) >= capacity) return NULL;
+  } while (!ATOMIC_CAS_WEAK(qend, &end, end + 1, memory_order_acq_rel, memory_order_relaxed));
 
   __builtin_prefetch(value, 0, 3);
   const uint64_t idx = (end & mask);
 
   _Atomic(enum ThreadQueueState) *state = &queue->states[idx].value;
+  __builtin_prefetch(state, 1, 3);
+
   while (atomic_load_explicit(state, memory_order_acquire) != TQ_EMPTY) cpu_relax();
 
   char *dst = ((char *) queue->data + (idx * queue->type));
@@ -85,19 +91,23 @@ void *push_tqueue(struct ThreadQueue *queue, void *value) {
 }
 
 bool pop_tqueue(struct ThreadQueue *queue, void *dest) {
+  _Atomic(uint64_t) *qat = &queue->at;
+  _Atomic(uint64_t) *qend = &queue->end;
   const uint64_t mask = (queue->capacity - 1);
   uint64_t at;
 
   do {
-    at = atomic_load_explicit(&queue->at, memory_order_relaxed);
-    const uint64_t end = atomic_load_explicit(&queue->end, memory_order_acquire);
+    at = atomic_load_explicit(qat, memory_order_relaxed);
+    const uint64_t end = atomic_load_explicit(qend, memory_order_acquire);
     if (end == at) return false;
-  } while (!ATOMIC_CAS_WEAK(&queue->at, &at, at + 1, memory_order_acq_rel, memory_order_relaxed));
+  } while (!ATOMIC_CAS_WEAK(qat, &at, at + 1, memory_order_acq_rel, memory_order_relaxed));
 
   __builtin_prefetch(dest, 1, 3);
   const uint64_t idx = at & mask;
 
   _Atomic(enum ThreadQueueState) *state = &queue->states[idx].value;
+  __builtin_prefetch(state, 1, 3);
+
   while (atomic_load_explicit(state, memory_order_acquire) != TQ_STORED) cpu_relax();
 
   char *src = ((char *) queue->data + (idx * queue->type));
