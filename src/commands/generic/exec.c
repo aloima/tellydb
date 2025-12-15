@@ -11,6 +11,12 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   entry->client->waiting_block->type = TX_MULTIPLE;
+  TransactionBlock *queued = enqueue_to_transaction_queue(&entry->client->waiting_block);
+
+  if (queued == NULL) {
+    return RESP_ERROR_MESSAGE("The transaction block could not be executed, out of memory");
+  }
+
   entry->client->waiting_block = NULL;
   PASS_COMMAND();
 }

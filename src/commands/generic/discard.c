@@ -8,7 +8,7 @@ static string_t run(struct CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
   if (!entry->client->waiting_block) {
-    return RESP_ERROR_MESSAGE("A transaction block did not started, cannot execute one without starting before");
+    return RESP_ERROR_MESSAGE("There is no transaction block, cannot execute one without starting before");
   }
 
   const uint64_t count = entry->client->waiting_block->data.multiple.transaction_count;

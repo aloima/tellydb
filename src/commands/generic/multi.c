@@ -10,17 +10,17 @@ static string_t run(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("Already started a transaction block, cannot create one without executing before");
   }
 
-  TransactionBlock block;
-  block.type = TX_WAITING;
-  block.client = entry->client;
-  block.password = entry->password;
-  memset(&block.data, 0, sizeof(block.data));
-
-  entry->client->waiting_block = add_transaction_block(&block);
+  entry->client->waiting_block = malloc(sizeof(TransactionBlock));
 
   if (entry->client->waiting_block == NULL) {
-    return RESP_ERROR_MESSAGE("Cannot create a transaction block because of configuration limit");
+    return RESP_ERROR_MESSAGE("Cannot create a transaction block, out of memory");
   }
+
+  TransactionBlock *block = entry->client->waiting_block;
+  block->type = TX_WAITING;
+  block->client = entry->client;
+  block->password = entry->password;
+  memset(&block->data, 0, sizeof(block->data));
 
   return RESP_OK();
 }

@@ -25,8 +25,12 @@ uint64_t get_processed_transaction_count() {
   return processed_transaction_count;
 }
 
-TransactionBlock *add_transaction_block(TransactionBlock *block) {
-  return push_tqueue(variables->queue, block);
+TransactionBlock *enqueue_to_transaction_queue(TransactionBlock **block) {
+  TransactionBlock *res = push_tqueue(variables->queue, block);
+  if (res == NULL) return NULL;
+
+  sem_post(variables->sem);
+  return res;
 }
 
 static inline void prepare_transaction(Transaction *transaction, Client *client, const uint64_t command_idx, commanddata_t *data) {
@@ -36,27 +40,29 @@ static inline void prepare_transaction(Transaction *transaction, Client *client,
 }
 
 bool add_transaction(Client *client, const uint64_t command_idx, commanddata_t *data) {
-  TransactionBlock *block = malloc(sizeof(TransactionBlock));
-
   if (client->waiting_block == NULL || IS_RELATED_TO_WAITING_TX(variables->commands, command_idx)) {
-    block->type = TX_DIRECT;
+    TransactionBlock *block = malloc(sizeof(TransactionBlock));
+    if (block == NULL) return false;
 
+    block->type = TX_DIRECT;
     block->client = client;
     block->password = client->password;
     block->data.transaction = malloc(sizeof(Transaction));
 
     prepare_transaction(block->data.transaction, client, command_idx, data);
-    push_tqueue(variables->queue, &block);
+    if (push_tqueue(variables->queue, &block) == NULL) return false;
 
-    // if (estimate_tqueue_size(variables->queue) - atomic_load_explicit(&variables->waiting_count, memory_order_relaxed) >= 1) {
-      sem_post(variables->sem);
-    // }
+    sem_post(variables->sem);
   } else {
-    block->type = TX_WAITING;
-
-    MultipleTransactions *multiple = &block->data.multiple;
+    MultipleTransactions *multiple = &client->waiting_block->data.multiple;
     multiple->transaction_count += 1;
-    multiple->transactions = realloc(multiple->transactions, sizeof(Transaction) * multiple->transaction_count);
+
+    if (multiple->transaction_count == 1) {
+      multiple->transactions = malloc(sizeof(Transaction));
+    } else {
+      multiple->transactions = realloc(multiple->transactions, sizeof(Transaction) * multiple->transaction_count);
+    }
+
     prepare_transaction(&multiple->transactions[multiple->transaction_count - 1], client, command_idx, data);
   }
 
@@ -122,7 +128,6 @@ void execute_transaction_block(TransactionBlock *block) {
       break;
     }
 
-    // TODO: client->write_buf collision
     case TX_MULTIPLE: {
       MultipleTransactions multiple = block->data.multiple;
       string_t results[multiple.transaction_count];

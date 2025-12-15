@@ -47,7 +47,8 @@ void destroy_transaction_thread();
 uint64_t get_processed_transaction_count();
 uint32_t get_transaction_count();
 
-TransactionBlock *add_transaction_block(TransactionBlock *block);
+TransactionBlock *enqueue_to_transaction_queue(TransactionBlock **block);
+
 bool add_transaction(Client *client, const uint64_t command_idx, commanddata_t *data);
 void remove_transaction_block(TransactionBlock *block);
 

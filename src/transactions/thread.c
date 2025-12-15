@@ -29,19 +29,17 @@ void *transaction_thread(void *arg) {
 
     TransactionBlock *block;
     if (pop_tqueue(variables->queue, &block)) {
-      if (block->type == TX_DIRECT) {
-        Client *client;
+      Client *client;
 
-        if (block->client->id != -1) {
-          client = block->client;
-          __builtin_prefetch(client, 0, 3);
-        } else {
-          client = NULL;
-        }
-
-        execute_transaction_block(block);
-        remove_transaction_block(block);
+      if (block->client->id != -1) {
+        client = block->client;
+        __builtin_prefetch(client, 0, 3);
+      } else {
+        client = NULL;
       }
+
+      execute_transaction_block(block);
+      remove_transaction_block(block);
     } else {
       // May be data race, does not matter. If there is, a transaction will be executed. It is acceptable behavior.
       if (kill_pending) break;
@@ -72,8 +70,6 @@ void create_transaction_thread() {
   variables->commands = get_commands();
   variables->queue = create_tqueue(conf->max_transaction_blocks, sizeof(TransactionBlock *), _Alignof(TransactionBlock *));
   if (variables->queue == NULL) return write_log(LOG_ERR, "Cannot allocate transaction blocks, out of memory.");
-
-  atomic_init(&variables->waiting_count, 0);
 
   variables->sem = malloc(sizeof(sem_t));
   sem_init(variables->sem, 0, 0);

@@ -21,7 +21,6 @@ typedef struct {
   struct ThreadQueue *queue;
   struct Command *commands;
   sem_t *sem;
-  _Atomic uint64_t waiting_count;
 } TransactionVariables;
 
 TransactionVariables *get_transaction_variables();
