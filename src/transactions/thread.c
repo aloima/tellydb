@@ -29,15 +29,6 @@ void *transaction_thread(void *arg) {
 
     TransactionBlock *block;
     if (pop_tqueue(variables->queue, &block)) {
-      Client *client;
-
-      if (block->client->id != -1) {
-        client = block->client;
-        __builtin_prefetch(client, 0, 3);
-      } else {
-        client = NULL;
-      }
-
       execute_transaction_block(block);
       remove_transaction_block(block);
     } else {
