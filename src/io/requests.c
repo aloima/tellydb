@@ -52,9 +52,6 @@ void *handle_io_requests(void *arg) {
         _write(client, op.write_str.value, op.write_str.len);
         break;
       }
-
-      default:
-        break;
     }
 
     atomic_store_explicit(&client->state, CLIENT_STATE_ACTIVE, memory_order_release);

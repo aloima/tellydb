@@ -51,14 +51,14 @@ execute_process(
 )
 
 file(GLOB SOURCES "src/**/**/*.c" "src/**/*.c" "src/*.c")
-list(REMOVE_ITEM SOURCES "${CMAKE_SOURCE_DIR}/src/utils/memcpy_aligned.c")
+list(REMOVE_ITEM SOURCES "${CMAKE_SOURCE_DIR}/src/utils/memcpy_aligned.c ${CMAKE_SOURCE_DIR}/src/utils/memset_aligned.c")
 
 
 # telly target
 add_executable(telly ${SOURCES})
 set_property(TARGET telly PROPERTY C_STANDARD 23)
 set_property(TARGET telly PROPERTY C_STANDARD_REQUIRED ON)
-target_sources(telly PRIVATE src/utils/memcpy_aligned.c)
+target_sources(telly PRIVATE src/utils/memcpy_aligned.c src/utils/memset_aligned.c)
 target_link_options(telly PRIVATE ${LINK_FLAGS})
 
 include(CheckCCompilerFlag)
@@ -66,9 +66,9 @@ check_c_compiler_flag(-mavx2 COMPILER_SUPPORTS_AVX2)
 check_c_compiler_flag(-msse2 COMPILER_SUPPORTS_SSE2)
 
 if(COMPILER_SUPPORTS_AVX2)
-  set_source_files_properties(src/utils/memcpy_aligned.c PROPERTIES COMPILE_OPTIONS "-mavx2")
+  set_source_files_properties(src/utils/memcpy_aligned.c src/utils/memset_aligned.c PROPERTIES COMPILE_OPTIONS "-mavx2")
 elseif(COMPILER_SUPPORTS_SSE2)
-  set_source_files_properties(src/utils/memcpy_aligned.c PROPERTIES COMPILE_OPTIONS "-msse2")
+  set_source_files_properties(src/utils/memcpy_aligned.c src/utils/memset_aligned.c PROPERTIES COMPILE_OPTIONS "-msse2")
 endif()
 
 target_include_directories(telly PRIVATE
