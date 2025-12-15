@@ -36,25 +36,25 @@ static inline void prepare_transaction(Transaction *transaction, Client *client,
 }
 
 bool add_transaction(Client *client, const uint64_t command_idx, commanddata_t *data) {
-  TransactionBlock block;
+  TransactionBlock *block = malloc(sizeof(TransactionBlock));
 
   if (client->waiting_block == NULL || IS_RELATED_TO_WAITING_TX(variables->commands, command_idx)) {
-    block.type = TX_DIRECT;
+    block->type = TX_DIRECT;
 
-    block.client = client;
-    block.password = client->password;
-    block.data.transaction = malloc(sizeof(Transaction));
+    block->client = client;
+    block->password = client->password;
+    block->data.transaction = malloc(sizeof(Transaction));
 
-    prepare_transaction(block.data.transaction, client, command_idx, data);
+    prepare_transaction(block->data.transaction, client, command_idx, data);
     push_tqueue(variables->queue, &block);
 
     // if (estimate_tqueue_size(variables->queue) - atomic_load_explicit(&variables->waiting_count, memory_order_relaxed) >= 1) {
       sem_post(variables->sem);
     // }
   } else {
-    block.type = TX_WAITING;
+    block->type = TX_WAITING;
 
-    MultipleTransactions *multiple = &block.data.multiple;
+    MultipleTransactions *multiple = &block->data.multiple;
     multiple->transaction_count += 1;
     multiple->transactions = realloc(multiple->transactions, sizeof(Transaction) * multiple->transaction_count);
     prepare_transaction(&multiple->transactions[multiple->transaction_count - 1], client, command_idx, data);
@@ -84,16 +84,16 @@ void remove_transaction_block(TransactionBlock *block) {
       break;
   }
 
-  block->type = TX_UNINITIALIZED;
+  free(block);
 }
 
 void free_transaction_blocks() {
   struct ThreadQueue *queue = variables->queue;
 
   while (estimate_tqueue_size(queue) != 0) {
-    TransactionBlock block;
+    TransactionBlock *block;
     pop_tqueue(queue, &block);
-    remove_transaction_block(&block);
+    remove_transaction_block(block);
   }
 
   free_tqueue(queue);
