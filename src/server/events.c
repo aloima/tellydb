@@ -127,7 +127,7 @@ void handle_events(struct Server *server) {
     const int nfds = WAIT_EVENTS(eventfd, events, 512);
 
     for (int i = 0; i < nfds; ++i) {
-      __builtin_prefetch(&events[i + 1], 0, 2);
+      __builtin_prefetch(&events[i + 1], 0, 0);
       const int fd = GET_EVENT_FD(events[i]);
 
       if (fd == sockfd) {
