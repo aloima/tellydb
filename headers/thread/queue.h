@@ -14,17 +14,13 @@ struct ThreadQueueStateValue {
 };
 
 struct ThreadQueue {
-  _Atomic uint64_t at;
-  char _pad1[64 - sizeof(_Atomic uint64_t)];
-
-  _Atomic uint64_t end;
-  char _pad2[64 - sizeof(_Atomic uint64_t)];
-
   struct ThreadQueueStateValue *states;
-
   void *data;
   uint64_t capacity;
   uint64_t type;
+
+  _Atomic uint64_t at __attribute__((aligned(64)));
+  _Atomic uint64_t end __attribute__((aligned(64)));
 };
 
 struct ThreadQueue *create_tqueue(const uint64_t capacity, const uint64_t size, const uint64_t align);

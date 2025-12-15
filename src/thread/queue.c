@@ -19,8 +19,10 @@ struct ThreadQueue *create_tqueue(const uint64_t capacity, const uint64_t size, 
   if (align < sizeof(void*)) align = sizeof(void *);
   if ((align & (align - 1)) != 0) return NULL;
 
-  struct ThreadQueue *queue = malloc(sizeof(struct ThreadQueue));
-  if (queue == NULL) return NULL;
+  struct ThreadQueue *queue;
+  if (posix_memalign((void **) &queue, alignof(typeof(struct ThreadQueue)), sizeof(struct ThreadQueue)) != 0) {
+    return NULL;
+  }
 
   void *data;
   if (posix_memalign(&data, align, capacity * size) != 0) {
