@@ -6,6 +6,12 @@
 extern bool check_crlf(Client *client, char *buf, int32_t *at, int32_t *size);
 
 static inline bool get_resp_command_name(Arena *arena, Client *client, string_t *name, char *buf, int32_t *at, int32_t *size) {
+  uint64_t len = 0;
+  char *value;
+
+  __builtin_prefetch(&name->len, 1, 0);
+  __builtin_prefetch(&name->value, 1, 0);
+
   char *c;
   TAKE_BYTES(c, 1, false);
   if (VERY_UNLIKELY(*c != RDT_BSTRING)) THROW_RESP_ERROR(client->id);
@@ -14,7 +20,7 @@ static inline bool get_resp_command_name(Arena *arena, Client *client, string_t 
   if (VERY_UNLIKELY(!('0' <= *c && *c <= '9'))) THROW_RESP_ERROR(client->id);
 
   do {
-    name->len = (name->len * 10) + (*c - '0');
+    len = (len * 10) + (*c - '0');
     TAKE_BYTES(c, 1, false);
   } while ('0' <= *c && *c <= '9');
 
@@ -23,14 +29,17 @@ static inline bool get_resp_command_name(Arena *arena, Client *client, string_t 
   TAKE_BYTES(c, 1, false);
   if (VERY_UNLIKELY(*c != '\n')) THROW_RESP_ERROR(client->id);
 
-  name->value = arena_alloc(arena, name->len * sizeof(char));
+  value = arena_alloc(arena, len * sizeof(char));
 
-  char *name_raw;
-  TAKE_BYTES(name_raw, name->len, false);
-  memcpy(name->value, name_raw, name->len);
-  name->value[name->len] = '\0';
+  char *raw;
+  TAKE_BYTES(raw, len, false);
+  memcpy(value, raw, len);
+  value[len] = '\0';
 
   if (!check_crlf(client, buf, at, size)) THROW_RESP_ERROR(client->id);
+
+  name->len = len;
+  name->value = value;
   return true;
 }
 
@@ -88,7 +97,6 @@ bool parse_resp_command(Arena *arena, Client *client, char *buf, int32_t *at, in
   }
 
   command->name = arena_alloc(arena, sizeof(string_t));
-  command->name->len = 0;
   if (!get_resp_command_name(arena, client, command->name, buf, at, size)) return false;
 
   command->args.count -= 1;
