@@ -38,7 +38,7 @@ struct ThreadQueue *create_tqueue(const uint64_t capacity, const uint64_t size, 
   }
 
   // Better than individually atomic_init usage. TQ_EMPTY = 0, so it is legal.
-  memset(states, 0, capacity * sizeof(queue->states[0]));
+  memset_aligned(states, 0, capacity * sizeof(queue->states[0]));
   queue->states = states;
   queue->data = data;
 
@@ -77,11 +77,12 @@ void *push_tqueue(struct ThreadQueue *queue, void *value) {
     if ((end - at) >= capacity) return NULL;
   } while (!ATOMIC_CAS_WEAK(qend, &end, end + 1, memory_order_acq_rel, memory_order_relaxed));
 
-  __builtin_prefetch(value, 0, 3);
+  __builtin_prefetch(value, 0, 2);
   const uint64_t idx = (end & mask);
 
   _Atomic(enum ThreadQueueState) *state = &queue->states[idx].value;
-  __builtin_prefetch(state, 1, 3);
+  __builtin_prefetch(state, 0, 3);
+  __builtin_prefetch(state, 1, 0);
 
   while (atomic_load_explicit(state, memory_order_acquire) != TQ_EMPTY) cpu_relax();
 
