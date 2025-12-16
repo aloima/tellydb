@@ -1,4 +1,5 @@
 #include <telly.h>
+#include "resp.h"
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -19,7 +20,7 @@ static inline bool parse_name(Arena *arena, Client *client, char *buf, int32_t *
       break;
     }
 
-    if (take_n_bytes_from_socket(client, buf, at, &c, 1, size) != 1) {
+    if (take_n_bytes(client, buf, at, &c, 1, size) != 1) {
       idx += 1;
       cmd->name->value[idx] = '\0';
       cmd->name->len = idx;

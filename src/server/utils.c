@@ -55,3 +55,11 @@ string_t write_value(void *value, const enum TellyTypes type, const enum Protoco
       return RESP_OK_MESSAGE("list");
   }
 }
+
+inline __attribute__((always_inline)) int _read(Client *client, char *buf, const size_t nbytes) {
+  return (!client->ssl ? read(client->connfd, buf, nbytes) : SSL_read(client->ssl, buf, nbytes));
+}
+
+inline __attribute__((always_inline)) int _write(Client *client, char *buf, const size_t nbytes) {
+  return (!client->ssl ? write(client->connfd, buf, nbytes) : SSL_write(client->ssl, buf, nbytes));
+}
