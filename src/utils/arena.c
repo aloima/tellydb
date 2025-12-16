@@ -3,24 +3,47 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+static inline ArenaBlock *arena_block_create(const uint64_t size) {
+  ArenaBlock *block = malloc(sizeof(ArenaBlock));
+  if (block == NULL) return NULL;
+
+  block->region = malloc(size);
+  if (block->region == NULL) {
+    free(block);
+    return NULL;
+  }
+
+  block->index = 0;
+  block->size = size;
+  block->next = NULL;
+
+  return block;
+}
+
 Arena *arena_create(const uint64_t size) {
   Arena *arena = malloc(sizeof(Arena));
   if (arena == NULL) return NULL;
 
-  arena->region = malloc(size);
-  if (arena->region == NULL) {
+  arena->current = arena_block_create(size);
+  if (arena->current == NULL) {
     free(arena);
     return NULL;
   }
-
-  arena->index = 0;
-  arena->size = size;
 
   return arena;
 }
 
 void arena_destroy(Arena *arena) {
-  free(arena->region);
+  ArenaBlock *block = arena->start;
+
+  while (block != NULL) {
+    ArenaBlock *current = block;
+    block = block->next;
+
+    free(current->region);
+    free(current);
+  }
+
   free(arena);
 }
 
@@ -29,21 +52,20 @@ void *arena_alloc(Arena *arena, const uint64_t size) {
 }
 
 void *arena_alloc_aligned(Arena *arena, const uint64_t size, const uint64_t alignment) {
-  uint64_t offset = (uint64_t) (arena->region + arena->index) % alignment;
-  if (offset > 0) {
-    arena->index = arena->index - offset + alignment;
+  ArenaBlock *block = arena->current;
+
+  uint64_t offset = (uint64_t) (block->region + block->index) % alignment;
+  if (offset > 0) block->index = block->index - offset + alignment;
+
+  if ((size + (block->index + offset)) > block->size) {
+    ArenaBlock *nblock = arena_block_create(block->size);
+    if (nblock == NULL) return NULL;
+
+    block->next = nblock;
+    arena->current = nblock;
+    block = nblock;
   }
 
-  if ((size + (arena->index + offset)) > arena->size) {
-    arena->size *= 2;
-    arena->region = realloc(arena->region, arena->size);
-
-    if (arena->region == NULL) {
-      arena->size /= 2;
-      return NULL;
-    }
-  }
-
-  arena->index += size;
-  return (arena->region + (arena->index - size));
+  block->index += size;
+  return (block->region + (block->index - size));
 }
