@@ -30,6 +30,7 @@ Arena *arena_create(const uint64_t size) {
     return NULL;
   }
 
+  arena->start = arena->current;
   return arena;
 }
 
