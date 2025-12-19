@@ -37,10 +37,15 @@ struct ThreadQueue *create_tqueue(const uint64_t capacity, const uint64_t size, 
     return NULL;
   }
 
-  // Better than individually atomic_init usage. TQ_EMPTY = 0, so it is legal.
-  memset_aligned(states, 0, capacity * sizeof(queue->states[0]));
+  // It is undefined behavior.
+  // memset_aligned(states, 0, capacity * sizeof(queue->states[0]));
+
   queue->states = states;
   queue->data = data;
+
+  for (uint64_t i = 0; i < capacity; ++i) {
+    atomic_init(&queue->states[i].value, TQ_EMPTY);
+  }
 
   atomic_init(&queue->at, 0);
   atomic_init(&queue->end, 0);
