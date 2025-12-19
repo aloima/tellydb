@@ -50,7 +50,7 @@ bool add_transaction(Client *client, const uint64_t command_idx, commanddata_t *
     block->data.transaction = malloc(sizeof(Transaction));
 
     prepare_transaction(block->data.transaction, client, command_idx, data);
-    if (push_tqueue(variables->queue, &block) == NULL) return false;
+    while (push_tqueue(variables->queue, &block) == NULL);
 
     sem_post(variables->sem);
   } else {
