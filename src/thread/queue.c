@@ -16,7 +16,7 @@
 struct ThreadQueue *create_tqueue(const uint64_t capacity, const uint64_t size, uint64_t align) {
   // Capacity and alignment control for power of 2
   if ((capacity == 0) || ((capacity & (capacity - 1)) != 0)) return NULL;
-  if (align < sizeof(void*)) align = sizeof(void *);
+  if (align < sizeof(void *)) align = sizeof(void *);
   if ((align & (align - 1)) != 0) return NULL;
 
   struct ThreadQueue *queue;
@@ -70,6 +70,8 @@ uint64_t estimate_tqueue_size(const struct ThreadQueue *queue) {
 }
 
 void *push_tqueue(struct ThreadQueue *queue, void *value) {
+  __builtin_prefetch(value, 0, 3);
+
   _Atomic(uint64_t) *qat = &queue->at;
   _Atomic(uint64_t) *qend = &queue->end;
   const uint64_t capacity = queue->capacity;
@@ -77,50 +79,74 @@ void *push_tqueue(struct ThreadQueue *queue, void *value) {
   const uint64_t mask = (capacity - 1);
   uint64_t end = atomic_load_explicit(qend, memory_order_relaxed);
 
-  do {
+  while (true) {
     const uint64_t at = atomic_load_explicit(qat, memory_order_acquire);
     if ((end - at) >= capacity) return NULL;
-  } while (!ATOMIC_CAS_WEAK(qend, &end, end + 1, memory_order_acq_rel, memory_order_relaxed));
 
-  __builtin_prefetch(value, 0, 2);
+    if (ATOMIC_CAS_WEAK(qend, &end, end + 1, memory_order_acq_rel, memory_order_relaxed)) {
+      break;
+    }
+
+    cpu_relax();
+  }
+
   const uint64_t idx = (end & mask);
 
   _Atomic(enum ThreadQueueState) *state = &queue->states[idx].value;
-  __builtin_prefetch(state, 0, 3);
-  __builtin_prefetch(state, 1, 0);
+  __builtin_prefetch(state, 1, 3);
 
-  while (atomic_load_explicit(state, memory_order_acquire) != TQ_EMPTY) cpu_relax();
+  char *dst = (((char *) queue->data) + (idx * queue->type));
+  __builtin_prefetch(dst, 1, 3);
 
-  char *dst = ((char *) queue->data + (idx * queue->type));
+  enum ThreadQueueState expected = TQ_EMPTY;
+  while (!ATOMIC_CAS_WEAK(state, &expected, TQ_STORING, memory_order_acq_rel, memory_order_relaxed)) {
+    expected = TQ_EMPTY;
+    cpu_relax();
+  }
+
   memcpy(dst, value, queue->type);
-  atomic_store_explicit(state, TQ_STORED, memory_order_release);
 
+  atomic_store_explicit(state, TQ_STORED, memory_order_release);
   return dst;
 }
 
-bool pop_tqueue(struct ThreadQueue *queue, void *dest) {
+bool pop_tqueue(struct ThreadQueue *queue, void *dst) {
+  __builtin_prefetch(dst, 1, 3);
+
   _Atomic(uint64_t) *qat = &queue->at;
   _Atomic(uint64_t) *qend = &queue->end;
-  const uint64_t mask = (queue->capacity - 1);
-  uint64_t at;
 
-  do {
-    at = atomic_load_explicit(qat, memory_order_relaxed);
+  const uint64_t mask = (queue->capacity - 1);
+  uint64_t at = atomic_load_explicit(qat, memory_order_relaxed);
+
+  while (true) {
     const uint64_t end = atomic_load_explicit(qend, memory_order_acquire);
     if (end == at) return false;
-  } while (!ATOMIC_CAS_WEAK(qat, &at, at + 1, memory_order_acq_rel, memory_order_relaxed));
 
-  __builtin_prefetch(dest, 1, 3);
+    if (ATOMIC_CAS_WEAK(qat, &at, at + 1, memory_order_acq_rel, memory_order_relaxed)) {
+      break;
+    }
+
+    cpu_relax();
+  }
+
+  __builtin_prefetch(dst, 1, 0);
   const uint64_t idx = at & mask;
 
   _Atomic(enum ThreadQueueState) *state = &queue->states[idx].value;
   __builtin_prefetch(state, 1, 3);
 
-  while (atomic_load_explicit(state, memory_order_acquire) != TQ_STORED) cpu_relax();
+  char *src = (((char *) queue->data) + (idx * queue->type));
+  __builtin_prefetch(src, 0, 3);
 
-  char *src = ((char *) queue->data + (idx * queue->type));
-  memcpy(dest, src, queue->type);
+  enum ThreadQueueState expected = TQ_STORED;
+  while (!ATOMIC_CAS_WEAK(state, &expected, TQ_CONSUMING, memory_order_acq_rel, memory_order_relaxed)) {
+    expected = TQ_STORED;
+    cpu_relax();
+  }
+
+  memcpy(dst, src, queue->type);
+
   atomic_store_explicit(state, TQ_EMPTY, memory_order_release);
-
   return true;
 }

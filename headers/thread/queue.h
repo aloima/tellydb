@@ -2,15 +2,17 @@
 
 #include <stddef.h>
 #include <stdatomic.h>
+#include <stdalign.h>
 
 enum ThreadQueueState : uint8_t {
   TQ_EMPTY = 0,
   TQ_STORING,
+  TQ_CONSUMING,
   TQ_STORED
 };
 
 struct ThreadQueueStateValue {
-  alignas(8) _Atomic enum ThreadQueueState value;
+  alignas(64) _Atomic(enum ThreadQueueState) value;
 };
 
 struct ThreadQueue {
@@ -19,8 +21,8 @@ struct ThreadQueue {
   uint64_t capacity;
   uint64_t type;
 
-  _Atomic uint64_t at __attribute__((aligned(64)));
-  _Atomic uint64_t end __attribute__((aligned(64)));
+  alignas(64) _Atomic(uint64_t) at;
+  alignas(64) _Atomic(uint64_t) end;
 };
 
 struct ThreadQueue *create_tqueue(const uint64_t capacity, const uint64_t size, const uint64_t align);
