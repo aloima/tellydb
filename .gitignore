@@ -9,3 +9,8 @@ build/
 
 # Auto-generated code
 src/utils/command_hash.c
+
+# Python tests
+tests/.pytest_cache
+tests/**/__pycache__
+tests/**/.pytest_cache

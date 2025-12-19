@@ -27,7 +27,6 @@ find_package(OpenSSL REQUIRED)
 find_package(Threads REQUIRED)
 pkg_check_modules(GMP REQUIRED QUIET gmp)
 pkg_check_modules(JEMALLOC REQUIRED QUIET jemalloc)
-pkg_check_modules(HIREDIS QUIET hiredis)
 
 
 execute_process(
@@ -95,37 +94,3 @@ target_compile_definitions(telly
 )
 
 install(TARGETS telly)
-
-
-# For testing
-if(NOT HIREDIS_FOUND)
-  message(WARNING "hiredis could not find, so \"tests\" target cannot be created.")
-else()
-  add_executable(tests utils/tests.c)
-
-  target_include_directories(tests PRIVATE
-    ${HIREDIS_INCLUDE_DIRS}
-  )
-
-  target_link_libraries(tests
-    Threads::Threads
-    ${HIREDIS_LINK_LIBRARIES}
-  )
-endif()
-
-
-# For benchmarking
-if(NOT HIREDIS_FOUND)
-  message(WARNING "hiredis could not find, so \"benchmark\" target cannot be created.")
-else()
-  add_executable(benchmark utils/benchmark.c)
-
-  target_include_directories(benchmark PRIVATE
-    ${HIREDIS_INCLUDE_DIRS}
-  )
-
-  target_link_libraries(benchmark
-    Threads::Threads
-    ${HIREDIS_LINK_LIBRARIES}
-  )
-endif()
