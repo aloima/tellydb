@@ -14,15 +14,17 @@ An in-memory key-value database project.
 + Supports multiple databases
 + Data persists on one-file
 
-> Look at:  
-> [docs/SPECS.md](./docs/SPECS.md) for more technical information,  
-> [docs/FILE.md](./docs/FILE.md) for information about provided files by tellydb,  
-> [docs/COMMANDS.md](./docs/COMMANDS.md) for information about commands,  
-> [docs/AUTH.md](./docs/AUTH.md) for information about authorization.
+The project is documented as follows:
+|                  File                  |            Includes            |
+| :------------------------------------: | :----------------------------: |
+|    [docs/SPECS.md](./docs/SPECS.md)    |  architecture of the project   |
+|     [docs/FILE.md](./docs/FILE.md)     |   provided files by tellydb    |
+| [docs/COMMANDS.md](./docs/COMMANDS.md) | commands and their information |
+|     [docs/AUTH.md](./docs/AUTH.md)     |      authorization logic       |
 
 ## Installation
 ### Install from GitHub Releases:
-* Download the [latest release file](https://github.com/aloima/tellydb/releases/latest/download/telly)
+* Download the [latest release file](https://github.com/aloima/tellydb/releases/latest)
 * Start the server using `./telly`
 
 ### Compile on Local Machine:
@@ -49,9 +51,6 @@ docker run -d -p 6379:6379 --name telly aloima/tellydb
 ```
 
 To get information about cli commands, use `./telly help`.
-
-## Benchmark Results
-Look at [utils/README.md](./utils/README.md).
 
 ## License
 Licensed under [BSD-3 Clause Clear License](./LICENSE).

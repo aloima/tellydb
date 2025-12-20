@@ -2,20 +2,49 @@
 This file contains the specifications of tellydb.
 
 ## Process
-tellydb contains a process, a transaction thread, I/O threads and an optional background saving thread:
-* Thread manages sent commands by clients and executes them.
-* Process accepts clients, manages the server and responses to clients.
-* There are `docs(processor count - 1, 1)` I/O threads. They read buffers from socket, interprets them to readable command data and terminates clients.
-* Background saving thread saves the database on the cache tp the persistent database file. It can be opened using [BGSAVE command](./COMMANDS.md#BGSAVE).
+tellydb contains a main thread (process), a transaction thread, I/O threads and an optional background saving thread.
 
-tellydb handles database as follows:
-* Database will be taken from persistent database file, then be saved to cache.
-* When closing the server, database will be taken from cache and written to persistent database file.
+### Main Thread
+1. The thread initializing everything.
+2. After initializing, the thread runs an infinite event loop, continuously polling for I/O requests. (`epoll()`/`kqueue()`)
+3. Operations of this loop are accepting clients and enqueuing I/O jobs. (`accept()`)
+4. Once the close signal, deinitializes everything and ends the loop.
+
+### I/O Threads
+tellydb spawns `max(processor count - 1, 1)` I/O threads. The architecture operates as follows:
+1. Each I/O thread runs an infinite loop, continuously polling for incoming tasks.
+2. Any thread can enqueue an I/O job when need into a thread-safe queue.
+3. An available I/O thread dequeues a task from the queue.
+4. The I/O thread executes the task.
+5. The result of the task is not captured by the calling thread externally.
+
+I/O threads responsibilities as follows:
+* Reading raw data from clients and deserializing them into commands (`read()`)
+* Writing transaction responses to calling client (`write()`)
+* Terminating clients (`close()`)
+
+### Transaction Thread
+tellydb spawn a transaction thread. The architecture operates as follows:
+1. The thread runs an infinite loop, continuously polling for incoming transactions.
+2. Any thread can enqueue an transaction, all transactions are enqueued by an successfull read-and-parse I/O job.
+3. The thread dequeues and executes transactions sequentially.
+4. The response of the transaction is written to buffer of the client.
+5. A write I/O job is enqueued into I/O job queue.
+
+### Background-Saving Thread
+Background saving thread can be spawned via [`BGSAVE` command](./COMMANDS.md#BGSAVE).
+1. All data currently in the memory is started for saving to the persistent database file.
+2. Once saving process is complete, the thread terminates automatically.
+3. If a background-saving thread is already in progress, [`BGSAVE` command](./COMMANDS.md#BGSAVE) throws an error.
 
 ## Authorization
 To get information, look at [AUTH.md](./AUTH.md).
 
 ## Databases
+tellydb handles database as follows:
+* Database will be taken from persistent database file, then be saved to cache.
+* When closing the server, database will be taken from cache and written to persistent database file.
+
 * There may be databases more than one, look at [SELECT command](./COMMANDS.md#SELECT).
 * Each database stores the data in a HashMap.
 * The hashmap uses **djb2 hash algorithm** and all hashed values of key-value pairs will be stored in, so there is no re-hashing.
