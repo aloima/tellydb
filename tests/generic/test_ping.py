@@ -4,6 +4,17 @@ from redis.exceptions import ResponseError
 import random
 from string import ascii_letters, digits
 
+import sys
+from pathlib import Path
+
+constants_path = Path(__file__).resolve().parent.parent
+sys.path.append(str(constants_path))
+
+try:
+    from constants import wrong_argument
+except ImportError:
+    pass
+
 
 class PingCommand(unittest.TestCase):
     @classmethod
@@ -25,7 +36,4 @@ class PingCommand(unittest.TestCase):
         with self.assertRaises(ResponseError) as e:
             self.client.execute_command("PING", "a", "b")
 
-        self.assertEqual(
-            e.exception.args[0],
-            "Wrong argument count for 'PING' command"
-        )
+        self.assertEqual(e.exception.args[0], wrong_argument("PING"))
