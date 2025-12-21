@@ -43,8 +43,20 @@ struct ThreadQueue *create_tqueue(const uint64_t capacity, const uint64_t size, 
   queue->states = states;
   queue->data = data;
 
-  for (uint64_t i = 0; i < capacity; ++i) {
-    atomic_init(&queue->states[i].value, TQ_EMPTY);
+#define INIT_STATE(at) atomic_init(&queue->states[at].value, TQ_EMPTY)
+
+  for (uint64_t i = 0; i < capacity / 4; ++i) {
+    const uint64_t idx = (i * 4);
+    INIT_STATE(idx);
+    INIT_STATE(idx + 1);
+    INIT_STATE(idx + 2);
+    INIT_STATE(idx + 3);
+  }
+
+  const uint64_t offset = ((capacity / 4) * 4);
+
+  for (uint64_t i = offset; i < capacity; ++i) {
+    INIT_STATE(i);
   }
 
   atomic_init(&queue->at, 0);
