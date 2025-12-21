@@ -30,6 +30,14 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
+    },
+    {
+      "name": "relwithdeb",
+      "inherits": "default",
+      "binaryDir": "${sourceDir}/build/relwithdeb",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
     }
   ],
   "buildPresets": [
@@ -44,6 +52,10 @@
     {
       "name": "debug",
       "configurePreset": "debug"
+    },
+    {
+      "name": "relwithdeb",
+      "configurePreset": "relwithdeb"
     }
   ]
 }
