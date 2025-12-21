@@ -47,9 +47,14 @@ uint32_t get_last_connection_client_id() {
 
 int initialize_clients() {
   conf = get_server_config();
-  write_arena = arena_create((conf->max_clients / 4) * MAX_RESPONSE_SIZE * sizeof(char));
   atomic_init(&client_count, 0);
   atomic_init(&last_connection_client_id, 1);
+
+  write_arena = arena_create((conf->max_clients / 4) * MAX_RESPONSE_SIZE * sizeof(char));
+  if (write_arena == NULL) {
+    write_log(LOG_ERR, "Cannot allocate writing buffer for clients, out of memory.");
+    return -1;
+  }
 
   const size_t size = (sizeof(Client) * conf->max_clients);
 
