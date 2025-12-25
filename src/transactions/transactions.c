@@ -52,7 +52,9 @@ bool add_transaction(Client *client, const uint64_t command_idx, commanddata_t *
     prepare_transaction(block->data.transaction, client, command_idx, data);
     while (push_tqueue(variables->queue, &block) == NULL);
 
-    sem_post(variables->sem);
+    if (atomic_load_explicit(&variables->thread_sleeping, memory_order_acquire) == true) {
+      sem_post(variables->sem);
+    }
   } else {
     MultipleTransactions *multiple = &client->waiting_block->data.multiple;
     multiple->transaction_count += 1;
