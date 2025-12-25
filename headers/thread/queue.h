@@ -4,25 +4,19 @@
 #include <stdatomic.h>
 #include <stdalign.h>
 
-enum ThreadQueueState : uint8_t {
-  TQ_EMPTY = 0,
-  TQ_STORING,
-  TQ_CONSUMING,
-  TQ_STORED
-};
-
-struct ThreadQueueStateValue {
-  alignas(64) _Atomic(enum ThreadQueueState) value;
-};
+typedef struct {
+  _Atomic uint64_t seq;
+  void *data;
+  char _pad[64 - sizeof(uint64_t) - sizeof(void *)];
+} ThreadQueueSlot;
 
 struct ThreadQueue {
-  struct ThreadQueueStateValue *states;
-  void *data;
-  uint64_t capacity;
-  uint64_t type;
-
   alignas(64) _Atomic(uint64_t) at;
   alignas(64) _Atomic(uint64_t) end;
+
+  ThreadQueueSlot *slots;
+  uint64_t capacity;
+  uint64_t type;
 };
 
 struct ThreadQueue *create_tqueue(const uint64_t capacity, const uint64_t size, const uint64_t align);
