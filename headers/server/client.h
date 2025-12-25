@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdatomic.h>
+#include <stdalign.h>
 #include <time.h>
 
 #include <openssl/crypto.h>
@@ -27,7 +28,7 @@ enum ClientState : uint8_t {
 };
 
 typedef struct {
-  _Atomic enum ClientState state;
+  alignas(64) _Atomic enum ClientState state;
   int id, connfd;
   SSL *ssl;
 
