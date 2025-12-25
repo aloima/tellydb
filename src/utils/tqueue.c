@@ -149,7 +149,6 @@ bool pop_tqueue(struct ThreadQueue *queue, void *dst) {
     cpu_relax();
   }
 
-  __builtin_prefetch(dst, 1, 3);
   memcpy(dst, slot->data, queue->type);
   atomic_store_explicit(&slot->seq, at + queue->capacity, memory_order_release);
   return true;
