@@ -29,13 +29,13 @@ static inline bool init_state(struct ThreadQueue *queue, uint64_t at, uint64_t a
   return true;
 }
 
-struct ThreadQueue *create_tqueue(const uint64_t capacity, const uint64_t size, uint64_t align) {
+ThreadQueue *create_tqueue(const uint64_t capacity, const uint64_t size, uint64_t align) {
   // Capacity and alignment control for power of 2
   if ((capacity == 0) || ((capacity & (capacity - 1)) != 0)) return NULL;
   if (align < sizeof(void *)) align = sizeof(void *);
   if ((align & (align - 1)) != 0) return NULL;
 
-  struct ThreadQueue *queue;
+  ThreadQueue *queue;
   if (posix_memalign((void **) &queue, alignof(typeof(struct ThreadQueue)), sizeof(struct ThreadQueue)) != 0) {
     return NULL;
   }
@@ -68,7 +68,7 @@ struct ThreadQueue *create_tqueue(const uint64_t capacity, const uint64_t size, 
   return queue;
 }
 
-void free_tqueue(struct ThreadQueue *queue) {
+void free_tqueue(ThreadQueue *queue) {
   for (uint64_t i = 0; i < queue->capacity; ++i) {
     free(queue->slots[i].data);
   }
@@ -77,14 +77,14 @@ void free_tqueue(struct ThreadQueue *queue) {
   free(queue);
 }
 
-uint64_t estimate_tqueue_size(const struct ThreadQueue *queue) {
+uint64_t estimate_tqueue_size(const ThreadQueue *queue) {
   const uint64_t at = atomic_load_explicit(&queue->at, memory_order_acquire);
   const uint64_t end = atomic_load_explicit(&queue->end, memory_order_acquire);
 
   return (end - at); // automatically wanted behavior
 }
 
-void *push_tqueue(struct ThreadQueue *queue, void *value) {
+void *push_tqueue(ThreadQueue *queue, void *value) {
   __builtin_prefetch(value, 0, 3);
 
   _Atomic(uint64_t) *qat = &queue->at;
@@ -121,7 +121,7 @@ void *push_tqueue(struct ThreadQueue *queue, void *value) {
   return dst;
 }
 
-bool pop_tqueue(struct ThreadQueue *queue, void *dst) {
+bool pop_tqueue(ThreadQueue *queue, void *dst) {
   __builtin_prefetch(dst, 1, 3);
 
   _Atomic(uint64_t) *qat = &queue->at;

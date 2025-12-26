@@ -18,7 +18,7 @@ typedef struct {
 } MultipleTransactions;
 
 typedef struct {
-  struct ThreadQueue *queue;
+  ThreadQueue *queue;
   struct Command *commands;
   sem_t *sem;
   _Atomic bool thread_sleeping;

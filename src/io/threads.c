@@ -10,7 +10,7 @@
 
 struct Command *commands = NULL;
 IOThread *threads = NULL;
-struct ThreadQueue *queue = NULL;
+ThreadQueue *queue = NULL;
 uint32_t thread_count = 0;
 
 sem_t *kill_sem = NULL;

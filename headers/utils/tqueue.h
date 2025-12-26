@@ -10,18 +10,18 @@ typedef struct {
   char _pad[64 - sizeof(uint64_t) - sizeof(void *)];
 } ThreadQueueSlot;
 
-struct ThreadQueue {
+typedef struct ThreadQueue {
   alignas(64) _Atomic(uint64_t) at;
   alignas(64) _Atomic(uint64_t) end;
 
   ThreadQueueSlot *slots;
   uint64_t capacity;
   uint64_t type;
-};
+} ThreadQueue;
 
-struct ThreadQueue *create_tqueue(const uint64_t capacity, const uint64_t size, const uint64_t align);
+ThreadQueue *create_tqueue(const uint64_t capacity, const uint64_t size, const uint64_t align);
 void free_tqueue(struct ThreadQueue *queue);
 
-uint64_t estimate_tqueue_size(const struct ThreadQueue *queue);
-void *push_tqueue(struct ThreadQueue *queue, void *value);
-bool pop_tqueue(struct ThreadQueue *queue, void *dest);
+uint64_t estimate_tqueue_size(const ThreadQueue *queue);
+void *push_tqueue(ThreadQueue *queue, void *value);
+bool pop_tqueue(ThreadQueue *queue, void *dest);
