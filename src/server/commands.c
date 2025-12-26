@@ -64,7 +64,7 @@ struct Command *load_commands() {
 
   command_count = (sizeof(command_list) / sizeof(struct Command));
 
-  if (posix_memalign((void **) &commands, 32, sizeof(command_list)) != 0) {
+  if (amalloc(commands, struct Command, command_count) != 0) {
     write_log(LOG_ERR, "Cannot create commands, out of memory.");
     return NULL;
   }

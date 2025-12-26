@@ -203,7 +203,7 @@ bool edit_password(char *value, const size_t value_len, const uint32_t permissio
 
 void add_password(Client *client, const string_t data, const uint8_t permissions) {
   Password *password;
-  if (posix_memalign((void **) &password, 8, sizeof(Password)) != 0) {
+  if (amalloc(password, Password, 1) != 0) {
     write_log(LOG_ERR, "Cannot create a password, out of memory.");
     return;
   }

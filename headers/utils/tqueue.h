@@ -2,6 +2,7 @@
 
 #include <stddef.h>
 #include <stdatomic.h>
+#include <stdint.h>
 #include <stdalign.h>
 
 typedef struct {

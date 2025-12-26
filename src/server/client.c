@@ -58,7 +58,7 @@ int initialize_clients() {
 
   const size_t size = (sizeof(Client) * conf->max_clients);
 
-  if (posix_memalign((void **) &clients, alignof(typeof(Client)), size) != 0) {
+  if (amalloc(clients, Client, conf->max_clients) != 0) {
     write_log(LOG_ERR, "Cannot create a map for storing clients, out of memory.");
     return -1;
   }

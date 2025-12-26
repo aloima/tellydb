@@ -1,9 +1,14 @@
 #pragma once
 
+#include <stdlib.h> // IWYU pragma: export
+
 #define VERY_LIKELY(x) (__builtin_expect_with_probability(!!(x), 1, 0.999))
 #define VERY_UNLIKELY(x) (__builtin_expect_with_probability(!!(x), 0, 0.999))
 #define min(a, b) ((a) > (b) ? (b) : (a))
 #define max(a, b) ((a) > (b) ? (a) : (b))
+
+// Aligned memory allocation
+#define amalloc(value, type, count) posix_memalign((void **) &(value), alignof(typeof(type)), (count) * sizeof(type))
 
 #define FLOAT_PRECISION 1024
 
