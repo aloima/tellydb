@@ -41,7 +41,7 @@
 #include <openssl/ssl.h>
 #include <openssl/crypto.h>
 
-static inline int accept_client(struct Server *server) {
+static inline int accept_client() {
   struct sockaddr_in addr;
   socklen_t addr_len = sizeof(addr);
 
@@ -116,7 +116,7 @@ static inline int accept_client(struct Server *server) {
 }
 
 // TODO: thread-race for transactions, some executions will not be executed for inline commands
-void handle_events(struct Server *server) {
+void handle_events() {
   event_t events[512];
 
   const int sockfd = server->sockfd;
@@ -137,7 +137,7 @@ void handle_events(struct Server *server) {
         }
 
         // If client cannot be accepted, it continues already. No need condition.
-        accept_client(server);
+        accept_client();
         continue;
       }
 

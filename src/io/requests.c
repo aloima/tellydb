@@ -9,21 +9,21 @@
 void add_io_request(const enum IOOpType type, Client *client, string_t write_str) {
   IOOperation op = {type, client, write_str};
 
-  sem_wait(available_space_sem);
-  while (!push_tqueue(queue, &op)) cpu_relax();
+  sem_wait(io_available_space_sem);
+  while (!push_tqueue(io_queue, &op)) cpu_relax();
 
-  sem_post(stored_sem);
+  sem_post(io_stored_sem);
 }
 
 void *handle_io_requests(void *arg) {
   IOThread *thread = arg;
 
   while (atomic_load_explicit(&thread->status, memory_order_acquire) == ACTIVE) {
-    sem_wait(stored_sem);
+    sem_wait(io_stored_sem);
     IOOperation op;
 
-    if (!pop_tqueue(queue, &op)) continue;
-    sem_post(available_space_sem);
+    if (!pop_tqueue(io_queue, &op)) continue;
+    sem_post(io_available_space_sem);
     thread = arg;
 
     Client *client = op.client;
@@ -89,6 +89,6 @@ TERMINATION:
   if (thread->arena) arena_destroy(thread->arena);
 
   atomic_store_explicit(&thread->status, KILLED, memory_order_release);
-  sem_post(kill_sem);
+  sem_post(io_kill_sem);
   return NULL;
 }

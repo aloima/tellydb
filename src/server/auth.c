@@ -73,10 +73,10 @@ static bool password_derive(char *value, const size_t value_len, unsigned char *
 }
 
 static inline void remove_password_from_clients(Password *password) {
-  const Config *conf = get_server_config();
   Client *clients = get_clients();
+  const uint32_t max_clients = server->conf->max_clients;
 
-  for (uint32_t i = 0; i < conf->max_clients; ++i) {
+  for (uint32_t i = 0; i < max_clients; ++i) {
     if ((clients[i].id != -1) && clients[i].password == password) {
       clients[i].password = get_empty_password();
     }

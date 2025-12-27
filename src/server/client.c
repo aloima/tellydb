@@ -46,7 +46,7 @@ uint32_t get_last_connection_client_id() {
 }
 
 int initialize_clients() {
-  conf = get_server_config();
+  conf = server->conf;
   atomic_init(&client_count, 0);
   atomic_init(&last_connection_client_id, 1);
 

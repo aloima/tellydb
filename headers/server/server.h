@@ -14,7 +14,7 @@
 
 #include <openssl/crypto.h>
 
-struct Server {
+typedef struct {
   int eventfd;
   int sockfd;
   SSL_CTX *ctx;
@@ -23,13 +23,14 @@ struct Server {
   uint32_t age;
   sig_atomic_t closed;
   struct Command *commands;
-};
+} Server;
+
+extern Server *server;
 
 void terminate_connection(Client *client);
 off_t *get_authorization_end_at();
 void get_server_time(time_t *server_start_at, uint32_t *server_age);
-void handle_events(struct Server *server);
+void handle_events();
 void start_server(Config *config);
-Config *get_server_config();
 
 string_t write_value(void *value, const enum TellyTypes type, const enum ProtocolVersion protover, char *buffer);

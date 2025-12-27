@@ -1,7 +1,9 @@
 #include <telly.h>
 
-static TransactionVariables variables;
+#include <stdbool.h>
 
-TransactionVariables *get_transaction_variables() {
-  return &variables;
-}
+#include <semaphore.h>
+
+ThreadQueue *tx_queue = NULL;
+sem_t *tx_sem = NULL;
+_Atomic bool tx_thread_sleeping;

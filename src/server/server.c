@@ -42,7 +42,7 @@
 #include <openssl/ssl.h>
 #include <openssl/crypto.h>
 
-static struct Server *server;
+Server *server = NULL;
 
 #define CLEANUP_RETURN_IF(condition) do { \
   if (condition) { \
@@ -68,10 +68,6 @@ static struct Server *server;
   write_log(LOG_ERR, (fmt), ##__VA_ARGS__); \
   return; \
 } while (0)
-
-Config *get_server_config() {
-  return server->conf;
-}
 
 void get_server_time(time_t *server_start_at, uint32_t *server_age) {
   *server_start_at = server->start_at;
@@ -203,7 +199,7 @@ static int initialize_authorization() {
 }
 
 void start_server(Config *config) {
-  server = calloc(1, sizeof(struct Server));
+  server = calloc(1, sizeof(Server));
   server->conf = config ?: get_default_config();
   server->eventfd = -1;
   server->sockfd = -1;
@@ -256,6 +252,6 @@ void start_server(Config *config) {
   server->start_at = time(NULL);
   write_log(LOG_INFO, "Server is listening on %" PRIu16 " port for accepting connections...", server->conf->port);
 
-  handle_events(server);
+  handle_events();
   close_server();
 }

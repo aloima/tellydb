@@ -11,8 +11,6 @@
 
 #include <pthread.h>
 
-#include "../headers/transactions/private.h"
-
 #define MAX_RESPONSE_SIZE 262144
 
 #define IS_RELATED_TO_WAITING_TX(commands, command_idx) ((commands)[command_idx].flags & CMD_FLAG_WAITING_TX)
@@ -29,6 +27,11 @@ typedef struct Transaction {
   struct Command *command;
   struct Database *database;
 } Transaction;
+
+typedef struct {
+  Transaction *transactions;
+  uint64_t transaction_count;
+} MultipleTransactions;
 
 typedef struct TransactionBlock {
   enum TransactionBlockType type;

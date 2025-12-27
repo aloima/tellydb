@@ -22,7 +22,7 @@ static uint16_t block_size = 4096;
 struct ThreadQueue *lines;
 
 bool initialize_logs() {
-  _conf = get_server_config();
+  _conf = server->conf;
   if ((fd = open_file(_conf->log_file, 0)) == -1) return false;
 
   struct stat sostat;

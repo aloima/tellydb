@@ -1,6 +1,5 @@
 #include <telly.h>
-
-#include "../headers/transactions/private.h"
+#include "transactions.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -9,16 +8,10 @@
 
 #include <semaphore.h>
 
-static TransactionVariables *variables;
 static uint64_t processed_transaction_count = 0;
 
-// Private method, accessed by create_transaction_thread method once.
-void initialize_transactions() {
-  variables = get_transaction_variables();
-}
-
 uint32_t get_transaction_count() {
-  return estimate_tqueue_size(variables->queue);
+  return estimate_tqueue_size(tx_queue);
 }
 
 uint64_t get_processed_transaction_count() {
@@ -26,21 +19,21 @@ uint64_t get_processed_transaction_count() {
 }
 
 TransactionBlock *enqueue_to_transaction_queue(TransactionBlock **block) {
-  TransactionBlock *res = push_tqueue(variables->queue, block);
+  TransactionBlock *res = push_tqueue(tx_queue, block);
   if (res == NULL) return NULL;
 
-  sem_post(variables->sem);
+  sem_post(tx_sem);
   return res;
 }
 
 static inline void prepare_transaction(Transaction *transaction, Client *client, const uint64_t command_idx, commanddata_t *data) {
-  transaction->command = &variables->commands[command_idx];
+  transaction->command = &server->commands[command_idx];
   transaction->args = data->args;
   transaction->database = client->database;
 }
 
 bool add_transaction(Client *client, const uint64_t command_idx, commanddata_t *data) {
-  if (client->waiting_block == NULL || IS_RELATED_TO_WAITING_TX(variables->commands, command_idx)) {
+  if (client->waiting_block == NULL || IS_RELATED_TO_WAITING_TX(server->commands, command_idx)) {
     TransactionBlock *block = malloc(sizeof(TransactionBlock));
     if (block == NULL) return false;
 
@@ -50,10 +43,10 @@ bool add_transaction(Client *client, const uint64_t command_idx, commanddata_t *
     block->data.transaction = malloc(sizeof(Transaction));
 
     prepare_transaction(block->data.transaction, client, command_idx, data);
-    while (push_tqueue(variables->queue, &block) == NULL);
+    while (push_tqueue(tx_queue, &block) == NULL) cpu_relax();
 
-    if (atomic_load_explicit(&variables->thread_sleeping, memory_order_acquire) == true) {
-      sem_post(variables->sem);
+    if (atomic_load_explicit(&tx_thread_sleeping, memory_order_acquire) == true) {
+      sem_post(tx_sem);
     }
   } else {
     MultipleTransactions *multiple = &client->waiting_block->data.multiple;
@@ -96,15 +89,13 @@ void remove_transaction_block(TransactionBlock *block) {
 }
 
 void free_transaction_blocks() {
-  struct ThreadQueue *queue = variables->queue;
-
-  while (estimate_tqueue_size(queue) != 0) {
+  while (estimate_tqueue_size(tx_queue) != 0) {
     TransactionBlock *block;
-    pop_tqueue(queue, &block);
+    pop_tqueue(tx_queue, &block);
     remove_transaction_block(block);
   }
 
-  free_tqueue(queue);
+  free_tqueue(tx_queue);
 }
 
 static inline string_t execute_transaction(Client *client, struct Password *password, Transaction *transaction) {

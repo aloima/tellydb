@@ -8,10 +8,9 @@
 static string_t run(struct CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
-  const Config *conf = get_server_config();
   struct stat res;
 
-  if (stat(conf->data_file, &res) == -1) {
+  if (stat(server->conf->data_file, &res) == -1) {
     write_log(LOG_ERR, "stat(): Cannot access database file");
     return RESP_ERROR();
   }

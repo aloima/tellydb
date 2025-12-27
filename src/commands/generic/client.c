@@ -122,7 +122,6 @@ static inline string_t subcommand_list(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_CLIENT");
   }
 
-  const Config *conf = get_server_config();
   Client *clients = get_clients();
   uint64_t at = 1;
 
@@ -131,7 +130,9 @@ static inline string_t subcommand_list(struct CommandEntry *entry) {
   entry->client->write_buf[at++] = '\r';
   entry->client->write_buf[at++] = '\n';
 
-  for (uint32_t i = 0; i < conf->max_clients; ++i) {
+  const uint32_t max_clients = server->conf->max_clients;
+
+  for (uint32_t i = 0; i < max_clients; ++i) {
     if (clients[i].id != -1) {
       entry->client->write_buf[at++] = RDT_SSTRING;
       at += ltoa(clients[i].id, entry->client->write_buf + at);

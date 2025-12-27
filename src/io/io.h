@@ -6,6 +6,7 @@
 #include <stdatomic.h>
 
 #include <pthread.h>
+#include <semaphore.h>
 
 enum IOThreadStatus : uint8_t {
   ACTIVE,
@@ -31,9 +32,8 @@ typedef struct {
 void read_command(IOThread *thread, Client *client);
 void *handle_io_requests(void *arg);
 
-extern struct Command *commands;
-extern struct ThreadQueue *queue;
+extern ThreadQueue *io_queue;
 
-extern sem_t *kill_sem;
-extern sem_t *stored_sem;
-extern sem_t *available_space_sem;
+extern sem_t *io_kill_sem;
+extern sem_t *io_stored_sem;
+extern sem_t *io_available_space_sem;

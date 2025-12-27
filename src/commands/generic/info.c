@@ -58,8 +58,6 @@ static bool get_section(char *section, const Config *conf, const char *name) {
 static string_t run(struct CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
-  const Config *conf = get_server_config();
-
   char buf[8192], section[2048];
   buf[0] = '\0';
 
@@ -69,7 +67,7 @@ static string_t run(struct CommandEntry *entry) {
     for (uint32_t i = 0; i < n; ++i) {
       char *name = entry->args->data[i].value;
 
-      if (!get_section(section, conf, name)) {
+      if (!get_section(section, server->conf, name)) {
         return RESP_ERROR_MESSAGE("Invalid section name");
       }
 
@@ -79,7 +77,7 @@ static string_t run(struct CommandEntry *entry) {
 
     const char *name = entry->args->data[n].value;
 
-    if (!get_section(section, conf, name)) {
+    if (!get_section(section, server->conf, name)) {
       return RESP_ERROR_MESSAGE("Invalid section name");
     }
 
@@ -91,7 +89,7 @@ static string_t run(struct CommandEntry *entry) {
     for (uint32_t i = 0; i < n; ++i) {
       const char *name = names[i];
 
-      if (!get_section(section, conf, name)) {
+      if (!get_section(section, server->conf, name)) {
         return RESP_ERROR_MESSAGE("Invalid section name");
       }
 
@@ -101,7 +99,7 @@ static string_t run(struct CommandEntry *entry) {
 
     const char *name = names[n];
 
-    if (!get_section(section, conf, name)) {
+    if (!get_section(section, server->conf, name)) {
       return RESP_ERROR_MESSAGE("Invalid section name");
     }
 

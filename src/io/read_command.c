@@ -63,6 +63,6 @@ void read_command(IOThread *thread, Client *client) {
       return;
     }
 
-    if (client->waiting_block && !IS_RELATED_TO_WAITING_TX(commands, command_idx)) _write(client, "+QUEUED\r\n", 9);
+    if (client->waiting_block && !IS_RELATED_TO_WAITING_TX(server->commands, command_idx)) _write(client, "+QUEUED\r\n", 9);
   }
 }

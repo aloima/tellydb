@@ -23,11 +23,10 @@ static uint16_t block_size;
 size_t read_file(const int fd, const off_t file_size, char *block, const uint16_t block_size, const uint16_t filled_block_size);
 
 int open_database_fd(uint32_t *server_age) {
-  Config *conf = get_server_config();
-  if ((fd = open_file(conf->data_file, 0)) == -1) return -1;
+  if ((fd = open_file(server->conf->data_file, 0)) == -1) return -1;
 
   struct stat sostat;
-  stat(conf->data_file, &sostat);
+  stat(server->conf->data_file, &sostat);
 
   const off_t file_size = sostat.st_size;
   block_size = sostat.st_blksize;
@@ -64,7 +63,7 @@ int open_database_fd(uint32_t *server_age) {
       free(block);
     }
   } else {
-    set_main_database(create_database(CREATE_STRING(conf->database_name, strlen(conf->database_name)), DATABASE_INITIAL_SIZE));
+    set_main_database(create_database(CREATE_STRING(server->conf->database_name, strlen(server->conf->database_name)), DATABASE_INITIAL_SIZE));
     write_log(LOG_INFO, "Database file is empty, loaded password and data count: 0");
     *server_age = 0;
   }

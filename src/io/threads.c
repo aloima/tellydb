@@ -8,30 +8,28 @@
 #include <semaphore.h>
 #include <pthread.h>
 
-struct Command *commands = NULL;
-IOThread *threads = NULL;
-ThreadQueue *queue = NULL;
-uint32_t thread_count = 0;
+static IOThread *threads = NULL;
+static uint32_t thread_count = 0;
 
-sem_t *kill_sem = NULL;
-sem_t *stored_sem = NULL;
-sem_t *available_space_sem = NULL;
+ThreadQueue *io_queue = NULL;
+sem_t *io_kill_sem = NULL;
+sem_t *io_stored_sem = NULL;
+sem_t *io_available_space_sem = NULL;
 
 int create_io_threads(const uint32_t count) {
   bool success = false;
-  commands = get_commands();
 
-  kill_sem = malloc(sizeof(sem_t));
-  if (kill_sem == NULL || sem_init(kill_sem, 0, 0) != 0) goto CLEANUP;
+  io_kill_sem = malloc(sizeof(sem_t));
+  if (io_kill_sem == NULL || sem_init(io_kill_sem, 0, 0) != 0) goto CLEANUP;
 
-  stored_sem = malloc(sizeof(sem_t));
-  if (stored_sem == NULL || sem_init(stored_sem, 0, 0) != 0) goto CLEANUP;
+  io_stored_sem = malloc(sizeof(sem_t));
+  if (io_stored_sem == NULL || sem_init(io_stored_sem, 0, 0) != 0) goto CLEANUP;
 
-  available_space_sem = malloc(sizeof(sem_t));
-  if (available_space_sem == NULL || sem_init(available_space_sem, 0, 128) != 0) goto CLEANUP;
+  io_available_space_sem = malloc(sizeof(sem_t));
+  if (io_available_space_sem == NULL || sem_init(io_available_space_sem, 0, 128) != 0) goto CLEANUP;
 
-  queue = create_tqueue(128, sizeof(IOThread), alignof(IOThread));
-  if (queue == NULL) goto CLEANUP;
+  io_queue = create_tqueue(128, sizeof(IOThread), alignof(IOThread));
+  if (io_queue == NULL) goto CLEANUP;
 
   threads = calloc(count, sizeof(IOThread));
   if (threads == NULL) goto CLEANUP;
@@ -70,9 +68,9 @@ CLEANUP:
       }
     }
 
-    if (queue) {
-      free_tqueue(queue);
-      queue = NULL;
+    if (io_queue) {
+      free_tqueue(io_queue);
+      io_queue = NULL;
     }
 
     if (threads) {
@@ -80,21 +78,21 @@ CLEANUP:
       threads = NULL;
     }
 
-    if (stored_sem) {
-      for (uint32_t i = 0; i < count; ++i) sem_post(stored_sem);
+    if (io_stored_sem) {
+      for (uint32_t i = 0; i < count; ++i) sem_post(io_stored_sem);
       usleep(5);
-      sem_destroy(stored_sem);
-      free(stored_sem);
+      sem_destroy(io_stored_sem);
+      free(io_stored_sem);
     }
 
-    if (kill_sem) {
-      sem_destroy(kill_sem);
-      free(kill_sem);
+    if (io_kill_sem) {
+      sem_destroy(io_kill_sem);
+      free(io_kill_sem);
     }
 
-    if (available_space_sem) {
-      sem_destroy(available_space_sem);
-      free(available_space_sem);
+    if (io_available_space_sem) {
+      sem_destroy(io_available_space_sem);
+      free(io_available_space_sem);
     }
   }
 
@@ -102,8 +100,8 @@ CLEANUP:
 }
 
 void destroy_io_threads() {
-  if (!threads && queue) {
-    free_tqueue(queue);
+  if (!threads && io_queue) {
+    free_tqueue(io_queue);
     return;
   }
 
@@ -112,22 +110,22 @@ void destroy_io_threads() {
   }
 
   for (uint32_t i = 0; i < thread_count; ++i) {
-    sem_post(stored_sem);
+    sem_post(io_stored_sem);
   }
 
   for (uint32_t i = 0; i < thread_count; ++i) {
-    sem_wait(kill_sem); // wait until killed
+    sem_wait(io_kill_sem); // wait until killed
   }
 
-  sem_destroy(kill_sem);
-  free(kill_sem);
+  sem_destroy(io_kill_sem);
+  free(io_kill_sem);
 
-  sem_destroy(stored_sem);
-  free(stored_sem);
+  sem_destroy(io_stored_sem);
+  free(io_stored_sem);
 
-  sem_destroy(available_space_sem);
-  free(available_space_sem);
+  sem_destroy(io_available_space_sem);
+  free(io_available_space_sem);
 
-  free_tqueue(queue);
+  free_tqueue(io_queue);
   free(threads);
 }
