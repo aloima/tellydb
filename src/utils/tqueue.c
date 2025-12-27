@@ -7,12 +7,6 @@
 #include <stdalign.h>
 #include <stdatomic.h>
 
-#if defined(__x86_64__) || defined(__i386__)
-  #define cpu_relax() __asm__ __volatile__("pause\n" ::: "memory")
-#elif defined(__aarch64__)
-  #define cpu_relax() __asm__ __volatile__("yield\n" ::: "memory")
-#endif
-
 static inline bool init_state(struct ThreadQueue *queue, uint64_t at, uint64_t align, uint64_t size) {
   atomic_init(&queue->slots[at].seq, at);
 

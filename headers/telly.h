@@ -7,6 +7,12 @@
 #define min(a, b) ((a) > (b) ? (b) : (a))
 #define max(a, b) ((a) > (b) ? (a) : (b))
 
+#if defined(__x86_64__) || defined(__i386__)
+  #define cpu_relax() __asm__ __volatile__("pause\n" ::: "memory")
+#elif defined(__aarch64__)
+  #define cpu_relax() __asm__ __volatile__("yield\n" ::: "memory")
+#endif
+
 // Aligned memory allocation
 #define amalloc(value, type, count) posix_memalign((void **) &(value), alignof(typeof(type)), (count) * sizeof(type))
 

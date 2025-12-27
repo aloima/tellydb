@@ -1,11 +1,16 @@
 #include <telly.h>
 #include "io.h"
 
+#include <stdlib.h>
+
+#include <semaphore.h>
+#include <sched.h>
+
 void add_io_request(const enum IOOpType type, Client *client, string_t write_str) {
   IOOperation op = {type, client, write_str};
 
   sem_wait(available_space_sem);
-  while (!push_tqueue(queue, &op));
+  while (!push_tqueue(queue, &op)) cpu_relax();
 
   sem_post(stored_sem);
 }
@@ -32,8 +37,28 @@ void *handle_io_requests(void *arg) {
     // __builtin_prefetch(&client->state, 1, 3); // terminate_connection writes once
     __builtin_prefetch(&op.write_str, 0, 1); // _write reads twice/three times
 
-    while (!ATOMIC_CAS_WEAK(&client->state, &expected, CLIENT_STATE_PASSIVE, memory_order_acq_rel, memory_order_relaxed)) {
+    _Atomic(enum ClientState) *state = &client->state;
+
+    while (true) {
+      if (ATOMIC_CAS_WEAK(state, &expected, CLIENT_STATE_PASSIVE, memory_order_acq_rel, memory_order_relaxed)) {
+        break;
+      }
+
       if (expected == CLIENT_STATE_EMPTY) goto TERMINATION;
+      int spin_count = 0;
+
+      while (1) {
+        enum ClientState current_state = atomic_load_explicit(state, memory_order_relaxed);
+        if (current_state == CLIENT_STATE_ACTIVE) break;
+        if (current_state == CLIENT_STATE_EMPTY) goto TERMINATION;
+        cpu_relax();
+
+        if (++spin_count > 1000) {
+          sched_yield();
+          spin_count = 0;
+        }
+      }
+
       expected = CLIENT_STATE_ACTIVE;
     }
 
