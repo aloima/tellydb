@@ -65,7 +65,6 @@ uint8_t ltoa(const int64_t value, char *dst) {
 
   if (uval > 0) {
     const uint8_t remainder = uval;
-    const uint16_t chars = *((uint16_t*) (TWO_DIGITS_TABLE + remainder * 2));
 
     if (remainder >= 10) {
       pos -= 2;
