@@ -8,6 +8,7 @@ struct List *create_list() {
 
 struct ListNode *create_listnode(void *value, enum TellyTypes type) {
   struct ListNode *node = malloc(sizeof(struct ListNode));
+  if (!node) return NULL;
   node->prev = NULL;
   node->next = NULL;
   node->type = type;

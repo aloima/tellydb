@@ -5,8 +5,14 @@
 #include <stdint.h>
 
 struct HashTable *create_hashtable(const uint32_t size) {
+  if (size == 0) return NULL;
   struct HashTable *table = malloc(sizeof(struct HashTable));
+  if (!table) return NULL;
   table->fields = calloc(size, sizeof(struct HashTableField *));
+  if (!table->fields) {
+    free(table);
+    return NULL;
+  }
   table->size.capacity = size;
   table->size.used = 0;
 

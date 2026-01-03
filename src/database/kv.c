@@ -9,6 +9,7 @@ void set_kv(struct KVPair *kv, const string_t key, void *value, const enum Telly
   kv->hashed = hash(key.value, key.len);
   kv->key.len = key.len;
   kv->key.value = malloc(key.len);
+  if (!kv->key.value) return;
   memcpy(kv->key.value, key.value, key.len);
 
   kv->type = type;

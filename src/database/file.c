@@ -419,6 +419,8 @@ int save_data(const uint32_t server_age) {
       }
 
       char *data = malloc(data_size);
+      if (!data)
+        return -1;
 
       for (uint32_t i = 0; i < capacity; ++i) {
         struct KVPair *kv = database->data[i];
