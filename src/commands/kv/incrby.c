@@ -30,10 +30,12 @@ static string_t run(struct CommandEntry *entry) {
     if (is_integer) {
       type = TELLY_INT;
       mpz_t *raw = (number = malloc(sizeof(mpz_t)));
+      if (raw == NULL) return RESP_ERROR_MESSAGE("Out of memory");
       mpz_init_set_str(*raw, input, 10);
     } else if (is_double) {
       type = TELLY_DOUBLE;
       mpf_t *raw = (number = malloc(sizeof(mpf_t)));
+      if (raw == NULL) return RESP_ERROR_MESSAGE("Out of memory");
       mpf_init2(*raw, FLOAT_PRECISION);
       mpf_set_str(*raw, input, 10);
     }
@@ -66,6 +68,7 @@ static string_t run(struct CommandEntry *entry) {
 
           result->type = TELLY_DOUBLE;
           mpf_t *raw = (result->value = malloc(sizeof(mpf_t)));
+          if (raw == NULL) return RESP_ERROR_MESSAGE("Out of memory");
           mpf_init2(*raw, FLOAT_PRECISION);
           mpf_set_str(*raw, input, 10);
           mpf_add(*raw, *raw, original);

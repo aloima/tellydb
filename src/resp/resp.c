@@ -98,12 +98,14 @@ bool parse_resp_command(Arena *arena, Client *client, char *buf, int32_t *at, in
   }
 
   command->name = arena_alloc(arena, sizeof(string_t));
+  if (command->name == NULL) return false;
   if (!get_resp_command_name(arena, client, command->name, buf, at, size)) return false;
 
   command->args.count -= 1;
 
   if (command->args.count != 0) {
     command->args.data = arena_alloc(arena, command->args.count * sizeof(string_t));
+    if (command->args.data == NULL) return false;
 
     for (uint32_t i = 0; i < command->args.count; ++i) {
       command->args.data[i].len = 0;

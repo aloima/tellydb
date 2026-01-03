@@ -33,8 +33,12 @@ static string_t run(struct CommandEntry *entry) {
     const string_t arg = entry->args->data[1];
 
     string_t *string = malloc(sizeof(string_t));
+    if (string == NULL) return RESP_ERROR_MESSAGE("Out of memory");
+
     string->len = arg.len;
     string->value = malloc(string->len);
+    if (string->value == NULL) return RESP_ERROR_MESSAGE("Out of memory");
+
     memcpy(string->value, arg.value, string->len);
     set_data(entry->database, NULL, key, string, TELLY_STR);
 

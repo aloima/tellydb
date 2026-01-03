@@ -218,6 +218,8 @@ void add_password(Client *client, const string_t data, const uint8_t permissions
 
   if (passwords == NULL) {
     write_log(LOG_ERR, "Cannot create a password, out of memory.");
+    password_count -= 1;
+    free(password);
     return;
   } else if (password_count == 1) {
     client->password->permissions = 0; // Resets all client permissions via reference

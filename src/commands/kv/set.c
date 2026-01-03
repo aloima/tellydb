@@ -9,8 +9,13 @@
 
 static void take_as_string(void **value, const string_t data) {
   string_t *string = (*value = malloc(sizeof(string_t)));
+  if (string == NULL) return;
   string->len = data.len;
   string->value = malloc(string->len);
+  if (string->value) {
+    free(string);
+    return;
+  }
   memcpy(string->value, data.value, string->len);
 }
 
@@ -115,12 +120,14 @@ static string_t run(struct CommandEntry *entry) {
     switch (type) {
       case TELLY_INT: {
         value = malloc(sizeof(mpz_t));
+        if (value == NULL) return RESP_ERROR_MESSAGE("Out of memory");
         mpz_init_set_str(*((mpz_t *) value), value_in, 10);
         break;
       }
 
       case TELLY_DOUBLE: {
         value = malloc(sizeof(mpf_t));
+        if (value == NULL) return RESP_ERROR_MESSAGE("Out of memory");
         mpf_init2(*((mpf_t *) value), FLOAT_PRECISION);
         mpf_set_str(*((mpf_t *) value), value_in, 10);
         break;
@@ -145,6 +152,7 @@ static string_t run(struct CommandEntry *entry) {
     switch (type) {
       case TELLY_BOOL: {
         value = malloc(sizeof(bool));
+        if (value == NULL) return RESP_ERROR_MESSAGE("Out of memory");
         *((bool *) value) = is_true;
         break;
       }
