@@ -200,6 +200,11 @@ static int initialize_authorization() {
 
 void start_server(Config *config) {
   server = calloc(1, sizeof(Server));
+  if (server == NULL) {
+    write_log(LOG_ERR, "Cannot initialize server, out of memory.");
+    return;
+  }
+
   server->conf = config ?: get_default_config();
   server->eventfd = -1;
   server->sockfd = -1;
@@ -222,6 +227,8 @@ void start_server(Config *config) {
   else server->ctx = NULL;
 
   server->commands = load_commands();
+  if (server->commands == NULL) return;
+
   write_log(LOG_INFO, "Loaded commands.");
 
   CLEANUP_RETURN_IF(create_transaction_thread() == -1);
