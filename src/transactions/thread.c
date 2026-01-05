@@ -5,11 +5,14 @@
 #include <signal.h>
 #include <stdatomic.h>
 #include <stdbool.h>
+#include <errno.h> // IWYU pragma: export
 
 #include <semaphore.h>
 #include <pthread.h>
 
 static pthread_t thread;
+static sem_t thread_sem; // Controls waits until thread opened, error situation does not matter
+static bool failed = false; // Represents thread is not opened successfuly
 
 static sem_t kill_sem;
 static bool kill_pending = false;
@@ -21,10 +24,19 @@ void *transaction_thread(void *arg) {
   sigaddset(&set, SIGTERM);
   pthread_sigmask(SIG_BLOCK, &set, NULL);
 
-  atomic_init(&tx_thread_sleeping, true);
   tx_sem = malloc(sizeof(sem_t));
+  if (tx_sem == NULL) {
+    failed = true;
+    sem_post(&thread_sem);
+
+    write_log(LOG_ERR, "Cannot allocate transaction semaphore, out of memory.");
+    return NULL;
+  }
+
   sem_init(tx_sem, 0, 0);
   sem_init(&kill_sem, 0, 0);
+  atomic_init(&tx_thread_sleeping, true);
+  sem_post(&thread_sem);
 
   while (true) {
     sem_wait(tx_sem);
@@ -57,10 +69,30 @@ void destroy_transaction_thread() {
   sem_destroy(&kill_sem);
 }
 
-void create_transaction_thread() {
+int create_transaction_thread() {
   tx_queue = create_tqueue(server->conf->max_transaction_blocks, sizeof(TransactionBlock *), alignof(TransactionBlock *));
-  if (tx_queue == NULL) return write_log(LOG_ERR, "Cannot allocate transaction blocks, out of memory.");
+  if (tx_queue == NULL) {
+    write_log(LOG_ERR, "Cannot allocate transaction blocks, out of memory.");
+    return -1;
+  }
 
-  pthread_create(&thread, NULL, transaction_thread, NULL);
-  pthread_detach(thread);
+  const int code = pthread_create(&thread, NULL, transaction_thread, NULL);
+
+  switch (code) {
+    case EAGAIN:
+      write_log(LOG_ERR, "Cannot create transaction thread, out of memory or thread limit problem of OS.");
+      return -1;
+
+    default:
+      break;
+  }
+
+  sem_init(&thread_sem, 0, 0);
+  pthread_detach(thread); // Thread is guaranteed joinable and available, so no need for control.
+
+  sem_wait(&thread_sem);
+  sem_destroy(&thread_sem);
+  
+  if (failed) return -1;
+  else return 0;
 }

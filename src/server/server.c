@@ -224,7 +224,7 @@ void start_server(Config *config) {
   server->commands = load_commands();
   write_log(LOG_INFO, "Loaded commands.");
 
-  create_transaction_thread();
+  CLEANUP_RETURN_IF(create_transaction_thread() == -1);
   write_log(LOG_INFO, "Created transaction thread.");
 
   const uint32_t thread_count = max(sysconf(_SC_NPROCESSORS_ONLN) - 1, 1);
