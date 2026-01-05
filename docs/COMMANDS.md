@@ -78,6 +78,7 @@ The list of unwritten behavior to commands.
 **Returns**: `OK`  
 **Behavior**:
 * If database cannot be found, throws an error.
+* If database cannot be created, throws an error.
 
 **Arguments**:
 - **database**: The name of the database to be used by client.

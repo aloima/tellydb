@@ -24,7 +24,10 @@ static string_t run(struct CommandEntry *entry) {
     node = node->next;
   }
 
-  entry->client->database = create_database(entry->args->data[0], DATABASE_INITIAL_SIZE);
+  struct Database *database = create_database(entry->args->data[0], DATABASE_INITIAL_SIZE);
+  if (database == NULL) return RESP_ERROR_MESSAGE("Memory error, cannot create new database");
+
+  entry->client->database = database;
   return RESP_OK();
 }
 
