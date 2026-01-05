@@ -33,9 +33,15 @@ void set_field_of_hashtable(struct HashTable *table, const string_t name, void *
   if (field == NULL) {
     table->size.used += 1;
     field = malloc(sizeof(struct HashTableField));
+    if (!field) return;
 
-    field->name.len = name.len;
     field->name.value = malloc(name.len);
+    if (!field->name.value) {
+      free(field);
+      return;
+    }
+    field->name.len = name.len;
+
     memcpy(field->name.value, name.value, name.len);
 
     table->fields[index] = field;

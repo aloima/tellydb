@@ -201,6 +201,7 @@ static inline string_t subcommand_setinfo(struct CommandEntry *entry) {
     }
 
     entry->client->lib_name = malloc(value_size);
+    if (entry->client->lib_name == NULL) return RESP_ERROR_MESSAGE("Out of memory");
     memcpy(entry->client->lib_name, value.value, value_size);
 
     return RESP_OK();
@@ -213,6 +214,7 @@ static inline string_t subcommand_setinfo(struct CommandEntry *entry) {
     }
 
     entry->client->lib_ver = malloc(value_size);
+    if (entry->client->lib_ver == NULL) return RESP_ERROR_MESSAGE("Out of memory");
     memcpy(entry->client->lib_ver, value.value, value_size);
 
     return RESP_OK();

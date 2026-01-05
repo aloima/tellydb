@@ -42,6 +42,11 @@ bool add_transaction(Client *client, const uint64_t command_idx, commanddata_t *
     block->password = client->password;
     block->data.transaction = malloc(sizeof(Transaction));
 
+    if (block->data.transaction == NULL) {
+      free(block);
+      return false;
+    }
+
     prepare_transaction(block->data.transaction, client, command_idx, data);
     while (push_tqueue(tx_queue, &block) == NULL) cpu_relax();
 
@@ -56,6 +61,11 @@ bool add_transaction(Client *client, const uint64_t command_idx, commanddata_t *
       multiple->transactions = malloc(sizeof(Transaction));
     } else {
       multiple->transactions = realloc(multiple->transactions, sizeof(Transaction) * multiple->transaction_count);
+    }
+
+    if (multiple->transactions == NULL) {
+      multiple->transaction_count -= 1;
+      return false;
     }
 
     prepare_transaction(&multiple->transactions[multiple->transaction_count - 1], client, command_idx, data);

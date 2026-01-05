@@ -11,7 +11,10 @@ static inline bool parse_name(Arena *arena, Client *client, char *buf, int32_t *
   uint8_t idx = 0;
 
   cmd->name = arena_alloc(arena, sizeof(string_t));
+  if (cmd->name == NULL) return false;
+
   cmd->name->value = arena_alloc(arena, RESP_INLINE_BUFFER * sizeof(char));
+  if (cmd->name->value == NULL) return false;
 
   do {
     cmd->name->value[idx] = *c;
@@ -40,10 +43,12 @@ static inline bool parse_name(Arena *arena, Client *client, char *buf, int32_t *
 static inline bool parse_arguments(Arena *arena, Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *cmd, char *c) {
   bool retrieving = true;
   cmd->args.data = arena_alloc(arena, RESP_INLINE_ARGUMENT_COUNT * sizeof(string_t));
+  if (cmd->args.data == NULL) return false;
 
   while (retrieving) {
     string_t *arg = &cmd->args.data[cmd->args.count];
     arg->value = arena_alloc(arena, RESP_INLINE_BUFFER * sizeof(char));
+    if (arg->value == NULL) return false;
     arg->len = 0;
     cmd->args.count += 1;
 

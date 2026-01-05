@@ -39,6 +39,7 @@ static string_t run(struct CommandEntry *entry) {
 
       if (!result) {
         number = malloc(sizeof(mpz_t));
+        if (number == NULL) return RESP_ERROR_MESSAGE("Out of memory");
 
         mpz_t *value = number;
         mpz_init_set_ui(*value, 0);
@@ -88,6 +89,7 @@ static string_t run(struct CommandEntry *entry) {
 
       if (!result) {
         number = malloc(sizeof(mpz_t));
+        if (number == NULL) return RESP_ERROR_MESSAGE("Out of memory");
         mpz_init_set_ui(*((mpz_t *) number), 0);
 
         const bool success = set_data(entry->database, NULL, key, number, TELLY_INT);
