@@ -13,21 +13,18 @@ static _Atomic uint32_t last_connection_client_id;
 static Arena *write_arena = NULL;
 
 Client *get_client(const uint32_t id) {
-  const Config *conf = server->conf;
+  const uint16_t max_clients = server->conf->max_clients;
   Client *clients = server->clients;
 
-  const uint32_t start = (id % conf->max_clients);
+  const uint32_t start = (id % max_clients);
   uint32_t at = start;
 
   while (clients[at].id != -1) {
     if (clients[at].id == id) return &clients[at];
 
     at += 1;
-    if (at == conf->max_clients) at = 0;
-
-    if (at == start) {
-      return NULL;
-    }
+    if (at == max_clients) at = 0;
+    else if (at == start) return NULL;
   }
 
   return NULL;
@@ -77,20 +74,15 @@ static inline uint16_t get_available_client_slot(const uint32_t id) {
   while (clients[at].id != -1) {
     at += 1;
 
-    if (at == max_clients) {
-      at = 0;
-    }
+    if (at == max_clients) at = 0;
   }
 
   return at;
 }
 
 Client *add_client(const int connfd) {
-  const Config *conf = server->conf;
-  Client *clients = server->clients;
-
   const uint32_t id = atomic_load_explicit(&last_connection_client_id, memory_order_relaxed);
-  Client *client = &clients[get_available_client_slot(id)];
+  Client *client = &server->clients[get_available_client_slot(id)];
 
   client->id = id;
   client->connfd = connfd;
@@ -113,7 +105,7 @@ Client *add_client(const int connfd) {
     client->password = get_empty_password();
   }
 
-  atomic_init(&client.state, CLIENT_STATE_ACTIVE);
+  atomic_init(&client->state, CLIENT_STATE_ACTIVE);
   atomic_fetch_add_explicit(&client_count, 1, memory_order_relaxed);
   atomic_fetch_add_explicit(&last_connection_client_id, 1, memory_order_relaxed);
 
@@ -132,20 +124,7 @@ static inline void free_client(Client *client) {
 }
 
 bool remove_client(const int id) {
-  const Config *conf = server->conf;
-  Client *clients = server->clients;
-
-  uint16_t at = (id % conf->max_clients);
-  Client *client;
-
-  while ((client = &clients[at])->id != id) {
-    at += 1;
-
-    if (at == conf->max_clients) {
-      at = 0;
-    }
-  }
-
+  Client *client = get_client(id);
   if (atomic_load_explicit(&client->state, memory_order_acquire) == CLIENT_STATE_EMPTY) return false;
 
   client->id = -1;
