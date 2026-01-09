@@ -18,32 +18,33 @@ static bool failed = false; // Represents thread is not opened successfuly
 static _Atomic(bool) kill_pending; // Executes killing operation of thread
 static sem_t kill_sem; // Waits until killing thread after kill_pending signal
 
-void *transaction_thread(void *arg) {
-  sigset_t *set = (sigset_t *) arg;
-  pthread_sigmask(SIG_BLOCK, set, NULL);
-
+static inline bool initialize_thread_variables() {
   tx_sem = malloc(sizeof(sem_t));
   if (tx_sem == NULL) {
     write_log(LOG_ERR, "Cannot allocate transaction semaphore, out of memory.");
-
-    failed = true;
-    sem_post(&thread_sem);
-    return NULL;
+    return false;
   }
 
   tx_queue = create_tqueue(server->conf->max_transaction_blocks, sizeof(TransactionBlock *), alignof(TransactionBlock *));
   if (tx_queue == NULL) {
+    free(tx_sem);
     write_log(LOG_ERR, "Cannot allocate transaction blocks, out of memory.");
-
-    failed = true;
-    sem_post(&thread_sem);
-    return NULL;
+    return false;
   }
 
   sem_init(tx_sem, 0, 0);
   sem_init(&kill_sem, 0, 0);
   atomic_init(&kill_pending, false);
   atomic_init(&tx_thread_sleeping, true);
+
+  return true;
+}
+
+void *transaction_thread(void *arg) {
+  sigset_t *set = (sigset_t *) arg;
+  pthread_sigmask(SIG_BLOCK, set, NULL);
+
+  failed = !initialize_thread_variables();
   sem_post(&thread_sem);
 
   while (!atomic_load_explicit(&kill_pending, memory_order_relaxed)) {
