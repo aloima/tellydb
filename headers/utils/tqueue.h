@@ -22,6 +22,7 @@ typedef struct ThreadQueue {
 
 ThreadQueue *create_tqueue(const uint64_t capacity, const uint64_t size, const uint64_t align);
 void free_tqueue(struct ThreadQueue *queue);
+void reset_tqueue(ThreadQueue *queue);
 
 uint64_t estimate_tqueue_size(const ThreadQueue *queue);
 void *push_tqueue(ThreadQueue *queue, void *value);

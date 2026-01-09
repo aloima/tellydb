@@ -62,6 +62,16 @@ ThreadQueue *create_tqueue(const uint64_t capacity, const uint64_t size, uint64_
   return queue;
 }
 
+void reset_tqueue(ThreadQueue *queue) {
+  for (uint64_t i = 0; i < queue->capacity; ++i) {
+    ThreadQueueSlot *slot = &queue->slots[i];
+    atomic_store(&slot->seq, i);
+  }
+
+  atomic_store(&queue->at, 0);
+  atomic_store(&queue->end, 0);
+}
+
 void free_tqueue(ThreadQueue *queue) {
   for (uint64_t i = 0; i < queue->capacity; ++i) {
     free(queue->slots[i].data);
