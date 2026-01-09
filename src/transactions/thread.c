@@ -11,34 +11,42 @@
 #include <pthread.h>
 
 static pthread_t thread;
-static sem_t thread_sem; // Controls waits until thread opened, error situation does not matter
+
+static sem_t thread_sem; // Controls initalization of thread, signalled if thread initialized successfully or not
 static bool failed = false; // Represents thread is not opened successfuly
 
-static sem_t kill_sem;
-static bool kill_pending = false;
+static _Atomic(bool) kill_pending; // Executes killing operation of thread
+static sem_t kill_sem; // Waits until killing thread after kill_pending signal
 
 void *transaction_thread(void *arg) {
-  sigset_t set;
-  sigemptyset(&set);
-  sigaddset(&set, SIGINT);
-  sigaddset(&set, SIGTERM);
-  pthread_sigmask(SIG_BLOCK, &set, NULL);
+  sigset_t *set = (sigset_t *) arg;
+  pthread_sigmask(SIG_BLOCK, set, NULL);
 
   tx_sem = malloc(sizeof(sem_t));
   if (tx_sem == NULL) {
+    write_log(LOG_ERR, "Cannot allocate transaction semaphore, out of memory.");
+
     failed = true;
     sem_post(&thread_sem);
+    return NULL;
+  }
 
-    write_log(LOG_ERR, "Cannot allocate transaction semaphore, out of memory.");
+  tx_queue = create_tqueue(server->conf->max_transaction_blocks, sizeof(TransactionBlock *), alignof(TransactionBlock *));
+  if (tx_queue == NULL) {
+    write_log(LOG_ERR, "Cannot allocate transaction blocks, out of memory.");
+
+    failed = true;
+    sem_post(&thread_sem);
     return NULL;
   }
 
   sem_init(tx_sem, 0, 0);
   sem_init(&kill_sem, 0, 0);
+  atomic_init(&kill_pending, false);
   atomic_init(&tx_thread_sleeping, true);
   sem_post(&thread_sem);
 
-  while (true) {
+  while (!atomic_load_explicit(&kill_pending, memory_order_relaxed)) {
     sem_wait(tx_sem);
     atomic_store_explicit(&tx_thread_sleeping, false, memory_order_release);
 
@@ -49,8 +57,6 @@ void *transaction_thread(void *arg) {
       remove_transaction_block(block);
     }
 
-    // May be data race, does not matter. If there is, a transaction will be executed. It is acceptable behavior.
-    if (kill_pending) break;
     atomic_store_explicit(&tx_thread_sleeping, true, memory_order_release);
   }
 
@@ -62,21 +68,20 @@ void *transaction_thread(void *arg) {
 }
 
 void destroy_transaction_thread() {
-  kill_pending = true;
+  atomic_store_explicit(&kill_pending, true, memory_order_relaxed);
   sem_post(tx_sem); // run transaction loop once
 
-  sem_wait(&kill_sem); // wait until killed
+  sem_wait(&kill_sem);
   sem_destroy(&kill_sem);
 }
 
 int create_transaction_thread() {
-  tx_queue = create_tqueue(server->conf->max_transaction_blocks, sizeof(TransactionBlock *), alignof(TransactionBlock *));
-  if (tx_queue == NULL) {
-    write_log(LOG_ERR, "Cannot allocate transaction blocks, out of memory.");
-    return -1;
-  }
+  sigset_t set;
+  sigemptyset(&set);
+  sigaddset(&set, SIGINT);
+  sigaddset(&set, SIGTERM);
 
-  const int code = pthread_create(&thread, NULL, transaction_thread, NULL);
+  const int code = pthread_create(&thread, NULL, transaction_thread, &set);
 
   switch (code) {
     case EAGAIN:
@@ -88,7 +93,7 @@ int create_transaction_thread() {
   }
 
   sem_init(&thread_sem, 0, 0);
-  pthread_detach(thread); // Thread is guaranteed joinable and available, so no need for control.
+  pthread_detach(thread); // Thread is guaranteed joinable and available, so no need to control.
 
   sem_wait(&thread_sem);
   sem_destroy(&thread_sem);
