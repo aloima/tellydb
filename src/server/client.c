@@ -136,15 +136,19 @@ bool remove_client(const int id) {
 }
 
 void free_clients() {
-  const uint16_t max_clients = server->conf->max_clients;
   Client *clients = server->clients;
 
-  for (uint16_t i = 0; i < max_clients; ++i) {
-    Client *client = &clients[i];
-    if (atomic_load_explicit(&client->state, memory_order_acquire) == CLIENT_STATE_EMPTY) continue;
-    free_client(client);
+  if (clients) {
+    const uint16_t max_clients = server->conf->max_clients;
+
+    for (uint16_t i = 0; i < max_clients; ++i) {
+      Client *client = &clients[i];
+      if (atomic_load_explicit(&client->state, memory_order_acquire) == CLIENT_STATE_EMPTY) continue;
+      free_client(client);
+    }
+
+    free(clients);
   }
 
-  arena_destroy(write_arena);
-  free(clients);
+  if (write_arena) arena_destroy(write_arena);
 }
