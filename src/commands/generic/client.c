@@ -122,7 +122,7 @@ static inline string_t subcommand_list(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_CLIENT");
   }
 
-  Client *clients = get_clients();
+  Client *clients = server->clients;
   uint64_t at = 1;
 
   entry->client->write_buf[0] = RDT_ARRAY;

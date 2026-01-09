@@ -52,7 +52,6 @@ void free_clients();
 Client *get_client(const uint32_t id);
 
 uint32_t get_last_connection_client_id();
-Client *get_clients();
 uint16_t get_client_count();
 
 Client *add_client(const int connfd);

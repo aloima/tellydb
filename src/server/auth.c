@@ -73,7 +73,7 @@ static bool password_derive(char *value, const size_t value_len, unsigned char *
 }
 
 static inline void remove_password_from_clients(Password *password) {
-  Client *clients = get_clients();
+  Client *clients = server->clients;
   const uint32_t max_clients = server->conf->max_clients;
 
   for (uint32_t i = 0; i < max_clients; ++i) {

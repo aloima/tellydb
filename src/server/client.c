@@ -8,14 +8,14 @@
 
 #include <openssl/ssl.h>
 
-static Config *conf;
-
-static Client *clients = NULL;
 static _Atomic uint16_t client_count;
 static _Atomic uint32_t last_connection_client_id;
 static Arena *write_arena = NULL;
 
 Client *get_client(const uint32_t id) {
+  const Config *conf = server->conf;
+  Client *clients = server->clients;
+
   const uint32_t start = (id % conf->max_clients);
   uint32_t at = start;
 
@@ -33,10 +33,6 @@ Client *get_client(const uint32_t id) {
   return NULL;
 }
 
-Client *get_clients() {
-  return clients;
-}
-
 uint16_t get_client_count() {
   return atomic_load_explicit(&client_count, memory_order_relaxed);
 }
@@ -46,24 +42,25 @@ uint32_t get_last_connection_client_id() {
 }
 
 int initialize_clients() {
-  conf = server->conf;
+  const uint16_t max_clients = server->conf->max_clients;
+
   atomic_init(&client_count, 0);
   atomic_init(&last_connection_client_id, 1);
 
-  write_arena = arena_create((conf->max_clients / 4) * MAX_RESPONSE_SIZE * sizeof(char));
+  write_arena = arena_create((max_clients / 4) * MAX_RESPONSE_SIZE * sizeof(char));
   if (write_arena == NULL) {
     write_log(LOG_ERR, "Cannot allocate writing buffer for clients, out of memory.");
     return -1;
   }
 
-  const size_t size = (sizeof(Client) * conf->max_clients);
-
-  if (amalloc(clients, Client, conf->max_clients) != 0) {
+  if (amalloc(server->clients, Client, max_clients) != 0) {
     write_log(LOG_ERR, "Cannot create a map for storing clients, out of memory.");
     return -1;
   }
 
-  for (uint32_t i = 0; i < conf->max_clients; ++i) {
+  Client *clients = server->clients;
+
+  for (uint16_t i = 0; i < max_clients; ++i) {
     clients[i].id = -1;
     atomic_init(&clients[i].state, CLIENT_STATE_EMPTY);
   }
@@ -71,49 +68,56 @@ int initialize_clients() {
   return 0;
 }
 
-static inline Client *insert_client(Client *client) {
-  uint16_t at = (client->id % conf->max_clients);
+static inline uint16_t get_available_client_slot(const uint32_t id) {
+  const uint16_t max_clients = server->conf->max_clients;
+  const Client *clients = server->clients;
+
+  uint16_t at = (id % max_clients);
 
   while (clients[at].id != -1) {
     at += 1;
 
-    if (at == conf->max_clients) {
+    if (at == max_clients) {
       at = 0;
     }
   }
 
-  clients[at] = *client;
-  return &clients[at];
+  return at;
 }
 
 Client *add_client(const int connfd) {
-  Client client;
-  client.id = atomic_load_explicit(&last_connection_client_id, memory_order_relaxed);
-  client.connfd = connfd;
-  time(&client.connected_at);
-  client.database = get_main_database();
-  client.command = NULL;
-  client.lib_name = NULL;
-  client.lib_ver = NULL;
-  client.ssl = NULL;
-  client.protover = RESP2;
-  client.locked = false;
-  client.waiting_block = NULL;
+  const Config *conf = server->conf;
+  Client *clients = server->clients;
 
-  client.write_buf = arena_alloc(write_arena, MAX_RESPONSE_SIZE * sizeof(char));
-  if (client.write_buf == NULL) return NULL;
+  const uint32_t id = atomic_load_explicit(&last_connection_client_id, memory_order_relaxed);
+  Client *client = &clients[get_available_client_slot(id)];
+
+  client->id = id;
+  client->connfd = connfd;
+  time(&client->connected_at);
+  client->database = get_main_database();
+  client->command = NULL;
+  client->lib_name = NULL;
+  client->lib_ver = NULL;
+  client->ssl = NULL;
+  client->protover = RESP2;
+  client->locked = false;
+  client->waiting_block = NULL;
+
+  client->write_buf = arena_alloc(write_arena, MAX_RESPONSE_SIZE * sizeof(char));
+  if (client->write_buf == NULL) return NULL;
 
   if (get_password_count() == 0) {
-    client.password = get_default_password();
+    client->password = get_default_password();
   } else {
-    client.password = get_empty_password();
+    client->password = get_empty_password();
   }
 
   atomic_init(&client.state, CLIENT_STATE_ACTIVE);
   atomic_fetch_add_explicit(&client_count, 1, memory_order_relaxed);
   atomic_fetch_add_explicit(&last_connection_client_id, 1, memory_order_relaxed);
 
-  return insert_client(&client);
+  return client;
 }
 
 static inline void free_client(Client *client) {
@@ -128,6 +132,9 @@ static inline void free_client(Client *client) {
 }
 
 bool remove_client(const int id) {
+  const Config *conf = server->conf;
+  Client *clients = server->clients;
+
   uint16_t at = (id % conf->max_clients);
   Client *client;
 
@@ -150,7 +157,10 @@ bool remove_client(const int id) {
 }
 
 void free_clients() {
-  for (uint16_t i = 0; i < conf->max_clients; ++i) {
+  const uint16_t max_clients = server->conf->max_clients;
+  Client *clients = server->clients;
+
+  for (uint16_t i = 0; i < max_clients; ++i) {
     Client *client = &clients[i];
     if (atomic_load_explicit(&client->state, memory_order_acquire) == CLIENT_STATE_EMPTY) continue;
     free_client(client);

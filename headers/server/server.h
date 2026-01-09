@@ -23,6 +23,7 @@ typedef struct {
   uint32_t age;
   sig_atomic_t closed;
   struct Command *commands;
+  Client *clients;
 } Server;
 
 extern Server *server;
