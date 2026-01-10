@@ -53,9 +53,8 @@ void *handle_io_requests(void *arg) {
     sem_post(io_available_space_sem);
 
     Client *client = op.client;
-    enum ClientState expected = CLIENT_STATE_ACTIVE;
-
     __builtin_prefetch(client, 0, 1);
+
     if (!acquire_client_passive(client)) continue;
 
     switch (op.type) {

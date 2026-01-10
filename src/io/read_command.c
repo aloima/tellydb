@@ -51,7 +51,7 @@ void read_command(IOThread *thread, Client *client) {
 
     if (!command_index) {
       unknown_command(client, data.name);
-      return;
+      continue;
     }
 
     const uint64_t command_idx = command_index->idx;
@@ -63,6 +63,9 @@ void read_command(IOThread *thread, Client *client) {
       return;
     }
 
-    if (client->waiting_block && !IS_RELATED_TO_WAITING_TX(server->commands, command_idx)) _write(client, "+QUEUED\r\n", 9);
+    if (client->waiting_block && !IS_RELATED_TO_WAITING_TX(server->commands, command_idx)) {
+      WRITE_OK_MESSAGE(client, "QUEUED");
+      continue;
+    }
   }
 }

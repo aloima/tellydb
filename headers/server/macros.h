@@ -33,6 +33,7 @@ int _write(Client *client, char *buf, const size_t nbytes);
 #define RESP_ERROR()                CREATE_STRING(RDT_ERR_SL     "ERROR\r\n",    8)
 #define RESP_ERROR_MESSAGE(message) CREATE_STRING(RDT_ERR_SL     message "\r\n", sizeof(message) + 2)
 
+#define WRITE_OK_MESSAGE(client, message) _write((client), RDT_SSTRING_SL message "\r\n", sizeof(message) + 2)
 #define WRITE_ERROR_MESSAGE(client, message) _write((client), RDT_ERR_SL message "\r\n", sizeof(message) + 2)
 
 #if defined(__linux__)
