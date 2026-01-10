@@ -88,7 +88,12 @@ Client *add_client(const int connfd) {
   client->connfd = connfd;
   time(&client->connected_at);
   client->database = get_main_database();
-  client->command = NULL;
+  
+  client->command = malloc(sizeof(UsedCommand));
+  atomic_init(&client->command->idx, UINT64_MAX);
+  atomic_init(&client->command->data, NULL);
+  atomic_init(&client->command->subcommand, NULL);
+
   client->lib_name = NULL;
   client->lib_ver = NULL;
   client->ssl = NULL;
@@ -121,6 +126,7 @@ static inline void free_client(Client *client) {
   if (client->lib_name) free(client->lib_name);
   if (client->lib_ver) free(client->lib_ver);
   if (client->waiting_block) remove_transaction_block(client->waiting_block);
+  if (client->command) free(client->command);
 }
 
 bool remove_client(const int id) {

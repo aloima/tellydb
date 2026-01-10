@@ -26,14 +26,14 @@ TransactionBlock *enqueue_to_transaction_queue(TransactionBlock **block) {
   return res;
 }
 
-static inline void prepare_transaction(Transaction *transaction, Client *client, const uint64_t command_idx, commanddata_t *data) {
-  transaction->command = &server->commands[command_idx];
+static inline void prepare_transaction(Transaction *transaction, Client *client, const UsedCommand *command, commanddata_t *data) {
+  transaction->command = command->data;
   transaction->args = data->args;
   transaction->database = client->database;
 }
 
-bool add_transaction(Client *client, const uint64_t command_idx, commanddata_t *data) {
-  if (client->waiting_block == NULL || IS_RELATED_TO_WAITING_TX(server->commands, command_idx)) {
+bool add_transaction(Client *client, const UsedCommand *command, commanddata_t *data) {
+  if (client->waiting_block == NULL || IS_RELATED_TO_WAITING_TX(server->commands, command->idx)) {
     TransactionBlock *block = malloc(sizeof(TransactionBlock));
     if (block == NULL) return false;
 
@@ -47,7 +47,7 @@ bool add_transaction(Client *client, const uint64_t command_idx, commanddata_t *
       return false;
     }
 
-    prepare_transaction(block->data.transaction, client, command_idx, data);
+    prepare_transaction(block->data.transaction, client, command, data);
     while (push_tqueue(tx_queue, &block) == NULL) cpu_relax();
 
     if (atomic_load_explicit(&tx_thread_sleeping, memory_order_acquire) == true) {
@@ -68,7 +68,7 @@ bool add_transaction(Client *client, const uint64_t command_idx, commanddata_t *
       return false;
     }
 
-    prepare_transaction(&multiple->transactions[multiple->transaction_count - 1], client, command_idx, data);
+    prepare_transaction(&multiple->transactions[multiple->transaction_count - 1], client, command, data);
   }
 
   return true;

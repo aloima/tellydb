@@ -52,7 +52,7 @@ uint32_t get_transaction_count();
 
 TransactionBlock *enqueue_to_transaction_queue(TransactionBlock **block);
 
-bool add_transaction(Client *client, const uint64_t command_idx, commanddata_t *data);
+bool add_transaction(Client *client, const UsedCommand *command, commanddata_t *data);
 void remove_transaction_block(TransactionBlock *block);
 
 void free_transaction_blocks();

@@ -3,12 +3,46 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdatomic.h>
+
+#include <strings.h>
 
 static inline void unknown_command(Client *client, string_t *name) {
   char buf[COMMAND_NAME_MAX_LENGTH + 22];
   const size_t nbytes = sprintf(buf, "-Unknown command '%s'\r\n", name->value);
 
   _write(client, buf, nbytes);
+}
+
+static inline void get_used_command(const commanddata_t *data, UsedCommand *command) {
+  const struct CommandIndex *command_index = get_command_index(data->name->value, data->name->len);
+  if (!command_index) {
+    atomic_store_explicit(&command->idx, UINT64_MAX, memory_order_relaxed);
+    atomic_store_explicit(&command->data, NULL, memory_order_relaxed);
+    atomic_store_explicit(&command->subcommand, NULL, memory_order_relaxed);
+
+    return;
+  }
+
+  struct Command *command_data = &server->commands[command_index->idx];
+  struct Subcommand *subcommand = NULL;
+
+  if (data->args.count != 0) {
+    struct Subcommand *subcommands = command_data->subcommands;
+    const uint32_t subcommand_count = command_data->subcommand_count;
+    const char *value = data->args.data[0].value;
+
+    for (uint32_t i = 0; i < subcommand_count; ++i) {
+      if (strcasecmp(subcommands[i].name, value) == 0) {
+        subcommand = &subcommands[i];
+        break;
+      }
+    }
+  }
+
+  atomic_store_explicit(&command->idx, command_index->idx, memory_order_relaxed);
+  atomic_store_explicit(&command->data, command_data, memory_order_relaxed);
+  atomic_store_explicit(&command->subcommand, subcommand, memory_order_relaxed);
 }
 
 void read_command(IOThread *thread, Client *client) {
@@ -54,16 +88,15 @@ void read_command(IOThread *thread, Client *client) {
       continue;
     }
 
-    const uint64_t command_idx = command_index->idx;
-    // client->command = &commands[command_idx];
+    get_used_command(&data, client->command);
 
-    if (!add_transaction(client, command_idx, &data)) {
+    if (!add_transaction(client, client->command, &data)) {
       WRITE_ERROR_MESSAGE(client, "Transaction cannot be enqueued because of server settings");
       write_log(LOG_WARN, "Transaction count reached their limit, so next transactions cannot be added.");
       return;
     }
 
-    if (client->waiting_block && !IS_RELATED_TO_WAITING_TX(server->commands, command_idx)) {
+    if (client->waiting_block && !IS_RELATED_TO_WAITING_TX(server->commands, client->command->idx)) {
       WRITE_OK_MESSAGE(client, "QUEUED");
       continue;
     }

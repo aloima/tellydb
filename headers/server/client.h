@@ -28,13 +28,19 @@ enum ClientState : uint8_t {
 };
 
 typedef struct {
+  _Atomic(struct Command *) data;
+  _Atomic(struct Subcommand *) subcommand;
+  _Atomic(uint64_t) idx;
+} UsedCommand;
+
+typedef struct {
   alignas(64) _Atomic enum ClientState state;
   int id, connfd;
   SSL *ssl;
 
   time_t connected_at;
   struct Database *database;
-  struct Command *command;
+  UsedCommand *command;
   char *lib_name, *lib_ver;
 
   Password *password;

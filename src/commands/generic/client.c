@@ -4,7 +4,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdatomic.h>
 #include <inttypes.h>
+
+#include <alloca.h>
 
 static inline string_t subcommand_id(Client *client, char *buffer) {
   const size_t nbytes = create_resp_integer(buffer, client->id);
@@ -99,7 +102,20 @@ static inline string_t subcommand_info(struct CommandEntry *entry) {
   char connected_at[21];
   generate_date_string(connected_at, client->connected_at);
 
-  const char *latest_command = (client->command ? client->command->name : "None");
+  const struct Command *command = atomic_load_explicit(&client->command->data, memory_order_relaxed);
+  char *command_name;
+
+  if (command != NULL) {
+    const struct Subcommand *subcommand = atomic_load_explicit(&client->command->subcommand, memory_order_relaxed);
+
+    if (subcommand != NULL) {
+      command_name = alloca(strlen(command->name) + strlen(subcommand->name) + 2);
+      sprintf(command_name, "%s %s", command->name, subcommand->name);
+    } else {
+      command_name = alloca(strlen(command->name) + 1);
+      strcpy(command_name, command->name);
+    }
+  }
 
   char res[512];
   const size_t res_len = sprintf(res, (
@@ -111,7 +127,7 @@ static inline string_t subcommand_info(struct CommandEntry *entry) {
     "Library version: %s\r\n"
     "Protocol: %s\r\n"
     "Permissions: %.*s\r\n"
-  ), client->id, client->connfd, connected_at, latest_command, lib_name, lib_ver, protocol, permissions_len, permissions);
+  ), client->id, client->connfd, connected_at, command_name, lib_name, lib_ver, protocol, permissions_len, permissions);
 
   const size_t nbytes = create_resp_string(entry->client->write_buf, CREATE_STRING(res, res_len));
   return CREATE_STRING(entry->client->write_buf, nbytes);
