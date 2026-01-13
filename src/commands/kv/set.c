@@ -7,16 +7,20 @@
 
 #include <gmp.h>
 
-static void take_as_string(void **value, const string_t data) {
+static inline int take_as_string(void **value, const string_t data) {
   string_t *string = (*value = malloc(sizeof(string_t)));
-  if (string == NULL) return;
+  if (string == NULL) return -1;
+
   string->len = data.len;
   string->value = malloc(string->len);
-  if (string->value) {
+
+  if (string->value == NULL) {
     free(string);
-    return;
+    return -1;
   }
+
   memcpy(string->value, data.value, string->len);
+  return 0;
 }
 
 static string_t run(struct CommandEntry *entry) {
@@ -121,6 +125,7 @@ static string_t run(struct CommandEntry *entry) {
       case TELLY_INT: {
         value = malloc(sizeof(mpz_t));
         if (value == NULL) return RESP_ERROR_MESSAGE("Out of memory");
+
         mpz_init_set_str(*((mpz_t *) value), value_in, 10);
         break;
       }
@@ -128,6 +133,7 @@ static string_t run(struct CommandEntry *entry) {
       case TELLY_DOUBLE: {
         value = malloc(sizeof(mpf_t));
         if (value == NULL) return RESP_ERROR_MESSAGE("Out of memory");
+
         mpf_init2(*((mpf_t *) value), FLOAT_PRECISION);
         mpf_set_str(*((mpf_t *) value), value_in, 10);
         break;
@@ -150,17 +156,16 @@ static string_t run(struct CommandEntry *entry) {
     }
 
     switch (type) {
-      case TELLY_BOOL: {
+      case TELLY_BOOL:
         value = malloc(sizeof(bool));
         if (value == NULL) return RESP_ERROR_MESSAGE("Out of memory");
+
         *((bool *) value) = is_true;
         break;
-      }
 
-      case TELLY_STR: {
+      case TELLY_STR:
         take_as_string(&value, entry->args->data[1]);
         break;
-      }
 
       default:
         break;
@@ -174,15 +179,13 @@ static string_t run(struct CommandEntry *entry) {
     }
 
     switch (type) {
-      case TELLY_NULL: {
+      case TELLY_NULL:
         value = NULL;
         break;
-      }
 
-      case TELLY_STR: {
+      case TELLY_STR:
         take_as_string(&value, entry->args->data[1]);
         break;
-      }
 
       default:
         break;
@@ -215,7 +218,7 @@ static string_t run(struct CommandEntry *entry) {
       return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_READ");
     }
   } else {
-    const bool success = set_data(entry->database, res, key, value, type);
+    const bool success = (set_data(entry->database, res, key, value, type) != NULL);
     PASS_NO_CLIENT(entry->client);
 
     if (success) {
