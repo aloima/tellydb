@@ -61,6 +61,7 @@ void free_kdf() {
   if (ctx) EVP_KDF_CTX_free(ctx);
   if (prov) OSSL_PROVIDER_unload(prov);
   if (libctx) OSSL_LIB_CTX_free(libctx);
+  OSSL_LIB_CTX_free(NULL); // free's default libraries
 }
 
 static bool password_derive(char *value, const size_t value_len, unsigned char *out) {

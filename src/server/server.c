@@ -107,6 +107,7 @@ static inline void cleanup() {
   free_kdf();
   free_passwords();
   free_databases();
+  OPENSSL_cleanup();
 
   write_log(LOG_INFO, "Free'd all memory blocks and exiting the process...");
   save_and_close_logs();
