@@ -823,11 +823,12 @@ RENAME name user_name
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
 **Permissions**: (`P_READ` if used `GET` argument) and `P_WRITE`  
-**Returns**: `OK` or a value or `ERROR`  
+**Returns**: `OK` or a value or an error message  
 **Behavior**:
 * If the key is exist, new value will be overwritten.
 * If value type is not specified using `AS type` argument, type will be determined by value itself. For example, `boolean` type for `true` value.
 * If value type is specified using `AS type` and value does not match the type, throws an error.
+* If a memory allocation is failed, throws an error.
 
 **Arguments**:
 - **NX**: Only set if the key does not exist.

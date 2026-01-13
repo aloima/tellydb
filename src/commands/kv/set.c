@@ -164,7 +164,11 @@ static string_t run(struct CommandEntry *entry) {
         break;
 
       case TELLY_STR:
-        take_as_string(&value, entry->args->data[1]);
+        if (take_as_string(&value, entry->args->data[1]) == -1) {
+          PASS_NO_CLIENT(entry->client);
+          return RESP_ERROR_MESSAGE("Out of memory");
+        }
+
         break;
 
       default:
@@ -184,7 +188,11 @@ static string_t run(struct CommandEntry *entry) {
         break;
 
       case TELLY_STR:
-        take_as_string(&value, entry->args->data[1]);
+        if (take_as_string(&value, entry->args->data[1]) == -1) {
+          PASS_NO_CLIENT(entry->client);
+          return RESP_ERROR_MESSAGE("Out of memory");
+        }
+
         break;
 
       default:
@@ -198,12 +206,20 @@ static string_t run(struct CommandEntry *entry) {
       return RESP_ERROR_MESSAGE("The type must be string for this value");
     }
 
-    take_as_string(&value, entry->args->data[1]);
+    if (take_as_string(&value, entry->args->data[1]) == -1) {
+      PASS_NO_CLIENT(entry->client);
+      return RESP_ERROR_MESSAGE("Out of memory");
+    }
   }
 
   if (get) {
     if (entry->password->permissions & P_READ) {
-      set_data(entry->database, res, key, value, type);
+      const bool success = (set_data(entry->database, res, key, value, type) != NULL);
+
+      if (!success) {
+        PASS_NO_CLIENT(entry->client);
+        return RESP_ERROR_MESSAGE("Out of memory");
+      }
 
       if (res) {
         if (entry->client) {
@@ -224,7 +240,7 @@ static string_t run(struct CommandEntry *entry) {
     if (success) {
       return RESP_OK();
     } else {
-      return RESP_ERROR();
+      return RESP_ERROR_MESSAGE("Out of memory");
     }
   }
 }
