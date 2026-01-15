@@ -33,7 +33,7 @@ static inline void prepare_transaction(Transaction *transaction, Client *client,
 }
 
 bool add_transaction(Client *client, const UsedCommand *command, commanddata_t *data) {
-  if (client->waiting_block == NULL || IS_RELATED_TO_WAITING_TX(server->commands, command->idx)) {
+  if (client->waiting_block == NULL || server->commands[command->idx].flags.bits.waiting_tx) {
     TransactionBlock *block = malloc(sizeof(TransactionBlock));
     if (block == NULL) return false;
 

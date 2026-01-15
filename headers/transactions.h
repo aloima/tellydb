@@ -13,8 +13,6 @@
 
 #define MAX_RESPONSE_SIZE 262144
 
-#define IS_RELATED_TO_WAITING_TX(commands, command_idx) ((commands)[command_idx].flags & CMD_FLAG_WAITING_TX)
-
 enum TransactionBlockType : uint8_t {
   TX_UNINITIALIZED,
   TX_DIRECT,

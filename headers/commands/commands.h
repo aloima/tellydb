@@ -9,9 +9,9 @@
 #include <stddef.h>
 
 enum CommandFlags {
-  CMD_FLAG_NO_FLAG,
-  CMD_FLAG_DATABASE, // affects on databases, writing/deleting/updating/selecting database, not includes file operations nor getting
-  CMD_FLAG_WAITING_TX
+  CMD_FLAG_NO_FLAG    = 0b00,
+  CMD_FLAG_DATABASE   = 0b01, // affecting on databases, not including file operations nor getting data
+  CMD_FLAG_WAITING_TX = 0b10
 };
 
 struct CommandIndex {
@@ -41,7 +41,16 @@ struct Command {
   char *since;
   char *complexity;
   uint64_t permissions;
-  uint8_t flags;
+
+  union {
+    struct {
+      uint8_t database : 1;
+      uint8_t waiting_tx : 1;
+    } bits;
+
+    uint8_t value;
+  } flags;
+
   string_t (*run)(struct CommandEntry *entry);
   struct Subcommand *subcommands;
   uint32_t subcommand_count;

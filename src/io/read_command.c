@@ -88,6 +88,7 @@ void read_command(IOThread *thread, Client *client) {
       continue;
     }
 
+    UsedCommand *command = client->command;
     get_used_command(&data, client->command);
 
     if (!add_transaction(client, client->command, &data)) {
@@ -96,7 +97,7 @@ void read_command(IOThread *thread, Client *client) {
       return;
     }
 
-    if (client->waiting_block && !IS_RELATED_TO_WAITING_TX(server->commands, client->command->idx)) {
+    if (client->waiting_block && !server->commands[command->idx].flags.bits.waiting_tx) {
       WRITE_OK_MESSAGE(client, "QUEUED");
       continue;
     }
