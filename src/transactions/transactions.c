@@ -152,7 +152,8 @@ void execute_transaction_block(TransactionBlock *block) {
       size_t at = get_digit_count(result_count) + 3;
       length += at;
 
-      sprintf(client->write_buf, "*%" PRIu64 "\r\n", result_count);
+      if (client != NULL && client->write_buf != NULL)
+        sprintf(client->write_buf, "*%" PRIu64 "\r\n", result_count);
 
       for (uint64_t i = 0; i < result_count; ++i) {
         string_t result = results[i];
