@@ -10,11 +10,18 @@ static Config default_conf = {
   .port = 6379,
   .max_clients = 128,
   .max_transaction_blocks = 262144,
+
   .allowed_log_levels = LOG_INFO | LOG_ERR | LOG_WARN | LOG_DBG,
   .max_log_lines = 128,
-  .data_file = ".tellydb",
   .log_file = ".tellylog",
+
+  .data_file = ".tellydb",
   .database_name = "telly",
+
+  .autosave = {
+    .count = 100000,
+    .seconds = 60
+  },
 
   .tls = false,
   .cert = {0},
@@ -81,6 +88,15 @@ static inline bool set_int(void *value, const char *buf) {
   return (*end == '\0');
 }
 
+static inline bool set_autosave(void *value, const char *buf) {
+  typeof(default_conf.autosave) *data = value;
+  char *end;
+  data->seconds = strtoll(buf, &end, 10);
+  data->count   = strtoll(end, &end, 10);
+
+  return (*end == '\0');
+}
+
 static inline bool set_str(void *value, const char *buf) {
   strcpy(value, buf);
   return true;
@@ -138,6 +154,7 @@ static inline bool set_allowed_log_levels(void *value, const char *buf) {
     {"max_log_lines", &conf.max_log_lines, set_int},
     {"log_file", &conf.log_file, set_str},
 
+    {"save", &conf.autosave, set_autosave},
     {"data_file", &conf.data_file, set_str},
     {"database_name", &conf.database_name, set_str},
 
@@ -234,11 +251,16 @@ size_t get_config_string(char *buf, Config *conf) {
     "# MAX_LOG_LINES * (FILE BLOCK SIZE [512, 4096 or a power of 2] + 1) bytes will be allocated, so be careful\n"
     "max_log_lines = %" PRIi32 "\n\n"
 
-    "# Specifies database file where data will be saved\n"
-    "data_file = %s\n\n"
-
     "# Specifies log file where logs will be saved\n"
     "log_file = %s\n\n"
+
+    "# If K keys are changed on S seconds, saves database\n"
+    "# save = S K\n"
+    "# If seconds is -1, this feature will be deactivated.\n"
+    "save = %" PRIu32 " %" PRIu32 "\n\n"
+
+    "# Specifies database file where data will be saved\n"
+    "data_file = %s\n\n"
 
     "# Specifies default database name, it will be created on first startup of server and deletion of all databases\n"
     "# On a client connection to the server, the client will be paired with this database\n"
@@ -255,8 +277,10 @@ size_t get_config_string(char *buf, Config *conf) {
     "tls = %s\n"
     "cert = %s\n"
     "private_key = %s\n"
-  ), conf->port, conf->max_clients, conf->max_transaction_blocks, allowed_log_levels, conf->max_log_lines, conf->data_file,
-     conf->log_file, conf->database_name, conf->tls ? "true" : "false", conf->cert, conf->private_key
+  ), conf->port, conf->max_clients, conf->max_transaction_blocks,
+     allowed_log_levels, conf->max_log_lines, conf->log_file,
+     conf->autosave.seconds, conf->autosave.count, conf->data_file, conf->database_name,
+     conf->tls ? "true" : "false", conf->cert, conf->private_key
   );
 }
 

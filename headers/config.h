@@ -8,11 +8,18 @@ typedef struct {
   uint16_t port;
   uint16_t max_clients;
   uint32_t max_transaction_blocks;
+
   uint8_t allowed_log_levels;
   int32_t max_log_lines;
-  char data_file[49];
   char log_file[49];
+
+  char data_file[49];
   char database_name[65];
+
+  struct {
+    uint32_t seconds;
+    uint32_t count;
+  } autosave;
 
   bool tls;
   char cert[49];
