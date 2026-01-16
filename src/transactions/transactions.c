@@ -127,11 +127,13 @@ void execute_transaction_block(TransactionBlock *block) {
   switch (block->type) {
     case TX_DIRECT: {
       const string_t response = execute_transaction(client, password, block->data.transaction);
-      if (response.len != 0) add_io_request(IOOP_WRITE, client, response);
+      if (response.len != 0 && client)
+        add_io_request(IOOP_WRITE, client, response);
       break;
     }
 
     case TX_MULTIPLE: {
+      if (!client) break;
       MultipleTransactions multiple = block->data.multiple;
       string_t results[multiple.transaction_count];
       uint64_t result_count = 0;
