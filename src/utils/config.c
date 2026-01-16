@@ -41,7 +41,8 @@ static constexpr LogLevelField log_levels_map[4] = {
 
 static inline void pass_line(FILE *file) {
   int c;
-  while (c != EOF && c != '\n') c = fgetc(file);
+  while ((c = fgetc(file)) != EOF && c != '\n')
+    ;
 }
 
 static inline void read_value(FILE *file, char *buf) {
@@ -265,6 +266,10 @@ Config *get_default_config() {
 
 Config *get_config(const char *filename) {
   Config *conf = malloc(sizeof(Config));
+  if (!conf) {
+    write_log(LOG_ERR, "Allocation failed for get_config");
+    return NULL;
+  }
 
   if (filename == NULL) {
     FILE *file = fopen(".tellyconf", "r");
@@ -288,6 +293,7 @@ Config *get_config(const char *filename) {
 
       return conf;
     } else {
+      free(conf);
       return get_config(NULL);
     }
   }

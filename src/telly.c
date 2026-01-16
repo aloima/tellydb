@@ -44,6 +44,10 @@ int main(int argc, char *argv[]) {
         return EXIT_SUCCESS;
       } else if (streq(arg, "create-config")) {
         FILE *file = fopen(".tellyconf", "w");
+        if (!file) {
+          fprintf(stderr, "Error: Cannot create .tellyconf file\n");
+          return EXIT_FAILURE;
+        }
         Config *conf = get_default_config();
         char buf[4096];
 
