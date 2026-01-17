@@ -6,6 +6,7 @@
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <errno.h> // IWYU pragma: export
+#include <time.h>
 
 #include <semaphore.h>
 #include <pthread.h>
@@ -36,6 +37,7 @@ static inline bool initialize_thread_variables() {
   sem_init(&kill_sem, 0, 0);
   atomic_init(&kill_pending, false);
   atomic_init(&tx_thread_sleeping, true);
+  tx_last_saved_at = time(NULL);
 
   return true;
 }

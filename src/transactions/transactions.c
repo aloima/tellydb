@@ -10,6 +10,8 @@
 
 static uint64_t processed_transaction_count = 0;
 
+static uint32_t database_operations = 0;
+
 uint32_t get_transaction_count() {
   return estimate_tqueue_size(tx_queue);
 }
@@ -120,13 +122,45 @@ static inline string_t execute_transaction(Client *client, struct Password *pass
   return command->run(&entry);
 }
 
+static inline void check_autosave(struct Command *command) {
+  if (command->flags.bits.database) {
+    const time_t current_time = time(NULL);
+    database_operations += 1;
+
+    const uint32_t count = server->conf->autosave.count;
+    const uint32_t seconds = server->conf->autosave.seconds;
+
+    if (
+      (database_operations >= count) &&
+      (current_time < (tx_last_saved_at + seconds))
+    ) {
+      database_operations = 0;
+      tx_last_saved_at = current_time;
+
+      uint32_t server_age;
+      time_t start_at;
+      get_server_time(&start_at, &server_age);
+      server_age += difftime(current_time, start_at);
+      save_data(server_age);
+
+      write_log(LOG_INFO, "More than %" PRIu32 " keys are changed in %" PRIu32 " seconds, auto-saving...", count, seconds);
+    } else if (current_time >= (tx_last_saved_at + seconds)) {
+      database_operations = 1;
+      tx_last_saved_at = current_time;
+    }
+  }
+}
+
 void execute_transaction_block(TransactionBlock *block) {
   Client *client = ((block->client->id != -1) ? block->client : NULL);
   struct Password *password = block->password;
 
   switch (block->type) {
     case TX_DIRECT: {
-      const string_t response = execute_transaction(client, password, block->data.transaction);
+      struct Transaction *transaction = block->data.transaction;
+      const string_t response = execute_transaction(client, password, transaction);
+      check_autosave(transaction->command);
+
       if (response.len != 0) add_io_request(IOOP_WRITE, client, response);
       break;
     }
@@ -138,7 +172,9 @@ void execute_transaction_block(TransactionBlock *block) {
       uint64_t length = 0;
 
       for (uint32_t i = 0; i < multiple.transaction_count; ++i) {
-        const string_t result = execute_transaction(client, password, &multiple.transactions[i]);
+        struct Transaction *transaction = &multiple.transactions[i];
+        const string_t result = execute_transaction(client, password, transaction);
+        check_autosave(transaction->command);
         if (result.len == 0) continue;
 
         string_t *area = &results[result_count++];
