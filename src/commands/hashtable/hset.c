@@ -42,14 +42,19 @@ static string_t run(struct CommandEntry *entry) {
     if (is_integer || is_double) {
       if (is_integer) {
         mpz_t *value = malloc(sizeof(mpz_t));
-        if (value == NULL) return RESP_ERROR_MESSAGE("Out of memory");
+        if (value == NULL) {
+          PASS_NO_CLIENT(entry->client);
+          return RESP_ERROR_MESSAGE("Out of memory");
+        }
 
         mpz_init_set_str(*value, input.value, 10);
-
         set_field_of_hashtable(table, name, value, TELLY_INT);
       } else if (is_double) {
         mpf_t *value = malloc(sizeof(mpf_t));
-        if (value == NULL) return RESP_ERROR_MESSAGE("Out of memory");
+        if (value == NULL) {
+          PASS_NO_CLIENT(entry->client);
+          return RESP_ERROR_MESSAGE("Out of memory");
+        }
 
         mpf_init2(*value, FLOAT_PRECISION);
         mpf_set_str(*value, input.value, 10);
@@ -58,19 +63,29 @@ static string_t run(struct CommandEntry *entry) {
       }
     } else if (is_true || streq(input.value, "false")) {
       bool *value = malloc(sizeof(bool));
-      if (value == NULL) return RESP_ERROR_MESSAGE("Out of memory");
-      *value = is_true;
+      if (value == NULL) {
+        PASS_NO_CLIENT(entry->client);
+        return RESP_ERROR_MESSAGE("Out of memory");
+      }
 
+      *value = is_true;
       set_field_of_hashtable(table, name, value, TELLY_BOOL);
     } else if (streq(input.value, "null")) {
       set_field_of_hashtable(table, name, NULL, TELLY_NULL);
     } else {
       string_t *value = malloc(sizeof(string_t));
-      if (value == NULL) return RESP_ERROR_MESSAGE("Out of memory");
+      if (value == NULL) {
+        PASS_NO_CLIENT(entry->client);
+        return RESP_ERROR_MESSAGE("Out of memory");
+      }
 
       value->len = input.len;
       value->value = malloc(value->len);
-      if (value->value == NULL) return RESP_ERROR_MESSAGE("Out of memory");
+      if (value->value == NULL) {
+        free(value);
+        PASS_NO_CLIENT(entry->client);
+        return RESP_ERROR_MESSAGE("Out of memory");
+      }
 
       memcpy(value->value, input.value, value->len);
       set_field_of_hashtable(table, name, value, TELLY_STR);
