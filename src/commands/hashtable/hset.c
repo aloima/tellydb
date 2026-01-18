@@ -67,11 +67,12 @@ static string_t run(struct CommandEntry *entry) {
     } else {
       string_t *value = malloc(sizeof(string_t));
       if (value == NULL) return RESP_ERROR_MESSAGE("Out of memory");
+
       value->len = input.len;
       value->value = malloc(value->len);
-      if (value->value = NULL) return RESP_ERROR_MESSAGE("Out of memory");
-      memcpy(value->value, input.value, value->len);
+      if (value->value == NULL) return RESP_ERROR_MESSAGE("Out of memory");
 
+      memcpy(value->value, input.value, value->len);
       set_field_of_hashtable(table, name, value, TELLY_STR);
     }
   }
