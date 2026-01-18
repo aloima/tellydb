@@ -1,10 +1,17 @@
 name: Building source code
 
-on: push
+on:
+  release:
+    types: [published]
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
 
 jobs:
   build-linux:
     runs-on: ubuntu-latest
+    timeout-minutes: 8
 
     steps:
     - uses: actions/checkout@v4
@@ -33,6 +40,7 @@ jobs:
 
   build-macos:
     runs-on: macos-latest
+    timeout-minutes: 8
 
     steps:
     - uses: actions/checkout@v4
