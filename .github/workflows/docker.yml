@@ -1,6 +1,8 @@
 name: Building and pushing Docker image
 
 on:
+  release:
+    types: [published]
   push:
     branches: [ "master" ]
 
@@ -11,6 +13,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Docker Meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/tellydb
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
+            type=ref,event=tag
+            type=semver,pattern={{version}}
+
       - name: Install Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -20,11 +32,12 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push image
+      - name: Build and push images
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/tellydb:latest
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
