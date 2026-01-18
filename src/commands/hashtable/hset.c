@@ -26,7 +26,16 @@ static string_t run(struct CommandEntry *entry) {
     }
   } else {
     table = create_hashtable(16);
-    set_data(entry->database, kv, key, table, TELLY_HASHTABLE);
+    if (table == NULL) {
+      PASS_NO_CLIENT(entry->client);
+      return RESP_ERROR_MESSAGE("Out of memory");
+    }
+
+    if (set_data(entry->database, kv, key, table, TELLY_HASHTABLE) == NULL) {
+      free(table);
+      PASS_NO_CLIENT(entry->client);
+      return RESP_ERROR_MESSAGE("Out of memory");
+    }
   }
 
   const uint32_t fv_count = (entry->args->count - 1) / 2;
@@ -48,7 +57,12 @@ static string_t run(struct CommandEntry *entry) {
         }
 
         mpz_init_set_str(*value, input.value, 10);
-        set_field_of_hashtable(table, name, value, TELLY_INT);
+
+        if (!set_field_of_hashtable(table, name, value, TELLY_INT)) {
+          free(value);
+          PASS_NO_CLIENT(entry->client);
+          return RESP_ERROR_MESSAGE("Out of memory");
+        }
       } else if (is_double) {
         mpf_t *value = malloc(sizeof(mpf_t));
         if (value == NULL) {
@@ -59,7 +73,11 @@ static string_t run(struct CommandEntry *entry) {
         mpf_init2(*value, FLOAT_PRECISION);
         mpf_set_str(*value, input.value, 10);
 
-        set_field_of_hashtable(table, name, value, TELLY_DOUBLE);
+        if (!set_field_of_hashtable(table, name, value, TELLY_DOUBLE)) {
+          free(value);
+          PASS_NO_CLIENT(entry->client);
+          return RESP_ERROR_MESSAGE("Out of memory");
+        }
       }
     } else if (is_true || streq(input.value, "false")) {
       bool *value = malloc(sizeof(bool));
@@ -69,9 +87,17 @@ static string_t run(struct CommandEntry *entry) {
       }
 
       *value = is_true;
-      set_field_of_hashtable(table, name, value, TELLY_BOOL);
+
+      if (!set_field_of_hashtable(table, name, value, TELLY_BOOL)) {
+        free(value);
+        PASS_NO_CLIENT(entry->client);
+        return RESP_ERROR_MESSAGE("Out of memory");
+      }
     } else if (streq(input.value, "null")) {
-      set_field_of_hashtable(table, name, NULL, TELLY_NULL);
+      if (!set_field_of_hashtable(table, name, NULL, TELLY_NULL)) {     
+        PASS_NO_CLIENT(entry->client);
+        return RESP_ERROR_MESSAGE("Out of memory");
+      }
     } else {
       string_t *value = malloc(sizeof(string_t));
       if (value == NULL) {
@@ -88,7 +114,13 @@ static string_t run(struct CommandEntry *entry) {
       }
 
       memcpy(value->value, input.value, value->len);
-      set_field_of_hashtable(table, name, value, TELLY_STR);
+
+      if (!set_field_of_hashtable(table, name, value, TELLY_STR)) {
+        free(value->value);
+        free(value);
+        PASS_NO_CLIENT(entry->client);
+        return RESP_ERROR_MESSAGE("Out of memory");
+      }
     }
   }
 

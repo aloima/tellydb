@@ -3,31 +3,33 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 struct HashTable *create_hashtable(const uint32_t size) {
   if (size == 0) return NULL;
+
   struct HashTable *table = malloc(sizeof(struct HashTable));
   if (!table) return NULL;
+
   table->fields = calloc(size, sizeof(struct HashTableField *));
   if (!table->fields) {
     free(table);
     return NULL;
   }
+
   table->size.capacity = size;
   table->size.used = 0;
 
   return table;
 }
 
-void resize_hashtable(struct HashTable *table, const uint32_t size) {
+bool resize_hashtable(struct HashTable *table, const uint32_t size) {
   struct HashTableField **data = calloc(size, sizeof(struct HashTableField *));
+  if (!data) return false;
 
   for (uint32_t i = 0; i < table->size.capacity; ++i) {
     struct HashTableField *field = table->fields[i];
-
-    if (!field) {
-      continue;
-    }
+    if (!field) continue;
 
     uint32_t index = field->hash % size;
 
@@ -41,6 +43,8 @@ void resize_hashtable(struct HashTable *table, const uint32_t size) {
   free(table->fields);
   table->size.capacity = size;
   table->fields = data;
+
+  return true;
 }
 
 struct HashTableField *get_field_from_hashtable(struct HashTable *table, const string_t name) {

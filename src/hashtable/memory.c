@@ -9,11 +9,12 @@ static inline uint32_t add_to_index(const uint32_t index, const uint32_t capacit
   return ((index + 1) % capacity);
 }
 
-void set_field_of_hashtable(struct HashTable *table, const string_t name, void *value, const enum TellyTypes type) {
+bool set_field_of_hashtable(struct HashTable *table, const string_t name, void *value, const enum TellyTypes type) {
   const uint32_t capacity = table->size.capacity;
 
   if (table->size.used == capacity) {
-    resize_hashtable(table, (capacity * HASHTABLE_GROW_FACTOR));
+    const bool resized = resize_hashtable(table, (capacity * HASHTABLE_GROW_FACTOR));
+    if (!resized) return false;
   }
 
   const uint64_t hashed = hash(name.value, name.len);
@@ -33,23 +34,24 @@ void set_field_of_hashtable(struct HashTable *table, const string_t name, void *
   if (field == NULL) {
     table->size.used += 1;
     field = malloc(sizeof(struct HashTableField));
-    if (!field) return;
+    if (!field) return false;
 
+    field->name.len = name.len;
     field->name.value = malloc(name.len);
     if (!field->name.value) {
       free(field);
-      return;
+      return false;
     }
-    field->name.len = name.len;
 
     memcpy(field->name.value, name.value, name.len);
-
     table->fields[index] = field;
   }
 
   field->type = type;
   field->value = value;
   field->hash = hashed;
+
+  return true;
 }
 
 bool del_field_from_hashtable(struct HashTable *table, const string_t name) {

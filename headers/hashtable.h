@@ -3,6 +3,7 @@
 #include "utils/utils.h"
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define HASHTABLE_GROW_FACTOR 1.5
 #define HASHTABLE_SHRINK_FACTOR 0.75
@@ -25,11 +26,11 @@ struct HashTable {
 };
 
 struct HashTable *create_hashtable(const uint32_t size);
-void resize_hashtable(struct HashTable *table, const uint32_t size);
+bool resize_hashtable(struct HashTable *table, const uint32_t size);
 struct HashTableField *get_field_from_hashtable(struct HashTable *table, const string_t name);
 void free_hashtable(struct HashTable *table);
 
 void free_htfield(struct HashTableField *field);
 
-void set_field_of_hashtable(struct HashTable *table, const string_t name, void *value, const enum TellyTypes type);
+bool set_field_of_hashtable(struct HashTable *table, const string_t name, void *value, const enum TellyTypes type);
 bool del_field_from_hashtable(struct HashTable *table, const string_t name);
