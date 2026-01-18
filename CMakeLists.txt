@@ -3,6 +3,18 @@ project(tellydb C)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS yes)
 
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+  include(CheckIPOSupported)
+  check_ipo_supported(RESULT supported OUTPUT error)
+
+  if(supported)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+    message(STATUS "LTO/IPO optimization is enabled.")
+  else()
+    message(WARNING "LTO/IPO optimization is not supported: ${error}")
+  endif()
+endif()
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(CMAKE_OSX_ARCHITECTURES ${CMAKE_SYSTEM_PROCESSOR}
     CACHE STRING "Target architecture for macOS"
