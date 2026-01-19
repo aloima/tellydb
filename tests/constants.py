@@ -1,4 +1,4 @@
-out_of_bounds = "Specified ID is out of bounds for uint32_t"
+OUT_OF_BOUNDS = "Specified ID is out of bounds for uint32_t"
 
 
 def wrong_argument(command: str):

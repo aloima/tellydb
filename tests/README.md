@@ -1,10 +1,9 @@
 # Testing
-For testing, you need Python +3.10 and pip.
+For testing, you need Python +3.14 and pip.
 
 > [!CAUTION]
-> Used redis-py library is specialized for redis, so tests are mostly broken,
-> even tellydb is compatible with [Redis Serialization Protocol](https://redis.io/docs/latest/develop/reference/protocol-spec/).
-> Library will be changed as soon as possible.
+> Used [tellypy](https://github.com/aloima/tellypy) library, it is not yet published.  
+> So, use with manual downloading or via github link in requirements.txt
 
 Install required packages:
 ```
