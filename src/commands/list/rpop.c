@@ -26,7 +26,7 @@ static string_t run(struct CommandEntry *entry) {
   string_t response = EMPTY_STRING();
 
   if (entry->client) {
-    return write_value(list->end->value, list->end->type, entry->client->protover, entry->client->write_buf);
+    response = write_value(list->end->value, list->end->type, entry->client->protover, entry->client->write_buf);
   }
 
   if (list->size == 1) {
