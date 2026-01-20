@@ -1,7 +1,5 @@
 import unittest
-import redis
-from redis.exceptions import ResponseError
-import logging
+from tellypy import Client, Kind, Protocol
 
 import sys
 from pathlib import Path
@@ -16,60 +14,70 @@ except ImportError:
 
 
 class CommandCommand(unittest.TestCase):
-    client_2: redis.Redis
-    client_3: redis.Redis
+    client_2: Client
+    client_3: Client
 
     @classmethod
     def setUpClass(self):
-        self.client_2 = redis.Redis(host="localhost", port=6379, protocol=2)
-        self.client_3 = redis.Redis(host="localhost", port=6379, protocol=3)
+        self.client_2 = Client(host="localhost", port=6379)
+        self.client_2.connect()
+
+        self.client_3 = Client(host="localhost", port=6379)
+        self.client_3.connect(protocol=Protocol.RESP3)
 
     def test_list_subcommand(self):
         response = self.client_2.execute_command("COMMAND LIST")
-        self.assertIsInstance(response, list)
+        self.assertEqual(response.kind, Kind.ARRAY)
+        self.assertIsInstance(response.data, list)
 
-        for element in response:
-            self.assertIsInstance(element, bytes)
-            self.assertTrue(element.isalpha())
+        for element in response.data:
+            self.assertEqual(element.kind, Kind.SIMPLE_STRING)
+            self.assertIsInstance(element.data, str)
+            self.assertTrue(element.data.isalpha())
 
     def test_count_subcommand(self):
         response = self.client_2.execute_command("COMMAND COUNT")
-        self.assertIsInstance(response, int)
+        self.assertEqual(response.kind, Kind.INTEGER)
+        self.assertIsInstance(response.data, int)
 
     def test_missing_subcommand(self):
-        with self.assertRaises(ResponseError) as e:
-            self.client_2.execute_command("COMMAND")
-
-        self.assertEqual(e.exception.args[0], missing_subcommand("COMMAND"))
+        response = self.client_2.execute_command("COMMAND")
+        self.assertEqual(response.kind, Kind.SIMPLE_ERROR)
+        self.assertIsInstance(response.data, str)
+        self.assertEqual(response.data, missing_subcommand("COMMAND"))
 
     def test_invalid_subcommand(self):
-        with self.assertRaises(ResponseError) as e:
-            self.client_2.execute_command("COMMAND INVALID")
-
-        self.assertEqual(e.exception.args[0], invalid_subcommand("COMMAND"))
+        response = self.client_2.execute_command("COMMAND INVALID")
+        self.assertEqual(response.kind, Kind.SIMPLE_ERROR)
+        self.assertIsInstance(response.data, str)
+        self.assertEqual(response.data, invalid_subcommand("COMMAND"))
 
     def test_docs_subcommand(self):
         response = self.client_2.execute_command("COMMAND DOCS")
-        response_3 = self.client_3.execute_command("COMMAND DOCS")
-        logging.warning(response_3)
-        self.assertIsInstance(response, list)
-        self.assertEqual(len(response) % 2, 0)
+        self.assertEqual(response.kind, Kind.ARRAY)
+        self.assertIsInstance(response.data, list)
+        self.assertEqual(len(response.data) % 2, 0)
 
-        response = iter(response)
-        for name, data in zip(response, response):
-            self.assertIsInstance(name, bytes)
-            self.assertTrue(name.isalpha())
-            self.assertIsInstance(data, list)
+        response = iter(response.data)
+        for name, info in zip(response, response):
+            self.assertEqual(name.kind, Kind.BULK_STRING)
+            self.assertIsInstance(name.data, str)
+            self.assertTrue(name.data.isalpha())
 
-            keys = {b"summary", b"since", b"complexity"}
+            self.assertEqual(info.kind, Kind.ARRAY)
+            self.assertIsInstance(info.data, list)
+            self.assertGreater(len(info.data), 0)
 
-            data = iter(data)
-            for key, value in zip(data, data):
-                self.assertIsInstance(key, bytes)
-                self.assertTrue(key.isalpha())
+            keys = {"summary", "since", "complexity"}
 
-                self.assertIn(key, keys)
-                keys.remove(key)
+            info = iter(info.data)
+            for key, value in zip(info, info):
+                self.assertEqual(key.kind, Kind.BULK_STRING)
+                self.assertIsInstance(key.data, str)
+                self.assertTrue(key.data.isalpha())
 
-                self.assertIsInstance(value, bytes)
-                self.assertTrue(all(32 <= b <= 126 for b in value))
+                self.assertIn(key.data, keys)
+                keys.remove(key.data)
+
+                self.assertIsInstance(value.data, str)
+                self.assertTrue(all(32 <= ord(b) <= 126 for b in value.data))
