@@ -8,7 +8,13 @@
 string_t write_value(void *value, const enum TellyTypes type, const enum ProtocolVersion protover, char *buffer) {
   switch (type) {
     case TELLY_NULL:
-      return RESP_OK_MESSAGE("null");
+      switch (protover) {
+        case RESP2:
+          return CREATE_STRING("$-1\r\n", 5);
+
+        case RESP3:
+          return CREATE_STRING("_\r\n", 3);
+      }
 
     case TELLY_INT: {
       mpz_t *number = value;
