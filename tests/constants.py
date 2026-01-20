@@ -9,5 +9,9 @@ def invalid_subcommand(command: str):
     return f"Invalid subcommand for '{command}' command"
 
 
+def invalid_type(command: str):
+    return f"Invalid type for '{command}' command"
+
+
 def missing_subcommand(command: str):
     return f"Missing subcommand for '{command}' command"
