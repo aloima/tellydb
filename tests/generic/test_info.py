@@ -12,6 +12,7 @@ class InfoCommand(unittest.TestCase):
         self.client = Client(host="localhost", port=6379)
         self.client.connect()
 
+    @pytest.mark.order(1)
     @pytest.mark.dependency(name="no_section")
     def test_no_section(self):
         response = self.client.execute_command("INFO")
@@ -26,6 +27,7 @@ class InfoCommand(unittest.TestCase):
             self.assertIsInstance(response.data, str)
             self.assertGreater(len(response.data), 0)
 
+    @pytest.mark.order(2)
     @pytest.mark.dependency(depends=["no_section"])
     def test_all_sections(self):
         response_all = self.client.execute_command(

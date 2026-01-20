@@ -26,6 +26,7 @@ class ClientCommand(unittest.TestCase):
         self.client.connect()
         self.other_client.connect()
 
+    @pytest.mark.order(1)
     @pytest.mark.dependency(name="id")
     def test_id_argument(self):
         response = self.client.execute_command("CLIENT ID")
@@ -42,6 +43,7 @@ class ClientCommand(unittest.TestCase):
             self.assertEqual(element.kind, Kind.SIMPLE_STRING)
             self.assertIsInstance(element.data, str)
 
+    @pytest.mark.order(2)
     @pytest.mark.dependency(depends=["id"])
     def test_info_argument(self):
         response = self.client.execute_command("CLIENT INFO")
@@ -83,6 +85,7 @@ class ClientCommand(unittest.TestCase):
         self.assertEqual(response.data, "The argument count must be 1 or 2.")
 
 # Requires permissions integration
+#    @pytest.mark.order(2)
 #    @pytest.mark.dependency(depends=["id"])
 #    def test_kill_argument(self):
 #        response = self.client.execute_command(
