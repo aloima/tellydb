@@ -81,3 +81,29 @@ class CommandCommand(unittest.TestCase):
 
                 self.assertIsInstance(value.data, str)
                 self.assertTrue(all(32 <= ord(b) <= 126 for b in value.data))
+
+        response = self.client_3.execute_command("COMMAND DOCS")
+        self.assertEqual(response.kind, Kind.MAP)
+        self.assertIsInstance(response.data, dict)
+
+        for name, info in response.data.items():
+            self.assertEqual(name.kind, Kind.BULK_STRING)
+            self.assertIsInstance(name.data, str)
+            self.assertTrue(name.data.isalpha())
+
+            self.assertEqual(info.kind, Kind.MAP)
+            self.assertIsInstance(info.data, dict)
+            self.assertGreater(len(info.data), 0)
+
+            keys = {"summary", "since", "complexity"}
+
+            for key, value in info.data.items():
+                self.assertEqual(key.kind, Kind.BULK_STRING)
+                self.assertIsInstance(key.data, str)
+                self.assertTrue(key.data.isalpha())
+
+                self.assertIn(key.data, keys)
+                keys.remove(key.data)
+
+                self.assertIsInstance(value.data, str)
+                self.assertTrue(all(32 <= ord(b) <= 126 for b in value.data))
