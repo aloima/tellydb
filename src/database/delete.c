@@ -12,7 +12,7 @@ bool delete_data(struct Database *database, const string_t key) {
   const uint64_t capacity = database->size.capacity;
   const uint64_t start_idx = (hash((char *) key.value, key.len) % capacity);
   uint64_t index = start_idx;
-  struct KVPair *kv;
+  struct KVPair *kv = NULL;
 
   while ((kv = database->data[index])) {
     if ((kv->hashed % capacity) != index) {
@@ -28,6 +28,7 @@ bool delete_data(struct Database *database, const string_t key) {
     }
   }
 
+  if (kv == NULL) return false;
   free_kv(kv);
   database->data[index] = NULL; // Needs it for uncollised indexes and filled next index
 
