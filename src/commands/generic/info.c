@@ -88,20 +88,14 @@ static string_t run(struct CommandEntry *entry) {
 
     for (uint32_t i = 0; i < n; ++i) {
       const char *name = names[i];
-
-      if (!get_section(section, server->conf, name)) {
-        return RESP_ERROR_MESSAGE("Invalid section name");
-      }
+      get_section(section, server->conf, name);
 
       strcat(buf, section);
       strcat(buf, "\r\n");
     }
 
     const char *name = names[n];
-
-    if (!get_section(section, server->conf, name)) {
-      return RESP_ERROR_MESSAGE("Invalid section name");
-    }
+    get_section(section, server->conf, name);
 
     strcat(buf, section);
   }
