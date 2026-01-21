@@ -19,21 +19,21 @@ static inline bool acquire_client_passive(Client *client) {
   _Atomic(enum ClientState) *state = &client->state;
 
   enum ClientState expected = CLIENT_STATE_ACTIVE;
-  int spin_count = 0;
 
   while (!ATOMIC_CAS_WEAK(state, &expected, CLIENT_STATE_PASSIVE, memory_order_acq_rel, memory_order_relaxed)) {
     if (expected == CLIENT_STATE_EMPTY) return false;
 
-    while (expected == CLIENT_STATE_PASSIVE) {
+    if (expected == CLIENT_STATE_PASSIVE) {
+      cpu_relax();
+      cpu_relax();
+      cpu_relax();
       cpu_relax();
 
-      if (++spin_count > 1000) {
-        sched_yield();
-        spin_count = 0;
-      }
+      sched_yield();
 
       expected = atomic_load_explicit(state, memory_order_relaxed);
       if (expected == CLIENT_STATE_EMPTY) return false;
+      continue;
     }
 
     expected = CLIENT_STATE_ACTIVE;
