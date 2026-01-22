@@ -35,3 +35,6 @@ void handle_events();
 void start_server(Config *config);
 
 string_t write_value(void *value, const enum TellyTypes type, const enum ProtocolVersion protover, char *buffer);
+
+#include "macros.h" // IWYU pragma: export
+#include "client.h" // IWYU pragma: export

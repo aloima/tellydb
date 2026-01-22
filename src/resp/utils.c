@@ -14,7 +14,7 @@ bool check_crlf(Client *client, char *buf, int32_t *at, int32_t *size) {
 }
 
 uint8_t create_resp_integer(char *buf, uint64_t value) {
-  *(buf) = RDT_INTEGER;
+  *(buf) = *RDT_INTEGER;
   const uint64_t nbytes = ltoa(value, buf + 1);
   *(buf + nbytes + 1) = '\r';
   *(buf + nbytes + 2) = '\n';
@@ -25,7 +25,7 @@ uint64_t create_resp_integer_mpz(const enum ProtocolVersion protover, char *buf,
   uint64_t nbytes = 1;
 
   if (mpz_fits_slong_p(value) != 0) {
-    *(buf) = RDT_INTEGER;
+    *(buf) = *RDT_INTEGER;
   } else {
     switch (protover) {
       case RESP2: {
@@ -41,7 +41,7 @@ uint64_t create_resp_integer_mpz(const enum ProtocolVersion protover, char *buf,
         char digits[4]; // the maximum number of digits can be 310 (including negative sign)
         const uint8_t digit_len = ltoa(length, digits);
 
-        *(buf) = RDT_BSTRING;
+        *(buf) = *RDT_BSTRING;
         memcpy(buf + 1, digits, digit_len);
         nbytes += digit_len;
 
@@ -59,7 +59,7 @@ uint64_t create_resp_integer_mpz(const enum ProtocolVersion protover, char *buf,
       }
 
       case RESP3:
-        *(buf) = RDT_BIGNUMBER;
+        *(buf) = *RDT_BIGNUMBER;
         break;
     }
   }
@@ -90,7 +90,7 @@ uint64_t create_resp_integer_mpf(const enum ProtocolVersion protover, char *buf,
   const uint64_t len = strlen(str);
 
   if (len == 0) {
-    *(buf) = RDT_INTEGER;
+    *(buf) = *RDT_INTEGER;
     *(buf + 1) = '0';
     *(buf + 2) = '\r';
     *(buf + 3) = '\n';
@@ -120,7 +120,7 @@ uint64_t create_resp_integer_mpf(const enum ProtocolVersion protover, char *buf,
           char digits[4]; // the maximum number of digits can be 310 (including negative sign)
           const uint8_t digit_len = ltoa(length, digits);
 
-          *(buf) = RDT_BSTRING;
+          *(buf) = *RDT_BSTRING;
           memcpy(buf + 1, digits, digit_len);
           nbytes += digit_len;
 
@@ -130,31 +130,31 @@ uint64_t create_resp_integer_mpf(const enum ProtocolVersion protover, char *buf,
         }
 
         case RESP3:
-          *(buf) = RDT_BIGNUMBER;
+          *(buf) = *RDT_BIGNUMBER;
           break;
       }
 
       memcpy(buf + nbytes, str, length);
       nbytes += length;
     } else {
-      *(buf) = RDT_INTEGER;
+      *(buf) = *RDT_INTEGER;
     }
   } else {
     switch (protover) {
       case RESP2:
         if (exp == 0) {
           nbytes = 2;
-          *(buf) = RDT_INTEGER;
+          *(buf) = *RDT_INTEGER;
           *(buf + 1) = '0';
         } else {
           nbytes = (((exp + 1) < nbytes) ? (exp + 1) : nbytes);
-          *(buf) = RDT_INTEGER;
+          *(buf) = *RDT_INTEGER;
         }
 
         break;
 
       case RESP3:
-        *(buf) = RDT_DOUBLE;
+        *(buf) = *RDT_DOUBLE;
         break;
     }
   }
@@ -167,7 +167,7 @@ uint64_t create_resp_integer_mpf(const enum ProtocolVersion protover, char *buf,
 }
 
 uint64_t create_resp_string(char *buf, string_t string) {
-  *(buf) = RDT_BSTRING;
+  *(buf) = *RDT_BSTRING;
   const uint64_t nbytes = ltoa(string.len, buf + 1);
   *(buf + nbytes + 1) = '\r';
   *(buf + nbytes + 2) = '\n';

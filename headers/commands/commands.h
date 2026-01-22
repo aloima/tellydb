@@ -2,7 +2,7 @@
 
 #include "../database/database.h"
 #include "../server/client.h"
-#include "../resp.h"
+#include "../resp/resp.h"
 #include "../auth.h"
 
 #include <stdint.h>

@@ -15,7 +15,7 @@ static inline bool get_resp_command_name(Arena *arena, Client *client, string_t 
 
   char *c;
   TAKE_BYTES(c, 1, false);
-  if (VERY_UNLIKELY(*c != RDT_BSTRING)) THROW_RESP_ERROR(client->id);
+  if (VERY_UNLIKELY(*c != *RDT_BSTRING)) THROW_RESP_ERROR(client->id);
 
   TAKE_BYTES(c, 1, false);
   if (VERY_UNLIKELY(!('0' <= *c && *c <= '9'))) THROW_RESP_ERROR(client->id);
@@ -47,7 +47,7 @@ static inline bool get_resp_command_name(Arena *arena, Client *client, string_t 
 static inline bool get_resp_command_argument(Arena *arena, Client *client, string_t *arg, char *buf, int32_t *at, int32_t *size) {
   char *c;
   TAKE_BYTES(c, 1, false);
-  if (VERY_UNLIKELY(*c != RDT_BSTRING)) THROW_RESP_ERROR(client->id);
+  if (VERY_UNLIKELY(*c != *RDT_BSTRING)) THROW_RESP_ERROR(client->id);
 
   TAKE_BYTES(c, 1, false);
   if (VERY_UNLIKELY(!('0' <= *c && *c <= '9'))) THROW_RESP_ERROR(client->id);

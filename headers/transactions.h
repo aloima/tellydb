@@ -3,7 +3,7 @@
 #include "commands/data.h"
 #include "database/database.h"
 #include "server/server.h"
-#include "resp.h"
+#include "resp/resp.h"
 #include "auth.h"
 
 #include <stdbool.h>

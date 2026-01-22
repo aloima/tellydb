@@ -141,7 +141,7 @@ static inline string_t subcommand_list(struct CommandEntry *entry) {
   Client *clients = server->clients;
   uint64_t at = 1;
 
-  entry->client->write_buf[0] = RDT_ARRAY;
+  entry->client->write_buf[0] = *RDT_ARRAY;
   at += ltoa(get_client_count(), entry->client->write_buf + at);
   entry->client->write_buf[at++] = '\r';
   entry->client->write_buf[at++] = '\n';
@@ -150,7 +150,7 @@ static inline string_t subcommand_list(struct CommandEntry *entry) {
 
   for (uint32_t i = 0; i < max_clients; ++i) {
     if (clients[i].id != -1) {
-      entry->client->write_buf[at++] = RDT_SSTRING;
+      entry->client->write_buf[at++] = *RDT_SSTRING;
       at += ltoa(clients[i].id, entry->client->write_buf + at);
       entry->client->write_buf[at++] = '\r';
       entry->client->write_buf[at++] = '\n';
