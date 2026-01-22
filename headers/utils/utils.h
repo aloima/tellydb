@@ -25,8 +25,9 @@ void memcpy_aligned(void *restrict dest, const void *restrict src, size_t n);
 void memset_aligned(void *s, int c, size_t n);
 int open_file(const char *file, int flags);
 
-#include "tqueue.h"  // IWYU pragma: export
-#include "integer.h" // IWYU pragma: export
-#include "string.h"  // IWYU pragma: export
-#include "arena.h"   // IWYU pragma: export
-#include "logging.h" // IWYU pragma: export
+#include "notifier.h" // IWYU pragma: export
+#include "tqueue.h"   // IWYU pragma: export
+#include "integer.h"  // IWYU pragma: export
+#include "string.h"   // IWYU pragma: export
+#include "arena.h"    // IWYU pragma: export
+#include "logging.h"  // IWYU pragma: export
