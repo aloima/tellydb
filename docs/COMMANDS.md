@@ -581,11 +581,11 @@ HKEYS user_profile
 **Description**: Returns field count information of the hash table.  
 **Since**: `0.1.3`  
 **Time complexity**: `O(1)`  
-**Permissions**: `P_READ`    
+**Permissions**: `P_READ`  
 **Returns**: An array or null reply  
-* First element is allocated field area count except fields from field->next.
-* Second element is filled field count using allocated field areas except fields from field->count.
-* Third element is all filled field count included fields from field->next.
+* First element is used field count.
+* Second element is usable field capacity.
+
 **Behavior**:
 * If the key is holding a value that is not a hash table, throws an error.
 * If the key is not holding a value, returns null reply.

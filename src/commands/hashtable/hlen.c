@@ -22,10 +22,10 @@ static string_t run(struct CommandEntry *entry) {
   const struct HashTable *table = kv->value;
 
   const size_t nbytes = sprintf(entry->client->write_buf, (
-    "*3\r\n"
-      "+Capacity: %u\r\n"
-      "+Used: %u\r\n"
-  ), table->size.capacity, table->size.used);
+    "*2\r\n"
+      ":%u\r\n"
+      ":%u\r\n"
+  ), table->size.used, table->size.capacity);
 
   return CREATE_STRING(entry->client->write_buf, nbytes);
 }
