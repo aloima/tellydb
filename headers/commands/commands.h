@@ -22,7 +22,7 @@ struct CommandIndex {
 const struct CommandIndex *get_command_index(const char *str, size_t len);
 
 struct CommandEntry {
-  struct Database *database;
+  Database *database;
   Client *client;
   Password *password;
   commandargs_t *args;

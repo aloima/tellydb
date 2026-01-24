@@ -23,7 +23,7 @@ enum TransactionBlockType : uint8_t {
 typedef struct Transaction {
   commandargs_t args;
   struct Command *command;
-  struct Database *database;
+  Database *database;
 } Transaction;
 
 typedef struct {

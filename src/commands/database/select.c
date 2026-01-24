@@ -10,22 +10,14 @@ static string_t run(struct CommandEntry *entry) {
     return WRONG_ARGUMENT_ERROR("SELECT");
   }
 
-  struct LinkedListNode *node = get_database_node();
-  const uint64_t target = hash(entry->args->data[0].value, entry->args->data[0].len);
+  const string_t name = entry->args->data[0];
 
-  while (node) {
-    struct Database *database = node->data;
+  Database *database = get_database(name);
 
-    if (database->id == target) {
-      entry->client->database = database;
-      return RESP_OK();
-    }
-
-    node = node->next;
+  if (database == NULL) {
+    database = create_database(name, DATABASE_INITIAL_SIZE);
+    if (database == NULL) return RESP_ERROR_MESSAGE("Memory error, cannot create new database");
   }
-
-  struct Database *database = create_database(entry->args->data[0], DATABASE_INITIAL_SIZE);
-  if (database == NULL) return RESP_ERROR_MESSAGE("Memory error, cannot create new database");
 
   entry->client->database = database;
   return RESP_OK();

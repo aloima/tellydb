@@ -297,7 +297,7 @@ static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uin
   return collected_bytes;
 }
 
-static size_t collect_database(struct Database **database, const int fd, char *block, const uint16_t block_size, uint16_t *at, uint64_t *count) {
+static size_t collect_database(Database **database, const int fd, char *block, const uint16_t block_size, uint16_t *at, uint64_t *count) {
   collect_bytes(fd, block, block_size, at, 8, count);
 
   string_t name;
@@ -338,7 +338,7 @@ size_t read_file(const int fd, const off_t file_size, char *block, const uint16_
 
     off_t collected_bytes = at;
     uint64_t data_count = 0;
-    struct Database *database;
+    Database *database;
 
     do {
       collected_bytes += collect_database(&database, fd, block, block_size, &at, &data_count);

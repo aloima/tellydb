@@ -399,7 +399,7 @@ int save_data(const uint32_t server_age) {
     struct LinkedListNode *node = get_database_node();
 
     while (node) {
-      struct Database *database = node->data;
+      Database *database = node->data;
       const uint64_t capacity = database->size.capacity;
       const uint64_t size = database->size.stored;
 
@@ -419,8 +419,7 @@ int save_data(const uint32_t server_age) {
       }
 
       char *data = malloc(data_size);
-      if (!data)
-        return -1;
+      if (!data) return -1;
 
       for (uint32_t i = 0; i < capacity; ++i) {
         struct KVPair *kv = database->data[i];

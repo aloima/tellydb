@@ -8,7 +8,7 @@ static inline uint64_t add_to_index(const uint64_t index, const uint64_t capacit
   return ((index + 1) % capacity);
 }
 
-static inline struct KVPair *search_kv(struct Database *database, const string_t search, const uint64_t capacity, uint64_t *at) {
+static inline struct KVPair *search_kv(Database *database, const string_t search, const uint64_t capacity, uint64_t *at) {
   const uint64_t start_idx = (*at = (hash(search.value, search.len) % capacity));
   struct KVPair *kv;
 
@@ -28,7 +28,7 @@ static inline struct KVPair *search_kv(struct Database *database, const string_t
   return kv;
 }
 
-static inline void place_kv(struct Database *database, struct KVPair *kv, const uint64_t capacity) {
+static inline void place_kv(Database *database, struct KVPair *kv, const uint64_t capacity) {
   uint64_t index = (kv->hashed % capacity);
 
   while (database->data[index]) {
@@ -47,7 +47,7 @@ static inline void change_kv(struct KVPair *kv, const string_t name) {
   kv->hashed = hash(name.value, name.len);
 }
 
-static inline void shift_others(struct Database *database, struct KVPair *kv, const uint64_t at, const uint64_t capacity) {
+static inline void shift_others(Database *database, struct KVPair *kv, const uint64_t at, const uint64_t capacity) {
   uint64_t prev = at;
   uint64_t next = add_to_index(prev, capacity);
 

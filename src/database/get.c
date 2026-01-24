@@ -3,7 +3,7 @@
 #include <stddef.h>
 #include <string.h>
 
-struct KVPair *get_data(struct Database *database, string_t key) {
+struct KVPair *get_data(Database *database, string_t key) {
   const uint64_t capacity = database->size.capacity;
   const uint64_t start_idx = (hash(key.value, key.len) % capacity);
   uint64_t index = start_idx;

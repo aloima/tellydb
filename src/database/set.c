@@ -10,7 +10,7 @@ static inline uint64_t probe(struct KVPair **data, uint64_t index, const uint64_
   return index;
 }
 
-static inline bool extend_database(struct Database *database, const uint64_t old_capacity) {
+static inline bool extend_database(Database *database, const uint64_t old_capacity) {
   struct KVPair **nd = calloc(old_capacity * 2, sizeof(struct KVPair *));
   if (!nd) return false;
 
@@ -31,7 +31,7 @@ static inline bool extend_database(struct Database *database, const uint64_t old
   return true;
 }
 
-struct KVPair *set_data(struct Database *database, struct KVPair *data, const string_t key, void *value, const enum TellyTypes type) {
+struct KVPair *set_data(Database *database, struct KVPair *data, const string_t key, void *value, const enum TellyTypes type) {
   if (data) {
     free_value(data->type, data->value);
     data->type = type;

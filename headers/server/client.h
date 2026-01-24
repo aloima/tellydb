@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../database/database.h"
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdatomic.h>
@@ -39,7 +41,7 @@ typedef struct {
   SSL *ssl;
 
   time_t connected_at;
-  struct Database *database;
+  Database *database;
   UsedCommand *command;
   char *lib_name, *lib_ver;
 

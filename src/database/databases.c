@@ -5,18 +5,17 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-static struct LinkedListNode *start = NULL;
-static struct LinkedListNode *end = NULL;
-static struct Database *main = NULL;
+static struct LinkedListNode *head = NULL;
+static Database *main = NULL;
 static uint32_t database_count = 0;
 
-struct Database *create_database(const string_t name, const uint64_t capacity) {
-  struct Database *database = NULL;
+Database *create_database(const string_t name, const uint64_t capacity) {
+  Database *database = NULL;
   struct LinkedListNode *node = NULL;
   char *name_str = NULL;
   struct KVPair **data = NULL;
 
-  database = malloc(sizeof(struct Database));;
+  database = malloc(sizeof(Database));;
   if (database == NULL) goto CLEANUP;
 
   node = malloc(sizeof(struct LinkedListNode));
@@ -31,13 +30,10 @@ struct Database *create_database(const string_t name, const uint64_t capacity) {
   database_count += 1;
 
   if (database_count != 1) {
-    end->next = node;
-    end = node;
     node->data = database;
     node->next = NULL;
   } else {
-    start = node;
-    end = node;
+    head = node;
     node->data = database;
     node->next = NULL;
   }
@@ -61,20 +57,20 @@ CLEANUP:
   return NULL;
 }
 
-void set_main_database(struct Database *database) {
+void set_main_database(Database *database) {
   main = database;
 }
 
-struct Database *get_main_database() {
+Database *get_main_database() {
   return main;
 }
 
-struct Database *get_database(const string_t name) {
+Database *get_database(const string_t name) {
   const uint64_t target = hash(name.value, name.len);
-  struct LinkedListNode *node = start;
+  struct LinkedListNode *node = head;
 
   while (node) {
-    struct Database *database = node->data;
+    Database *database = node->data;
 
     if (database->id == target) {
       return database;
@@ -87,22 +83,19 @@ struct Database *get_database(const string_t name) {
 }
 
 struct LinkedListNode *get_database_node() {
-  return start;
+  return head;
 }
 
 bool rename_database(const string_t old_name, const string_t new_name) {
   const uint64_t target = hash(old_name.value, old_name.len);
-  struct LinkedListNode *node = start;
+  struct LinkedListNode *node = head;
 
   while (node) {
-    struct Database *database = node->data;
+    Database *database = node->data;
 
     if (database->id == target) {
       char *name = malloc(new_name.len);
-
-      if (!name) {
-        return false;
-      }
+      if (!name) return false;
 
       database->id = hash(new_name.value, new_name.len);
       free(database->name.value);
@@ -119,7 +112,7 @@ bool rename_database(const string_t old_name, const string_t new_name) {
   return false;
 }
 
-static void free_database(struct Database *database) {
+static void free_database(Database *database) {
   for (uint64_t i = 0; i < database->size.capacity; ++i) {
     struct KVPair *kv = database->data[i];
 
@@ -134,11 +127,11 @@ static void free_database(struct Database *database) {
 }
 
 void free_databases() {
-  while (start) {
-    free_database(start->data);
+  while (head) {
+    free_database(head->data);
 
-    struct LinkedListNode *next = start->next;
-    free(start);
-    start = next;
+    struct LinkedListNode *next = head->next;
+    free(head);
+    head = next;
   }
 }
