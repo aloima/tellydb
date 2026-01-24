@@ -92,9 +92,6 @@ static inline void cleanup() {
   destroy_transaction_thread();
   usleep(15);
 
-  destroy_io_threads();
-  usleep(10);
-
   free_transaction_blocks();
   free_commands();
   free_clients();
@@ -236,7 +233,6 @@ void start_server(Config *config) {
   write_log(LOG_INFO, "Created transaction thread.");
 
   const uint32_t thread_count = max(sysconf(_SC_NPROCESSORS_ONLN) - 1, 1);
-  CLEANUP_RETURN_LOG_IF(create_io_threads(thread_count) == -1, "Cannot create I/O threads.");
   write_log(LOG_INFO, "Created I/O thread.");
 
   signal(SIGTERM, close_signal);
