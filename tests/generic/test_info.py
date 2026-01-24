@@ -1,9 +1,19 @@
-import unittest
 import pytest
 from tellypy import Client, Kind
 
+import sys
+from pathlib import Path
 
-class InfoCommand(unittest.TestCase):
+utils_path = Path(__file__).resolve().parent.parent
+sys.path.append(str(utils_path))
+
+try:
+    from utils import ExtendedTestCase
+except ImportError:
+    pass
+
+
+class InfoCommand(ExtendedTestCase):
     client: Client
     sections = ["server", "clients"]
 
@@ -30,9 +40,7 @@ class InfoCommand(unittest.TestCase):
     @pytest.mark.order(2)
     @pytest.mark.dependency(depends=["no_section"])
     def test_all_sections(self):
-        response_all = self.client.execute_command(
-            f"INFO {' '.join(self.sections)}"
-        )
+        response_all = self.client.execute_command(f"INFO {' '.join(self.sections)}")
 
         self.assertEqual(response_all.kind, Kind.BULK_STRING)
         self.assertIsInstance(response_all.data, str)
@@ -43,7 +51,4 @@ class InfoCommand(unittest.TestCase):
         # self.assertEqual(response_all.data, response.data)
 
     def test_invalid_section(self):
-        response = self.client.execute_command("INFO unknown")
-        self.assertEqual(response.kind, Kind.SIMPLE_ERROR)
-        self.assertIsInstance(response.data, str)
-        self.assertEqual(response.data, "Invalid section name")
+        self.assertSimpleErrorEqual("INFO unknown", "Invalid section name")

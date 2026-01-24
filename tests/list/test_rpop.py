@@ -1,19 +1,18 @@
-import unittest
-from tellypy import Client, Kind
+from tellypy import Client
 
 import sys
 from pathlib import Path
 
-constants_path = Path(__file__).resolve().parent.parent
-sys.path.append(str(constants_path))
+utils_path = Path(__file__).resolve().parent.parent
+sys.path.append(str(utils_path))
 
 try:
-    from constants import wrong_argument, invalid_type
+    from utils import wrong_argument, invalid_type, ExtendedTestCase
 except ImportError:
     pass
 
 
-class RPopCommand(unittest.TestCase):
+class RPopCommand(ExtendedTestCase):
     client: Client
 
     @classmethod
@@ -23,87 +22,46 @@ class RPopCommand(unittest.TestCase):
 
         self.client.execute_command("DEL list")
 
-    def test_wrong_arguments(self):
-        response = self.client.execute_command("RPOP")
-        self.assertEqual(response.kind, Kind.SIMPLE_ERROR)
-        self.assertIsInstance(response.data, str)
-        self.assertEqual(response.data, wrong_argument("RPOP"))
-
-        response = self.client.execute_command("RPOP list a b")
-        self.assertEqual(response.kind, Kind.SIMPLE_ERROR)
-        self.assertIsInstance(response.data, str)
-        self.assertEqual(response.data, wrong_argument("RPOP"))
+    def test_wrong_argument(self):
+        self.assertSimpleErrorEqual("RPOP", wrong_argument("RPOP"))
+        self.assertSimpleErrorEqual("RPOP list a b", wrong_argument("RPOP"))
 
     def test_unexisted_list(self):
-        response = self.client.execute_command("RPOP list")
-        self.assertEqual(response.kind, Kind.NULL)
-        self.assertIsInstance(response.data, type(None))
-        self.assertEqual(response.data, None)
+        self.assertNullEqual("RPOP list")
 
     def test_not_list(self):
         self.client.execute_command("SET list value")
 
-        response = self.client.execute_command("LPOP list")
-        self.assertEqual(response.kind, Kind.SIMPLE_ERROR)
-        self.assertIsInstance(response.data, str)
-        self.assertEqual(response.data, invalid_type("LPOP"))
+        self.assertSimpleErrorEqual("RPOP list", invalid_type("RPOP"))
 
     def test_ordered_list(self):
         # value_a value_b value_c value_d value_e
-        self.client.execute_command("RPUSH list value_a")
-        self.client.execute_command("RPUSH list value_b")
-        self.client.execute_command("RPUSH list value_c")
-        self.client.execute_command("RPUSH list value_d")
-        self.client.execute_command("RPUSH list value_e")
+        self.client.execute_command("RPUSH list value_a value_b value_c value_d value_e")
 
         for value in ["value_e", "value_d", "value_c", "value_b", "value_a"]:
-            response = self.client.execute_command("RPOP list")
-            self.assertEqual(response.kind, Kind.BULK_STRING)
-            self.assertIsInstance(response.data, str)
-            self.assertEqual(response.data, value)
+            self.assertBulkStringEqual("RPOP list", value)
 
-        response = self.client.execute_command("RPOP list")
-        self.assertEqual(response.kind, Kind.NULL)
-        self.assertIsInstance(response.data, type(None))
-        self.assertEqual(response.data, None)
+        self.assertNullEqual("RPOP list")
 
     def test_reverse_ordered_list(self):
         # value_e value_d value_c value_b value_a
-        self.client.execute_command("LPUSH list value_a")
-        self.client.execute_command("LPUSH list value_b")
-        self.client.execute_command("LPUSH list value_c")
-        self.client.execute_command("LPUSH list value_d")
-        self.client.execute_command("LPUSH list value_e")
+        self.client.execute_command("LPUSH list value_a value_b value_c value_d value_e")
 
         for value in ["value_a", "value_b", "value_c", "value_d", "value_e"]:
-            response = self.client.execute_command("RPOP list")
-            self.assertEqual(response.kind, Kind.BULK_STRING)
-            self.assertIsInstance(response.data, str)
-            self.assertEqual(response.data, value)
+            self.assertBulkStringEqual("RPOP list", value)
 
-        response = self.client.execute_command("RPOP list")
-        self.assertEqual(response.kind, Kind.NULL)
-        self.assertIsInstance(response.data, type(None))
-        self.assertEqual(response.data, None)
+        self.assertNullEqual("RPOP list")
 
     def test_unordered_list(self):
         # value_e value_b value_a value_c value_d
-        self.client.execute_command("LPUSH list value_a")
-        self.client.execute_command("LPUSH list value_b")
-        self.client.execute_command("RPUSH list value_c")
-        self.client.execute_command("RPUSH list value_d")
+        self.client.execute_command("LPUSH list value_a value_b")
+        self.client.execute_command("RPUSH list value_c value_d")
         self.client.execute_command("LPUSH list value_e")
 
         for value in ["value_d", "value_c", "value_a", "value_b", "value_e"]:
-            response = self.client.execute_command("RPOP list")
-            self.assertEqual(response.kind, Kind.BULK_STRING)
-            self.assertIsInstance(response.data, str)
-            self.assertEqual(response.data, value)
+            self.assertBulkStringEqual("RPOP list", value)
 
-        response = self.client.execute_command("RPOP list")
-        self.assertEqual(response.kind, Kind.NULL)
-        self.assertIsInstance(response.data, type(None))
-        self.assertEqual(response.data, None)
+        self.assertNullEqual("RPOP list")
 
     def tearDown(self):
         self.client.execute_command("DEL list")

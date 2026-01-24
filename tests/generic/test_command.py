@@ -4,11 +4,11 @@ from tellypy import Client, Kind, Protocol
 import sys
 from pathlib import Path
 
-constants_path = Path(__file__).resolve().parent.parent
-sys.path.append(str(constants_path))
+utils_path = Path(__file__).resolve().parent.parent
+sys.path.append(str(utils_path))
 
 try:
-    from constants import invalid_subcommand, missing_subcommand
+    from utils import invalid_subcommand, missing_subcommand
 except ImportError:
     pass
 

@@ -1,21 +1,20 @@
-import unittest
-from tellypy import Client, Kind
+from tellypy import Client
 import random
 from string import ascii_letters, digits
 
 import sys
 from pathlib import Path
 
-constants_path = Path(__file__).resolve().parent.parent
-sys.path.append(str(constants_path))
+utils_path = Path(__file__).resolve().parent.parent
+sys.path.append(str(utils_path))
 
 try:
-    from constants import wrong_argument
+    from utils import wrong_argument, ExtendedTestCase
 except ImportError:
     pass
 
 
-class PingCommand(unittest.TestCase):
+class PingCommand(ExtendedTestCase):
     client: Client
 
     @classmethod
@@ -24,20 +23,11 @@ class PingCommand(unittest.TestCase):
         self.client.connect()
 
     def test_without_arguments(self):
-        response = self.client.execute_command("PING")
-        self.assertEqual(response.kind, Kind.SIMPLE_STRING)
-        self.assertIsInstance(response.data, str)
-        self.assertEqual(response.data, "PONG")
+        self.assertSimpleStringEqual("PING", "PONG")
 
     def test_with_argument(self):
         value = "".join(random.choices(ascii_letters + digits, k=64))
-        response = self.client.execute_command(f"PING {value}")
-        self.assertEqual(response.kind, Kind.BULK_STRING)
-        self.assertIsInstance(response.data, str)
-        self.assertEqual(response.data, value)
+        self.assertBulkStringEqual(f"PING {value}", value)
 
     def test_with_arguments(self):
-        response = self.client.execute_command("PING a b")
-        self.assertEqual(response.kind, Kind.SIMPLE_ERROR)
-        self.assertIsInstance(response.data, str)
-        self.assertEqual(response.data, wrong_argument("PING"))
+        self.assertSimpleErrorEqual("PING a b", wrong_argument("PING"))
