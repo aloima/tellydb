@@ -9,3 +9,4 @@
 event_notifier_t *create_notifier();
 void signal_notifier(event_notifier_t *notifier);
 void consume_notifier(event_notifier_t *notifier);
+int get_notifier(event_notifier_t *notifier);
