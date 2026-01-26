@@ -72,7 +72,7 @@
   }
 
   int get_notifier(event_notifier_t *notifier) {
-    return notifier[0];
+    return (*notifier)[0];
   }
 
   void destroy_notifier(event_notifier_t *notifier) {
