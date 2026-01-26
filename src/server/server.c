@@ -66,6 +66,9 @@ static inline void cleanup() {
   destroy_transaction_thread();
   usleep(15);
 
+  destroy_io_thread();
+  usleep(15);
+
   free_transaction_blocks();
   free_commands();
   free_clients();
@@ -226,6 +229,7 @@ void start_server(Config *config) {
   CLEANUP_RETURN_LOG_IF(ADD_EVENT(server->eventfd, server->sockfd, event) == -1, "Cannot create epoll instance.");
 
   CLEANUP_RETURN_IF(initialize_clients() == -1);
+  CLEANUP_RETURN_LOG_IF(create_io_thread() == -1, "Cannot create I/O thread.");
 
   server->start_at = time(NULL);
   write_log(LOG_INFO, "Server is listening on %" PRIu16 " port for accepting connections...", server->conf->port);
