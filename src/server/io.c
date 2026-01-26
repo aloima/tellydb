@@ -1,5 +1,6 @@
 #include <telly.h>
 
+#include <stdlib.h>
 #include <stdbool.h>
 #include <signal.h>
 #include <errno.h> // IWYU pragma: export
@@ -19,13 +20,13 @@ typedef struct {
 void *io_thread(void *arg);
 
 int create_io_thread() {
-  sigset_t set;
-  sigemptyset(&set);
-  sigaddset(&set, SIGINT);
-  sigaddset(&set, SIGTERM);
+  sigset_t *set = malloc(sizeof(sigset_t));
+  sigemptyset(set);
+  sigaddset(set, SIGINT);
+  sigaddset(set, SIGTERM);
 
   pthread_t thread;
-  const int code = pthread_create(&thread, NULL, io_thread, &set);
+  const int code = pthread_create(&thread, NULL, io_thread, set);
 
   switch (code) {
     case EAGAIN:
@@ -59,6 +60,7 @@ void add_io_request(const enum IOOpType type, Client *client, string_t write_str
 void *io_thread(void *arg) {
   const sigset_t *set = (sigset_t *) arg;
   pthread_sigmask(SIG_BLOCK, set, NULL);
+  free(arg);
 
   notifier = create_notifier();
   if (notifier == NULL) return NULL;
