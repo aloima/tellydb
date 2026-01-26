@@ -62,20 +62,24 @@ void *io_thread(void *arg) {
   pthread_sigmask(SIG_BLOCK, set, NULL);
   free(arg);
 
+  int added = -1, efd = -1;
+
   notifier = create_notifier();
-  if (notifier == NULL) return NULL;
+  if (notifier == NULL) goto DESTROY;
 
   queue = create_tqueue(512, sizeof(IOOperation), alignof(IOOperation));
-  if (queue == NULL) return NULL;
+  if (queue == NULL) goto DESTROY;
 
-  int efd = CREATE_EVENTFD();
-  if (efd == -1) return NULL;
+  efd = CREATE_EVENTFD();
+  if (efd == -1) goto DESTROY;
 
   const int fd = get_notifier(notifier);
 
   event_t event;
   CREATE_EVENT(event, fd);
-  if (ADD_EVENT(efd, fd, event) == -1) return NULL;
+
+  added = ADD_EVENT(efd, fd, event);
+  if (added == -1) goto DESTROY;
 
   event_t events[256];
 
@@ -93,7 +97,16 @@ void *io_thread(void *arg) {
     }
   }
 
-  free_tqueue(queue);
-  destroy_notifier(notifier);
+DESTROY:
+  if (added != -1) {
+    event_t ev;
+    PREPARE_REMOVING_EVENT(ev, fd);
+    REMOVE_EVENT(efd, fd);
+  }
+
+  if (efd != -1) close(efd);
+  if (notifier != NULL) destroy_notifier(notifier);
+  if (queue != NULL) free_tqueue(queue);
+
   return NULL;
 }
