@@ -36,6 +36,11 @@
   int get_notifier(event_notifier_t *notifier) {
     return *notifier;
   }
+
+  void destroy_notifier(event_notifier_t *notifier) {
+    close(*notifier);
+    free(notifier);
+  }
 #elif defined(__APPLE__)
   typedef int event_notifier_t[2];
 
@@ -68,5 +73,11 @@
 
   int get_notifier(event_notifier_t *notifier) {
     return notifier[0];
+  }
+
+  void destroy_notifier(event_notifier_t *notifier) {
+    close((*notifier)[0]);
+    close((*notifier)[1]);
+    free(notifier);
   }
 #endif
