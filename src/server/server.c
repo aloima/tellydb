@@ -7,32 +7,6 @@
 #include <stdatomic.h>
 #include <time.h>
 
-#if defined(__linux__)
-  #include <sys/epoll.h>
-
-  #define CREATE_EVENTFD() epoll_create1(0)
-
-  #define CREATE_EVENT(event, sockfd) do { \
-    (event).events = EPOLLIN; \
-    (event).data.fd = (sockfd); \
-  } while (0)
-
-  #define ADD_EVENT(eventfd, sockfd, event) epoll_ctl((eventfd), EPOLL_CTL_ADD, (sockfd), &(event))
-
-  #define REMOVE_EVENT(eventfd, connfd) epoll_ctl((eventfd), EPOLL_CTL_DEL, (connfd), NULL)
-  #define PREPARE_REMOVING_EVENT(ev, connfd) (void) ev, (void) connfd
-#elif defined(__APPLE__)
-  #include <sys/event.h>
-  #include <sys/time.h>
-
-  #define CREATE_EVENTFD() kqueue()
-  #define CREATE_EVENT(event, sockfd) EV_SET(&(event), (sockfd), EVFILT_READ, EV_ADD, 0, 0, NULL)
-  #define ADD_EVENT(eventfd, sockfd, event) kevent((eventfd), &(event), 1, NULL, 0, NULL)
-
-  #define REMOVE_EVENT(eventfd, connfd) kevent((eventfd), &ev, 1, NULL, 0, NULL)
-  #define PREPARE_REMOVING_EVENT(ev, connfd) EV_SET(&(ev), (connfd), EVFILT_READ, EV_DELETE, 0, 0, NULL)
-#endif
-
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
