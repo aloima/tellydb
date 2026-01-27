@@ -75,7 +75,7 @@ int write_to_socket(Client *client, char *buf, const size_t nbytes) {
 
   if (client->ssl) {
     while (written < nbytes) {
-      const int n = SSL_write(client->ssl, buf, (size_t) (nbytes - written));
+      const int n = SSL_write(client->ssl, buf + written, (size_t) (nbytes - written));
 
       if (n <= 0) {
         const int err = SSL_get_error(client->ssl, n);
@@ -88,7 +88,7 @@ int write_to_socket(Client *client, char *buf, const size_t nbytes) {
     }
   } else {
     while (written < nbytes) {
-      const int n = write(client->connfd, buf, (size_t) (nbytes - written));
+      const int n = write(client->connfd, buf + written, (size_t) (nbytes - written));
 
       if (n <= 0) {
         if (errno == EINTR) continue;
