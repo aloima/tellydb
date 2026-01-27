@@ -66,8 +66,36 @@ string_t write_value(void *value, const enum TellyTypes type, const enum Protoco
   }
 }
 
-inline __attribute__((always_inline)) int _read(Client *client, char *buf, const size_t nbytes) {
-  return (!client->ssl ? read(client->connfd, buf, nbytes) : SSL_read(client->ssl, buf, nbytes));
+int read_from_socket(Client *client, char *buf, const size_t nbytes) {
+  size_t read_bytes = 0;
+
+  if (client->ssl) {
+    while (read_bytes < nbytes) {
+      const int n = SSL_read(client->ssl, buf + read_bytes, (size_t) (nbytes - read_bytes));
+
+      if (n <= 0) {
+        const int err = SSL_get_error(client->ssl, n);
+        if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) continue;
+
+        return -1;
+      }
+
+      read_bytes += n;
+    }
+  } else {
+    while (read_bytes < nbytes) {
+      const int n = read(client->connfd, buf + read_bytes, (size_t) (nbytes - read_bytes));
+
+      if (n <= 0) {
+        if (errno == EINTR) continue;
+        return -1;
+      }
+
+      read_bytes += n;
+    }
+  }
+
+  return read_bytes;
 }
 
 int write_to_socket(Client *client, char *buf, const size_t nbytes) {
