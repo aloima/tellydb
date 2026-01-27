@@ -23,12 +23,6 @@ enum ProtocolVersion : uint8_t {
   RESP3 = 3
 };
 
-enum ClientState : uint8_t {
-  CLIENT_STATE_ACTIVE,
-  CLIENT_STATE_PASSIVE,
-  CLIENT_STATE_EMPTY
-};
-
 typedef struct {
   _Atomic(struct Command *) data;
   _Atomic(struct Subcommand *) subcommand;
@@ -36,7 +30,6 @@ typedef struct {
 } UsedCommand;
 
 typedef struct {
-  alignas(64) _Atomic enum ClientState state;
   int id, connfd;
   SSL *ssl;
 
@@ -57,7 +50,7 @@ typedef struct {
 int initialize_clients();
 void free_clients();
 
-Client *get_client(const uint32_t id);
+Client *get_client(const int id);
 
 uint32_t get_last_connection_client_id();
 uint16_t get_client_count();
