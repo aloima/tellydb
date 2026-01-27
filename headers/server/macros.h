@@ -9,11 +9,10 @@
 
 #include <openssl/ssl.h>
 
-int _read(Client *client, char *buf, const size_t nbytes);
-int _write(Client *client, char *buf, const size_t nbytes);
+int write_to_socket(Client *client, char *buf, const size_t nbytes);
 
-#define WRITE_OK_MESSAGE(client, message) _write((client),    RDT_SSTRING message "\r\n", sizeof(message) + 2)
-#define WRITE_ERROR_MESSAGE(client, message) _write((client), RDT_ERROR   message "\r\n", sizeof(message) + 2)
+#define WRITE_OK_MESSAGE(client, message)    write_to_socket((client), RDT_SSTRING message "\r\n", sizeof(message) + 2)
+#define WRITE_ERROR_MESSAGE(client, message) write_to_socket((client), RDT_ERROR   message "\r\n", sizeof(message) + 2)
 
 #if defined(__linux__)
   #include <sys/epoll.h>
