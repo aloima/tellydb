@@ -15,6 +15,7 @@ static bool destroyed = false;
 typedef struct {
   enum IOOpType type;
   Client *client;
+  string_t to_write;
 } IOOperation;
 
 void *io_thread(void *arg);
@@ -48,12 +49,13 @@ void destroy_io_thread() {
   signal_notifier(notifier);
 }
 
-void add_io_request(const enum IOOpType type, Client *client, string_t write_str) {
-  IOOperation *op = malloc(sizeof(IOOperation));
-  op->type = type;
-  op->client = client;
+void add_io_request(const enum IOOpType type, Client *client, string_t to_write) {
+  IOOperation op;
+  op.type = type;
+  op.client = client;
+  op.to_write = RESP_OK_MESSAGE("PONG"); // TODO
 
-  push_tqueue(queue, &op);
+  while (push_tqueue(queue, &op) == NULL);
   signal_notifier(notifier);
 }
 
@@ -81,6 +83,8 @@ void *io_thread(void *arg) {
   added = ADD_EVENT(efd, fd, event);
   if (added == -1) goto DESTROY;
 
+  if (initialize_read_buffers() == -1) goto DESTROY;
+
   event_t events[256];
 
   while (true) {
@@ -88,12 +92,26 @@ void *io_thread(void *arg) {
     if (destroyed) break;
 
     for (int i = 0; i < n; ++i) {
-      IOOperation *op;
-      pop_tqueue(queue, &op);
+      IOOperation op;
+      while (!pop_tqueue(queue, &op));
       consume_notifier(notifier);
 
-      // TODO: handle I/O operations
-      free(op);
+      Client *client = op.client;
+      if (client->id == -1) continue;
+
+      switch (op.type) {
+        case IOOP_TERMINATE:
+          terminate_connection(client);
+          break;
+
+        case IOOP_GET_COMMAND:
+          read_command(client);
+          break;
+
+        case IOOP_WRITE:
+          write_to_socket(client, op.to_write.value, op.to_write.len);
+          break;
+      }
     }
   }
 
@@ -107,6 +125,7 @@ DESTROY:
   if (efd != -1) close(efd);
   if (notifier != NULL) destroy_notifier(notifier);
   if (queue != NULL) free_tqueue(queue);
+  free_read_buffers();
 
   return NULL;
 }
