@@ -88,6 +88,7 @@ int read_from_socket(Client *client, char *buf, const size_t nbytes) {
 
       if (n <= 0) {
         if (errno == EINTR) continue;
+        if (errno == EAGAIN) break; // all existing data is read even (existing size < nbytes)
         return -1;
       }
 
