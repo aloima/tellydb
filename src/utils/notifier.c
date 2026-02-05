@@ -70,7 +70,7 @@
   }
 
   uint64_t consume_notifier(event_notifier_t *notifier) {
-    if (notifier == NULL) return;
+    if (notifier == NULL) return -1;
 
     uint64_t result = 0;
     uint64_t val[128];
@@ -83,6 +83,8 @@
         result += val[i];
       }
     }
+
+    return result;
   }
 
   int get_notifier(event_notifier_t *notifier) {
