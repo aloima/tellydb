@@ -46,17 +46,18 @@ void destroy_io_thread() {
   destroyed = true;
   usleep(10);
 
-  signal_notifier(notifier);
+  signal_notifier(notifier, 1);
 }
 
 void add_io_request(const enum IOOpType type, Client *client, string_t to_write) {
   IOOperation op;
   op.type = type;
   op.client = client;
-  op.to_write = RESP_OK_MESSAGE("PONG"); // TODO
+  op.to_write = RESP_OK_MESSAGE("PONG");
+  // RESP_OK_MESSAGE("PONG"); // TODO
 
-  while (push_tqueue(queue, &op) == NULL);
-  signal_notifier(notifier);
+  push_tqueue(queue, &op);
+  signal_notifier(notifier, 1);
 }
 
 void *io_thread(void *arg) {
@@ -85,16 +86,18 @@ void *io_thread(void *arg) {
 
   if (initialize_read_buffers() == -1) goto DESTROY;
 
-  event_t events[256];
+  // There is exactly one fd/notifier
+  event_t events[1];
 
   while (true) {
-    int n = WAIT_EVENTS(efd, events, 256);
+    WAIT_EVENTS(efd, events, 1);
     if (destroyed) break;
 
-    for (int i = 0; i < n; ++i) {
+    const uint64_t count = consume_notifier(notifier);
+
+    for (uint64_t i = 0; i < count; ++i) {
       IOOperation op;
-      while (!pop_tqueue(queue, &op));
-      consume_notifier(notifier);
+      if (!pop_tqueue(queue, &op)) break;
 
       Client *client = op.client;
       if (client->id == -1) continue;
