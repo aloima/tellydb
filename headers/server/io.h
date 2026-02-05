@@ -11,6 +11,6 @@ enum IOOpType : uint8_t {
   IOOP_WRITE
 };
 
-int create_io_threads(const uint32_t count);
+int create_io_thread();
+void destroy_io_thread();
 void add_io_request(const enum IOOpType type, Client *client, string_t write_str);
-void destroy_io_threads();

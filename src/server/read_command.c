@@ -1,5 +1,4 @@
 #include <telly.h>
-#include "io.h"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -7,11 +6,32 @@
 
 #include <strings.h>
 
-static inline void unknown_command(Client *client, string_t *name) {
-  char buf[COMMAND_NAME_MAX_LENGTH + 22];
-  const size_t nbytes = sprintf(buf, "-Unknown command '%s'\r\n", name->value);
+static char *buf = NULL;
+static Arena *arena = NULL;
 
-  _write(client, buf, nbytes);
+int initialize_read_buffers() {
+  buf = malloc(RESP_BUF_SIZE);
+  if (buf == NULL) return -1;
+
+  arena = arena_create(INITIAL_RESP_ARENA_SIZE);
+  if (arena == NULL) {
+    free(buf);
+    return -1;
+  }
+
+  return 1;
+}
+
+void free_read_buffers() {
+  if (buf) free(buf);
+  if (arena) arena_destroy(arena);
+}
+
+static inline void unknown_command(Client *client, string_t *name) {
+  char ubuf[COMMAND_NAME_MAX_LENGTH + 22];
+  const size_t nbytes = sprintf(ubuf, "-Unknown command '%s'\r\n", name->value);
+
+  add_io_request(IOOP_WRITE, client, CREATE_STRING(ubuf, nbytes));
 }
 
 static inline void get_used_command(const commanddata_t *data, UsedCommand *command) {
@@ -45,23 +65,15 @@ static inline void get_used_command(const commanddata_t *data, UsedCommand *comm
   atomic_store_explicit(&command->subcommand, subcommand, memory_order_relaxed);
 }
 
-void read_command(IOThread *thread, Client *client) {
-  char *buf = thread->read_buf;
-  __builtin_prefetch(buf, 0, 3);
-  __builtin_prefetch(buf, 1, 3);
-
-  int32_t size = _read(client, buf, RESP_BUF_SIZE);
+void read_command(Client *client) {
+  int size = read_from_socket(client, buf, RESP_BUF_SIZE);
 
   if (size == 0) {
     add_io_request(IOOP_TERMINATE, client, EMPTY_STRING());
     return;
   }
 
-  Arena *arena = thread->arena;
-  __builtin_prefetch(arena, 0, 3);
-  __builtin_prefetch(arena, 1, 3);
-
-  int32_t at = 0;
+  int at = 0;
 
   while (size != -1) {
     commanddata_t data;
@@ -71,7 +83,7 @@ void read_command(IOThread *thread, Client *client) {
       if (size != RESP_BUF_SIZE) {
         size = -1;
       } else {
-        size = _read(client, buf, RESP_BUF_SIZE);
+        size = read_from_socket(client, buf, RESP_BUF_SIZE);
         at = 0;
       }
     }

@@ -2,7 +2,11 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <errno.h>
 
+#include <unistd.h>
+
+#include <openssl/ssl.h>
 #include <gmp.h>
 
 string_t write_value(void *value, const enum TellyTypes type, const enum ProtocolVersion protover, char *buffer) {
@@ -62,10 +66,67 @@ string_t write_value(void *value, const enum TellyTypes type, const enum Protoco
   }
 }
 
-inline __attribute__((always_inline)) int _read(Client *client, char *buf, const size_t nbytes) {
-  return (!client->ssl ? read(client->connfd, buf, nbytes) : SSL_read(client->ssl, buf, nbytes));
+int read_from_socket(Client *client, char *buf, const size_t nbytes) {
+  size_t read_bytes = 0;
+
+  if (client->ssl) {
+    while (read_bytes < nbytes) {
+      const int n = SSL_read(client->ssl, buf + read_bytes, (size_t) (nbytes - read_bytes));
+
+      if (n <= 0) {
+        const int err = SSL_get_error(client->ssl, n);
+        if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) continue;
+
+        return -1;
+      }
+
+      read_bytes += n;
+    }
+  } else {
+    while (read_bytes < nbytes) {
+      const int n = read(client->connfd, buf + read_bytes, (size_t) (nbytes - read_bytes));
+
+      if (n <= 0) {
+        if (errno == EINTR) continue;
+        if (errno == EAGAIN) break; // all existing data is read even (existing size < nbytes)
+        return -1;
+      }
+
+      read_bytes += n;
+    }
+  }
+
+  return read_bytes;
 }
 
-inline __attribute__((always_inline)) int _write(Client *client, char *buf, const size_t nbytes) {
-  return (!client->ssl ? write(client->connfd, buf, nbytes) : SSL_write(client->ssl, buf, nbytes));
+int write_to_socket(Client *client, char *buf, const size_t nbytes) {
+  size_t written = 0;
+
+  if (client->ssl) {
+    while (written < nbytes) {
+      const int n = SSL_write(client->ssl, buf + written, (size_t) (nbytes - written));
+
+      if (n <= 0) {
+        const int err = SSL_get_error(client->ssl, n);
+        if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) continue;
+
+        return -1;
+      }
+
+      written += n;
+    }
+  } else {
+    while (written < nbytes) {
+      const int n = write(client->connfd, buf + written, (size_t) (nbytes - written));
+
+      if (n <= 0) {
+        if (errno == EINTR) continue;
+        return -1;
+      }
+
+      written += n;
+    }
+  }
+
+  return written;
 }

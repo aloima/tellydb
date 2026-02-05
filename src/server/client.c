@@ -12,7 +12,9 @@ static _Atomic uint16_t client_count;
 static _Atomic uint32_t last_connection_client_id;
 static Arena *write_arena = NULL;
 
-Client *get_client(const uint32_t id) {
+Client *get_client(const int id) {
+  if (id == -1) return NULL;
+
   const uint16_t max_clients = server->conf->max_clients;
   Client *clients = server->clients;
 
@@ -59,7 +61,6 @@ int initialize_clients() {
 
   for (uint16_t i = 0; i < max_clients; ++i) {
     clients[i].id = -1;
-    atomic_init(&clients[i].state, CLIENT_STATE_EMPTY);
   }
 
   return 0;
@@ -110,7 +111,6 @@ Client *add_client(const int connfd) {
     client->password = get_empty_password();
   }
 
-  atomic_init(&client->state, CLIENT_STATE_ACTIVE);
   atomic_fetch_add_explicit(&client_count, 1, memory_order_relaxed);
   atomic_fetch_add_explicit(&last_connection_client_id, 1, memory_order_relaxed);
 
@@ -131,13 +131,12 @@ static inline void free_client(Client *client) {
 
 bool remove_client(const int id) {
   Client *client = get_client(id);
-  if (atomic_load_explicit(&client->state, memory_order_acquire) == CLIENT_STATE_EMPTY) return false;
+  if (client == NULL) return false;
 
   client->id = -1;
   free_client(client);
   atomic_fetch_sub_explicit(&client_count, 1, memory_order_relaxed);
 
-  atomic_store_explicit(&client->state, CLIENT_STATE_EMPTY, memory_order_release);
   return true;
 }
 
@@ -149,7 +148,8 @@ void free_clients() {
 
     for (uint16_t i = 0; i < max_clients; ++i) {
       Client *client = &clients[i];
-      if (atomic_load_explicit(&client->state, memory_order_acquire) == CLIENT_STATE_EMPTY) continue;
+      if (client->id == -1) continue;
+
       free_client(client);
     }
 

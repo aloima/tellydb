@@ -7,32 +7,6 @@
 #include <stdatomic.h>
 #include <time.h>
 
-#if defined(__linux__)
-  #include <sys/epoll.h>
-
-  #define CREATE_EVENTFD() epoll_create1(0)
-
-  #define CREATE_EVENT(event, sockfd) do { \
-    (event).events = EPOLLIN; \
-    (event).data.fd = (sockfd); \
-  } while (0)
-
-  #define ADD_EVENT(eventfd, sockfd, event) epoll_ctl((eventfd), EPOLL_CTL_ADD, (sockfd), &(event))
-
-  #define REMOVE_EVENT(eventfd, connfd) epoll_ctl((eventfd), EPOLL_CTL_DEL, (connfd), NULL)
-  #define PREPARE_REMOVING_EVENT(ev, connfd) (void) ev, (void) connfd
-#elif defined(__APPLE__)
-  #include <sys/event.h>
-  #include <sys/time.h>
-
-  #define CREATE_EVENTFD() kqueue()
-  #define CREATE_EVENT(event, sockfd) EV_SET(&(event), (sockfd), EVFILT_READ, EV_ADD, 0, 0, NULL)
-  #define ADD_EVENT(eventfd, sockfd, event) kevent((eventfd), &(event), 1, NULL, 0, NULL)
-
-  #define REMOVE_EVENT(eventfd, connfd) kevent((eventfd), &ev, 1, NULL, 0, NULL)
-  #define PREPARE_REMOVING_EVENT(ev, connfd) EV_SET(&(ev), (connfd), EVFILT_READ, EV_DELETE, 0, 0, NULL)
-#endif
-
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -92,8 +66,8 @@ static inline void cleanup() {
   destroy_transaction_thread();
   usleep(15);
 
-  destroy_io_threads();
-  usleep(10);
+  destroy_io_thread();
+  usleep(15);
 
   free_transaction_blocks();
   free_commands();
@@ -236,7 +210,6 @@ void start_server(Config *config) {
   write_log(LOG_INFO, "Created transaction thread.");
 
   const uint32_t thread_count = max(sysconf(_SC_NPROCESSORS_ONLN) - 1, 1);
-  CLEANUP_RETURN_LOG_IF(create_io_threads(thread_count) == -1, "Cannot create I/O threads.");
   write_log(LOG_INFO, "Created I/O thread.");
 
   signal(SIGTERM, close_signal);
@@ -256,6 +229,7 @@ void start_server(Config *config) {
   CLEANUP_RETURN_LOG_IF(ADD_EVENT(server->eventfd, server->sockfd, event) == -1, "Cannot create epoll instance.");
 
   CLEANUP_RETURN_IF(initialize_clients() == -1);
+  CLEANUP_RETURN_LOG_IF(create_io_thread() == -1, "Cannot create I/O thread.");
 
   server->start_at = time(NULL);
   write_log(LOG_INFO, "Server is listening on %" PRIu16 " port for accepting connections...", server->conf->port);
