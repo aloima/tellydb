@@ -18,18 +18,10 @@ static inline int accept_client() {
 
 #if defined(__linux__)
   const int connfd = accept4(server->sockfd, (struct sockaddr *) &addr, &addr_len, SOCK_NONBLOCK);
-
-  if (connfd == -1) {
-    write_log(LOG_WARN, "Cannot accept a connection as non-blocking because of sockets.");
-    return -1;
-  }
+  if (connfd == -1) return -1; // There should be logs, but it is interrupting condition for infinite loop.
 #elif defined(__APPLE__)
   const int connfd = accept(server->sockfd, (struct sockaddr *) &addr, &addr_len);
-
-  if (connfd == -1) {
-    write_log(LOG_WARN, "Cannot accept a connection because of sockets.");
-    return -1;
-  }
+  if (connfd == -1) return -1; // There should be logs, but it is interrupting condition for infinite loop.
 
   if ((fcntl(connfd, F_SETFL, fcntl(connfd, F_GETFL, 0) | O_NONBLOCK)) == -1) {
     write_log(LOG_WARN, "Cannot accept a connection, because cannot set as non-blocking file descriptor.");
@@ -108,7 +100,8 @@ void handle_events() {
         }
 
         // If client cannot be accepted, it continues already. No need condition.
-        accept_client();
+        
+        while (accept_client() != -1);
         continue;
       }
 
