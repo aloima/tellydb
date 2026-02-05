@@ -53,6 +53,19 @@ void add_io_request(const enum IOOpType type, Client *client, string_t to_write)
   IOOperation op;
   op.type = type;
   op.client = client;
+
+  /**
+   * TODO
+   * transactions are handled by transaction loop/thread, so IOOP_WRITE requests added by this loop.
+   * this loop outs responses to client.write_buf generally, then saves this write_buf to to_write string.
+   * After that, this method will be executed. There is a problem, if two transactions from same client will be handled:
+   *
+   * tx 1 => writes "A" to write_buf, then adds it to I/O requests
+   * tx 2 => writes "B" to write_buf, then adds it to I/O requests
+   *
+   * but, write_buf is only one buffer, so I/O requests from tx 1 and tx 2 consists of "B", not "A"
+   * if handling I/O requests is started, there will be collision.
+   */
   op.to_write = RESP_OK_MESSAGE("PONG");
   // RESP_OK_MESSAGE("PONG"); // TODO
 
