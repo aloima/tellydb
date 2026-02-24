@@ -81,14 +81,17 @@ static inline int accept_client() {
 // TODO: thread-race for transactions, some executions will not be executed for inline commands
 void handle_events() {
   const uint32_t event_capacity = server->conf->max_clients + 2; // sockfd + empty for safety
-  event_t events[event_capacity];
+  event_t events[256];
 
   const int sockfd = server->sockfd;
   const int eventfd = server->eventfd;
   struct Command *commands = server->commands;
 
+  int timeout = -1;
+
   while (!server->closed) {
-    const int nfds = WAIT_EVENTS(eventfd, events, event_capacity);
+    const int nfds = WAIT_EVENTS(eventfd, events, 256, timeout);
+    int processed = nfds;
 
     for (int i = 0; i < nfds; ++i) {
       __builtin_prefetch(&events[i + 1], 0, 0);
@@ -101,7 +104,8 @@ void handle_events() {
         }
 
         // If client cannot be accepted, it continues already. No need condition.
-        while (accept_client() != -1);
+        while (accept_client() != -1) processed++;
+        processed--;
         continue;
       }
 
@@ -110,5 +114,7 @@ void handle_events() {
 
       if (IS_CONNECTION_CLOSED(events[i])) add_io_request(IOOP_TERMINATE, client, EMPTY_STRING());
     }
+
+    timeout = 32 - (processed * 32 / 256);
   }
 }

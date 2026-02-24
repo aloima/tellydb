@@ -67,7 +67,6 @@ void add_io_request(const enum IOOpType type, Client *client, string_t to_write)
    * if handling I/O requests is started, there will be collision.
    */
   op.to_write = RESP_OK_MESSAGE("PONG");
-  // RESP_OK_MESSAGE("PONG"); // TODO
 
   push_tqueue(queue, &op);
   signal_notifier(notifier, 1);
@@ -103,7 +102,7 @@ void *io_thread(void *arg) {
   event_t events[1];
 
   while (true) {
-    WAIT_EVENTS(efd, events, 1);
+    WAIT_EVENTS(efd, events, 1, -1);
     if (destroyed) break;
 
     const uint64_t count = consume_notifier(notifier);

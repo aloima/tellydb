@@ -20,22 +20,22 @@ int write_to_socket(Client *client, char *buf, const size_t nbytes);
   typedef struct epoll_event event_t;
 
   #define GET_EVENT_FD(event) (event).data.fd
-  #define WAIT_EVENTS(eventfd, events, count) epoll_wait((eventfd), (events), (count), -1)
+  #define WAIT_EVENTS(eventfd, events, count, timeout_ms) epoll_wait((eventfd), (events), (count), (timeout_ms))
   #define GET_EVENT_DATA(event) (event).data.ptr
   #define IS_CONNECTION_CLOSED(event) ((event).events & (EPOLLRDHUP | EPOLLHUP))
   #define ADD_TO_MULTIPLEXING(eventfd, connfd, event) epoll_ctl((eventfd), EPOLL_CTL_ADD, (connfd), &(event))
 
-  #define PREPARE_EVENT(event, client, connfd) do { \
-    (void) connfd; \
+  #define PREPARE_EVENT(event, client, connfd) do {               \
+    (void) connfd;                                                \
     (event).events = (EPOLLIN | EPOLLET | EPOLLHUP | EPOLLRDHUP); \
-    (event).data.ptr = (client); \
+    (event).data.ptr = (client);                                  \
   } while (0)
 
   #define CREATE_EVENTFD() epoll_create1(0)
 
   #define CREATE_EVENT(event, sockfd) do { \
-    (event).events = EPOLLIN; \
-    (event).data.fd = (sockfd); \
+    (event).events = EPOLLIN | EPOLLET;    \
+    (event).data.fd = (sockfd);            \
   } while (0)
 
   #define ADD_EVENT(eventfd, sockfd, event) epoll_ctl((eventfd), EPOLL_CTL_ADD, (sockfd), &(event))
@@ -50,7 +50,20 @@ int write_to_socket(Client *client, char *buf, const size_t nbytes);
   typedef struct kevent event_t;
 
   #define GET_EVENT_FD(event) (event).ident
-  #define WAIT_EVENTS(eventfd, events, count) kevent((eventfd), NULL, 0, (events), (count), NULL)
+
+  #define WAIT_EVENTS(eventfd, events, count, timeout_ms) ({ \
+    struct timespec ts;                                      \
+    struct timespec *ts_ptr = NULL;                          \
+                                                             \
+    if ((timeout_ms) >= 0) {                                 \
+      ts.tv_sec = (timeout_ms) / 1000;                       \
+      ts.tv_nsec = ((timeout_ms) % 1000) * 1000000L;         \
+      ts_ptr = &ts;                                          \
+    }                                                        \
+                                                             \
+    kevent((eventfd), NULL, 0, (events), (count), ts_ptr);   \
+  })
+
   #define GET_EVENT_DATA(event) (event).udata
   #define IS_CONNECTION_CLOSED(event) ((event).flags & EV_EOF)
   #define ADD_TO_MULTIPLEXING(eventfd, connfd, event) kevent((eventfd), &(event), 1, NULL, 0, NULL)
