@@ -1,7 +1,7 @@
 #include <telly.h>
 
 #include <stdlib.h>
-#include <stdbool.h>
+#include <stdatomic.h>
 #include <signal.h>
 #include <errno.h> // IWYU pragma: export
 
@@ -10,7 +10,7 @@
 
 static ThreadQueue *queue = NULL;
 static event_notifier_t *notifier = NULL;
-static bool destroyed = false;
+static atomic_bool destroyed = false;
 
 typedef struct {
   enum IOOpType type;
@@ -26,11 +26,22 @@ int create_io_thread() {
   sigaddset(set, SIGINT);
   sigaddset(set, SIGTERM);
 
+  notifier = create_notifier();
+  if (notifier == NULL) return -1;
+
+  queue = create_tqueue(512, sizeof(IOOperation), alignof(IOOperation));
+  if (queue == NULL) {
+    destroy_notifier(notifier);
+    return -1;
+  }
+
   pthread_t thread;
   const int code = pthread_create(&thread, NULL, io_thread, set);
 
   switch (code) {
     case EAGAIN:
+      destroy_notifier(notifier);
+      free_tqueue(queue);
       write_log(LOG_ERR, "Cannot create transaction thread, out of memory or thread limit problem of OS.");
       return -1;
 
@@ -43,9 +54,7 @@ int create_io_thread() {
 }
 
 void destroy_io_thread() {
-  destroyed = true;
-  usleep(10);
-
+  atomic_store_explicit(&destroyed, true, memory_order_relaxed);
   signal_notifier(notifier, 1);
 }
 
@@ -79,12 +88,6 @@ void *io_thread(void *arg) {
 
   int added = -1, efd = -1;
 
-  notifier = create_notifier();
-  if (notifier == NULL) goto DESTROY;
-
-  queue = create_tqueue(512, sizeof(IOOperation), alignof(IOOperation));
-  if (queue == NULL) goto DESTROY;
-
   efd = CREATE_EVENTFD();
   if (efd == -1) goto DESTROY;
 
@@ -103,7 +106,7 @@ void *io_thread(void *arg) {
 
   while (true) {
     WAIT_EVENTS(efd, events, 1, -1);
-    if (destroyed) break;
+    if (atomic_load_explicit(&destroyed, memory_order_relaxed)) break;
 
     const uint64_t count = consume_notifier(notifier);
 
@@ -138,8 +141,8 @@ DESTROY:
   }
 
   if (efd != -1) close(efd);
-  if (notifier != NULL) destroy_notifier(notifier);
-  if (queue != NULL) free_tqueue(queue);
+  destroy_notifier(notifier);
+  free_tqueue(queue);
   free_read_buffers();
 
   return NULL;
