@@ -9,7 +9,6 @@
 #include <semaphore.h>
 
 static uint64_t processed_transaction_count = 0;
-
 static uint32_t database_operations = 0;
 
 uint32_t get_transaction_count() {
@@ -24,7 +23,7 @@ TransactionBlock *enqueue_to_transaction_queue(TransactionBlock **block) {
   TransactionBlock *res = push_tqueue(tx_queue, block);
   if (res == NULL) return NULL;
 
-  sem_post(tx_sem);
+  signal_notifier(tx_notifier, 1);
   return res;
 }
 
@@ -52,9 +51,7 @@ bool add_transaction(Client *client, const UsedCommand *command, commanddata_t *
     prepare_transaction(block->data.transaction, client, command, data);
     while (push_tqueue(tx_queue, &block) == NULL) cpu_relax();
 
-    if (atomic_load_explicit(&tx_thread_sleeping, memory_order_acquire) == true) {
-      sem_post(tx_sem);
-    }
+    signal_notifier(tx_notifier, 1);
   } else {
     MultipleTransactions *multiple = &client->waiting_block->data.multiple;
     multiple->transaction_count += 1;
