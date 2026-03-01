@@ -62,6 +62,8 @@
 
     int flags = fcntl((*notifier)[0], F_GETFL, 0);
     fcntl((*notifier)[0], F_SETFL, flags | O_NONBLOCK);
+
+    return notifier;
   }
 
   void signal_notifier(event_notifier_t *notifier, uint64_t n) {
