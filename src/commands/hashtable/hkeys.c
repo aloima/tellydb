@@ -11,14 +11,8 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   const struct KVPair *kv = get_data(entry->database, entry->args->data[0]);
-
-  if (!kv) {
-    return CREATE_STRING("*0\r\n", 4);
-  }
-
-  if (kv->type != TELLY_HASHTABLE) {
-    return INVALID_TYPE_ERROR("HKEYS");
-  }
+  if (!kv) return CREATE_STRING("*0\r\n", 4);
+  if (kv->type != TELLY_HASHTABLE) return INVALID_TYPE_ERROR("HKEYS");
 
   const struct HashTable *table = kv->value;
   char *response = entry->client->write_buf;
@@ -30,18 +24,17 @@ static string_t run(struct CommandEntry *entry) {
 
   for (uint32_t i = 0; i < table->size.capacity; ++i) {
     struct HashTableField *field = table->fields[i];
+    if (!field) continue;
 
-    if (field) {
-      response[at++] = '$';
-      at += ltoa(field->name.len, response + at);
-      response[at++] = '\r';
-      response[at++] = '\n';
+    response[at++] = '$';
+    at += ltoa(field->name.len, response + at);
+    response[at++] = '\r';
+    response[at++] = '\n';
 
-      memcpy(response + at, field->name.value, field->name.len);
-      at += field->name.len;
-      response[at++] = '\r';
-      response[at++] = '\n';
-    }
+    memcpy(response + at, field->name.value, field->name.len);
+    at += field->name.len;
+    response[at++] = '\r';
+    response[at++] = '\n';
   }
 
   return CREATE_STRING(response, at);

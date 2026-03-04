@@ -10,14 +10,8 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   const struct KVPair *kv = get_data(entry->database, entry->args->data[0]);
-
-  if (!kv) {
-    return RESP_NULL(entry->client->protover);
-  }
-
-  if (kv->type != TELLY_HASHTABLE) {
-    return INVALID_TYPE_ERROR("HGET");
-  }
+  if (!kv) return RESP_NULL(entry->client->protover);
+  if (kv->type != TELLY_HASHTABLE) return INVALID_TYPE_ERROR("HGET");
 
   const struct HashTableField *field = get_field_from_hashtable(kv->value, entry->args->data[1]);
 

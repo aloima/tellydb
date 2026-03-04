@@ -5,10 +5,9 @@
 
 int main(int argc, char *argv[]) {
   switch (argc) {
-    case 1: {
+    case 1:
       start_server(NULL);
       return EXIT_SUCCESS;
-    }
 
     case 2: {
       const char *arg = argv[1];

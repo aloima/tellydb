@@ -13,14 +13,8 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   const struct KVPair *kv = get_data(entry->database, entry->args->data[0]);
-
-  if (!kv) {
-    return CREATE_STRING("*0\r\n", 4);
-  }
-
-  if (kv->type != TELLY_HASHTABLE) {
-    return INVALID_TYPE_ERROR("HVALS");
-  }
+  if (!kv) return CREATE_STRING("*0\r\n", 4);
+  if (kv->type != TELLY_HASHTABLE) return INVALID_TYPE_ERROR("HVALS");
 
   const struct HashTable *table = kv->value;
   char *response = entry->client->write_buf;
@@ -31,90 +25,86 @@ static string_t run(struct CommandEntry *entry) {
   response[at++] = '\n';
 
   switch (entry->client->protover) {
-    case RESP2: {
+    case RESP2:
       for (uint32_t i = 0; i < table->size.capacity; ++i) {
         struct HashTableField *field = table->fields[i];
+        if (!field) continue;
 
-        if (field) {
-          switch (field->type) {
-            case TELLY_NULL:
-              memcpy(response + at, "+null\r\n", 7);
+        switch (field->type) {
+          case TELLY_NULL:
+            memcpy(response + at, "+null\r\n", 7);
+            at += 7;
+            break;
+
+          case TELLY_INT:
+            at += create_resp_integer_mpz(entry->client->protover, response + at, *((mpz_t *) field->value));
+            break;
+
+          case TELLY_DOUBLE:
+            at += create_resp_integer_mpf(entry->client->protover, response + at, *((mpf_t *) field->value));
+            break;
+
+          case TELLY_STR:
+            at += create_resp_string(response + at, *((string_t *) field->value));
+            break;
+
+          case TELLY_BOOL: {
+            if (*((bool *) field->value)) {
+              memcpy(response + at, "+true\r\n", 7);
               at += 7;
-              break;
-
-            case TELLY_INT:
-              at += create_resp_integer_mpz(entry->client->protover, response + at, *((mpz_t *) field->value));
-              break;
-
-            case TELLY_DOUBLE:
-              at += create_resp_integer_mpf(entry->client->protover, response + at, *((mpf_t *) field->value));
-              break;
-
-            case TELLY_STR:
-              at += create_resp_string(response + at, *((string_t *) field->value));
-              break;
-
-            case TELLY_BOOL: {
-              if (*((bool *) field->value)) {
-                memcpy(response + at, "+true\r\n", 7);
-                at += 7;
-              } else {
-                memcpy(response + at, "+false\r\n", 8);
-                at += 8;
-              }
+            } else {
+              memcpy(response + at, "+false\r\n", 8);
+              at += 8;
             }
-
-            default:
-              break;
           }
+
+          default:
+            break;
         }
       }
 
       break;
-    }
 
-    case RESP3: {
+    case RESP3:
       for (uint32_t i = 0; i < table->size.capacity; ++i) {
         struct HashTableField *field = table->fields[i];
+        if (!field) continue;
 
-        if (field) {
-          switch (field->type) {
-            case TELLY_NULL:
-              memcpy(response + at, "_\r\n", 3);
-              at += 3;
-              break;
+        switch (field->type) {
+          case TELLY_NULL:
+            memcpy(response + at, "_\r\n", 3);
+            at += 3;
+            break;
 
-            case TELLY_INT:
-              at += create_resp_integer_mpz(entry->client->protover, response + at, *((mpz_t *) field->value));
-              break;
+          case TELLY_INT:
+            at += create_resp_integer_mpz(entry->client->protover, response + at, *((mpz_t *) field->value));
+            break;
 
-            case TELLY_DOUBLE:
-              at += create_resp_integer_mpf(entry->client->protover, response + at, *((mpf_t *) field->value));
-              break;
+          case TELLY_DOUBLE:
+            at += create_resp_integer_mpf(entry->client->protover, response + at, *((mpf_t *) field->value));
+            break;
 
-            case TELLY_STR: {
-              at += create_resp_string(response + at, *((string_t *) field->value));
-              break;
-            }
-
-            case TELLY_BOOL: {
-              if (*((bool *) field->value)) {
-                memcpy(response + at, "#t\r\n", 4);
-              } else {
-                memcpy(response + at, "#f\r\n", 4);
-              }
-
-              at += 4;
-            }
-
-            default:
-              break;
+          case TELLY_STR: {
+            at += create_resp_string(response + at, *((string_t *) field->value));
+            break;
           }
+
+          case TELLY_BOOL: {
+            if (*((bool *) field->value)) {
+              memcpy(response + at, "#t\r\n", 4);
+            } else {
+              memcpy(response + at, "#f\r\n", 4);
+            }
+
+            at += 4;
+          }
+
+          default:
+            break;
         }
       }
 
       break;
-    }
   }
 
   return CREATE_STRING(response, at);
