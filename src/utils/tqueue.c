@@ -140,12 +140,16 @@ bool pop_tqueue(ThreadQueue *queue, void *dst) {
     uint64_t seq = atomic_load_explicit(&slot->seq, memory_order_acquire);
     int64_t diff = seq - (at + 1);
 
-    if (diff == 0) {
+    if (VERY_LIKELY(diff == 0)) {
       if (ATOMIC_CAS_WEAK(qat, &at, at + 1, memory_order_acq_rel, memory_order_relaxed)) {
-        break;
+        memcpy(dst, slot->data, queue->type);
+        atomic_store_explicit(&slot->seq, at + queue->capacity, memory_order_release);
+        return true;
       }
-    } else if (diff < 0) {
-      return NULL;
+
+      continue; // no need for cpu_relax()
+    } else if (VERY_UNLIKELY(diff < 0)) {
+      return false;
     } else {
       at = atomic_load_explicit(qat, memory_order_relaxed);
     }
@@ -153,7 +157,5 @@ bool pop_tqueue(ThreadQueue *queue, void *dst) {
     cpu_relax();
   }
 
-  memcpy(dst, slot->data, queue->type);
-  atomic_store_explicit(&slot->seq, at + queue->capacity, memory_order_release);
-  return true;
+  return false;
 }
