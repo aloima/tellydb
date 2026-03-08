@@ -18,7 +18,7 @@
 
 // This function should not be used for small blocks, it should be used for unknown-sized blocks and large blocks.
 void memset_aligned(void *s, int c, size_t n) {
-    // ((void * pointer) + value) is undefined behavior
+  // ((void * pointer) + value) is undefined behavior
   char *d = (char *) s;
   uint8_t fill_value = (uint8_t) c;
 

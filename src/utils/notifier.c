@@ -14,10 +14,10 @@
 
   event_notifier_t *create_notifier() {
     event_notifier_t *notifier = malloc(sizeof(event_notifier_t));
-    if (notifier == NULL) return NULL;
+    if (VERY_UNLIKELY(notifier == NULL)) return NULL;
 
     *notifier = eventfd(0, EFD_NONBLOCK);
-    if (*notifier == -1) {
+    if (VERY_UNLIKELY(*notifier == -1)) {
       free(notifier);
       return NULL;
     }
@@ -26,14 +26,14 @@
   }
 
   void signal_notifier(event_notifier_t *notifier, uint64_t n) {
-    if (notifier == NULL) return;
+    if (VERY_UNLIKELY(notifier == NULL)) return;
     write(*notifier, &n, sizeof(n));
   }
 
   uint64_t consume_notifier(event_notifier_t *notifier) {
-    if (notifier == NULL) return -1;
+    if (VERY_UNLIKELY(notifier == NULL)) return -1;
 
-    uint64_t val;
+    uint64_t val = 0;
     read(*notifier, &val, sizeof(val));
 
     return val;
@@ -53,9 +53,9 @@
 
   event_notifier_t *create_notifier() {
     event_notifier_t *notifier = malloc(sizeof(event_notifier_t));
-    if (notifier == NULL) return NULL;
+    if (VERY_UNLIKELY(notifier == NULL)) return NULL;
 
-    if (pipe(*notifier) == -1) {
+    if (VERY_UNLIKELY(pipe(*notifier) == -1)) {
       free(notifier);
       return NULL;
     }
@@ -67,12 +67,12 @@
   }
 
   void signal_notifier(event_notifier_t *notifier, uint64_t n) {
-    if (notifier == NULL) return;
+    if (VERY_UNLIKELY(notifier == NULL)) return;
     write((*notifier)[1], &n, sizeof(n));
   }
 
   uint64_t consume_notifier(event_notifier_t *notifier) {
-    if (notifier == NULL) return -1;
+    if (VERY_UNLIKELY(notifier == NULL)) return -1;
 
     uint64_t result = 0;
     uint64_t val[128];
