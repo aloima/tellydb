@@ -27,10 +27,14 @@ int create_io_thread() {
   sigaddset(set, SIGTERM);
 
   notifier = create_notifier();
-  if (notifier == NULL) return -1;
+  if (notifier == NULL) {
+    free(set);
+    return -1;
+  }
 
   queue = create_tqueue(512, sizeof(IOOperation), alignof(IOOperation));
   if (queue == NULL) {
+    free(set);
     destroy_notifier(notifier);
     return -1;
   }
@@ -40,9 +44,9 @@ int create_io_thread() {
 
   switch (code) {
     case EAGAIN:
+      free(set);
       destroy_notifier(notifier);
       free_tqueue(queue);
-      write_log(LOG_ERR, "Cannot create transaction thread, out of memory or thread limit problem of OS.");
       return -1;
 
     default:
