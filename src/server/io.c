@@ -1,5 +1,6 @@
 #include <telly.h>
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdatomic.h>
 #include <signal.h>
@@ -22,9 +23,11 @@ void *io_thread(void *arg);
 
 int create_io_thread() {
   sigset_t *set = malloc(sizeof(sigset_t));
-  sigemptyset(set);
-  sigaddset(set, SIGINT);
-  sigaddset(set, SIGTERM);
+  if (set == NULL) return -1;
+
+  assert(sigemptyset(set) == 0);
+  assert(sigaddset(set, SIGINT) == 0);
+  assert(sigaddset(set, SIGTERM) == 0);
 
   notifier = create_notifier();
   if (notifier == NULL) {
@@ -53,7 +56,7 @@ int create_io_thread() {
       break;
   }
 
-  pthread_detach(thread);
+  assert(pthread_detach(thread) == 0);
   return 0;
 }
 
@@ -87,7 +90,7 @@ void add_io_request(const enum IOOpType type, Client *client, string_t to_write)
 
 void *io_thread(void *arg) {
   const sigset_t *set = (sigset_t *) arg;
-  pthread_sigmask(SIG_BLOCK, set, NULL);
+  assert(pthread_sigmask(SIG_BLOCK, set, NULL) == 0);
   free(arg);
 
   int added = -1, efd = -1;
