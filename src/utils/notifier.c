@@ -23,24 +23,20 @@
       return NULL;
     }
 
-    atomic_init(&notifier->has, false);
     return notifier;
   }
 
   void signal_notifier(event_notifier_t *notifier, uint64_t n) {
     if (VERY_UNLIKELY(notifier == NULL)) return;
     write(notifier->efd, &n, sizeof(n));
-    atomic_store_explicit(&notifier->has, true, memory_order_relaxed);
   }
 
   uint64_t consume_notifier(event_notifier_t *notifier) {
     if (VERY_UNLIKELY(notifier == NULL)) return -1;
-    if (!atomic_load_explicit(&notifier->has, memory_order_relaxed)) return 0;
 
     uint64_t val = 0;
     read(notifier->efd, &val, sizeof(val));
 
-    atomic_store_explicit(&notifier->has, false, memory_order_relaxed);
     return val;
   }
 
@@ -66,19 +62,16 @@
     int flags = fcntl(notifier->fds[0], F_GETFL, 0);
     fcntl(notifier->fds[0], F_SETFL, flags | O_NONBLOCK);
 
-    atomic_init(&notifier->has, false);
     return notifier;
   }
 
   void signal_notifier(event_notifier_t *notifier, uint64_t n) {
     if (VERY_UNLIKELY(notifier == NULL)) return;
     write(notifier->fds[1], &n, sizeof(n));
-    atomic_store_explicit(&notifier->has, true, memory_order_relaxed);
   }
 
   uint64_t consume_notifier(event_notifier_t *notifier) {
     if (VERY_UNLIKELY(notifier == NULL)) return -1;
-    if (!atomic_load_explicit(&notifier->has, memory_order_relaxed)) return 0;
 
     uint64_t result = 0;
     uint64_t val[128];

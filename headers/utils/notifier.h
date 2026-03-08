@@ -6,12 +6,10 @@
 #if defined(__linux__)
   typedef struct {
     int efd;
-    _Atomic(bool) has;
   } event_notifier_t;
 #elif defined(__APPLE__)
   typedef struct {
     int fds[2];
-    _Atomic(bool) has;
   } event_notifier_t;
 #endif
 
