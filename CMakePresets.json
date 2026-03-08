@@ -14,6 +14,15 @@
       }
     },
     {
+      "name": "profiler",
+      "inherits": "default",
+      "binaryDir": "${sourceDir}/build/profiler",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_C_FLAGS": "$env{CMAKE_C_FLAGS} -lprofiler -fno-omit-frame-pointer -O3"
+      }
+    },
+    {
       "name": "tsan",
       "inherits": "default",
       "binaryDir": "${sourceDir}/build/tsan",
@@ -52,6 +61,10 @@
     {
       "name": "debug",
       "configurePreset": "debug"
+    },
+    {
+      "name": "profiler",
+      "configurePreset": "profiler"
     },
     {
       "name": "relwithdeb",
