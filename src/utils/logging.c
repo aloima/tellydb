@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdatomic.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -15,7 +16,7 @@
 #include <sys/mman.h>
 
 static int fd = -1;
-static off_t new_size = 0;
+static _Atomic(off_t) new_size;
 #define LOG_LENGTH 4096
 
 struct ThreadQueue *lines;
@@ -30,7 +31,7 @@ bool initialize_logs() {
   stat(conf->log_file, &sostat);
 
   const off_t size = sostat.st_size;
-  new_size += size;
+  atomic_init(&new_size, size);
   lines = create_tqueue(conf->max_log_lines * 2, sizeof(char *), alignof(typeof(char *)));
 
   if (size != 0) {
@@ -117,14 +118,14 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
     if (estimate_tqueue_size(lines) >= conf->max_log_lines) {
       char *line;
       pop_tqueue(lines, &line);
-      new_size -= strlen(line);
+      atomic_fetch_sub_explicit(&new_size, strlen(line), memory_order_relaxed);
       free(line);
     }
 
     char *line = malloc(message_len + 1);
     memcpy(line, message, (message_len + 1));
     push_tqueue(lines, &line);
-    new_size += message_len;
+    atomic_fetch_add_explicit(&new_size, message_len, memory_order_relaxed);
   }
 }
 
@@ -135,13 +136,15 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
 
 void save_and_close_logs() {
   if (fd == -1) return;
-  if (ftruncate(fd, new_size) == -1) {
+  const off_t size = atomic_load_explicit(&new_size, memory_order_consume);
+
+  if (ftruncate(fd, size) == -1) {
     if (errno == EIO) fprintf(stderr, "Cannot write logs to file, truncate I/O error.");
     return;
   }
 
   off_t written = 0;
-  char *map = mmap(NULL, new_size + 1, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  char *map = mmap(NULL, size + 1, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
   if (map == MAP_FAILED) {
     switch (errno) {
       CHECK_ERROR(ENOMEM, "Cannot write logs to file, out of memory.");
@@ -164,14 +167,14 @@ void save_and_close_logs() {
     free(line);
   }
 
-  map[new_size] = '\0';
+  map[size] = '\0';
   assert(estimate_tqueue_size(lines) == 0);
 
 CLEANUP:
   free_tqueue(lines);
-  msync(map, new_size + 1, MS_ASYNC);
+  msync(map, size + 1, MS_ASYNC);
 
-  munmap(map, new_size + 1);
+  munmap(map, size + 1);
   if (map == MAP_FAILED) {
     switch (errno) {
       CHECK_ERROR(ENOMEM, "Cannot write logs to file, out of memory.");
