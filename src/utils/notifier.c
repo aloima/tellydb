@@ -54,8 +54,6 @@
   }
 #elif defined(__APPLE__)
   // Entire apple base is untested
-  typedef int event_notifier_t[2];
-
   event_notifier_t *create_notifier() {
     event_notifier_t *notifier = malloc(sizeof(event_notifier_t));
     if (VERY_UNLIKELY(notifier == NULL)) return NULL;
