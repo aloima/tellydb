@@ -6,8 +6,11 @@
 
 #include <strings.h>
 
+#define INITIAL_UNKNOWN_COMMAND_ARENA_SIZE 8192
+
 static char *buf = NULL;
 static Arena *arena = NULL;
+static Arena *ucmd_arena = NULL;
 
 int initialize_read_buffers() {
   buf = malloc(RESP_BUF_SIZE);
@@ -19,16 +22,24 @@ int initialize_read_buffers() {
     return -1;
   }
 
+  ucmd_arena = arena_create(INITIAL_UNKNOWN_COMMAND_ARENA_SIZE);
+  if (ucmd_arena == NULL) {
+    arena_destroy(arena);
+    free(buf);
+    return -1;
+  }
+
   return 1;
 }
 
 void free_read_buffers() {
   if (buf) free(buf);
   if (arena) arena_destroy(arena);
+  if (ucmd_arena) arena_destroy(ucmd_arena);
 }
 
 static inline void unknown_command(Client *client, string_t *name) {
-  char ubuf[COMMAND_NAME_MAX_LENGTH + 22];
+  char *ubuf = arena_alloc(ucmd_arena, name->len + 22);
   const size_t nbytes = sprintf(ubuf, "-Unknown command '%s'\r\n", name->value);
 
   add_io_request(IOOP_WRITE, client, CREATE_STRING(ubuf, nbytes));

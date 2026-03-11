@@ -48,8 +48,7 @@ static constexpr LogLevelField log_levels_map[4] = {
 
 static inline void pass_line(FILE *file) {
   int c;
-  while ((c = fgetc(file)) != EOF && c != '\n')
-    ;
+  while ((c = fgetc(file)) != EOF && c != '\n');
 }
 
 static inline void read_value(FILE *file, char *buf) {
