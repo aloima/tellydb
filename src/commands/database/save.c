@@ -11,7 +11,7 @@ static string_t run(struct CommandEntry *entry) {
   get_server_time(&start_at, &server_age);
   server_age += difftime(time(NULL), start_at);
 
-  if (save_data(server_age)) {
+  if (save_data(server_age) != -1) {
     return RESP_OK();
   } else {
     return RESP_ERROR();
