@@ -20,14 +20,16 @@ int open_file(const char *file, int flags) {
 #endif
     switch (errno) {
 #if defined(__linux__)
-      CHECK_ERROR(EINVAL, "Direct I/O does not be supported by your file system, cannot open file.");
+      CHECK_ERROR(EINVAL,    "Direct I/O does not be supported by your file system, cannot open file.");
 #endif
-      CHECK_ERROR(EISDIR, "Specified file is a directory, cannot open file.");
-      CHECK_ERROR(ENOMEM, "No available memory to create/open file.");
-      CHECK_ERROR(EROFS,  "Your file system is read-only, cannot open file for writing.");
+      CHECK_ERROR(EISDIR,    "'%s' is a directory, cannot open as a file.", file);
+      CHECK_ERROR(ENOMEM,    "No available memory to create/open file.");
+      CHECK_ERROR(EROFS,     "Your file system is read-only, cannot open file for writing.");
+      CHECK_ERROR(EFAULT,    "'%s' points bad address in the disk.", file);
+      CHECK_ERROR(EOVERFLOW, "'%s' is too large to open.", file);
 
       default:
-        write_log(LOG_ERR, "File cannot be opened or created.");
+        write_log(LOG_ERR,   "'%s' cannot be opened or created.", file);
     }
 
     return -1;
