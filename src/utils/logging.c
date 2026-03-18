@@ -21,44 +21,65 @@ static _Atomic(off_t) new_size;
 
 struct ThreadQueue *lines;
 
-// TODO: handle max_log_liens == -1
-bool initialize_logs() {
+int initialize_logs() {
   const Config *conf = server->conf;
-  if (conf->log_file[0] == '\0') return true;
-  if ((fd = open_file(conf->log_file, 0)) == -1) return false;
+  if (conf->log_file[0] == '\0') return 0;
+  if ((fd = open_file(conf->log_file, 0)) == -1) return -1;
 
+  // All errors from stat() method are already handled by open_file() method
   struct stat sostat;
-  stat(conf->log_file, &sostat);
+  assert(stat(conf->log_file, &sostat) != -1);
 
   const off_t size = sostat.st_size;
   atomic_init(&new_size, size);
-  lines = create_tqueue(conf->max_log_lines * 2, sizeof(char *), alignof(typeof(char *)));
 
-  if (size != 0) {
-    char *data = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
-    off_t old_at = 0;
-    off_t at = 0;
+  // Specified log file is not allowed for processing
+  if (size == 0) return 0;
 
-    while (data[at] != '\0') {
-      if (data[at] != '\n') {
-        at += 1;
-        continue;
-      }
-
-      const off_t line_len = (at - old_at + 1); // line + '\n'
-      char *line = malloc(line_len + 1);
-      memcpy(line, data + old_at, line_len * sizeof(char));
-      line[line_len] = '\0';
-
-      push_tqueue(lines, &line);
-      at += 1;
-      old_at = at;
-    }
-
-    munmap(data, size);
+  lines = create_tqueue(conf->max_log_lines, sizeof(char *), alignof(typeof(char *)));
+  if (lines == NULL) {
+    write_log(LOG_ERR, "Cannot initialized logs, out of memory.");
+    return -1;
   }
 
-  return true;
+  #define CHECK_ERROR(ERROR_CODE, message) \
+    case (ERROR_CODE): \
+      fprintf(stderr, (message)); \
+      return -1
+
+  char *data = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
+  if (data == MAP_FAILED) {
+    switch (errno) {
+      CHECK_ERROR(ENOMEM, "Cannot initialized logs, out of memory.");
+      CHECK_ERROR(ENFILE, "Cannot initialized logs, exceeded max opened files.");
+      CHECK_ERROR(ENODEV, "Cannot initialized logs, file system does not support memory mapping.");
+      CHECK_ERROR(EPERM,  "Cannot initialized logs, permission error.");
+    }
+  }
+
+  #undef CHECK_ERROR
+
+  off_t old_at = 0;
+  off_t at = 0;
+
+  while (data[at] != '\0') {
+    if (data[at] != '\n') {
+      at += 1;
+      continue;
+    }
+
+    const off_t line_len = (at - old_at + 1); // line + '\n'
+    char *line = malloc(line_len + 1);
+    memcpy(line, data + old_at, line_len * sizeof(char));
+    line[line_len] = '\0';
+
+    push_tqueue(lines, &line);
+    at += 1;
+    old_at = at;
+  }
+
+  assert(munmap(data, size) == 0);
+  return 0;
 }
 
 void write_log(enum LogLevel level, const char *fmt, ...) {
@@ -109,6 +130,7 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
   fputs(message, stream);
   if (fd == -1) return;
 
+  // TODO: better handling, tqueue capacity is unsufficient
   if (conf->max_log_lines == -1) {
     char *line = malloc(message_len + 1);
     memcpy(line, message, (message_len + 1));
@@ -129,11 +151,6 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
   }
 }
 
-#define CHECK_ERROR(ERROR_CODE, message) \
-  case (ERROR_CODE): \
-    fprintf(stderr, (message)); \
-    return
-
 void save_and_close_logs() {
   if (fd == -1) return;
   const off_t size = atomic_load_explicit(&new_size, memory_order_consume);
@@ -142,6 +159,11 @@ void save_and_close_logs() {
     if (errno == EIO) fprintf(stderr, "Cannot write logs to file, truncate I/O error.");
     return;
   }
+
+  #define CHECK_ERROR(ERROR_CODE, message) \
+    case (ERROR_CODE): \
+      fprintf(stderr, (message)); \
+      return
 
   off_t written = 0;
   char *map = mmap(NULL, size + 1, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
@@ -185,5 +207,7 @@ CLEANUP:
     }
   }
 
-  close(fd);
+  assert(close(fd) == 0);
+
+  #undef CHECK_ERROR
 }

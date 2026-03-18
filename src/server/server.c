@@ -184,8 +184,7 @@ void start_server(Config *config) {
   server->eventfd = -1;
   server->sockfd = -1;
 
-  if (!initialize_logs()) {
-    write_log(LOG_ERR, "Cannot initialized logs.");
+  if (initialize_logs() == -1) {
     write_log(LOG_INFO, "Initialized configuration.");
   } else {
     write_log(LOG_INFO, "Initialized logs and configuration.");

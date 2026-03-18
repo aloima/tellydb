@@ -10,6 +10,6 @@ enum LogLevel : uint8_t {
   LOG_DBG  = 0b1000,
 };
 
-bool initialize_logs();
+int initialize_logs();
 void write_log(enum LogLevel level, const char *fmt, ...);
 void save_and_close_logs();
