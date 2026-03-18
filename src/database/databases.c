@@ -5,21 +5,17 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-static struct LinkedListNode *head = NULL;
+static LinkedListNode *front = NULL;
 static Database *main = NULL;
 static uint32_t database_count = 0;
 
 Database *create_database(const string_t name, const uint64_t capacity) {
   Database *database = NULL;
-  struct LinkedListNode *node = NULL;
   char *name_str = NULL;
   struct KVPair **data = NULL;
 
-  database = malloc(sizeof(Database));;
+  database = malloc(sizeof(Database));
   if (database == NULL) goto CLEANUP;
-
-  node = malloc(sizeof(struct LinkedListNode));
-  if (node == NULL) goto CLEANUP;
 
   name_str = malloc(name.len);
   if (name_str == NULL) goto CLEANUP;
@@ -27,16 +23,15 @@ Database *create_database(const string_t name, const uint64_t capacity) {
   data = calloc(capacity, sizeof(struct KVPair *));
   if (data == NULL) goto CLEANUP;
 
-  database_count += 1;
-
-  if (database_count != 1) {
-    node->data = database;
-    node->next = NULL;
+  if (database_count != 0) {
+    bool inserted = (ll_insert_back(front, database) != NULL);
+    if (!inserted) goto CLEANUP;
   } else {
-    head = node;
-    node->data = database;
-    node->next = NULL;
+    front = ll_create_node(database);
+    if (front == NULL) goto CLEANUP;
   }
+
+  database_count += 1;
 
   database->name = CREATE_STRING(name_str, name.len);
   memcpy(database->name.value, name.value, name.len);
@@ -50,7 +45,6 @@ Database *create_database(const string_t name, const uint64_t capacity) {
 
 CLEANUP:
   if (database) free(database);
-  if (node) free(node);
   if (name_str) free(name_str);
   if (data) free(data);
 
@@ -65,54 +59,60 @@ Database *get_main_database() {
   return main;
 }
 
-Database *get_database(const string_t name) {
-  const uint64_t target = hash(name.value, name.len);
-  struct LinkedListNode *node = head;
-
-  while (node) {
-    Database *database = node->data;
-
-    if (database->id == target) {
-      return database;
-    }
-
-    node = node->next;
-  }
-
-  return NULL;
+LinkedListNode *get_front_database_node() {
+  return front;
 }
 
-struct LinkedListNode *get_database_node() {
-  return head;
+struct ExternalData {
+  uint64_t target;
+  string_t name;
+};
+
+static inline bool cmp(void *data, void *external) {
+  Database *database = (Database *) data;
+  struct ExternalData *external_s = ((struct ExternalData *) external);
+  return (database->id == external_s->target) &&
+            (database->name.len == external_s->name.len && memcmp(database->name.value, external_s->name.value, 0) == 0);
+}
+
+Database *get_database(const string_t name) {
+  struct ExternalData external = {
+    .name = name,
+    .target = hash(name.value, name.len)
+  };
+
+  LinkedListNode *node = ll_search_node(front, LL_BACK, &external, cmp);
+  return node != NULL ? (Database *) node->data : NULL;
 }
 
 bool rename_database(const string_t old_name, const string_t new_name) {
-  const uint64_t target = hash(old_name.value, old_name.len);
-  struct LinkedListNode *node = head;
+  Database *database = ({
+    struct ExternalData external = {
+      .name = old_name,
+      .target = hash(old_name.value, old_name.len)
+    };
 
-  while (node) {
-    Database *database = node->data;
+    LinkedListNode *node = ll_search_node(front, LL_BACK, &external, cmp);
+    node != NULL ? (Database *) node->data : NULL;
+  });
 
-    if (database->id == target) {
-      char *name = malloc(new_name.len);
-      if (!name) return false;
+  if (!database) return false;
 
-      database->id = hash(new_name.value, new_name.len);
-      free(database->name.value);
+  char *name = malloc(new_name.len);
+  if (!name) return false;
 
-      database->name = CREATE_STRING(name, new_name.len);
-      memcpy(database->name.value, new_name.value, new_name.len);
+  database->id = hash(new_name.value, new_name.len);
+  free(database->name.value);
 
-      return true;
-    }
+  database->name = CREATE_STRING(name, new_name.len);
+  memcpy(database->name.value, new_name.value, new_name.len);
 
-    node = node->next;
-  }
-
-  return false;
+  return true;
 }
 
-static void free_database(Database *database) {
+static void free_database(void *database_ptr) {
+  Database *database = (Database *) database_ptr;
+
   for (uint64_t i = 0; i < database->size.capacity; ++i) {
     struct KVPair *kv = database->data[i];
 
@@ -127,11 +127,5 @@ static void free_database(Database *database) {
 }
 
 void free_databases() {
-  while (head) {
-    free_database(head->data);
-
-    struct LinkedListNode *next = head->next;
-    free(head);
-    head = next;
-  }
+  ll_free_each(front, free_database);
 }

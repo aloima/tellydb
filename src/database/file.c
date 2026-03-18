@@ -36,7 +36,7 @@ int open_database_fd(uint32_t *server_age) {
 
     if (posix_memalign((void **) &block, block_size, block_size) == 0) {
       const clock_t start = clock();
-      
+
       if (read(fd, block, block_size) == -1) {
         close(fd);
         free(block);
@@ -372,7 +372,7 @@ int save_data(const uint32_t server_age) {
       if (new_length > block_size) {
         const uint32_t allowed = (new_length - block_size);
         memcpy(block + length, password->data, allowed);
-        
+
         if (write(fd, block, block_size) == -1) {
           saving = false;
           free(block);
@@ -396,10 +396,10 @@ int save_data(const uint32_t server_age) {
   }
 
   {
-    struct LinkedListNode *node = get_database_node();
+    struct LinkedListNode *node = get_front_database_node();
 
     while (node) {
-      Database *database = node->data;
+      Database *database = (Database *) node->data;
       const uint64_t capacity = database->size.capacity;
       const uint64_t size = database->size.stored;
 
@@ -433,7 +433,7 @@ int save_data(const uint32_t server_age) {
           const uint16_t complete = (block_size - length);
 
           memcpy(block + length, data, complete);
-          
+
           if (write(fd, block, block_size) == -1) {
             saving = false;
             free(data);
@@ -448,7 +448,7 @@ int save_data(const uint32_t server_age) {
           if (remaining > block_size) {
             do {
               memcpy(block, data + (kv_size - remaining), block_size);
-              
+
               if (write(fd, block, block_size) == -1) {
                 saving = false;
                 free(data);
