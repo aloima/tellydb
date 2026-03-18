@@ -2,13 +2,9 @@
 
 #include <stdlib.h>
 #include <stdint.h>
-#include <stdatomic.h>
 
 #include <fcntl.h>
 #include <unistd.h>
-
-// TODO: writing uint64_t is mostly expensive, needed to be used get_byte_count writing
-// avoid redundant zero byte writing
 
 #if defined(__linux__)
   #include <sys/eventfd.h>
