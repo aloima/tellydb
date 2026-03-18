@@ -1,6 +1,5 @@
 #include <telly.h>
 
-#include <stdbool.h>
 #include <stdint.h>
 
 bool try_parse_integer(const char *value) {

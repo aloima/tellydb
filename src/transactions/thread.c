@@ -3,7 +3,6 @@
 
 #include <signal.h>
 #include <stdatomic.h>
-#include <stdbool.h>
 #include <errno.h> // IWYU pragma: export
 #include <time.h>
 

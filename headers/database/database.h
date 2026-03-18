@@ -9,7 +9,6 @@
 #include "../utils/utils.h"
 
 #include <stdint.h>
-#include <stdbool.h>
 
 typedef struct {
   string_t name;

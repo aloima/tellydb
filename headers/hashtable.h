@@ -3,7 +3,6 @@
 #include "utils/utils.h"
 
 #include <stdint.h>
-#include <stdbool.h>
 
 #define HASHTABLE_GROW_FACTOR 1.5
 #define HASHTABLE_SHRINK_FACTOR 0.75

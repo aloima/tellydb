@@ -1,7 +1,6 @@
 #include <telly.h>
 
 #include <stdlib.h>
-#include <stdbool.h>
 
 #include <gmp.h>
 
@@ -74,7 +73,7 @@ static string_t run(struct CommandEntry *entry) {
           mpf_init2(*raw, FLOAT_PRECISION);
           mpf_set_str(*raw, input, 10);
           mpf_sub(*raw, *raw, original);
-          mpf_neg(*raw, *raw); 
+          mpf_neg(*raw, *raw);
           mpf_clear(original);
         }
 

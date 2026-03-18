@@ -3,7 +3,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <stdbool.h>
 
 #include <gmp.h>
 
@@ -94,7 +93,7 @@ static string_t run(struct CommandEntry *entry) {
         return RESP_ERROR_MESSAGE("Out of memory");
       }
     } else if (streq(input.value, "null")) {
-      if (!set_field_of_hashtable(table, name, NULL, TELLY_NULL)) {     
+      if (!set_field_of_hashtable(table, name, NULL, TELLY_NULL)) {
         PASS_NO_CLIENT(entry->client);
         return RESP_ERROR_MESSAGE("Out of memory");
       }

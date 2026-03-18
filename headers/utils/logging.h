@@ -1,7 +1,6 @@
 #pragma once
 
 #include <stdint.h>
-#include <stdbool.h>
 
 enum LogLevel : uint8_t {
   LOG_INFO = 0b0001,

@@ -2,7 +2,6 @@
 
 #include <telly.h>
 
-#include <stdbool.h>
 #include <time.h>
 
 extern ThreadQueue *tx_queue; // Stores transactions, destroyed by free_transaction_blocks() method, not by thread

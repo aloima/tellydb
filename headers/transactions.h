@@ -6,7 +6,6 @@
 #include "resp/resp.h"
 #include "auth.h"
 
-#include <stdbool.h>
 #include <stdint.h>
 
 #include <pthread.h>

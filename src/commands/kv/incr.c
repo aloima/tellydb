@@ -1,7 +1,6 @@
 #include <telly.h>
 
 #include <stdlib.h>
-#include <stdbool.h>
 
 #include <gmp.h>
 

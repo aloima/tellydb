@@ -3,7 +3,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <stdbool.h>
 
 struct HashTable *create_hashtable(const uint32_t size) {
   if (size == 0) return NULL;

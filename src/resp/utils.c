@@ -2,7 +2,6 @@
 #include "resp.h"
 
 #include <stdint.h>
-#include <stdbool.h>
 
 #include <gmp.h>
 

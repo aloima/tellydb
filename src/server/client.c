@@ -1,6 +1,5 @@
 #include <telly.h>
 
-#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdatomic.h>
@@ -89,7 +88,7 @@ Client *add_client(const int connfd) {
   client->connfd = connfd;
   time(&client->connected_at);
   client->database = get_main_database();
-  
+
   client->command = malloc(sizeof(UsedCommand));
   atomic_init(&client->command->idx, UINT64_MAX);
   atomic_init(&client->command->data, NULL);

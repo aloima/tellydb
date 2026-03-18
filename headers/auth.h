@@ -7,7 +7,6 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 
 enum Permissions {
   P_NONE   = 0b00000000,

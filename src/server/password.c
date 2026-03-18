@@ -1,6 +1,5 @@
 #include <telly.h>
 
-#include <stdbool.h>
 #include <stdlib.h>
 
 struct Password *default_password = NULL,

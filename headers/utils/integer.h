@@ -1,6 +1,5 @@
 #pragma once
 
-#include <stdbool.h>
 #include <stdint.h>
 
 static constexpr char TWO_DIGITS_TABLE[200] = {

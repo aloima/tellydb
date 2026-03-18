@@ -1,7 +1,6 @@
 #include <telly.h>
 
 #include <stdint.h>
-#include <stdbool.h>
 #include <inttypes.h>
 
 static string_t run(struct CommandEntry *entry) {

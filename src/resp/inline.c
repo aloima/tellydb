@@ -2,7 +2,6 @@
 #include "resp.h"
 
 #include <stdint.h>
-#include <stdbool.h>
 
 extern bool check_crlf(Client *client, char *buf, int32_t *at, int32_t *size);
 

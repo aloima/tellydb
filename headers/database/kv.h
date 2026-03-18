@@ -2,7 +2,6 @@
 
 #include "../utils/utils.h"
 
-#include <stdbool.h>
 #include <stdint.h>
 
 struct KVPair {

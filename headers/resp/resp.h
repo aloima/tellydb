@@ -4,7 +4,6 @@
 #include "../utils/arena.h"
 #include "../utils/utils.h"
 
-#include <stdbool.h>
 #include <stdint.h>
 
 #include <gmp.h>

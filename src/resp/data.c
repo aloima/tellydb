@@ -1,7 +1,6 @@
 #include <telly.h>
 #include "resp.h"
 
-#include <stdbool.h>
 #include <stdint.h>
 
 bool get_command_data(Arena *arena, Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command) {

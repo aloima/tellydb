@@ -3,7 +3,6 @@
 #include "../database/database.h"
 
 #include <stdint.h>
-#include <stdbool.h>
 #include <stdatomic.h>
 #include <stdalign.h>
 #include <time.h>
