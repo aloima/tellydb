@@ -13,27 +13,32 @@
 
 static pthread_t thread;
 
-static sem_t *thread_sem; // Controls initalization of thread, signalled if thread initialized successfully or not
+#define SEM_CLOSE(sem, name) do { \
+  sem_close(sem);                 \
+  sem_unlink(name);               \
+} while (0)
+
+#define THREAD_SEM "/transaction_thread_sem"
+static sem_t *thread_sem;          // Controls initalization of thread, signalled if thread initialized successfully or not
+
+#define KILL_SEM "/transaction_kill_sem"
+static sem_t *kill_sem;            // Waits until killing thread after kill_pending signal
+
 static _Atomic(bool) kill_pending; // Executes killing operation of thread
-static sem_t kill_sem; // Waits until killing thread after kill_pending signal
 static int added = -1, efd = -1;
 
-#define THROW_ERROR(error)     \
-  write_log(LOG_ERR, (error)); \
-  return -1;
+#define THROW_ERROR(error) do { \
+  write_log(LOG_ERR, (error));  \
+  return -1;                    \
+} while (0)
 
 
 static inline int initialize_thread_variables() {
   efd = CREATE_EVENTFD();
-  if (efd == -1) {
-    THROW_ERROR("Cannot create transaction event waiter, out of memory.");
-  }
+  if (efd == -1) THROW_ERROR("Cannot create transaction event waiter, out of memory.");
 
   tx_notifier = create_notifier();
-  if (tx_notifier == NULL) {
-    write_log(LOG_ERR, "Cannot allocate transaction notifier, out of memory.");
-    return -1;
-  }
+  if (tx_notifier == NULL) THROW_ERROR("Cannot allocate transaction notifier, out of memory.");
 
   const int fd = get_notifier(tx_notifier);
 
@@ -41,27 +46,29 @@ static inline int initialize_thread_variables() {
   CREATE_EVENT(event, fd);
 
   added = ADD_EVENT(efd, fd, event);
-  if (added == -1) {
-    write_log(LOG_ERR, "Cannot allocate transaction notifier, out of memory.");
-    return -1;
-  }
+  if (added == -1) THROW_ERROR("Cannot allocate transaction notifier, out of memory.");
 
   tx_queue = create_tqueue(server->conf->max_transaction_blocks, sizeof(TransactionBlock *), alignof(TransactionBlock *));
   if (tx_queue == NULL) {
     destroy_notifier(tx_notifier);
-    write_log(LOG_ERR, "Cannot allocate transaction blocks, out of memory.");
-    return -1;
+    THROW_ERROR("Cannot allocate transaction blocks, out of memory.");
   }
 
-  thread_sem = sem_open("/transaction_thread", O_CREAT, 0644, 0);
+  thread_sem = sem_open(THREAD_SEM, O_CREAT, 0644, 0);
   if (thread_sem == SEM_FAILED) {
     destroy_notifier(tx_notifier);
     free_tqueue(tx_queue);
-    write_log(LOG_ERR, "Cannot allocate transaction semaphore, out of memory.");
-    return -1;
+    THROW_ERROR("Cannot allocate transaction semaphore, out of memory.");
   }
 
-  sem_init(&kill_sem, 0, 0);
+  kill_sem = sem_open(KILL_SEM, O_CREAT, 0644, 0);
+  if (kill_sem == SEM_FAILED) {
+    destroy_notifier(tx_notifier);
+    free_tqueue(tx_queue);
+    SEM_CLOSE(thread_sem, THREAD_SEM);
+    THROW_ERROR("Cannot allocate transaction semaphore, out of memory.");
+  }
+
   atomic_init(&kill_pending, false);
   tx_last_saved_at = time(NULL);
 
@@ -88,7 +95,7 @@ void *transaction_thread(void *arg) {
   }
 
   destroy_notifier(tx_notifier);
-  sem_post(&kill_sem);
+  sem_post(kill_sem);
   return NULL;
 }
 
@@ -96,8 +103,8 @@ void destroy_transaction_thread() {
   atomic_store_explicit(&kill_pending, true, memory_order_relaxed);
   signal_notifier(tx_notifier, 1); // run transaction loop once
 
-  sem_wait(&kill_sem);
-  sem_destroy(&kill_sem);
+  sem_wait(kill_sem);
+  SEM_CLOSE(kill_sem, KILL_SEM);
 }
 
 int create_transaction_thread() {
@@ -121,8 +128,7 @@ int create_transaction_thread() {
   pthread_detach(thread); // Thread is guaranteed joinable and available, so no need to control.
 
   sem_wait(thread_sem);
-  sem_close(thread_sem);
-  sem_unlink("/transaction_thread");
+  SEM_CLOSE(thread_sem, THREAD_SEM);
 
   return 0;
 }
