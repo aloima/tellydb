@@ -209,9 +209,6 @@ void start_server(Config *config) {
   CLEANUP_RETURN_IF(create_transaction_thread() == -1);
   write_log(LOG_INFO, "Created transaction thread.");
 
-  const uint32_t thread_count = max(sysconf(_SC_NPROCESSORS_ONLN) - 1, 1);
-  write_log(LOG_INFO, "Created I/O thread.");
-
   signal(SIGTERM, close_signal);
   signal(SIGINT, close_signal);
 
@@ -229,7 +226,9 @@ void start_server(Config *config) {
   CLEANUP_RETURN_LOG_IF(ADD_EVENT(server->eventfd, server->sockfd, event) == -1, "Cannot create epoll instance.");
 
   CLEANUP_RETURN_IF(initialize_clients() == -1);
+
   CLEANUP_RETURN_LOG_IF(create_io_thread() == -1, "Cannot create I/O thread.");
+  write_log(LOG_INFO, "Created I/O thread.");
 
   server->start_at = time(NULL);
   write_log(LOG_INFO, "Server is listening on %" PRIu16 " port for accepting connections...", server->conf->port);
