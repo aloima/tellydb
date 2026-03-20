@@ -2,13 +2,6 @@
 
 set -euo pipefail
 
-# =========================================================
-# TellyDB Installer
-# - If Docker is NOT installed: installs natively
-# - If Docker IS installed: lets the user choose
-# - Linux + macOS support
-# - English UI
-# =========================================================
 
 APP_NAME="tellydb"
 REPO_URL="https://github.com/aloima/tellydb.git"
