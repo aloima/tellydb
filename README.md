@@ -23,6 +23,15 @@ The project is documented as follows:
 |     [docs/AUTH.md](./docs/AUTH.md)     |      authorization logic       |
 
 ## Installation
+
+## Install and Update script
+
+```bash
+curl -o- https://raw.githubusercontent.com/aloima/tellydb/install.sh | bash
+
+```
+
+
 ### Install from GitHub Releases:
 * Download the [latest release file](https://github.com/aloima/tellydb/releases/latest)
 * Start the server using `./telly`
