@@ -284,6 +284,16 @@ The list of unwritten behavior to commands.
 
 ---
 
+### STATUS
+**Syntax**: `STATUS`  
+**Description**: Displays server status and last error date/time.  
+**Since**: `0.1.6`  
+**Time complexity**: `O(1)`  
+**Permissions**: None  
+**Returns**: String
+
+---
+
 ### MULTI
 **Syntax**: `MULTI`  
 **Description**: Creates a transaction block consists of multiple transactions.  

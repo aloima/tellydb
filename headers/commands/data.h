@@ -22,6 +22,7 @@ extern const struct Command cmd_info;
 extern const struct Command cmd_multi;
 extern const struct Command cmd_ping;
 extern const struct Command cmd_pwd;
+extern const struct Command cmd_status;
 extern const struct Command cmd_time;
 /* /GENERIC COMMANDS */
 

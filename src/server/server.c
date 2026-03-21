@@ -183,6 +183,8 @@ void start_server(Config *config) {
   server->conf = config ?: get_default_config();
   server->eventfd = -1;
   server->sockfd = -1;
+  server->last_error_at = 0;
+  server->status = SERVER_STATUS_STARTING;
 
   if (initialize_logs() == -1) {
     write_log(LOG_INFO, "Initialized configuration.");
@@ -230,8 +232,11 @@ void start_server(Config *config) {
   write_log(LOG_INFO, "Created I/O thread.");
 
   server->start_at = time(NULL);
+  server->status = SERVER_STATUS_ONLINE;
   write_log(LOG_INFO, "Server is listening on %" PRIu16 " port for accepting connections...", server->conf->port);
 
   handle_events();
+
+  server->status = SERVER_STATUS_CLOSED;
   close_server();
 }
