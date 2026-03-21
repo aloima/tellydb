@@ -33,7 +33,6 @@ int main(int argc, char *argv[]) {
           "Arguments:\n"
           " version        - Prints version\n"
           " help           - Prints this page\n"
-          " status         - Shows server status by querying STATUS command on 127.0.0.1:6379\n"
           " config [FILE]  - Runs the server using configuration file. If file is not exist, use .tellyconf\n"
           " create-config  - Creates a .tellyconf file using default values. If it is exists, it will be discarded\n"
           " default-config - Prints default configuration values\n\n"
@@ -43,10 +42,7 @@ int main(int argc, char *argv[]) {
 
         return EXIT_SUCCESS;
       } else if (streq(arg, "status")) {
-        Config *conf = get_default_config();
-        const int status = query_server_status(conf);
-        free_config(conf);
-        return status == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+        // TODO
       } else if (streq(arg, "default-config")) {
         Config *conf = get_default_config();
         char buf[1024];
