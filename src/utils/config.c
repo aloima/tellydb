@@ -209,13 +209,13 @@ static inline bool set_allowed_log_levels(void *value, const char *buf) {
   } while (c != EOF);
 
   if (conf.max_clients > UINT16_MAX) {
-    write_log(LOG_ERR, "'MAX_CLIENTS' in configuration violates limitations: value <= %u", UINT16_MAX);
+    write_log(LOG_ERR, "'max_clients' in configuration violates limitations: value <= %u", UINT16_MAX);
     exit(EXIT_FAILURE);
   } else if (conf.max_transaction_blocks > UINT32_MAX) {
-    write_log(LOG_ERR, "'MAX_TRANSACTION_BLOCKS' in configuration violates limitations: value <= %u", UINT32_MAX);
+    write_log(LOG_ERR, "'max_transaction_blocks' in configuration violates limitations: value <= %u", UINT32_MAX);
     exit(EXIT_FAILURE);
-  } else if (conf.max_log_lines > INT32_MAX || conf.max_log_lines <= 0) {
-    write_log(LOG_ERR, "'MAX_TRANSACTION_BLOCKS' in configuration violates limitations: 0 < value <= %d", INT32_MAX);
+  } else if (conf.max_log_lines > INT32_MAX || (conf.max_log_lines <= 0 && conf.max_log_lines != -1)) {
+    write_log(LOG_ERR, "'max_log_lines' in configuration violates limitations: 0 < value <= %d", INT32_MAX);
     exit(EXIT_FAILURE);
   }
 
