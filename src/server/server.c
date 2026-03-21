@@ -180,7 +180,7 @@ void start_server(Config *config) {
     return;
   }
 
-  server->conf = config ?: get_default_config();
+  server->conf = config ?: get_config(NULL);
   server->eventfd = -1;
   server->sockfd = -1;
 
