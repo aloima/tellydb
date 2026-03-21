@@ -23,7 +23,7 @@ The list of unwritten behavior to commands.
 ### BGSAVE
 **Syntax**: `BGSAVE`  
 **Description**: Saves all data to database file in background using a thread.  
-**Since**: `0.2.3`  
+**Since**: `0.1.6`  
 **Time complexity**: `O(N) where N is cached key-value pair count`  
 **Permissions**: `P_SERVER`  
 **Returns**: `OK`  
@@ -287,7 +287,7 @@ The list of unwritten behavior to commands.
 ### STATUS
 **Syntax**: `STATUS`  
 **Description**: Displays server status and last error date/time.  
-**Since**: `0.1.6`  
+**Since**: `0.2.3`  
 **Time complexity**: `O(1)`  
 **Permissions**: None  
 **Returns**: String
