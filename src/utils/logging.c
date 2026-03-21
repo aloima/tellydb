@@ -20,6 +20,7 @@ static int fd = -1;
 static _Atomic(off_t) new_size;
 #define LOG_LENGTH 4096
 
+// Accessable from different threads, so it should not be static
 static struct ThreadQueue *lines;
 
 int initialize_logs() {
@@ -41,14 +42,15 @@ int initialize_logs() {
   const off_t size = sostat.st_size;
   atomic_init(&new_size, size);
 
-  // Specified log file is not allowed for processing
-  if (size == 0) return 0;
-
-  lines = create_tqueue(conf->max_log_lines, sizeof(char *), alignof(typeof(char *)));
+  lines = create_tqueue(conf->max_log_lines, sizeof(char *), alignof(char *));
   if (lines == NULL) {
     write_log(LOG_ERR, "Cannot initialized logs, out of memory.");
     return -1;
   }
+
+  // Specified log file does not contain any lines, so there is no need for
+  // taking unexisted lines into lines thread queue
+  if (size == 0) return 0;
 
   #define CHECK_ERROR(ERROR_CODE, message) \
     case (ERROR_CODE): \
