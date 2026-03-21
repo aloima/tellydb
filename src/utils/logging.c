@@ -124,6 +124,10 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
     case LOG_ERR:
       stream = stderr;
       message_len = sprintf(message, "[%s / ERR]  | %s\n", time_text, buf);
+      if (server) {
+        server->last_error_at = time(NULL);
+        server->status = SERVER_STATUS_ERROR;
+      }
       break;
 
     case LOG_DBG:

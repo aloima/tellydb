@@ -14,6 +14,14 @@
 
 #include <openssl/crypto.h>
 
+typedef enum {
+  SERVER_STATUS_NONE = 0,
+  SERVER_STATUS_STARTING,
+  SERVER_STATUS_ONLINE,
+  SERVER_STATUS_ERROR,
+  SERVER_STATUS_CLOSED
+} ServerStatus;
+
 typedef struct {
   int eventfd;
   int sockfd;
@@ -21,6 +29,8 @@ typedef struct {
   Config *conf;
   time_t start_at;
   uint32_t age;
+  time_t last_error_at;
+  ServerStatus status;
   sig_atomic_t closed;
   struct Command *commands;
   Client *clients;

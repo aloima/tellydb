@@ -282,7 +282,6 @@ The list of unwritten behavior to commands.
 **Behavior**:
 + Allowed section names are `server` and `clients`, if it is not specified, includes all of them in return value.
 
----
 
 ### MULTI
 **Syntax**: `MULTI`  
