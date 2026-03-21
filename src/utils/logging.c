@@ -201,16 +201,6 @@ CLEANUP:
   msync(map, size + 1, MS_ASYNC);
 
   munmap(map, size + 1);
-  if (map == MAP_FAILED) {
-    switch (errno) {
-      CHECK_ERROR(ENOMEM, "Cannot write logs to file, out of memory.");
-      CHECK_ERROR(EAGAIN, "Cannot write logs to file, locked log file.");
-      CHECK_ERROR(ENFILE, "Cannot write logs to file, exceeded max opened files.");
-      CHECK_ERROR(ENODEV, "Cannot write logs to file, file system does not support memory mapping.");
-      CHECK_ERROR(EPERM,  "Cannot write logs to file, permission error.");
-    }
-  }
-
   assert(close(fd) == 0);
 
   #undef CHECK_ERROR
