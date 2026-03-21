@@ -282,17 +282,6 @@ The list of unwritten behavior to commands.
 **Behavior**:
 + Allowed section names are `server` and `clients`, if it is not specified, includes all of them in return value.
 
----
-
-### STATUS
-**Syntax**: `STATUS`  
-**Description**: Displays server status and last error date/time.  
-**Since**: `0.2.3`  
-**Time complexity**: `O(1)`  
-**Permissions**: None  
-**Returns**: String
-
----
 
 ### MULTI
 **Syntax**: `MULTI`  
