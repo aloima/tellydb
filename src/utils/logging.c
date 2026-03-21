@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <time.h>
 
+#include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -19,12 +20,19 @@ static int fd = -1;
 static _Atomic(off_t) new_size;
 #define LOG_LENGTH 4096
 
-struct ThreadQueue *lines;
+static struct ThreadQueue *lines;
 
 int initialize_logs() {
   const Config *conf = server->conf;
   if (conf->log_file[0] == '\0') return 0;
-  if ((fd = open_file(conf->log_file, 0)) == -1) return -1;
+  if (conf->max_log_lines < 0 && conf->max_log_lines != -1) return -1;
+
+  if (conf->max_log_lines == -1) {
+    if ((fd = open_file(conf->log_file, O_APPEND)) == -1) return -1;
+    return 0;
+  } else {
+    if ((fd = open_file(conf->log_file, 0)) == -1) return -1;
+  }
 
   // All errors from stat() method are already handled by open_file() method
   struct stat sostat;
@@ -130,12 +138,8 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
   fputs(message, stream);
   if (fd == -1) return;
 
-  // TODO: better handling, tqueue capacity is unsufficient
   if (conf->max_log_lines == -1) {
-    char *line = malloc(message_len + 1);
-    memcpy(line, message, (message_len + 1));
-
-    push_tqueue(lines, &line);
+    write(fd, message, message_len);
   } else {
     if (estimate_tqueue_size(lines) >= conf->max_log_lines) {
       char *line;
@@ -152,7 +156,7 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
 }
 
 void save_and_close_logs() {
-  if (fd == -1) return;
+  if (fd == -1 || server->conf->max_log_lines == -1) return;
   const off_t size = atomic_load_explicit(&new_size, memory_order_consume);
 
   if (ftruncate(fd, size) == -1) {
