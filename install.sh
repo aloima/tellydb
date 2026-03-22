@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-
 set -euo pipefail
 
+# TODO: not working via curl
 
 APP_NAME="tellydb"
 REPO_URL="https://github.com/aloima/tellydb.git"
@@ -244,14 +244,16 @@ prepare_install_paths() {
 }
 
 clone_or_update_repo() {
+  local LATEST_TAG=$(git ls-remote --tags "${REPO_URL}" | cut -d/ -f3 | sort -V | tail -n1)
+
   if [[ -d "${INSTALL_DIR}/.git" ]]; then
     info "Existing repository found in ${INSTALL_DIR}. Updating..."
     run_cmd "Updating repository" git -C "${INSTALL_DIR}" fetch --all --tags
-    run_cmd "Resetting repository to latest master" git -C "${INSTALL_DIR}" reset --hard origin/master
+    run_cmd "Switching to latest release ${LATEST_TAG}" git -C "${INSTALL_DIR}" checkout "tags/${LATEST_TAG}"
   else
     info "Cloning repository into ${INSTALL_DIR}..."
     rm -rf "${INSTALL_DIR}"
-    run_cmd "Cloning repository" git clone "${REPO_URL}" "${INSTALL_DIR}"
+    run_cmd "Cloning repository as latest release" git clone "${REPO_URL}" "${INSTALL_DIR}" --single-branch --branch "${LATEST_TAG}"
   fi
 
   success "Repository is ready."

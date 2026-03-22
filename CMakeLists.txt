@@ -21,8 +21,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     FORCE
   )
 
-  list(APPEND CMAKE_PREFIX_PATH 
-    "/opt/homebrew" 
+  list(APPEND CMAKE_PREFIX_PATH
+    "/opt/homebrew"
     "/usr/local"
   )
 
@@ -47,6 +47,8 @@ execute_process(
   OUTPUT_FILE ${CMAKE_SOURCE_DIR}/src/utils/command_hash.c
 )
 
+
+# TODO: take latest commit of current tag
 execute_process(
   COMMAND git rev-parse HEAD
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}

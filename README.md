@@ -24,11 +24,9 @@ The project is documented as follows:
 
 ## Installation
 
-## Install and Update script
-
+### Install via script
 ```bash
-curl -o- https://raw.githubusercontent.com/aloima/tellydb/install.sh | bash
-
+curl -o- https://raw.githubusercontent.com/aloima/tellydb/master/README.md | bash
 ```
 
 
