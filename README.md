@@ -25,8 +25,10 @@ The project is documented as follows:
 ## Installation
 
 ### Install via script
+[!IMPORTANT]
+It downloads dependencies and makes Docker operations, so it needs to be used via `sudo`.
 ```bash
-curl -o- https://raw.githubusercontent.com/aloima/tellydb/master/README.md | bash
+curl -o- https://raw.githubusercontent.com/aloima/tellydb/master/install.sh | bash
 ```
 
 

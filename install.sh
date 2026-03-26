@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# TODO: not working via curl
-
 APP_NAME="tellydb"
 REPO_URL="https://github.com/aloima/tellydb.git"
 INSTALL_DIR="/opt/tellydb"
@@ -139,11 +137,6 @@ stop_spinner() {
   else
     printf "\r%b %s%*s\n" "${RED}[FAIL]${NC}" "${message}" 20 ""
   fi
-}
-
-pause() {
-  echo
-  read -r -p "Press Enter to continue..." _
 }
 
 detect_pkg_manager() {
@@ -310,7 +303,7 @@ ask_create_service_linux() {
   fi
 
   echo
-  read -r -p "Do you want me to create a systemd service for native installation? [Y/n]: " reply
+  read -r -p "Do you want me to create a systemd service for native installation? [Y/n]: " reply < /dev/tty
   reply="${reply:-Y}"
 
   if [[ "$reply" =~ ^[Yy]$ ]]; then
@@ -373,7 +366,7 @@ install_docker_if_missing() {
     install_docker_macos
   fi
 
-  read -r -p "Would you like to install Docker now? [y/N]: " reply
+  read -r -p "Would you like to install Docker now? [y/N]: " reply < /dev/tty
   reply="${reply:-N}"
 
   if [[ ! "$reply" =~ ^[Yy]$ ]]; then
@@ -433,10 +426,7 @@ install_docker_if_missing() {
 }
 
 docker_deploy() {
-  if is_linux; then
-    require_root_linux
-  fi
-
+  require_root_linux
   install_docker_if_missing
 
   if ! command_exists docker; then
@@ -448,7 +438,7 @@ docker_deploy() {
 
   if docker ps -a --format '{{.Names}}' | grep -qx "${DOCKER_CONTAINER}"; then
     warn "A container named '${DOCKER_CONTAINER}' already exists."
-    read -r -p "Do you want to remove and recreate it? [y/N]: " reply
+    read -r -p "Do you want to remove and recreate it? [y/N]: " reply < /dev/tty
     reply="${reply:-N}"
 
     if [[ "$reply" =~ ^[Yy]$ ]]; then
@@ -459,7 +449,7 @@ docker_deploy() {
     fi
   fi
 
-  read -r -p "Port to expose [${DEFAULT_PORT}]: " port
+  read -r -p "Port to expose [${DEFAULT_PORT}]: " port < /dev/tty
   port="${port:-$DEFAULT_PORT}"
 
   run_cmd "Starting TellyDB container" docker run -d \
@@ -478,9 +468,7 @@ docker_deploy() {
 }
 
 native_install_flow() {
-  if is_linux; then
-    require_root_linux
-  fi
+  require_root_linux
 
   ensure_write_access_macos
   build_native
@@ -503,7 +491,8 @@ docker_choice_menu() {
   echo
 
   while true; do
-    read -r -p "Enter your choice [1-3]: " choice
+    read -r -p "Enter your choice [1-3]: " choice < /dev/tty
+
     case "$choice" in
       1)
         docker_deploy
