@@ -2,7 +2,6 @@ import unittest
 
 from tellypy import Client, Kind
 
-
 OUT_OF_BOUNDS = "Specified ID is out of bounds for uint32_t"
 
 

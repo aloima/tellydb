@@ -1,8 +1,8 @@
-import unittest
-from tellypy import Client, Kind, Protocol
-
 import sys
+import unittest
 from pathlib import Path
+
+from tellypy import Client, Kind, Protocol
 
 utils_path = Path(__file__).resolve().parent.parent
 sys.path.append(str(utils_path))
@@ -10,7 +10,7 @@ sys.path.append(str(utils_path))
 try:
     from utils import invalid_subcommand, missing_subcommand
 except ImportError:
-    pass
+    sys.exit(1)
 
 
 class CommandCommand(unittest.TestCase):
@@ -18,12 +18,12 @@ class CommandCommand(unittest.TestCase):
     client_3: Client
 
     @classmethod
-    def setUpClass(self):
-        self.client_2 = Client(host="localhost", port=6379)
-        self.client_2.connect()
+    def setUpClass(cls):
+        cls.client_2 = Client(host="localhost", port=6379)
+        cls.client_2.connect()
 
-        self.client_3 = Client(host="localhost", port=6379)
-        self.client_3.connect(protocol=Protocol.RESP3)
+        cls.client_3 = Client(host="localhost", port=6379)
+        cls.client_3.connect(protocol=Protocol.RESP3)
 
     def test_list_subcommand(self):
         response = self.client_2.execute_command("COMMAND LIST")

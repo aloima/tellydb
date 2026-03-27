@@ -1,8 +1,8 @@
-import pytest
-from tellypy import Client, Kind
-
 import sys
 from pathlib import Path
+
+import pytest
+from tellypy import Client, Kind
 
 utils_path = Path(__file__).resolve().parent.parent
 sys.path.append(str(utils_path))
@@ -10,7 +10,7 @@ sys.path.append(str(utils_path))
 try:
     from utils import ExtendedTestCase
 except ImportError:
-    pass
+    sys.exit(1)
 
 
 class InfoCommand(ExtendedTestCase):
@@ -18,9 +18,9 @@ class InfoCommand(ExtendedTestCase):
     sections = ["server", "clients"]
 
     @classmethod
-    def setUpClass(self):
-        self.client = Client(host="localhost", port=6379)
-        self.client.connect()
+    def setUpClass(cls):
+        cls.client = Client(host="localhost", port=6379)
+        cls.client.connect()
 
     @pytest.mark.order(1)
     @pytest.mark.dependency(name="no_section")

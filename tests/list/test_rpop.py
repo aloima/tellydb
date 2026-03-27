@@ -1,26 +1,26 @@
-from tellypy import Client
-
 import sys
 from pathlib import Path
+
+from tellypy import Client
 
 utils_path = Path(__file__).resolve().parent.parent
 sys.path.append(str(utils_path))
 
 try:
-    from utils import wrong_argument, invalid_type, ExtendedTestCase
+    from utils import ExtendedTestCase, invalid_type, wrong_argument
 except ImportError:
-    pass
+    sys.exit(1)
 
 
 class RPopCommand(ExtendedTestCase):
     client: Client
 
     @classmethod
-    def setUpClass(self):
-        self.client = Client(host="localhost", port=6379)
-        self.client.connect()
+    def setUpClass(cls):
+        cls.client = Client(host="localhost", port=6379)
+        cls.client.connect()
 
-        self.client.execute_command("DEL list")
+        cls.client.execute_command("DEL list")
 
     def test_wrong_argument(self):
         self.assertSimpleErrorEqual("RPOP", wrong_argument("RPOP"))
@@ -36,7 +36,9 @@ class RPopCommand(ExtendedTestCase):
 
     def test_ordered_list(self):
         # value_a value_b value_c value_d value_e
-        self.client.execute_command("RPUSH list value_a value_b value_c value_d value_e")
+        self.client.execute_command(
+            "RPUSH list value_a value_b value_c value_d value_e"
+        )
 
         for value in ["value_e", "value_d", "value_c", "value_b", "value_a"]:
             self.assertBulkStringEqual("RPOP list", value)
@@ -45,7 +47,9 @@ class RPopCommand(ExtendedTestCase):
 
     def test_reverse_ordered_list(self):
         # value_e value_d value_c value_b value_a
-        self.client.execute_command("LPUSH list value_a value_b value_c value_d value_e")
+        self.client.execute_command(
+            "LPUSH list value_a value_b value_c value_d value_e"
+        )
 
         for value in ["value_a", "value_b", "value_c", "value_d", "value_e"]:
             self.assertBulkStringEqual("RPOP list", value)

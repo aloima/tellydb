@@ -1,26 +1,26 @@
-from tellypy import Client
 import random
-from string import ascii_letters, digits
-
 import sys
 from pathlib import Path
+from string import ascii_letters, digits
+
+from tellypy import Client
 
 utils_path = Path(__file__).resolve().parent.parent
 sys.path.append(str(utils_path))
 
 try:
-    from utils import wrong_argument, ExtendedTestCase
+    from utils import ExtendedTestCase, wrong_argument
 except ImportError:
-    pass
+    sys.exit(1)
 
 
 class PingCommand(ExtendedTestCase):
     client: Client
 
     @classmethod
-    def setUpClass(self):
-        self.client = Client(host="localhost", port=6379)
-        self.client.connect()
+    def setUpClass(cls):
+        cls.client = Client(host="localhost", port=6379)
+        cls.client.connect()
 
     def test_without_arguments(self):
         self.assertSimpleStringEqual("PING", "PONG")

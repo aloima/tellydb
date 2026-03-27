@@ -1,26 +1,26 @@
-from tellypy import Client
-
 import sys
 from pathlib import Path
+
+from tellypy import Client
 
 utils_path = Path(__file__).resolve().parent.parent
 sys.path.append(str(utils_path))
 
 try:
-    from utils import wrong_argument, invalid_type, ExtendedTestCase
+    from utils import ExtendedTestCase, invalid_type, wrong_argument
 except ImportError:
-    pass
+    sys.exit(1)
 
 
 class LLenCommand(ExtendedTestCase):
     client: Client
 
     @classmethod
-    def setUpClass(self):
-        self.client = Client(host="localhost", port=6379)
-        self.client.connect()
+    def setUpClass(cls):
+        cls.client = Client(host="localhost", port=6379)
+        cls.client.connect()
 
-        self.client.execute_command("DEL list")
+        cls.client.execute_command("DEL list")
 
     def test_existed_list(self):
         self.client.execute_command("RPUSH list value_a")
