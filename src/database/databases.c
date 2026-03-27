@@ -1,11 +1,5 @@
 #include <telly.h>
 
-#include <string.h>
-#include <stdint.h>
-#include <stdlib.h>
-
-#include <openssl/lhash.h>
-
 static LinkedListNode *front = NULL;
 static Database *main = NULL;
 static uint32_t database_count = 0;

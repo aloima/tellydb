@@ -1,12 +1,5 @@
 #include <telly.h>
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdatomic.h>
-#include <time.h>
-
-#include <openssl/ssl.h>
-
 static _Atomic uint16_t client_count;
 static _Atomic uint32_t last_connection_client_id;
 static Arena *write_arena = NULL;

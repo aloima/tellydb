@@ -1,18 +1,5 @@
 #include <telly.h>
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <sys/types.h>
-#include <unistd.h>
-
-#include <openssl/crypto.h>
-#include <openssl/kdf.h>
-#include <openssl/provider.h>
-#include <openssl/params.h>
-#include <openssl/core_names.h>
-
 static OSSL_LIB_CTX *libctx = NULL;
 static OSSL_PROVIDER *prov = NULL;
 static EVP_KDF_CTX *ctx = NULL;

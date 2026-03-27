@@ -1,9 +1,5 @@
 #include <telly.h>
 
-#include <string.h>
-#include <stdint.h>
-#include <stdlib.h>
-
 static const struct Command *command_list[] = {
   // Data commands
   &cmd_dbsize, &cmd_bgsave, &cmd_lastsave, &cmd_save, &cmd_select,

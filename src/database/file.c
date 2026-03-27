@@ -1,20 +1,5 @@
 #include <telly.h>
 
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <math.h>
-
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <pthread.h>
-
-#include <gmp.h>
-
 static int fd = -1;
 static bool saving = false;
 static uint16_t block_size;

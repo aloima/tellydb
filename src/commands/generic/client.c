@@ -1,14 +1,5 @@
 #include <telly.h>
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdatomic.h>
-#include <inttypes.h>
-
-#include <alloca.h>
-
 static inline string_t subcommand_id(Client *client, char *buffer) {
   const size_t nbytes = create_resp_integer(buffer, client->id);
   return CREATE_STRING(buffer, nbytes);

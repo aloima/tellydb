@@ -1,11 +1,5 @@
 #include <telly.h>
 
-#include <stdio.h>
-#include <stdint.h>
-#include <stdatomic.h>
-
-#include <strings.h>
-
 #define INITIAL_UNKNOWN_COMMAND_ARENA_SIZE 8192
 
 static char *buf = NULL;

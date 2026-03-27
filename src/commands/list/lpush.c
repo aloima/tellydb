@@ -1,11 +1,5 @@
 #include <telly.h>
 
-#include <string.h>
-#include <stdint.h>
-#include <stdlib.h>
-
-#include <gmp.h>
-
 static void inline lpush_to_list(struct List *list, void *value, enum TellyTypes type) {
   struct ListNode *node = create_listnode(value, type);
   node->next = list->begin;

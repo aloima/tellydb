@@ -1,8 +1,5 @@
 #include <telly.h>
 
-#include <stdint.h>
-#include <time.h>
-
 static string_t run(struct CommandEntry *entry) {
   (void) entry;
 

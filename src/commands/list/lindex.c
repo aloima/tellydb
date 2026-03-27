@@ -1,9 +1,5 @@
 #include <telly.h>
 
-#include <stdlib.h>
-#include <stdint.h>
-#include <limits.h>
-
 enum SearchDirection {
   FORWARD,
   BACKWARD

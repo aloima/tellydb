@@ -1,10 +1,5 @@
 #include <telly.h>
 
-#include <stdint.h>
-#include <stdlib.h>
-
-#include <gmp.h>
-
 static inline uint64_t probe(struct KVPair **data, uint64_t index, const uint64_t capacity) {
   while (data[index]) index = (index + 1) % capacity;
   return index;

@@ -1,11 +1,5 @@
 #include <telly.h>
 
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
-#include <stdalign.h>
-#include <stdatomic.h>
-
 static inline bool init_state(struct ThreadQueue *queue, uint64_t at, uint64_t align, uint64_t size) {
   atomic_init(&queue->slots[at].seq, at);
 

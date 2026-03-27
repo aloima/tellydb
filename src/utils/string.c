@@ -1,10 +1,5 @@
 #include <telly.h>
 
-#include <stddef.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <time.h>
-
 void to_uppercase(string_t src, char *dst) {
   for (uint32_t i = 0; i < src.len; ++i) {
     const char c = src.value[i];

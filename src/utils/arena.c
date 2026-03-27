@@ -1,8 +1,5 @@
 #include <telly.h>
 
-#include <stdlib.h>
-#include <stdint.h>
-
 static inline ArenaBlock *arena_block_create(const uint64_t size) {
   ArenaBlock *block = malloc(sizeof(ArenaBlock));
   if (block == NULL) return NULL;

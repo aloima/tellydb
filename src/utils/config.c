@@ -1,11 +1,5 @@
 #include <telly.h>
 
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdlib.h>
-#include <inttypes.h>
-
 static Config default_conf = {
   .port = 6379,
   .max_clients = 128,

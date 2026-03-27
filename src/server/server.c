@@ -1,21 +1,5 @@
 #include <telly.h>
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <signal.h>
-#include <inttypes.h>
-#include <stdatomic.h>
-#include <time.h>
-
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <unistd.h>
-#include <fcntl.h>
-
-#include <openssl/ssl.h>
-#include <openssl/crypto.h>
-
 Server *server = NULL;
 
 #define CLEANUP_RETURN_IF(condition) do { \

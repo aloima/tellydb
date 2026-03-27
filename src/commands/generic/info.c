@@ -1,13 +1,5 @@
 #include <telly.h>
 
-#include <stdio.h>
-#include <string.h>
-#include <stdint.h>
-#include <inttypes.h>
-#include <time.h>
-
-#include <unistd.h>
-
 static bool get_section(char *section, const Config *conf, const char *name) {
   if (streq(name, "server")) {
     char gcc_version[16];

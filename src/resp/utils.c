@@ -1,10 +1,6 @@
 #include <telly.h>
 #include "resp.h"
 
-#include <stdint.h>
-
-#include <gmp.h>
-
 bool check_crlf(Client *client, char *buf, int32_t *at, int32_t *size) {
   char *crlf;
   TAKE_BYTES(crlf, 2, false);

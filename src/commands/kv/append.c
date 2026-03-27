@@ -1,9 +1,5 @@
 #include <telly.h>
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-
 static string_t run(struct CommandEntry *entry) {
   if (entry->args->count != 2) {
     PASS_NO_CLIENT(entry->client);

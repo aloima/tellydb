@@ -1,16 +1,5 @@
 #include <telly.h>
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-
-#include <sys/types.h>
-#include <unistd.h>
-
-#include <openssl/lhash.h>
-#include <gmp.h>
-
 static void collect_bytes(const int fd, char *block, const uint16_t block_size, uint16_t *at, const uint32_t count, void *data) {
   uint32_t remaining = count;
 

@@ -1,8 +1,6 @@
 #include <telly.h>
 #include "resp.h"
 
-#include <stdint.h>
-
 extern bool check_crlf(Client *client, char *buf, int32_t *at, int32_t *size);
 
 static inline bool parse_name(Arena *arena, Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *cmd, char *c) {

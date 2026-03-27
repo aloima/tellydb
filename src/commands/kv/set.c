@@ -1,11 +1,5 @@
 #include <telly.h>
 
-#include <string.h>
-#include <stdint.h>
-#include <stdlib.h>
-
-#include <gmp.h>
-
 static inline int take_as_string(void **value, const string_t data) {
   string_t *string = (*value = malloc(sizeof(string_t)));
   if (string == NULL) return -1;

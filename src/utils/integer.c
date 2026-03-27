@@ -1,7 +1,5 @@
 #include <telly.h>
 
-#include <stdint.h>
-
 bool try_parse_integer(const char *value) {
   char *v = (char *) value;
 

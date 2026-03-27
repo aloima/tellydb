@@ -1,14 +1,5 @@
 #include <telly.h>
 
-#include <stddef.h>
-#include <stdint.h>
-#include <errno.h>
-
-#include <unistd.h>
-
-#include <openssl/ssl.h>
-#include <gmp.h>
-
 string_t write_value(void *value, const enum TellyTypes type, const enum ProtocolVersion protover, char *buffer) {
   switch (type) {
     case TELLY_NULL:

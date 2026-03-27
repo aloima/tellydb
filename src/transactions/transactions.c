@@ -1,12 +1,6 @@
 #include <telly.h>
 #include "transactions.h"
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdatomic.h>
-
-#include <semaphore.h>
-
 static uint64_t processed_transaction_count = 0;
 static uint32_t database_operations = 0;
 

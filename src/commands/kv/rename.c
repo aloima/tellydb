@@ -1,11 +1,5 @@
 #include <telly.h>
 
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
-
-#include <openssl/lhash.h>
-
 static inline uint64_t add_to_index(const uint64_t index, const uint64_t capacity) {
   return ((index + 1) % capacity);
 }

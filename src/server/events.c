@@ -1,16 +1,5 @@
 #include <telly.h>
 
-#include <stdint.h>
-#include <inttypes.h>
-
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <unistd.h>
-
-#include <openssl/ssl.h>
-#include <openssl/crypto.h>
-
 static inline int accept_client() {
   struct sockaddr_in addr;
   socklen_t addr_len = sizeof(addr);

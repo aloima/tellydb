@@ -1,9 +1,5 @@
 #include <telly.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-
 static inline uint8_t read_permissions_value(struct CommandEntry *entry, const char *value) {
   uint8_t permissions = 0;
   char *cval = (char *) value;

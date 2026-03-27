@@ -1,7 +1,5 @@
 #include <telly.h>
 
-#include <stdlib.h>
-
 LinkedListNode *ll_create_node(void *data) {
   LinkedListNode *node = malloc(sizeof(LinkedListNode));
   node->data = data;

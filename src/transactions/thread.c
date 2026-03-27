@@ -1,15 +1,6 @@
 #include <telly.h>
 #include "transactions.h"
 
-#include <signal.h>
-#include <stdatomic.h>
-#include <errno.h> // IWYU pragma: export
-#include <time.h>
-
-#include <fcntl.h>
-#include <semaphore.h>
-#include <pthread.h>
-
 static pthread_t thread;
 
 #define SEM_CLOSE(sem, name) do { \

@@ -1,10 +1,5 @@
 #include <telly.h>
 
-#include <string.h>
-#include <stdint.h>
-
-#include <gmp.h>
-
 static constexpr string_t c_null[] = {
   [RESP2] = CREATE_STRING("$-1\r\n", 5),
   [RESP3] = CREATE_STRING("_\r\n", 3)

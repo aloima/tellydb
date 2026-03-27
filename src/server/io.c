@@ -1,14 +1,5 @@
 #include <telly.h>
 
-#include <assert.h>
-#include <stdlib.h>
-#include <stdatomic.h>
-#include <signal.h>
-#include <errno.h> // IWYU pragma: export
-
-#include <pthread.h>
-#include <unistd.h>
-
 static ThreadQueue *queue = NULL;
 static event_notifier_t *notifier = NULL;
 static atomic_bool destroyed = false;

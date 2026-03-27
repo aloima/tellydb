@@ -1,11 +1,5 @@
 #include <telly.h>
 
-#include <stdlib.h>
-#include <stdint.h>
-
-#include <fcntl.h>
-#include <unistd.h>
-
 #if defined(__linux__)
   #include <sys/eventfd.h>
 
@@ -45,6 +39,8 @@
     free(notifier);
   }
 #elif defined(__APPLE__)
+  #include <unistd.h>
+
   // Entire apple base is untested
   event_notifier_t *create_notifier() {
     event_notifier_t *notifier = malloc(sizeof(event_notifier_t));

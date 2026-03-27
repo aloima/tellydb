@@ -1,7 +1,5 @@
 #include <telly.h>
 
-#include <stdio.h>
-
 static string_t run(struct CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 

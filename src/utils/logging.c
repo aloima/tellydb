@@ -1,21 +1,5 @@
 #include <telly.h>
 
-#include <stdio.h>
-#include <string.h>
-#include <stdatomic.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <assert.h>
-#include <errno.h>
-#include <time.h>
-
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/mman.h>
-
 static int fd = -1;
 static _Atomic(off_t) new_size;
 #define LOG_LENGTH 4096

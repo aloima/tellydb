@@ -1,9 +1,5 @@
 #include <telly.h>
 
-#include <stdint.h>
-#include <stddef.h>
-#include <stdlib.h>
-
 #if defined(__AVX2__) || defined(__SSE2__)
 #include <immintrin.h>
 #endif

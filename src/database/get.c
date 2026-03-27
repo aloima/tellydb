@@ -1,10 +1,5 @@
 #include <telly.h>
 
-#include <stddef.h>
-#include <string.h>
-
-#include <openssl/lhash.h>
-
 struct KVPair *get_data(Database *database, string_t key) {
   const uint64_t capacity = database->size.capacity;
   const uint64_t start_idx = (OPENSSL_LH_strhash(key.value) % capacity);

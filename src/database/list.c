@@ -1,7 +1,5 @@
 #include <telly.h>
 
-#include <stdlib.h>
-
 struct List *create_list() {
   return calloc(1, sizeof(struct List));
 }

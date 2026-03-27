@@ -1,10 +1,5 @@
 #include <telly.h>
 
-#include <errno.h>
-
-#include <fcntl.h>
-#include <unistd.h>
-
 #define CHECK_ERROR(ERROR_CODE, message, ...) \
   case (ERROR_CODE): \
     write_log(LOG_ERR, (message), ##__VA_ARGS__); \

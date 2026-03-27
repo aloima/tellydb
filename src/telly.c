@@ -1,8 +1,5 @@
 #include <telly.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-
 int main(int argc, char *argv[]) {
   switch (argc) {
     case 1:
