@@ -1,6 +1,5 @@
 #include <telly.h>
 
-#include <stdint.h>
 #include <stdlib.h>
 
 LinkedListNode *ll_create_node(void *data) {

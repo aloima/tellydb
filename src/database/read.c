@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <openssl/lhash.h>
 #include <gmp.h>
 
 static void collect_bytes(const int fd, char *block, const uint16_t block_size, uint16_t *at, const uint32_t count, void *data) {
@@ -315,7 +316,7 @@ static size_t collect_database(Database **database, const int fd, char *block, c
     struct KVPair *kv = malloc(sizeof(struct KVPair));
     collected_bytes += collect_kv(kv, fd, block, block_size, at);
 
-    uint64_t index = (hash(kv->key.value, kv->key.len) % capacity);
+    uint64_t index = (OPENSSL_LH_strhash(kv->key.value) % capacity);
 
     while ((*database)->data[index]) {
       index = ((index + 1) % capacity);
@@ -333,7 +334,7 @@ size_t read_file(const int fd, const off_t file_size, char *block, const uint16_
   const string_t database_name = CREATE_STRING(server->conf->database_name, strlen(server->conf->database_name));
 
   if (at != file_size) {
-    const uint64_t hashed = hash(database_name.value, database_name.len);
+    const uint64_t hashed = OPENSSL_LH_strhash(database_name.value);
 
     off_t collected_bytes = at;
     uint64_t data_count = 0;

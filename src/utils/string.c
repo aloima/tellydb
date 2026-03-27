@@ -5,16 +5,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-uint64_t hash(char *key, uint32_t length) {
-  uint64_t hash = 5381;
-
-  while (length--) {
-    hash = ((hash << 5) + hash) + (*key++);
-  }
-
-  return hash;
-}
-
 void to_uppercase(string_t src, char *dst) {
   for (uint32_t i = 0; i < src.len; ++i) {
     const char c = src.value[i];

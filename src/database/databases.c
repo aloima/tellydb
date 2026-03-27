@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <openssl/lhash.h>
+
 static LinkedListNode *front = NULL;
 static Database *main = NULL;
 static uint32_t database_count = 0;
@@ -35,7 +37,7 @@ Database *create_database(const string_t name, const uint64_t capacity) {
   database->name = CREATE_STRING(name_str, name.len);
   memcpy(database->name.value, name.value, name.len);
 
-  database->id = hash(name.value, name.len);
+  database->id = OPENSSL_LH_strhash(name.value);
   database->data = data;
   database->size.stored = 0;
   database->size.capacity = capacity;
@@ -77,7 +79,7 @@ static inline bool cmp(void *data, void *external) {
 Database *get_database(const string_t name) {
   struct ExternalData external = {
     .name = name,
-    .target = hash(name.value, name.len)
+    .target = OPENSSL_LH_strhash(name.value)
   };
 
   LinkedListNode *node = ll_search_node(front, LL_BACK, &external, cmp);
@@ -88,7 +90,7 @@ bool rename_database(const string_t old_name, const string_t new_name) {
   Database *database = ({
     struct ExternalData external = {
       .name = old_name,
-      .target = hash(old_name.value, old_name.len)
+      .target = OPENSSL_LH_strhash(old_name.value)
     };
 
     LinkedListNode *node = ll_search_node(front, LL_BACK, &external, cmp);
@@ -100,7 +102,7 @@ bool rename_database(const string_t old_name, const string_t new_name) {
   char *name = malloc(new_name.len);
   if (!name) return false;
 
-  database->id = hash(new_name.value, new_name.len);
+  database->id = OPENSSL_LH_strhash(new_name.value);
   free(database->name.value);
 
   database->name = CREATE_STRING(name, new_name.len);

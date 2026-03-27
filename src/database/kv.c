@@ -4,12 +4,13 @@
 #include <stdlib.h>
 
 #include <gmp.h>
+#include <openssl/lhash.h>
 
 void set_kv(struct KVPair *kv, const string_t key, void *value, const enum TellyTypes type) {
   kv->key.value = malloc(key.len);
   if (!kv->key.value) return;
 
-  kv->hashed = hash(key.value, key.len);
+  kv->hashed = OPENSSL_LH_strhash(key.value);
   kv->key.len = key.len;
   memcpy(kv->key.value, key.value, key.len);
 

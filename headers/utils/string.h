@@ -15,7 +15,6 @@ typedef struct String {
 #define EMPTY_STRING() ((string_t) {"", 0})
 #define CREATE_STRING(value, len) ((string_t) {value, len})
 
-uint64_t hash(char *key, uint32_t length);
 void to_uppercase(string_t src, char *dst);
 
 static constexpr char months[12][4] = {

@@ -20,7 +20,6 @@ static int fd = -1;
 static _Atomic(off_t) new_size;
 #define LOG_LENGTH 4096
 
-// Accessable from different threads, so it should not be static
 static struct ThreadQueue *lines;
 
 int initialize_logs() {

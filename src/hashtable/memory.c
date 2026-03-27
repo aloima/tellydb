@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include <openssl/lhash.h>
+
 static inline uint32_t add_to_index(const uint32_t index, const uint32_t capacity) {
   return ((index + 1) % capacity);
 }
@@ -16,7 +18,7 @@ bool set_field_of_hashtable(struct HashTable *table, const string_t name, void *
     if (!resized) return false;
   }
 
-  const uint64_t hashed = hash(name.value, name.len);
+  const uint64_t hashed = OPENSSL_LH_strhash(name.value);
   uint32_t index = hashed % capacity;
 
   struct HashTableField *field;
@@ -55,7 +57,7 @@ bool set_field_of_hashtable(struct HashTable *table, const string_t name, void *
 
 bool del_field_from_hashtable(struct HashTable *table, const string_t name) {
   const uint32_t capacity = table->size.capacity;
-  const uint64_t hashed = hash(name.value, name.len);
+  const uint64_t hashed = OPENSSL_LH_strhash(name.value);
   const uint32_t start_idx = (hashed % capacity);
   uint32_t index = start_idx;
 

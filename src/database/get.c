@@ -3,9 +3,11 @@
 #include <stddef.h>
 #include <string.h>
 
+#include <openssl/lhash.h>
+
 struct KVPair *get_data(Database *database, string_t key) {
   const uint64_t capacity = database->size.capacity;
-  const uint64_t start_idx = (hash(key.value, key.len) % capacity);
+  const uint64_t start_idx = (OPENSSL_LH_strhash(key.value) % capacity);
   uint64_t index = start_idx;
 
   struct KVPair *pair;

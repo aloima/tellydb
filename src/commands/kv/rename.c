@@ -4,12 +4,14 @@
 #include <string.h>
 #include <stdint.h>
 
+#include <openssl/lhash.h>
+
 static inline uint64_t add_to_index(const uint64_t index, const uint64_t capacity) {
   return ((index + 1) % capacity);
 }
 
 static inline struct KVPair *search_kv(Database *database, const string_t search, const uint64_t capacity, uint64_t *at) {
-  const uint64_t start_idx = (*at = (hash(search.value, search.len) % capacity));
+  const uint64_t start_idx = (*at = (OPENSSL_LH_strhash(search.value) % capacity));
   struct KVPair *kv;
 
   while (true) {
@@ -44,7 +46,7 @@ static inline void change_kv(struct KVPair *kv, const string_t name) {
   area->value = realloc(area->value, name.len);
   memcpy(area->value, name.value, name.len);
 
-  kv->hashed = hash(name.value, name.len);
+  kv->hashed = OPENSSL_LH_strhash(name.value);
 }
 
 static inline void shift_others(Database *database, struct KVPair *kv, const uint64_t at, const uint64_t capacity) {

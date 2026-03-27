@@ -3,13 +3,15 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include <openssl/lhash.h>
+
 static inline uint64_t add_to_index(const uint64_t index, const uint64_t capacity) {
   return ((index + 1) % capacity);
 }
 
 bool delete_data(Database *database, const string_t key) {
   const uint64_t capacity = database->size.capacity;
-  const uint64_t start_idx = (hash((char *) key.value, key.len) % capacity);
+  const uint64_t start_idx = (OPENSSL_LH_strhash(key.value) % capacity);
   uint64_t index = start_idx;
   struct KVPair *kv = NULL;
 
