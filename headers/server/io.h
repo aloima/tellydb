@@ -5,6 +5,18 @@
 
 #include <stdint.h>
 
+typedef struct {
+  pthread_t thread;
+  ThreadQueue *queue;
+  event_notifier_t *notifier;
+  atomic_bool destroyed;
+
+  // Read buffers
+  char *buf;
+  Arena *resp_arena;
+  Arena *ucmd_arena;
+} IOThread;
+
 enum IOOpType : uint8_t {
   IOOP_GET_COMMAND,
   IOOP_TERMINATE,

@@ -8,14 +8,7 @@ typedef struct {
   string_t to_write;
 } IOOperation;
 
-typedef struct {
-  pthread_t thread;
-  ThreadQueue *queue;
-  event_notifier_t *notifier;
-  atomic_bool destroyed;
-} IOThread;
-
-static IOThread *io_threads = NULL;
+IOThread *io_threads = NULL;
 static int64_t io_thread_count = 0;
 static sigset_t set;
 
@@ -35,13 +28,21 @@ int create_io_threads() {
   while (succeed != io_thread_count) {
     IOThread *io_thread = &io_threads[succeed];
 
-    const int code = pthread_create(&io_thread->thread, NULL, io_thread_procedure, &io_thread);
+    const int code = pthread_create(&io_thread->thread, NULL, io_thread_procedure, io_thread);
     event_notifier_t *notifier = (io_thread->notifier = create_notifier());
     ThreadQueue *queue = (io_thread->queue = create_tqueue(IO_QUEUE_SIZE, sizeof(IOOperation), alignof(IOOperation)));
+    char *buf = (io_thread->buf = malloc(RESP_BUF_SIZE));
+    Arena *ucmd_arena = (io_thread->ucmd_arena = arena_create(INITIAL_UNKNOWN_COMMAND_ARENA_SIZE));
+    Arena *resp_arena = (io_thread->resp_arena = arena_create(INITIAL_RESP_ARENA_SIZE));
 
-    if (notifier == NULL || queue == NULL || code == EAGAIN) {
+    if (notifier == NULL || queue == NULL || buf == NULL || ucmd_arena == NULL || resp_arena == NULL || code == EAGAIN) {
       if (notifier) destroy_notifier(notifier);
       if (queue) free_tqueue(queue);
+      if (buf) free(buf);
+      if (ucmd_arena) arena_destroy(ucmd_arena);
+      if (resp_arena) arena_destroy(resp_arena);
+
+      break;
     }
 
     atomic_init(&io_thread->destroyed, false);
@@ -50,7 +51,7 @@ int create_io_threads() {
     succeed += 1;
   }
 
-  return 0;
+  return succeed;
 }
 
 void send_destroy_signal_to_io_threads() {
@@ -81,8 +82,6 @@ void *io_thread_procedure(void *arg) {
   added = ADD_EVENT(efd, fd, event);
   if (added == -1) goto DESTROY;
 
-  if (initialize_read_buffers() == -1) goto DESTROY;
-
   // There is exactly one fd/notifier
   event_t events[1];
 
@@ -105,7 +104,7 @@ void *io_thread_procedure(void *arg) {
           break;
 
         case IOOP_GET_COMMAND:
-          read_command(client);
+          read_command(thread, client);
           break;
 
         case IOOP_WRITE:
@@ -125,7 +124,10 @@ DESTROY:
   if (efd != -1) close(efd);
   destroy_notifier(thread->notifier);
   free_tqueue(thread->queue);
-  free_read_buffers();
+
+  free(thread->buf);
+  arena_destroy(thread->resp_arena);
+  arena_destroy(thread->ucmd_arena);
 
   return NULL;
 }

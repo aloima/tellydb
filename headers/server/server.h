@@ -14,6 +14,12 @@
 
 #include <openssl/crypto.h>
 
+#include "io.h"     // IWYU pragma: export
+#include "macros.h" // IWYU pragma: export
+#include "client.h" // IWYU pragma: export
+
+#define INITIAL_UNKNOWN_COMMAND_ARENA_SIZE 8192
+
 typedef enum {
   SERVER_STATUS_NONE = 0,
   SERVER_STATUS_STARTING,
@@ -48,10 +54,4 @@ int read_from_socket(Client *client, char *buf, const size_t nbytes);
 int write_to_socket(Client *client, char *buf, const size_t nbytes);
 string_t write_value(void *value, const enum TellyTypes type, const enum ProtocolVersion protover, char *buffer);
 
-int initialize_read_buffers();
-void free_read_buffers();
-void read_command(Client *client);
-
-#include "io.h"     // IWYU pragma: export
-#include "macros.h" // IWYU pragma: export
-#include "client.h" // IWYU pragma: export
+void read_command(IOThread *thread, Client *client);
