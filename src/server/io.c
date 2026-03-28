@@ -64,7 +64,7 @@ void add_io_request(const enum IOOpType type, Client *client, string_t to_write)
   // TODO
 }
 
-void *io_thread(void *arg) {
+void *io_thread_procedure(void *arg) {
   assert(pthread_sigmask(SIG_BLOCK, &set, NULL) == 0);
 
   IOThread *thread = (IOThread *) arg;
