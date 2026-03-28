@@ -26,4 +26,5 @@ int open_file(const char *file, int flags);
 #include "linkedlist.h" // IWYU pragma: export
 #include "string.h"     // IWYU pragma: export
 #include "arena.h"      // IWYU pragma: export
+#include "queue.h"      // IWYU pragma: export
 #include "logging.h"    // IWYU pragma: export
