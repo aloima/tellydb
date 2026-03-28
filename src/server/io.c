@@ -1,8 +1,6 @@
 #include <telly.h>
 
-static ThreadQueue *queue = NULL;
-static event_notifier_t *notifier = NULL;
-static atomic_bool destroyed = false;
+#define IO_QUEUE_SIZE 512
 
 typedef struct {
   enum IOOpType type;
@@ -10,86 +8,72 @@ typedef struct {
   string_t to_write;
 } IOOperation;
 
-void *io_thread(void *arg);
-
-int create_io_thread() {
-  sigset_t *set = malloc(sizeof(sigset_t));
-  if (set == NULL) return -1;
-
-  assert(sigemptyset(set) == 0);
-  assert(sigaddset(set, SIGINT) == 0);
-  assert(sigaddset(set, SIGTERM) == 0);
-
-  notifier = create_notifier();
-  if (notifier == NULL) {
-    free(set);
-    return -1;
-  }
-
-  queue = create_tqueue(512, sizeof(IOOperation), alignof(IOOperation));
-  if (queue == NULL) {
-    free(set);
-    destroy_notifier(notifier);
-    return -1;
-  }
-
+typedef struct {
   pthread_t thread;
-  const int code = pthread_create(&thread, NULL, io_thread, set);
+  ThreadQueue *queue;
+  event_notifier_t *notifier;
+  atomic_bool destroyed;
+} IOThread;
 
-  switch (code) {
-    case EAGAIN:
-      free(set);
-      destroy_notifier(notifier);
-      free_tqueue(queue);
-      return -1;
+static IOThread *io_threads = NULL;
+static int64_t io_thread_count = 0;
+static sigset_t set;
 
-    default:
-      break;
+void *io_thread_procedure(void *arg);
+
+int create_io_threads() {
+  assert(sigemptyset(&set) == 0);
+  assert(sigaddset(&set, SIGINT) == 0);
+  assert(sigaddset(&set, SIGTERM) == 0);
+
+  io_thread_count = max(sysconf(_SC_NPROCESSORS_ONLN) - 1, 2);
+  io_threads = malloc(io_thread_count * sizeof(IOThread));
+  if (io_threads == NULL) return -1;
+
+  int64_t succeed = 0;
+
+  while (succeed != io_thread_count) {
+    IOThread *io_thread = &io_threads[succeed];
+
+    const int code = pthread_create(&io_thread->thread, NULL, io_thread_procedure, &io_thread);
+    event_notifier_t *notifier = (io_thread->notifier = create_notifier());
+    ThreadQueue *queue = (io_thread->queue = create_tqueue(IO_QUEUE_SIZE, sizeof(IOOperation), alignof(IOOperation)));
+
+    if (notifier == NULL || queue == NULL || code == EAGAIN) {
+      if (notifier) destroy_notifier(notifier);
+      if (queue) free_tqueue(queue);
+    }
+
+    atomic_init(&io_thread->destroyed, false);
+    assert(pthread_detach(io_thread->thread) == 0);
+
+    succeed += 1;
   }
 
-  assert(pthread_detach(thread) == 0);
   return 0;
 }
 
-void destroy_io_thread() {
-  atomic_store_explicit(&destroyed, true, memory_order_relaxed);
-  signal_notifier(notifier, 1);
+void send_destroy_signal_to_io_threads() {
+  for (int64_t i = 0; i < io_thread_count; ++i) {
+    atomic_store_explicit(&io_threads[i].destroyed, true, memory_order_relaxed);
+    signal_notifier(io_threads[i].notifier, 1);
+  }
 }
 
 void add_io_request(const enum IOOpType type, Client *client, string_t to_write) {
-  IOOperation op;
-  op.type = type;
-  op.client = client;
-
-  /**
-   * TODO
-   * transactions are handled by transaction loop/thread, so IOOP_WRITE requests added by this loop.
-   * this loop outs responses to client.write_buf generally, then saves this write_buf to to_write string.
-   * After that, this method will be executed. There is a problem, if two transactions from same client will be handled:
-   *
-   * tx 1 => writes "A" to write_buf, then adds it to I/O requests
-   * tx 2 => writes "B" to write_buf, then adds it to I/O requests
-   *
-   * but, write_buf is only one buffer, so I/O requests from tx 1 and tx 2 consists of "B", not "A"
-   * if handling I/O requests is started, there will be collision.
-   */
-  op.to_write = RESP_OK_MESSAGE("PONG");
-
-  push_tqueue(queue, &op);
-  signal_notifier(notifier, 1);
+  // TODO
 }
 
 void *io_thread(void *arg) {
-  const sigset_t *set = (sigset_t *) arg;
-  assert(pthread_sigmask(SIG_BLOCK, set, NULL) == 0);
-  free(arg);
+  assert(pthread_sigmask(SIG_BLOCK, &set, NULL) == 0);
 
+  IOThread *thread = (IOThread *) arg;
   int added = -1, efd = -1;
 
   efd = CREATE_EVENTFD();
   if (efd == -1) goto DESTROY;
 
-  const int fd = get_notifier(notifier);
+  const int fd = get_notifier(thread->notifier);
 
   event_t event;
   CREATE_EVENT(event, fd);
@@ -104,13 +88,13 @@ void *io_thread(void *arg) {
 
   while (true) {
     WAIT_EVENTS(efd, events, 1, -1);
-    if (atomic_load_explicit(&destroyed, memory_order_relaxed)) break;
+    if (atomic_load_explicit(&thread->destroyed, memory_order_relaxed)) break;
 
-    const uint64_t count = consume_notifier(notifier);
+    const uint64_t count = consume_notifier(thread->notifier);
 
     for (uint64_t i = 0; i < count; ++i) {
       IOOperation op;
-      if (!pop_tqueue(queue, &op)) break;
+      if (!pop_tqueue(thread->queue, &op)) break;
 
       Client *client = op.client;
       if (client->id == -1) continue;
@@ -139,8 +123,8 @@ DESTROY:
   }
 
   if (efd != -1) close(efd);
-  destroy_notifier(notifier);
-  free_tqueue(queue);
+  destroy_notifier(thread->notifier);
+  free_tqueue(thread->queue);
   free_read_buffers();
 
   return NULL;
