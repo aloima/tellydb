@@ -62,7 +62,23 @@ void send_destroy_signal_to_io_threads() {
 }
 
 void add_io_request(const enum IOOpType type, Client *client, string_t to_write) {
-  // TODO
+  IOThread *selected = &io_threads[0];
+
+  for (int64_t i = 1; i < io_thread_count; ++i) {
+    IOThread *thread = &io_threads[i];
+
+    if (estimate_tqueue_size(selected->queue) > estimate_tqueue_size(thread->queue)) {
+      selected = thread;
+    }
+  }
+
+  IOOperation op = {
+    .type = type,
+    .client = client,
+    .to_write = RESP_OK_MESSAGE("PONG") // need to be replaced with to_write
+  };
+
+  push_tqueue(selected->queue, &op);
 }
 
 void *io_thread_procedure(void *arg) {
