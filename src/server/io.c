@@ -79,6 +79,7 @@ void add_io_request(const enum IOOpType type, Client *client, string_t to_write)
   };
 
   push_tqueue(selected->queue, &op);
+  signal_notifier(selected->notifier, 1);
 }
 
 void *io_thread_procedure(void *arg) {
