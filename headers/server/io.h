@@ -8,8 +8,12 @@
 typedef struct {
   pthread_t thread;
   ThreadQueue *queue;
+  Queue *prior_queue;
   event_notifier_t *notifier;
   atomic_bool destroyed;
+
+  // Current processing client id for not catching by other i/o threads
+  uint64_t client_id;
 
   // Read buffers
   char *buf;
