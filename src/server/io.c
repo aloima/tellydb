@@ -28,7 +28,6 @@ int create_io_threads() {
   while (succeed != io_thread_count) {
     IOThread *io_thread = &io_threads[succeed];
 
-    const int code = pthread_create(&io_thread->thread, NULL, io_thread_procedure, io_thread);
     event_notifier_t *notifier = (io_thread->notifier = create_notifier());
     ThreadQueue *queue = (io_thread->queue = create_tqueue(IO_QUEUE_SIZE, sizeof(IOOperation), alignof(IOOperation)));
 
@@ -36,7 +35,8 @@ int create_io_threads() {
     Arena *ucmd_arena = (io_thread->ucmd_arena = arena_create(INITIAL_UNKNOWN_COMMAND_ARENA_SIZE));
     Arena *resp_arena = (io_thread->resp_arena = arena_create(INITIAL_RESP_ARENA_SIZE));
 
-    if (notifier == NULL || queue == NULL || buf == NULL || ucmd_arena == NULL || resp_arena == NULL || code == EAGAIN) {
+    if (notifier == NULL || queue == NULL || buf == NULL || ucmd_arena == NULL || resp_arena == NULL) {
+      CLEANUP_THREAD:
       if (notifier) destroy_notifier(notifier);
       if (queue) free_tqueue(queue);
 
@@ -48,8 +48,11 @@ int create_io_threads() {
     }
 
     atomic_init(&io_thread->destroyed, false);
-    assert(pthread_detach(io_thread->thread) == 0);
 
+    const int code = pthread_create(&io_thread->thread, NULL, io_thread_procedure, io_thread);
+    if (code == EAGAIN) goto CLEANUP_THREAD;
+
+    assert(pthread_detach(io_thread->thread) == 0);
     succeed += 1;
   }
 
