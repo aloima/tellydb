@@ -1,3 +1,6 @@
+#include "server/io.h"
+#include <stdatomic.h>
+#include <stdint.h>
 #include <telly.h>
 
 #define IO_QUEUE_SIZE 512
@@ -47,7 +50,7 @@ int create_io_threads() {
       break;
     }
 
-    atomic_init(&io_thread->destroyed, false);
+    atomic_init(&io_thread->status, IO_THREAD_ACTIVE);
 
     const int code = pthread_create(&io_thread->thread, NULL, io_thread_procedure, io_thread);
     if (code == EAGAIN) goto CLEANUP_THREAD;
@@ -61,9 +64,18 @@ int create_io_threads() {
 
 void send_destroy_signal_to_io_threads() {
   for (int64_t i = 0; i < io_thread_count; ++i) {
-    atomic_store_explicit(&io_threads[i].destroyed, true, memory_order_relaxed);
+    atomic_store_explicit(&io_threads[i].status, IO_THREAD_PENDING_DESTROY, memory_order_relaxed);
     signal_notifier(io_threads[i].notifier, 1);
   }
+
+  WAIT_DESTROYED:
+  usleep(10);
+  for (int64_t i = 0; i < io_thread_count; ++i) {
+    if (atomic_load_explicit(&io_threads[i].status, memory_order_relaxed) != IO_THREAD_DESTROYED)
+      goto WAIT_DESTROYED;
+  }
+
+  free(io_threads);
 }
 
 void add_io_request(const enum IOOpType type, Client *client, string_t to_write) {
@@ -101,7 +113,7 @@ void *io_thread_procedure(void *arg) {
 
   while (true) {
     WAIT_EVENTS(efd, events, 1, -1);
-    if (atomic_load_explicit(&thread->destroyed, memory_order_relaxed)) break;
+    if (atomic_load_explicit(&thread->status, memory_order_relaxed) == IO_THREAD_PENDING_DESTROY) break;
 
     const uint64_t count = consume_notifier(thread->notifier);
 
@@ -143,5 +155,6 @@ DESTROY:
   arena_destroy(thread->resp_arena);
   arena_destroy(thread->ucmd_arena);
 
+  atomic_store_explicit(&thread->status, IO_THREAD_DESTROYED, memory_order_relaxed);
   return NULL;
 }

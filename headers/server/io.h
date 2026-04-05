@@ -13,11 +13,17 @@ enum IOOpType : uint8_t {
   IOOP_TERMINATE
 };
 
+enum IOThreadStatus {
+  IO_THREAD_ACTIVE,
+  IO_THREAD_PENDING_DESTROY,
+  IO_THREAD_DESTROYED
+};
+
 typedef struct {
   pthread_t thread;
   ThreadQueue *queue;
   event_notifier_t *notifier;
-  atomic_bool destroyed;
+  _Atomic(enum IOThreadStatus) status;
 
   // Read buffers
   char *buf;
