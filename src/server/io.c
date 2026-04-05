@@ -1,6 +1,3 @@
-#include "server/io.h"
-#include <stdatomic.h>
-#include <stdint.h>
 #include <telly.h>
 
 #define IO_QUEUE_SIZE 512
@@ -79,6 +76,8 @@ void send_destroy_signal_to_io_threads() {
 }
 
 void add_io_request(const enum IOOpType type, Client *client, string_t to_write) {
+  if (client->id == -1) return;
+
   IOThread *selected = &io_threads[client->id % io_thread_count];
 
   IOOperation op = {
