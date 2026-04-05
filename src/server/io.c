@@ -31,7 +31,6 @@ int create_io_threads() {
     const int code = pthread_create(&io_thread->thread, NULL, io_thread_procedure, io_thread);
     event_notifier_t *notifier = (io_thread->notifier = create_notifier());
     ThreadQueue *queue = (io_thread->queue = create_tqueue(IO_QUEUE_SIZE, sizeof(IOOperation), alignof(IOOperation)));
-    Queue *prior_queue = (io_thread->prior_queue = create_queue(io_thread_count - 1, sizeof(IOOperation), alignof(IOOperation)));
 
     char *buf = (io_thread->buf = malloc(RESP_BUF_SIZE));
     Arena *ucmd_arena = (io_thread->ucmd_arena = arena_create(INITIAL_UNKNOWN_COMMAND_ARENA_SIZE));
@@ -40,7 +39,6 @@ int create_io_threads() {
     if (notifier == NULL || queue == NULL || buf == NULL || ucmd_arena == NULL || resp_arena == NULL || code == EAGAIN) {
       if (notifier) destroy_notifier(notifier);
       if (queue) free_tqueue(queue);
-      if (prior_queue) free_queue(prior_queue);
 
       if (buf) free(buf);
       if (ucmd_arena) arena_destroy(ucmd_arena);
@@ -66,15 +64,7 @@ void send_destroy_signal_to_io_threads() {
 }
 
 void add_io_request(const enum IOOpType type, Client *client, string_t to_write) {
-  IOThread *selected = &io_threads[0];
-
-  for (int64_t i = 1; i < io_thread_count; ++i) {
-    IOThread *thread = &io_threads[i];
-
-    if (estimate_tqueue_size(selected->queue) > estimate_tqueue_size(thread->queue)) {
-      selected = thread;
-    }
-  }
+  IOThread *selected = &io_threads[client->id % io_thread_count];
 
   IOOperation op = {
     .type = type,
@@ -103,8 +93,6 @@ void *io_thread_procedure(void *arg) {
   added = ADD_EVENT(efd, fd, event);
   if (added == -1) goto DESTROY;
 
-  int k = 0;
-
   // There is exactly one fd/notifier
   event_t events[1];
 
@@ -116,40 +104,17 @@ void *io_thread_procedure(void *arg) {
 
     for (uint64_t i = 0; i < count; ++i) {
       IOOperation op;
-      if (thread->prior_queue->size != 0) {
-        k += 1;
-        op = *((IOOperation *) pop_queue(thread->prior_queue));
-      } else {
-        if (!pop_tqueue(thread->queue, &op)) break;
-      }
+      if (!pop_tqueue(thread->queue, &op)) break;
 
       Client *client = op.client;
       if (client->id == -1) continue;
-
-      bool processing = false;
-      for (uint64_t j = 0; j < io_thread_count; ++j) {
-        if (io_threads[j].client_id == client->id) {
-          processing = true;
-          signal_notifier(thread->notifier, 1);
-          break;
-        }
-      }
-
-      // This client is processing already by another I/O thread
-      if (processing) {
-        push_queue(thread->prior_queue, &op);
-        usleep(1); // TODO: need to be find better way
-        continue;
-      }
-
-      thread->client_id = client->id;
 
       switch (op.type) {
         case IOOP_TERMINATE:
           terminate_connection(client);
           break;
 
-        case IOOP_GET_COMMAND:
+        case IOOP_READ:
           read_command(thread, client);
           break;
 
@@ -157,13 +122,10 @@ void *io_thread_procedure(void *arg) {
           write_to_socket(client, op.to_write.value, op.to_write.len);
           break;
       }
-
-      thread->client_id = -1;
     }
   }
 
 DESTROY:
-  printf("k: %d\n", k);
   if (added != -1) {
     event_t ev;
     PREPARE_REMOVING_EVENT(ev, fd);
@@ -173,7 +135,6 @@ DESTROY:
   if (efd != -1) close(efd);
   destroy_notifier(thread->notifier);
   free_tqueue(thread->queue);
-  free_queue(thread->prior_queue);
 
   free(thread->buf);
   arena_destroy(thread->resp_arena);
