@@ -83,7 +83,10 @@ void add_io_request(const enum IOOpType type, Client *client, string_t to_write)
   IOOperation op = {
     .type = type,
     .client = client,
-    .to_write = RESP_OK_MESSAGE("PONG") // need to be replaced with to_write
+
+    // In transaction thread, each `to_write` value will be stored independenly already.
+    // Storing in extra layer (here) is redundant.
+    .to_write = to_write
   };
 
   push_tqueue(selected->queue, &op);
