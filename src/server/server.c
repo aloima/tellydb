@@ -206,9 +206,6 @@ void start_server(Config *config) {
   server->eventfd = CREATE_EVENTFD();
   CLEANUP_RETURN_LOG_IF(server->eventfd == -1, "Cannot create epoll instance.");
 
-  server->io_eventfd = CREATE_EVENTFD();
-  CLEANUP_RETURN_LOG_IF(server->io_eventfd == -1, "Cannot create epoll instance.");
-
   event_t event;
   CREATE_EVENT(event, server->sockfd);
   CLEANUP_RETURN_LOG_IF(ADD_EVENT(server->eventfd, server->sockfd, event) == -1, "Cannot create epoll instance.");

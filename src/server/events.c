@@ -112,9 +112,12 @@ void handle_events() {
     for (int64_t i = 0; i < io_thread_count; ++i) {
       if (used_threads[i] == false) continue;
 
+      IOThread *threads = get_io_threads();
+
       // Wait thread to complete its jobs
-      WAIT_EVENTS(server->io_eventfd, emptiness_event, 1, -1);
-      consume_notifier(get_io_threads()[i].server_notifier);
+      WAIT_EVENTS(threads[i].emptiness_eventfd, emptiness_event, 1, -1);
+      int x = consume_notifier(threads[i].emptiness_notifier);
+      if (x == 0) printf("x: %d\n", x);
 
       used_threads[i] = false;
     }

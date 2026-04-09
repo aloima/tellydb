@@ -32,8 +32,6 @@ typedef struct {
   int eventfd;
   int sockfd;
 
-  int io_eventfd;
-
   SSL_CTX *ctx;
   Config *conf;
   time_t start_at;

@@ -37,7 +37,10 @@ int create_io_threads() {
     IOThread *io_thread = &io_threads[succeed];
 
     event_notifier_t *notifier = (io_thread->notifier = create_notifier());
-    event_notifier_t *server_notifier = (io_thread->server_notifier = create_notifier());
+
+    event_notifier_t *emptiness_notifier = (io_thread->emptiness_notifier = create_notifier());
+    const int emptiness_eventfd = (io_thread->emptiness_eventfd = CREATE_EVENTFD());
+
     ThreadQueue *queue = (io_thread->queue = create_tqueue(IO_QUEUE_SIZE, sizeof(IOOperation), alignof(IOOperation)));
 
     char *buf = (io_thread->buf = malloc(RESP_BUF_SIZE));
@@ -47,8 +50,10 @@ int create_io_threads() {
     if (notifier == NULL || queue == NULL || buf == NULL || ucmd_arena == NULL || resp_arena == NULL) {
       CLEANUP_THREAD:
       if (notifier) destroy_notifier(notifier);
-      if (server_notifier) destroy_notifier(server_notifier);
       if (queue) free_tqueue(queue);
+
+      if (emptiness_notifier) destroy_notifier(emptiness_notifier);
+      if (emptiness_eventfd == -1) close(emptiness_eventfd);
 
       if (buf) free(buf);
       if (ucmd_arena) arena_destroy(ucmd_arena);
@@ -123,12 +128,12 @@ void *io_thread_procedure(void *arg) {
   added = ADD_EVENT(efd, fd, event);
   if (added == -1) goto DESTROY;
 
-  const int emptiness_fd = get_notifier(thread->server_notifier);
+  const int emptiness_fd = get_notifier(thread->emptiness_notifier);
 
   event_t emptiness_event;
   CREATE_EVENT(emptiness_event, emptiness_fd);
 
-  emptiness_added = ADD_EVENT(server->io_eventfd, emptiness_fd, emptiness_event);
+  emptiness_added = ADD_EVENT(thread->emptiness_eventfd, emptiness_fd, emptiness_event);
   if (emptiness_added == -1) goto DESTROY;
 
   // There is exactly one fd/notifier
@@ -162,7 +167,7 @@ void *io_thread_procedure(void *arg) {
       }
     }
 
-    signal_notifier(thread->server_notifier, 1);
+    signal_notifier(thread->emptiness_notifier, 1);
   }
 
 DESTROY:
@@ -175,13 +180,16 @@ DESTROY:
   if (emptiness_added != -1) {
     event_t ev;
     PREPARE_REMOVING_EVENT(ev, emptiness_added);
-    REMOVE_EVENT(server->io_eventfd, emptiness_added);
+    REMOVE_EVENT(thread->emptiness_eventfd, emptiness_added);
   }
 
   if (efd != -1) close(efd);
+
   destroy_notifier(thread->notifier);
-  destroy_notifier(thread->server_notifier);
   free_tqueue(thread->queue);
+
+  destroy_notifier(thread->emptiness_notifier);
+  close(thread->emptiness_eventfd);
 
   free(thread->buf);
   arena_destroy(thread->resp_arena);

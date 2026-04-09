@@ -23,7 +23,11 @@ typedef struct {
   pthread_t thread;
   ThreadQueue *queue;
   event_notifier_t *notifier; // For catching I/O operations, used inside I/O thread
-  event_notifier_t *server_notifier; // For catching emptiness of I/O operations, used inside server
+
+  // For catching emptiness of I/O operations, used via server events
+  event_notifier_t *emptiness_notifier;
+  int emptiness_eventfd;
+
   _Atomic(enum IOThreadStatus) status;
 
   // Read buffers
