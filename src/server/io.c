@@ -78,7 +78,7 @@ void send_destroy_signal_to_io_threads() {
   WAIT_DESTROYED:
   usleep(10);
   for (int64_t i = 0; i < io_thread_count; ++i) {
-    if (atomic_load_explicit(&io_threads[i].status, memory_order_relaxed) != IO_THREAD_DESTROYED)
+    if (atomic_load_explicit(&io_threads[i].status, memory_order_acquire) != IO_THREAD_DESTROYED)
       goto WAIT_DESTROYED;
   }
 
@@ -187,6 +187,6 @@ DESTROY:
   arena_destroy(thread->resp_arena);
   arena_destroy(thread->ucmd_arena);
 
-  atomic_store_explicit(&thread->status, IO_THREAD_DESTROYED, memory_order_relaxed);
+  atomic_store_explicit(&thread->status, IO_THREAD_DESTROYED, memory_order_release);
   return NULL;
 }
