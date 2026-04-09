@@ -14,6 +14,14 @@ static sigset_t set;
 
 void *io_thread_procedure(void *arg);
 
+IOThread *get_io_threads() {
+  return io_threads;
+}
+
+int64_t get_io_thread_count() {
+  return io_thread_count;
+}
+
 int create_io_threads() {
   assert(sigemptyset(&set) == 0);
   assert(sigaddset(&set, SIGINT) == 0);
@@ -29,6 +37,7 @@ int create_io_threads() {
     IOThread *io_thread = &io_threads[succeed];
 
     event_notifier_t *notifier = (io_thread->notifier = create_notifier());
+    event_notifier_t *server_notifier = (io_thread->server_notifier = create_notifier());
     ThreadQueue *queue = (io_thread->queue = create_tqueue(IO_QUEUE_SIZE, sizeof(IOOperation), alignof(IOOperation)));
 
     char *buf = (io_thread->buf = malloc(RESP_BUF_SIZE));
@@ -38,6 +47,7 @@ int create_io_threads() {
     if (notifier == NULL || queue == NULL || buf == NULL || ucmd_arena == NULL || resp_arena == NULL) {
       CLEANUP_THREAD:
       if (notifier) destroy_notifier(notifier);
+      if (server_notifier) destroy_notifier(server_notifier);
       if (queue) free_tqueue(queue);
 
       if (buf) free(buf);
@@ -75,10 +85,11 @@ void send_destroy_signal_to_io_threads() {
   free(io_threads);
 }
 
-void add_io_request(const enum IOOpType type, Client *client, string_t to_write) {
-  if (client->id == -1) return;
+int add_io_request(const enum IOOpType type, Client *client, string_t to_write) {
+  if (client->id == -1) return -1;
 
-  IOThread *selected = &io_threads[client->id % io_thread_count];
+  int thread_idx = (client->id % io_thread_count);
+  IOThread *selected = &io_threads[thread_idx];
 
   IOOperation op = {
     .type = type,
@@ -91,13 +102,15 @@ void add_io_request(const enum IOOpType type, Client *client, string_t to_write)
 
   push_tqueue(selected->queue, &op);
   signal_notifier(selected->notifier, 1);
+
+  return thread_idx;
 }
 
 void *io_thread_procedure(void *arg) {
   assert(pthread_sigmask(SIG_BLOCK, &set, NULL) == 0);
 
   IOThread *thread = (IOThread *) arg;
-  int added = -1, efd = -1;
+  int emptiness_added = -1, added = -1, efd = -1;
 
   efd = CREATE_EVENTFD();
   if (efd == -1) goto DESTROY;
@@ -109,6 +122,14 @@ void *io_thread_procedure(void *arg) {
 
   added = ADD_EVENT(efd, fd, event);
   if (added == -1) goto DESTROY;
+
+  const int emptiness_fd = get_notifier(thread->server_notifier);
+
+  event_t emptiness_event;
+  CREATE_EVENT(emptiness_event, emptiness_fd);
+
+  emptiness_added = ADD_EVENT(server->io_eventfd, emptiness_fd, emptiness_event);
+  if (emptiness_added == -1) goto DESTROY;
 
   // There is exactly one fd/notifier
   event_t events[1];
@@ -140,6 +161,8 @@ void *io_thread_procedure(void *arg) {
           break;
       }
     }
+
+    signal_notifier(thread->server_notifier, 1);
   }
 
 DESTROY:
@@ -149,8 +172,15 @@ DESTROY:
     REMOVE_EVENT(efd, fd);
   }
 
+  if (emptiness_added != -1) {
+    event_t ev;
+    PREPARE_REMOVING_EVENT(ev, emptiness_added);
+    REMOVE_EVENT(server->io_eventfd, emptiness_added);
+  }
+
   if (efd != -1) close(efd);
   destroy_notifier(thread->notifier);
+  destroy_notifier(thread->server_notifier);
   free_tqueue(thread->queue);
 
   free(thread->buf);

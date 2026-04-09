@@ -1,3 +1,5 @@
+#include "server/io.h"
+#include <stdint.h>
 #include <telly.h>
 
 static inline int accept_client() {
@@ -69,17 +71,18 @@ static inline int accept_client() {
 // TODO: thread-race for transactions, some executions will not be executed for inline commands
 void handle_events() {
   const uint32_t event_capacity = server->conf->max_clients + 2; // sockfd + empty for safety
-  event_t events[256];
+  event_t events[256], emptiness_event[1];
 
   const int sockfd = server->sockfd;
   const int eventfd = server->eventfd;
   struct Command *commands = server->commands;
 
-  int timeout = -1;
+  const int64_t io_thread_count = get_io_thread_count();
+  int used_threads[io_thread_count];
+  for (int64_t i = 0; i < io_thread_count; ++i) used_threads[i] = false;
 
   while (!server->closed) {
-    const int nfds = WAIT_EVENTS(eventfd, events, 256, timeout);
-    int processed = nfds;
+    const int nfds = WAIT_EVENTS(eventfd, events, 256, -1);
 
     for (int i = 0; i < nfds; ++i) {
       __builtin_prefetch(&events[i + 1], 0, 0);
@@ -92,17 +95,28 @@ void handle_events() {
         }
 
         // If client cannot be accepted, it continues already. No need condition.
-        while (accept_client() != -1) processed++;
-        processed--;
+        while (accept_client() != -1);
         continue;
       }
 
       Client *client = GET_EVENT_DATA(events[i]);
-      add_io_request(IOOP_READ, client, EMPTY_STRING());
+      int io_thread_idx = add_io_request(IOOP_READ, client, EMPTY_STRING());
 
       if (IS_CONNECTION_CLOSED(events[i])) add_io_request(IOOP_TERMINATE, client, EMPTY_STRING());
+
+      // io_thread_idx value is determined by client->id, so no need for making individual handling for IOOP_TERMINATE
+      if (io_thread_idx != -1)
+        used_threads[io_thread_idx] = true;
     }
 
-    timeout = 32 - (processed * 32 / 256);
+    for (int64_t i = 0; i < io_thread_count; ++i) {
+      if (used_threads[i] == false) continue;
+
+      // Wait thread to complete its jobs
+      WAIT_EVENTS(server->io_eventfd, emptiness_event, 1, -1);
+      consume_notifier(get_io_threads()[i].server_notifier);
+
+      used_threads[i] = false;
+    }
   }
 }
