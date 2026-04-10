@@ -50,7 +50,7 @@ static inline void cleanup() {
   destroy_transaction_thread();
   usleep(15);
 
-  destroy_io_thread();
+  send_destroy_signal_to_io_threads();
   usleep(15);
 
   free_transaction_blocks();
@@ -212,7 +212,7 @@ void start_server(Config *config) {
 
   CLEANUP_RETURN_IF(initialize_clients() == -1);
 
-  CLEANUP_RETURN_LOG_IF(create_io_thread() == -1, "Cannot create I/O thread.");
+  CLEANUP_RETURN_LOG_IF(create_io_threads() == -1, "Cannot create I/O thread.");
   write_log(LOG_INFO, "Created I/O thread.");
 
   server->start_at = time(NULL);

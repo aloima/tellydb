@@ -78,9 +78,21 @@ void *transaction_thread(void *arg) {
     TransactionBlock *block;
     uint64_t count = consume_notifier(tx_notifier);
 
-    while (count-- && pop_tqueue(tx_queue, &block)) { // TODO: unknown valgrind warning
+    // possible TODO: unknown valgrind warning
+    while (count > 0) {
+      if (atomic_load_explicit(&kill_pending, memory_order_relaxed)) {
+        // If there is no unfinished transaction, continue checking for kill_pending thread
+        if (!pop_tqueue(tx_queue, &block)) {
+          count--;
+          continue;
+        }
+      } else {
+        while (!pop_tqueue(tx_queue, &block)) cpu_relax();
+      }
+
       execute_transaction_block(block);
       remove_transaction_block(block);
+      count--;
     }
   }
 
