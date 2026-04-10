@@ -2,38 +2,8 @@
 
 #define INITIAL_UNKNOWN_COMMAND_ARENA_SIZE 8192
 
-static char *buf = NULL;
-static Arena *arena = NULL;
-static Arena *ucmd_arena = NULL;
-
-int initialize_read_buffers() {
-  buf = malloc(RESP_BUF_SIZE);
-  if (buf == NULL) return -1;
-
-  arena = arena_create(INITIAL_RESP_ARENA_SIZE);
-  if (arena == NULL) {
-    free(buf);
-    return -1;
-  }
-
-  ucmd_arena = arena_create(INITIAL_UNKNOWN_COMMAND_ARENA_SIZE);
-  if (ucmd_arena == NULL) {
-    arena_destroy(arena);
-    free(buf);
-    return -1;
-  }
-
-  return 1;
-}
-
-void free_read_buffers() {
-  if (buf) free(buf);
-  if (arena) arena_destroy(arena);
-  if (ucmd_arena) arena_destroy(ucmd_arena);
-}
-
-static inline void unknown_command(Client *client, string_t *name) {
-  char *ubuf = arena_alloc(ucmd_arena, name->len + 22);
+static inline void unknown_command(Client *client, string_t *name, Arena *arena) {
+  char *ubuf = arena_alloc(arena, name->len + 22);
   const size_t nbytes = sprintf(ubuf, "-Unknown command '%s'\r\n", name->value);
 
   add_io_request(IOOP_WRITE, client, CREATE_STRING(ubuf, nbytes));
@@ -70,8 +40,8 @@ static inline void get_used_command(const commanddata_t *data, UsedCommand *comm
   atomic_store_explicit(&command->subcommand, subcommand, memory_order_relaxed);
 }
 
-void read_command(Client *client) {
-  int size = read_from_socket(client, buf, RESP_BUF_SIZE);
+void read_command(IOThread *thread, Client *client) {
+  int size = read_from_socket(client, thread->buf, RESP_BUF_SIZE);
 
   if (size == 0) {
     add_io_request(IOOP_TERMINATE, client, EMPTY_STRING());
@@ -82,13 +52,13 @@ void read_command(Client *client) {
 
   while (size != -1) {
     commanddata_t data;
-    if (!get_command_data(arena, client, buf, &at, &size, &data)) continue;
+    if (!get_command_data(thread->resp_arena, client, thread->buf, &at, &size, &data)) continue;
 
     if (size == at) {
       if (size != RESP_BUF_SIZE) {
         size = -1;
       } else {
-        size = read_from_socket(client, buf, RESP_BUF_SIZE);
+        size = read_from_socket(client, thread->buf, RESP_BUF_SIZE);
         at = 0;
       }
     }
@@ -100,8 +70,10 @@ void read_command(Client *client) {
 
     const struct CommandIndex *command_index = get_command_index(data.name->value, data.name->len);
 
+    // TODO: related to issue #44
+    // takes invalid command data because of that, then throws unknown command error
     if (!command_index) {
-      unknown_command(client, data.name);
+      unknown_command(client, data.name, thread->ucmd_arena);
       continue;
     }
 

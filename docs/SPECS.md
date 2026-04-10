@@ -11,10 +11,10 @@ tellydb contains a main thread (process), a transaction thread, I/O threads and 
 4. Once the close signal, deinitializes everything and ends the loop.
 
 ### I/O Threads
-tellydb spawns `max(processor count - 1, 1)` I/O threads. The architecture operates as follows:
+tellydb spawns `max(processor count - 1, 2)` I/O threads. The architecture operates as follows:
 1. Each I/O thread runs an infinite loop, continuously polling for incoming tasks.
-2. Any thread can enqueue an I/O job when need into a thread-safe queue.
-3. An available I/O thread dequeues a task from the queue.
+2. Any thread can enqueue an I/O job when need into thread-safe queue of the thread. The thread to be responsible for is selected based on `client->id`.
+3. The selected I/O thread dequeues a task from the queue.
 4. The I/O thread executes the task.
 5. The result of the task is not captured by the calling thread externally.
 
