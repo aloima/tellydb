@@ -38,6 +38,13 @@
 #include <openssl/provider.h>   // IWYU pragma: export
 #include <openssl/core_names.h> // IWYU pragma: export
 
+// To guarantee code execution
+#define GASSERT(actual, op, expected) do { \
+  typeof(actual) __actual_val = (actual);   \
+  typeof(expected) __expected_val = (expected);   \
+  assert(__actual_val op __expected_val);        \
+} while (0)
+
 #define VERY_LIKELY(x) (__builtin_expect_with_probability(!!(x), 1, 0.999))
 #define VERY_UNLIKELY(x) (__builtin_expect_with_probability(!!(x), 0, 0.999))
 #define min(a, b) ((a) > (b) ? (b) : (a))

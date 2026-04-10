@@ -20,7 +20,7 @@ int initialize_logs() {
 
   // All errors from stat() method are already handled by open_file() method
   struct stat sostat;
-  assert(stat(conf->log_file, &sostat) != -1);
+  GASSERT(stat(conf->log_file, &sostat), !=, -1);
 
   const off_t size = sostat.st_size;
   atomic_init(&new_size, size);
@@ -71,7 +71,7 @@ int initialize_logs() {
     old_at = at;
   }
 
-  assert(munmap(data, size) == 0);
+  GASSERT(munmap(data, size), ==, 0);
   return 0;
 }
 
@@ -183,14 +183,14 @@ void save_and_close_logs() {
   }
 
   map[size] = '\0';
-  assert(estimate_tqueue_size(lines) == 0);
+  GASSERT(estimate_tqueue_size(lines), ==, 0);
 
 CLEANUP:
   free_tqueue(lines);
   msync(map, size + 1, MS_ASYNC);
 
   munmap(map, size + 1);
-  assert(close(fd) == 0);
+  GASSERT(close(fd), ==, 0);
 
   #undef CHECK_ERROR
 }
