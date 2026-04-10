@@ -23,7 +23,7 @@ static void collect_bytes(const int fd, char *block, const uint16_t block_size, 
   }
 }
 
-static size_t collect_string(string_t *string, const int fd, char *block, const uint16_t block_size, uint16_t *at) {
+static size_t collect_string(string_t *string, const int fd, char *block, const uint16_t block_size, uint16_t *at, bool nt) {
   string->len = 0;
 
   uint8_t first;
@@ -33,7 +33,14 @@ static size_t collect_string(string_t *string, const int fd, char *block, const 
   collect_bytes(fd, block, block_size, at, byte_count, &string->len);
 
   string->len = ((string->len << 6) | (first & 0b111111));
-  string->value = malloc(string->len);
+
+  if (nt) {
+    string->value = malloc(string->len + 1);
+    string->value[string->len] = '\0';
+  } else {
+    string->value = malloc(string->len);
+  }
+
   collect_bytes(fd, block, block_size, at, string->len, string->value);
 
   return (1 + byte_count + string->len);
@@ -143,7 +150,7 @@ static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uin
   void *value = NULL;
   uint8_t type;
 
-  size_t collected_bytes = collect_string(&key, fd, block, block_size, at) + 1;
+  size_t collected_bytes = collect_string(&key, fd, block, block_size, at, false) + 1;
   collect_bytes(fd, block, block_size, at, 1, &type);
 
   switch (type) {
@@ -162,7 +169,7 @@ static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uin
 
     case TELLY_STR:
       value = malloc(sizeof(string_t));
-      collected_bytes += collect_string(value, fd, block, block_size, at);
+      collected_bytes += collect_string(value, fd, block, block_size, at, false);
       break;
 
     case TELLY_BOOL:
@@ -189,7 +196,7 @@ static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uin
           collected_bytes += 1; // type byte
 
           string_t name;
-          collected_bytes += collect_string(&name, fd, block, block_size, at);
+          collected_bytes += collect_string(&name, fd, block, block_size, at, false);
 
           switch (byte) {
             case TELLY_NULL:
@@ -207,7 +214,7 @@ static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uin
 
             case TELLY_STR:
               fv_value = malloc(sizeof(string_t));
-              collected_bytes += collect_string(fv_value, fd, block, block_size, at);
+              collected_bytes += collect_string(fv_value, fd, block, block_size, at, false);
               break;
 
             case TELLY_BOOL:
@@ -254,7 +261,7 @@ static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uin
 
           case TELLY_STR:
             list_value = malloc(sizeof(string_t));
-            collected_bytes += collect_string(list_value, fd, block, block_size, at);
+            collected_bytes += collect_string(list_value, fd, block, block_size, at, false);
             break;
 
           case TELLY_BOOL:
@@ -290,7 +297,7 @@ static size_t collect_database(Database **database, const int fd, char *block, c
   collect_bytes(fd, block, block_size, at, 8, count);
 
   string_t name;
-  size_t collected_bytes = collect_string(&name, fd, block, block_size, at) + 8;
+  size_t collected_bytes = collect_string(&name, fd, block, block_size, at, true) + 8;
 
   const uint64_t needed = pow(2, get_bit_count(*count));
   const uint64_t capacity = ((needed > DATABASE_INITIAL_SIZE) ? needed : DATABASE_INITIAL_SIZE);
