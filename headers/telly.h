@@ -10,6 +10,7 @@
 #include <stdlib.h>    // IWYU pragma: export
 #include <assert.h>    // IWYU pragma: export
 #include <signal.h>    // IWYU pragma: export
+#include <ctype.h>     // IWYU pragma: export
 #include <stdint.h>    // IWYU pragma: export
 #include <inttypes.h>  // IWYU pragma: export
 #include <stdatomic.h> // IWYU pragma: export
