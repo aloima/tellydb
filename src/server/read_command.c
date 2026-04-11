@@ -70,8 +70,6 @@ void read_command(IOThread *thread, Client *client) {
 
     const struct CommandIndex *command_index = get_command_index(data.name->value, data.name->len);
 
-    // TODO: related to issue #44
-    // takes invalid command data because of that, then throws unknown command error
     if (!command_index) {
       unknown_command(client, data.name, thread->ucmd_arena);
       continue;
