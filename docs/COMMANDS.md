@@ -394,7 +394,7 @@ The list of unwritten behavior to commands.
 **Permissions**: None  
 **Returns**: Array includes an Unix timestamp and microseconds already elapsed in the current second  
 **Behavior**:
-* Calls gettimeofday() method.
+* Calls clock_gettime() method. If method is failed, throws an error.
 
 ---
 

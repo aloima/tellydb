@@ -3,12 +3,18 @@
 static string_t run(struct CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
-  struct timeval timestamp;
-  gettimeofday(&timestamp, NULL);
+  struct timespec ts;
+  if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
+    return RESP_ERROR_MESSAGE("clock_gettime() syscall error");
 
-  const size_t nbytes = sprintf(entry->client->write_buf, "*2\r\n"
-    ":%" PRIiMAX "\r\n"
-    ":%" PRIiMAX "\r\n", (intmax_t) timestamp.tv_sec, (intmax_t) timestamp.tv_usec);
+  const intmax_t secs = ts.tv_sec;
+  const intmax_t usecs = (ts.tv_nsec / 1000);
+
+  const size_t nbytes = sprintf(entry->client->write_buf, (
+    "*2\r\n"
+      ":%" PRIiMAX "\r\n"
+      ":%" PRIiMAX "\r\n"
+  ), secs, usecs);
 
   return CREATE_STRING(entry->client->write_buf, nbytes);
 }
