@@ -246,6 +246,16 @@ The list of unwritten behavior to commands.
 
 ---
 
+### ECHO
+**Syntax**: `ECHO message`  
+**Description**: Returns the given message.  
+**Since**: `1.0.0`  
+**Time complexity**: `O(1)`  
+**Permissions**: None  
+**Returns**: message
+
+---
+
 ### EXEC
 **Syntax**: `EXEC`  
 **Description**: Executes a transaction block consists of multiple transactions.  

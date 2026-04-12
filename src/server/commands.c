@@ -6,8 +6,8 @@ static const struct Command *command_list[] = {
 
   // Generic commands
   &cmd_age, &cmd_auth, &cmd_client, &cmd_command, &cmd_discard,
-  &cmd_exec, &cmd_hello, &cmd_info, &cmd_multi, &cmd_ping,
-  &cmd_pwd, &cmd_time,
+  &cmd_echo, &cmd_exec, &cmd_hello, &cmd_info, &cmd_multi,
+  &cmd_ping, &cmd_pwd, &cmd_time,
 
   // Hashtable commands
   &cmd_hdel, &cmd_hget, &cmd_hgetall, &cmd_hkeys, &cmd_hlen,

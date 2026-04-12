@@ -16,6 +16,7 @@ extern const struct Command cmd_auth;
 extern const struct Command cmd_client;
 extern const struct Command cmd_command;
 extern const struct Command cmd_discard;
+extern const struct Command cmd_echo;
 extern const struct Command cmd_exec;
 extern const struct Command cmd_hello;
 extern const struct Command cmd_info;
