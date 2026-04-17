@@ -244,7 +244,7 @@ int remove_password(Client *executor, char *value, const size_t value_len) {
     return 0;
   } else {
     const int at = where_password(value, value_len);
-    if (at == -1) return false;
+    if (at == -1) return -1;
 
     remove_password_from_clients(passwords[at]);
     free(passwords[at]);

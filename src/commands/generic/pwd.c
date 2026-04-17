@@ -132,13 +132,13 @@ static inline string_t remove_pwd(struct CommandEntry *entry) {
 
   const string_t input = entry->args->data[1];
 
-  if (remove_password(entry->client, input.value, input.len) && entry->client) {
+  if (remove_password(entry->client, input.value, input.len) == -1) {
     PASS_NO_CLIENT(entry->client);
-    return RESP_OK();
+    return RESP_ERROR_MESSAGE("This password cannot be found");
   }
 
   PASS_NO_CLIENT(entry->client);
-  return RESP_ERROR_MESSAGE("This password cannot be found");
+  return RESP_OK();
 }
 
 static inline string_t generate_pwd(struct CommandEntry *entry) {
