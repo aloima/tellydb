@@ -40,7 +40,7 @@ The list of unwritten behavior to commands.
 **Since**: `0.1.6`  
 **Time complexity**: `O(1)`  
 **Permissions**: `P_READ`  
-**Returns**: Integer
+**Returns**: Integer  
 **Behavior**:
 * If database cannot be found, throws an error.
 
