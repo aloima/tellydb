@@ -320,6 +320,8 @@ static inline void generate_headers(char *headers, const uint32_t server_age) {
   memcpy(headers + 2, &server_age, sizeof(uint32_t));
 }
 
+// TODO: better error handling
+// TODO: maybe mmap() will be used for directly saving instead of parsing all data individually
 int save_data(const uint32_t server_age) {
   if (saving) return -1;
 
@@ -400,6 +402,11 @@ int save_data(const uint32_t server_age) {
           const uint64_t kv_size = (1 + get_value_size(TELLY_STR, &kv->key) + get_value_size(kv->type, kv->value));
           data_size = ((data_size > kv_size) ? data_size : kv_size);
         }
+      }
+
+      if (data_size == 0) {
+        node = node->next;
+        continue;
       }
 
       char *data = malloc(data_size);
