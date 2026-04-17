@@ -50,14 +50,14 @@ static inline string_t add_pwd(struct CommandEntry *entry) {
     return WRONG_ARGUMENT_ERROR("PWD ADD");
   }
 
-  const uint8_t all = get_full_password()->permissions;
   const string_t data = entry->args->data[1];
 
   const char *value = entry->args->data[2].value;
   int permissions = -1;
 
   if (streq(value, "all")) {
-    permissions = all;
+    const uint8_t all_permissions = get_full_password()->permissions;
+    permissions = all_permissions;
   } else {
     const PermissionValue permission_value = read_permissions_value(entry, value);
 
