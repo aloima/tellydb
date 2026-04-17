@@ -48,3 +48,13 @@ bool delete_data(Database *database, const string_t key) {
 
   return true;
 }
+
+void clear_database(Database *database) {
+  for (uint64_t i = 0; i < database->size.capacity; ++i) {
+    struct KVPair *kv = database->data[i];
+    if (kv != NULL) free_kv(kv);
+    database->data[i] = NULL;
+  }
+
+  database->size.stored = 0;
+}
