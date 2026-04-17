@@ -50,13 +50,13 @@ void free_kdf() {
   OSSL_LIB_CTX_free(NULL); // free's default libraries
 }
 
-static bool password_derive(char *value, const size_t value_len, unsigned char *out) {
+static inline int password_derive(char *value, const size_t value_len, unsigned char *out) {
   params[3] = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_KEY, value, value_len);
-  if (EVP_KDF_derive(ctx, out, 48, params) > 0) return true;
+  if (EVP_KDF_derive(ctx, out, 48, params) > 0) return 0;
 
   write_log(LOG_ERR, "Cannot derive the password.");
   free_kdf();
-  return false;
+  return -1;
 }
 
 static inline void remove_password_from_clients(Password *password) {
@@ -170,7 +170,7 @@ uint16_t get_authorization_from_file(const int fd, char *block, const uint16_t b
 
 int where_password(char *value, const size_t value_len) {
   unsigned char derived[48];
-  if (!password_derive(value, value_len, derived)) return -1;
+  if (password_derive(value, value_len, derived) == -1) return -1;
 
   for (uint32_t i = 0; i < password_count; ++i) {
     Password *password = passwords[i];
@@ -180,19 +180,19 @@ int where_password(char *value, const size_t value_len) {
   return -1;
 }
 
-bool edit_password(char *value, const size_t value_len, const uint32_t permissions) {
+int edit_password(char *value, const size_t value_len, const uint32_t permissions) {
   const int at = where_password(value, value_len);
-  if (at == -1) return false;
+  if (at == -1) return -1;
 
   passwords[at]->permissions = permissions;
-  return true;
+  return 0;
 }
 
-void add_password(Client *client, const string_t data, const uint8_t permissions) {
+int add_password(Client *client, const string_t data, const uint8_t permissions) {
   Password *password;
   if (amalloc(password, Password, 1) != 0) {
     write_log(LOG_ERR, "Cannot create a password, out of memory.");
-    return;
+    return -1;
   }
 
   password_count += 1;
@@ -204,18 +204,19 @@ void add_password(Client *client, const string_t data, const uint8_t permissions
   }
 
   if (passwords == NULL) {
-    write_log(LOG_ERR, "Cannot create a password, out of memory.");
     password_count -= 1;
     free(password);
-    return;
+    return -1;
   } else if (password_count == 1) {
     client->password->permissions = 0; // Resets all client permissions via reference
     client->password = get_full_password(); // Give full permissions to client which added first password
   }
 
-  password_derive(data.value, data.len, password->data);
+  if (password_derive(data.value, data.len, password->data) == -1) return -1;
   password->permissions = permissions;
   passwords[password_count - 1] = password;
+
+  return 0;
 }
 
 void free_passwords() {
@@ -228,10 +229,10 @@ void free_passwords() {
   }
 }
 
-bool remove_password(Client *executor, char *value, const size_t value_len) {
+int remove_password(Client *executor, char *value, const size_t value_len) {
   if (password_count == 1) {
     const int at = where_password(value, value_len);
-    if (at == -1) return false;
+    if (at == -1) return -1;
 
     executor->password = get_full_password();
     password_count = 0;
@@ -240,7 +241,7 @@ bool remove_password(Client *executor, char *value, const size_t value_len) {
     free(passwords[at]);
     free(passwords);
 
-    return true;
+    return 0;
   } else {
     const int at = where_password(value, value_len);
     if (at == -1) return false;
@@ -252,6 +253,6 @@ bool remove_password(Client *executor, char *value, const size_t value_len) {
     memmove(passwords + at, passwords + at + 1, (password_count - at) * sizeof(Password *));
     passwords = realloc(passwords, password_count * sizeof(Password));
 
-    return true;
+    return 0;
   }
 }

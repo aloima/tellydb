@@ -1,46 +1,47 @@
 #include <telly.h>
 
-static inline uint8_t read_permissions_value(struct CommandEntry *entry, const char *value) {
-  uint8_t permissions = 0;
+static constexpr const enum Permissions permissions_mapping[] = {
+  ['r'] = P_READ,
+  ['w'] = P_WRITE,
+  ['c'] = P_CLIENT,
+  ['o'] = P_CONFIG,
+  ['a'] = P_AUTH,
+  ['s'] = P_SERVER,
+};
+
+typedef struct {
+  int status;
+
+  union {
+    uint8_t permissions;
+    string_t error;
+  } response;
+} PermissionValue;
+
+static inline PermissionValue read_permissions_value(struct CommandEntry *entry, const char *value) {
+  int permissions = 0;
   char *cval = (char *) value;
   char c;
 
   while ((c = *cval) != '\0') {
-    switch (c) {
-      case 'r':
-        permissions |= P_READ;
-        break;
+    const enum Permissions data = permissions_mapping[c];
 
-      case 'w':
-        permissions |= P_WRITE;
-        break;
+    if (data == 0) {
+      permissions |= data;
+    } else {
+      const size_t nbytes = sprintf(entry->client->write_buf, "-Invalid permission: '%c'\r\n", c);
 
-      case 'c':
-        permissions |= P_CLIENT;
-        break;
-
-      case 'o':
-        permissions |= P_CONFIG;
-        break;
-
-      case 'a':
-        permissions |= P_AUTH;
-        break;
-
-      case 's':
-        permissions |= P_SERVER;
-        break;
-
-      default: {
-        const size_t nbytes = sprintf(entry->client->write_buf, "-Invalid permission: '%c'\r\n", c);
-        return -1;
-      }
+      return (PermissionValue) {-1, {
+        .error = CREATE_STRING(entry->client->write_buf, nbytes)
+      }};
     }
 
     cval += 1;
   }
 
-  return permissions;
+  return (PermissionValue) {0, {
+    .permissions = permissions
+  }};
 }
 
 static inline string_t add_pwd(struct CommandEntry *entry) {
@@ -51,8 +52,23 @@ static inline string_t add_pwd(struct CommandEntry *entry) {
 
   const uint8_t all = get_full_password()->permissions;
   const string_t data = entry->args->data[1];
+
   const char *value = entry->args->data[2].value;
-  const uint8_t permissions = (streq(value, "all") ? all : read_permissions_value(entry, value));
+  int permissions = -1;
+
+  if (streq(value, "all")) {
+    permissions = all;
+  } else {
+    const PermissionValue permission_value = read_permissions_value(entry, value);
+
+    if (permission_value.status == -1) {
+      PASS_NO_CLIENT(entry->client);
+      return permission_value.response.error;
+    }
+
+    permissions = permission_value.response.permissions;
+  }
+
   const uint8_t not_have = ~entry->password->permissions & permissions;
 
   if (not_have) {
@@ -61,10 +77,10 @@ static inline string_t add_pwd(struct CommandEntry *entry) {
   }
 
   if (where_password(data.value, data.len) == -1) {
-    add_password(entry->client, data, permissions);
+    const int added = add_password(entry->client, data, permissions);
 
     PASS_NO_CLIENT(entry->client);
-    return RESP_OK();
+    return (added == 0) ? RESP_OK() : RESP_ERROR_MESSAGE("Password cannot be created");
   }
 
   return RESP_ERROR_MESSAGE("This password already exists");
@@ -86,7 +102,14 @@ static inline string_t edit_pwd(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("This password does not exist");
   }
 
-  const uint8_t permissions = read_permissions_value(entry, value);
+  const PermissionValue permission_value = read_permissions_value(entry, value);
+
+  if (permission_value.status == -1) {
+    PASS_NO_CLIENT(entry->client);
+    return permission_value.response.error;
+  }
+
+  const int permissions = permission_value.response.permissions;
   const uint8_t not_have = ~entry->password->permissions & permissions;
 
   if (not_have) {
