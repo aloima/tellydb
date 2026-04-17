@@ -1,8 +1,9 @@
 #include <telly.h>
 
 static const struct Command *command_list[] = {
-  // Data commands
-  &cmd_dbsize, &cmd_bgsave, &cmd_lastsave, &cmd_save, &cmd_select,
+  // Database commands
+  &cmd_dbsize, &cmd_flushall, &cmd_flushdb, &cmd_bgsave, &cmd_lastsave,
+  &cmd_save, &cmd_select,
 
   // Generic commands
   &cmd_age, &cmd_auth, &cmd_client, &cmd_command, &cmd_discard,

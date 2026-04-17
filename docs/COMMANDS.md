@@ -34,6 +34,26 @@ The list of unwritten behavior to commands.
 
 ---
 
+### FLUSHALL
+**Syntax**: `FLUSHALL`  
+**Description**: Deletes all the keys of all databases.  
+**Since**: `1.0.0`  
+**Time complexity**: `O(N) where N is total number of the keys in all databases`  
+**Permissions**: `P_WRITE`  
+**Returns**: `OK`
+
+---
+
+### FLUSHDB
+**Syntax**: `FLUSHDB`  
+**Description**: Deletes all the keys of the currently selected database.  
+**Since**: `1.0.0`  
+**Time complexity**: `O(N) where N is number of the keys in the currently selected database`  
+**Permissions**: `P_WRITE`  
+**Returns**: `OK`
+
+---
+
 ### DBSIZE
 **Syntax**: `DBSIZE [database]`  
 **Description**: Returns key count in the database.  
