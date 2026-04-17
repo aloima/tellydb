@@ -93,8 +93,6 @@ static inline string_t edit_pwd(struct CommandEntry *entry) {
   }
 
   const string_t input = entry->args->data[1];
-  const char *value = entry->args->data[2].value;
-
   const int target = where_password(input.value, input.len);
 
   if (target == -1) {
@@ -102,14 +100,23 @@ static inline string_t edit_pwd(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("This password does not exist");
   }
 
-  const PermissionValue permission_value = read_permissions_value(entry, value);
+  const char *value = entry->args->data[2].value;
+  int permissions = -1;
 
-  if (permission_value.status == -1) {
-    PASS_NO_CLIENT(entry->client);
-    return permission_value.response.error;
+  if (streq(value, "all")) {
+    const uint8_t all_permissions = get_full_password()->permissions;
+    permissions = all_permissions;
+  } else {
+    const PermissionValue permission_value = read_permissions_value(entry, value);
+
+    if (permission_value.status == -1) {
+      PASS_NO_CLIENT(entry->client);
+      return permission_value.response.error;
+    }
+
+    permissions = permission_value.response.permissions;
   }
 
-  const int permissions = permission_value.response.permissions;
   const uint8_t not_have = ~entry->password->permissions & permissions;
 
   if (not_have) {
