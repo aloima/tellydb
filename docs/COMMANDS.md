@@ -61,9 +61,9 @@ The list of unwritten behavior to commands.
 
 ### SAVE
 **Syntax**: `SAVE`  
-**Description**: Saves all data to database file.  
+**Description**: Saves all data in all databases to the database file.  
 **Since**: `0.1.6`  
-**Time complexity**: `O(N) where N is cached key-value pair count`  
+**Time complexity**: `O(N) where N is number of the keys in all databases`  
 **Permissions**: `P_SERVER`  
 **Returns**: `OK`  
 **Behavior**:

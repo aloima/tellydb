@@ -17,9 +17,9 @@ static string_t run(struct CommandEntry *entry) {
 
 const struct Command cmd_save = {
   .name = "SAVE",
-  .summary = "Saves all data to database file.",
+  .summary = "Saves all data in all databases to the database file.",
   .since = "0.1.6",
-  .complexity = "O(N) where N is cached key-value pair count",
+  .complexity = "O(N) where N is number of the keys in all databases",
   .permissions = P_SERVER,
   .flags.value = CMD_FLAG_NO_FLAG,
   .subcommands = NULL,
