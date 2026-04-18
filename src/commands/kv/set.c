@@ -28,7 +28,11 @@ static string_t run(struct CommandEntry *entry) {
   bool is_double = false;
 
   bool get = false;
-  bool nx = false, xx = false, as = false;
+  bool nx = false, xx = false;
+  bool as = false;
+
+  uint64_t expire_at;
+  bool ex = false, px = false;
 
   enum TellyTypes type;
 
@@ -42,6 +46,56 @@ static string_t run(struct CommandEntry *entry) {
       nx = true;
     } else if (streq(arg.value, "XX")) {
       xx = true;
+    } else if (streq(arg.value, "EX")) {
+      if ((i + 1) >= entry->args->count) {
+        PASS_NO_CLIENT(entry->client);
+        return RESP_ERROR_MESSAGE("There is no specified value for 'EX' argument");
+      }
+
+      ex = true;
+      i += 1;
+
+      const char *secs_s = entry->args->data[i].value;
+
+      if (!try_parse_integer(secs_s)) {
+        PASS_NO_CLIENT(entry->client);
+        return RESP_ERROR_MESSAGE("The value of 'EX' argument must be an integer");
+      }
+
+      struct timespec expire;
+
+      if (clock_gettime(CLOCK_REALTIME, &expire) == -1) {
+        PASS_NO_CLIENT(entry->client);
+        return RESP_ERROR_MESSAGE("Cannot take the current time for 'EX' argument");
+      }
+
+      const uint64_t secs = strtoull(secs_s, (char **) NULL, 10);
+      expire_at = (expire.tv_sec * 1000) + (expire.tv_nsec / 1e6) + (secs * 1000);
+    } else if (streq(arg.value, "PX")) {
+      if ((i + 1) >= entry->args->count) {
+        PASS_NO_CLIENT(entry->client);
+        return RESP_ERROR_MESSAGE("There is no specified value for 'PX' argument");
+      }
+
+      px = true;
+      i += 1;
+
+      const char *msecs_s = entry->args->data[i].value;
+
+      if (!try_parse_integer(msecs_s)) {
+        PASS_NO_CLIENT(entry->client);
+        return RESP_ERROR_MESSAGE("The value of 'PX' argument must be an integer");
+      }
+
+      struct timespec expire;
+
+      if (clock_gettime(CLOCK_REALTIME, &expire) == -1) {
+        PASS_NO_CLIENT(entry->client);
+        return RESP_ERROR_MESSAGE("Cannot take the current time for 'PX' argument");
+      }
+
+      const uint64_t msecs = strtoull(msecs_s, (char **) NULL, 10);
+      expire_at = (expire.tv_sec * 1000) + (expire.tv_nsec / 1e6) + msecs;
     } else if (streq(arg.value, "AS")) {
       as = true;
 
