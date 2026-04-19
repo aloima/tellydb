@@ -1,5 +1,9 @@
 #include <telly.h>
 
+static inline uint64_t add_to_index(const uint64_t index, const uint64_t capacity) {
+  return ((index + 1) % capacity);
+}
+
 void set_kv(struct KVPair *kv, const string_t key, void *value, const enum TellyTypes type, const uint64_t *expire_at_p) {
   kv->key.value = malloc(key.len);
   if (!kv->key.value) return;
@@ -17,6 +21,66 @@ void set_kv(struct KVPair *kv, const string_t key, void *value, const enum Telly
   } else {
     kv->expire.enabled = false;
   }
+}
+
+bool delete_kv(Database *database, struct KVPair *kv) {
+  const uint64_t capacity = database->size.capacity;
+  const uint64_t start_idx = (kv->hashed % capacity);
+  uint64_t index = start_idx;
+
+  while (true) {
+    if (kv == database->data[index]) {
+      break;
+    }
+
+    index = add_to_index(index, capacity);
+
+    if (index == start_idx) {
+      return false;
+    }
+  }
+
+  free_kv(kv);
+  database->data[index] = NULL; // Needs it for uncollised indexes and filled next index
+
+  for (uint64_t i = add_to_index(index, capacity); i != index; i = add_to_index(index, capacity)) {
+    struct KVPair *pair = database->data[i];
+    const uint64_t prev = ((i == 0) ? (capacity - 1) : (i - 1));
+
+    if (!pair) {
+      database->size.stored -= 1;
+      database->data[prev] = NULL;
+      break;
+    }
+
+    // On collised index
+    if (index == (pair->hashed % capacity)) {
+      database->data[prev] = pair;
+    } else {
+      break;
+    }
+  }
+
+  return true;
+}
+
+int check_kv_expiry(Database *database, struct KVPair *kv) {
+  if (!kv->expire.enabled) return 0;
+
+  struct timespec ts;
+  if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
+    return -2;
+
+  const uint64_t now = (ts.tv_sec * 1e3) + (ts.tv_nsec * 1e6);
+
+  if (kv->expire.at <= now) {
+    if (!delete_kv(database, kv))
+      return -1;
+
+    return 1;
+  }
+
+  return 0;
 }
 
 void free_value(const enum TellyTypes type, void *value) {
