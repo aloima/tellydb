@@ -20,6 +20,11 @@ typedef struct {
     uint32_t count;
   } autosave;
 
+  struct {
+    uint32_t seconds;
+    uint32_t size;
+  } expire_check;
+
   bool tls;
   char cert[49];
   char private_key[49];
