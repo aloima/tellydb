@@ -24,7 +24,7 @@ static string_t run(struct CommandEntry *entry) {
       return RESP_ERROR_MESSAGE("Out of memory");
     }
 
-    if (set_data(entry->database, kv, key, table, TELLY_HASHTABLE) == NULL) {
+    if (set_data(entry->database, kv, key, table, TELLY_HASHTABLE, NULL) == NULL) {
       free(table);
       PASS_NO_CLIENT(entry->client);
       return RESP_ERROR_MESSAGE("Out of memory");

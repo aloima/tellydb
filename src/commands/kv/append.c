@@ -36,7 +36,7 @@ static string_t run(struct CommandEntry *entry) {
     if (string->value == NULL) return RESP_ERROR_MESSAGE("Out of memory");
 
     memcpy(string->value, arg.value, string->len);
-    set_data(entry->database, NULL, key, string, TELLY_STR);
+    set_data(entry->database, NULL, key, string, TELLY_STR, NULL);
 
     PASS_NO_CLIENT(entry->client);
     const size_t nbytes = create_resp_integer(entry->client->write_buf, string->len);

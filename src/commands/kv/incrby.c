@@ -35,7 +35,7 @@ static string_t run(struct CommandEntry *entry) {
       mpf_set_str(*raw, input, 10);
     }
 
-    result = set_data(entry->database, NULL, key, number, type);
+    result = set_data(entry->database, NULL, key, number, type, NULL);
 
     if (!result) {
       free_value(type, number);

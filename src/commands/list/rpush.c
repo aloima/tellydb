@@ -33,7 +33,7 @@ static string_t run(struct CommandEntry *entry) {
   } else {
     list = create_list();
     if (list == NULL) return RESP_ERROR_MESSAGE("Out of memory");
-    set_data(entry->database, kv, key, list, TELLY_LIST);
+    set_data(entry->database, kv, key, list, TELLY_LIST, NULL);
   }
 
   for (uint32_t i = 1; i < entry->args->count; ++i) {

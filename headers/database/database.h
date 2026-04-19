@@ -32,6 +32,6 @@ bool rename_database(const string_t old_name, const string_t new_name);
 void free_databases();
 
 struct KVPair *get_data(Database *database, const string_t key);
-struct KVPair *set_data(Database *database, struct KVPair *data, const string_t key, void *value, const enum TellyTypes type);
+struct KVPair *set_data(Database *database, struct KVPair *data, const string_t key, void *value, const enum TellyTypes type, const uint64_t *expire_at_p);
 bool delete_data(Database *database, const string_t key);
 void clear_database(Database *database);

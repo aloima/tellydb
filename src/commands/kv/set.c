@@ -32,7 +32,7 @@ static string_t run(struct CommandEntry *entry) {
   bool as = false;
 
   uint64_t expire_at;
-  bool ex = false, px = false;
+  bool expire = false;
 
   enum TellyTypes type;
 
@@ -52,7 +52,7 @@ static string_t run(struct CommandEntry *entry) {
         return RESP_ERROR_MESSAGE("There is no specified value for 'EX' argument");
       }
 
-      ex = true;
+      expire = true;
       i += 1;
 
       const char *secs_s = entry->args->data[i].value;
@@ -77,7 +77,7 @@ static string_t run(struct CommandEntry *entry) {
         return RESP_ERROR_MESSAGE("There is no specified value for 'PX' argument");
       }
 
-      px = true;
+      expire = true;
       i += 1;
 
       const char *msecs_s = entry->args->data[i].value;
@@ -261,7 +261,7 @@ static string_t run(struct CommandEntry *entry) {
 
   if (get) {
     if (entry->password->permissions & P_READ) {
-      const bool success = (set_data(entry->database, res, key, value, type) != NULL);
+      const bool success = (set_data(entry->database, res, key, value, type, (expire ? &expire_at : NULL)) != NULL);
 
       if (!success) {
         PASS_NO_CLIENT(entry->client);
@@ -281,7 +281,7 @@ static string_t run(struct CommandEntry *entry) {
       return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_READ");
     }
   } else {
-    const bool success = (set_data(entry->database, res, key, value, type) != NULL);
+    const bool success = (set_data(entry->database, res, key, value, type, (expire ? &expire_at : NULL)) != NULL);
     PASS_NO_CLIENT(entry->client);
 
     if (success) {

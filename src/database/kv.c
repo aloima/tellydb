@@ -1,6 +1,6 @@
 #include <telly.h>
 
-void set_kv(struct KVPair *kv, const string_t key, void *value, const enum TellyTypes type) {
+void set_kv(struct KVPair *kv, const string_t key, void *value, const enum TellyTypes type, const uint64_t *expire_at_p) {
   kv->key.value = malloc(key.len);
   if (!kv->key.value) return;
 
@@ -10,6 +10,13 @@ void set_kv(struct KVPair *kv, const string_t key, void *value, const enum Telly
 
   kv->type = type;
   kv->value = value;
+
+  if (expire_at_p != NULL) {
+    kv->expire.enabled = true;
+    kv->expire.at = *expire_at_p;
+  } else {
+    kv->expire.enabled = false;
+  }
 }
 
 void free_value(const enum TellyTypes type, void *value) {
