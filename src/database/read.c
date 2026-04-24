@@ -287,7 +287,7 @@ static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uin
     break;
   }
 
-  set_kv(kv, key, value, type);
+  set_kv(kv, key, value, type, NULL);
   free(key.value);
 
   return collected_bytes;
