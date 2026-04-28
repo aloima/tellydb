@@ -40,7 +40,7 @@
 #include <openssl/core_names.h> // IWYU pragma: export
 
 // To guarantee code execution
-#define GASSERT(actual, op, expected) do { \
+#define ASSERT(actual, op, expected) do { \
   typeof(actual) __actual_val = (actual);   \
   typeof(expected) __expected_val = (expected);   \
   assert(__actual_val op __expected_val);        \

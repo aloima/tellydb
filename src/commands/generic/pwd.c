@@ -154,7 +154,7 @@ static inline string_t generate_pwd(struct CommandEntry *entry) {
   char value[33];
   generate_random_string(value, 32);
 
-  GASSERT(sprintf(entry->client->write_buf, "$32\r\n%s\r\n", value), ==, 39);
+  ASSERT(sprintf(entry->client->write_buf, "$32\r\n%s\r\n", value), ==, 39);
   return CREATE_STRING(entry->client->write_buf, 39);
 }
 
