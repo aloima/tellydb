@@ -76,7 +76,7 @@ static inline bool set_uint(void *value, const char *buf) {
 
 static inline bool set_int(void *value, const char *buf) {
   char *end;
-  *((uint64_t *) value) = strtoll(buf, &end, 10);
+  *((int64_t *) value) = strtoll(buf, &end, 10);
 
   return (*end == '\0');
 }
