@@ -18,14 +18,14 @@
 
   void signal_notifier(event_notifier_t *notifier, uint64_t n) {
     if (VERY_UNLIKELY(notifier == NULL)) return;
-    write(notifier->efd, &n, sizeof(n));
+    ASSERT(write(notifier->efd, &n, sizeof(n)), ==, sizeof(n));
   }
 
   uint64_t consume_notifier(event_notifier_t *notifier) {
     if (VERY_UNLIKELY(notifier == NULL)) return -1;
 
     uint64_t val = 0;
-    read(notifier->efd, &val, sizeof(val));
+    ASSERT(read(notifier->efd, &val, sizeof(val)), ==, sizeof(val));
 
     return val;
   }
@@ -35,7 +35,7 @@
   }
 
   void destroy_notifier(event_notifier_t *notifier) {
-    close(notifier->efd);
+    ASSERT(close(notifier->efd), ==, 0);
     free(notifier);
   }
 #elif defined(__APPLE__)
@@ -52,14 +52,15 @@
     }
 
     int flags = fcntl(notifier->fds[0], F_GETFL, 0);
-    fcntl(notifier->fds[0], F_SETFL, flags | O_NONBLOCK);
+    ASSERT(flags, !=, -1);
+    ASSERT(fcntl(notifier->fds[0], F_SETFL, flags | O_NONBLOCK), !=, -1);
 
     return notifier;
   }
 
   void signal_notifier(event_notifier_t *notifier, uint64_t n) {
     if (VERY_UNLIKELY(notifier == NULL)) return;
-    write(notifier->fds[1], &n, sizeof(n));
+    ASSERT(write(notifier->fds[1], &n, sizeof(n)), ==, sizeof(n));
   }
 
   uint64_t consume_notifier(event_notifier_t *notifier) {
@@ -85,8 +86,8 @@
   }
 
   void destroy_notifier(event_notifier_t *notifier) {
-    close(notifier->fds[0]);
-    close(notifier->fds[1]);
+    ASSERT(close(notifier->fds[0]), ==, 0);
+    ASSERT(close(notifier->fds[1]), ==, 0);
     free(notifier);
   }
 #endif

@@ -93,7 +93,7 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
   vsnprintf(buf, buf_size, fmt, args);
   va_end(args);
 
-  uint32_t message_len = 0;
+  int64_t message_len = 0;
   char message[LOG_LENGTH + 34];
 
   FILE *stream;
@@ -129,22 +129,29 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
       return;
   }
 
-  fputs(message, stream);
+  ASSERT(message_len, >=, 34);
+  ASSERT(fputs(message, stream), !=, EOF);
+
   if (fd == -1) return;
 
   if (conf->max_log_lines == -1) {
-    write(fd, message, message_len);
+    ASSERT(write(fd, message, message_len), ==, message_len);
   } else {
     if (estimate_tqueue_size(lines) >= conf->max_log_lines) {
       char *line;
-      pop_tqueue(lines, &line);
+      ASSERT(pop_tqueue(lines, &line), ==, true);
+
       atomic_fetch_sub_explicit(&new_size, strlen(line), memory_order_relaxed);
       free(line);
     }
 
+    // TODO: handle memory allocation error
     char *line = malloc(message_len + 1);
+    if (line == NULL) return;
+
     memcpy(line, message, (message_len + 1));
-    push_tqueue(lines, &line);
+    ASSERT(push_tqueue(lines, &line), !=, NULL);
+
     atomic_fetch_add_explicit(&new_size, message_len, memory_order_relaxed);
   }
 }
@@ -192,9 +199,9 @@ void save_and_close_logs() {
 
 CLEANUP:
   free_tqueue(lines);
-  msync(map, size + 1, MS_ASYNC);
+  ASSERT(msync(map, size + 1, MS_ASYNC), ==, 0);
 
-  munmap(map, size + 1);
+  ASSERT(munmap(map, size + 1), ==, 0);
   ASSERT(close(fd), ==, 0);
 
   #undef CHECK_ERROR

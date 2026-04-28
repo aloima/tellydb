@@ -39,7 +39,7 @@ int open_file(const char *file, int flags) {
         write_log(LOG_ERR, "File descriptor cannot be set for no kernel caching mode.");
     }
 
-    close(fd);
+    ASSERT(close(fd), ==, 0);
     return -1;
   }
 #endif
@@ -60,7 +60,7 @@ int open_file(const char *file, int flags) {
         CHECK_ERROR(EINTR,   "Locking operation of %s file is interrupted.", file);
       }
 
-      close(fd);
+      ASSERT(close(fd), ==, 0);
       return -1;
     } else {
       return fd;
