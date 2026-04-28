@@ -10,8 +10,9 @@ HashSet *create_hashset(const uint64_t capacity) {
     return NULL;
   }
 
-  for (uint64_t i = 0; i < capacity; ++i)
+  for (uint64_t i = 0; i < capacity; ++i) {
     set->elements[i] = NULL;
+  }
 
   set->size.capacity = capacity;
   set->size.count = 0;
@@ -137,4 +138,15 @@ bool exist_in_hashset(HashSet *set, void *element) {
   }
 
   return true;
+}
+
+void destroy_hashset(HashSet *set, void (*destroy_element)(void *element)) {
+  if (destroy_element != NULL) {
+    for (uint64_t i = 0; i < set->size.count; ++i) {
+      destroy_element(set->elements[i]);
+    }
+  }
+
+  free(set->elements);
+  free(set);
 }

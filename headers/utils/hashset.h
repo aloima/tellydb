@@ -15,6 +15,8 @@ typedef struct {
 } HashSet;
 
 HashSet *create_hashset(const uint64_t capacity);
+void destroy_hashset(HashSet *set, void (*destroy_element)(void *element));
+
 int insert_into_hashset(HashSet *set, void *element);
 bool delete_from_hashset(HashSet *set, void *element);
 bool exist_in_hashset(HashSet *set, void *element);
