@@ -61,6 +61,7 @@ static inline void cleanup() {
   if (server->sockfd != -1) close(server->sockfd);
   if (server->eventfd != -1) close(server->eventfd);
 
+  destroy_expiry_set();
   free_constant_passwords();
   free_kdf();
   free_passwords();

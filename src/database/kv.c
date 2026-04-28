@@ -7,6 +7,10 @@ int create_expiry_set() {
   return (expiry_set != NULL) ? 0 : -1;
 }
 
+void destroy_expiry_set() {
+  destroy_hashset(expiry_set, NULL);
+}
+
 static inline uint64_t add_to_index(const uint64_t index, const uint64_t capacity) {
   return ((index + 1) % capacity);
 }
