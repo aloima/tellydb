@@ -115,6 +115,8 @@ static inline string_t execute_transaction(Client *client, struct Password *pass
 static inline void check_autosave(struct Command *command) {
   if (command->flags.bits.database) {
     const time_t current_time = time(NULL);
+    ASSERT(current_time, !=, INVALID_TIME);
+
     database_operations += 1;
 
     const uint32_t count = server->conf->autosave.count;

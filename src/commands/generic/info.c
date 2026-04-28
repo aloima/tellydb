@@ -9,7 +9,10 @@ static bool get_section(char *section, const Config *conf, const char *name) {
     time_t start_at;
     get_server_time(&start_at, &age);
 
-    age += difftime(time(NULL), start_at);
+    const time_t current_time = time(NULL);
+    ASSERT(current_time, !=, INVALID_TIME);
+
+    age += difftime(current_time, start_at);
 
     char str_start_at[21];
     generate_date_string(str_start_at, start_at);

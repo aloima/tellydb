@@ -76,7 +76,10 @@ static inline void cleanup() {
 }
 
 static inline void close_server() {
-  const uint32_t server_age = server->age + difftime(time(NULL), server->start_at);
+  const time_t current_time = time(NULL);
+  ASSERT(current_time, !=, INVALID_TIME);
+
+  const uint32_t server_age = server->age + difftime(current_time, server->start_at);
   const clock_t start = clock();
 
   if (save_data(server_age) == 0) {
@@ -216,6 +219,8 @@ void start_server(Config *config) {
   write_log(LOG_INFO, "Created I/O thread.");
 
   server->start_at = time(NULL);
+  ASSERT(server->start_at, !=, INVALID_TIME);
+
   server->status = SERVER_STATUS_ONLINE;
   write_log(LOG_INFO, "Server is listening on %" PRIu16 " port for accepting connections...", server->conf->port);
 

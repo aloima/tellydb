@@ -79,8 +79,11 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
   Config *conf = server->conf ?: get_default_config();
   const uint8_t check = (conf->allowed_log_levels & level);
 
+  const time_t at = time(NULL);
+  ASSERT(at, !=, INVALID_TIME);
+
   char time_text[21];
-  generate_date_string(time_text, time(NULL));
+  generate_date_string(time_text, at);
 
   const uint32_t buf_size = LOG_LENGTH + 1;
   char buf[buf_size];
@@ -111,6 +114,8 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
       message_len = sprintf(message, "[%s / ERR]  | %s\n", time_text, buf);
       if (server) {
         server->last_error_at = time(NULL);
+        ASSERT(server->last_error_at, !=, INVALID_TIME);
+
         server->status = SERVER_STATUS_ERROR;
       }
       break;

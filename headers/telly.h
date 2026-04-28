@@ -46,6 +46,8 @@
   assert(__actual_val op __expected_val);        \
 } while (0)
 
+#define INVALID_TIME ((time_t) -1)
+
 #define VERY_LIKELY(x) (__builtin_expect_with_probability(!!(x), 1, 0.999))
 #define VERY_UNLIKELY(x) (__builtin_expect_with_probability(!!(x), 0, 0.999))
 #define min(a, b) ((a) > (b) ? (b) : (a))
