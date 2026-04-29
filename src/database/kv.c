@@ -88,7 +88,7 @@ int check_kv_expiry(Database *database, struct KVPair *kv) {
   if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
     return -2;
 
-  const uint64_t now = (ts.tv_sec * 1e3) + (ts.tv_nsec * 1e6);
+  const uint64_t now = (ts.tv_sec * 1e3) + (ts.tv_nsec / 1e6);
 
   if (kv->expire.at <= now) {
     if (!delete_kv(database, kv))
