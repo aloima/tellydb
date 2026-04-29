@@ -148,10 +148,8 @@ static inline void check_autosave(struct Command *command) {
       database_operations = 0;
       tx_last_saved_at = current_time;
 
-      uint32_t server_age;
-      time_t start_at;
-      get_server_time(&start_at, &server_age);
-      server_age += difftime(current_time, start_at);
+      uint32_t server_age = server->age;
+      server_age += difftime(current_time, server->start_at);
       save_data(server_age);
 
       write_log(LOG_INFO, "More than %" PRIu32 " keys are changed in %" PRIu32 " seconds, auto-saving...", count, seconds);

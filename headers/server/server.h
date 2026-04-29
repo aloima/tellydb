@@ -50,7 +50,6 @@ extern Server *server;
 
 void terminate_connection(Client *client);
 off_t *get_authorization_end_at();
-void get_server_time(time_t *server_start_at, uint32_t *server_age);
 void handle_events();
 void start_server(Config *config);
 

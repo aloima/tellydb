@@ -27,11 +27,6 @@ Server *server = NULL;
   return; \
 } while (0)
 
-void get_server_time(time_t *server_start_at, uint32_t *server_age) {
-  *server_start_at = server->start_at;
-  *server_age = server->age;
-}
-
 void terminate_connection(Client *client) {
   const int connfd = client->connfd;
   event_t ev;

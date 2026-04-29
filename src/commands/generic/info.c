@@ -5,17 +5,15 @@ static bool get_section(char *section, const Config *conf, const char *name) {
     char gcc_version[16];
     sprintf(gcc_version, "%d.%d.%d", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 
-    uint32_t age;
-    time_t start_at;
-    get_server_time(&start_at, &age);
+    uint32_t age = server->age;
 
     const time_t current_time = time(NULL);
     ASSERT(current_time, !=, INVALID_TIME);
 
-    age += difftime(current_time, start_at);
+    age += difftime(current_time, server->start_at);
 
     char str_start_at[21];
-    generate_date_string(str_start_at, start_at);
+    generate_date_string(str_start_at, server->start_at);
 
     sprintf(section, (
       "# Server\r\n"

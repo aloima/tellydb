@@ -3,10 +3,8 @@
 static string_t run(struct CommandEntry *entry) {
   (void) entry;
 
-  uint32_t server_age;
-  time_t start_at;
-  get_server_time(&start_at, &server_age);
-  server_age += difftime(time(NULL), start_at);
+  uint32_t server_age = server->age;
+  server_age += difftime(time(NULL), server->start_at);
 
   if (bg_save(server_age)) {
     return RESP_OK();

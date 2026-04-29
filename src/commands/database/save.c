@@ -3,15 +3,12 @@
 static string_t run(struct CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
-  uint32_t server_age;
-  time_t start_at;
-  get_server_time(&start_at, &server_age);
-
   const time_t current_time = time(NULL);
   if (current_time == INVALID_TIME)
     return RESP_ERROR_MESSAGE("time() system call is failed");
 
-  server_age += difftime(current_time, start_at);
+  uint32_t server_age = server->age;
+  server_age += difftime(current_time, server->start_at);
 
   if (save_data(server_age) != -1) {
     return RESP_OK();
