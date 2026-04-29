@@ -42,7 +42,7 @@ void terminate_connection(Client *client) {
 
   write_log(LOG_DBG, "Client #%" PRIi32 " is disconnected.", client->id);
 
-  close(connfd);
+  ASSERT(close(connfd), ==, 0);
   remove_client(client->id);
 }
 
