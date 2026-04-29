@@ -46,6 +46,7 @@ const struct Command cmd_type = {
   .since = "0.1.0",
   .complexity = "O(1)",
   .permissions = P_NONE,
+  .flags.value = CMD_FLAG_ACCESS_DATABASE,
   .subcommands = NULL,
   .subcommand_count = 0,
   .run = run

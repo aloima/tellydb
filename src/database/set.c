@@ -26,11 +26,18 @@ static inline bool extend_database(Database *database, const uint64_t old_capaci
   return true;
 }
 
-struct KVPair *set_data(Database *database, struct KVPair *data, const string_t key, void *value, const enum TellyTypes type) {
+struct KVPair *set_data(Database *database, struct KVPair *data, const string_t key, void *value, const enum TellyTypes type, const uint64_t *expire_at_p) {
   if (data) {
     free_value(data->type, data->value);
     data->type = type;
     data->value = value;
+
+    if (expire_at_p != NULL) {
+      data->expire.enabled = true;
+      data->expire.at = *expire_at_p;
+    } else {
+      data->expire.enabled = false;
+    }
 
     return data;
   }
@@ -44,7 +51,7 @@ struct KVPair *set_data(Database *database, struct KVPair *data, const string_t 
   struct KVPair *kv = malloc(sizeof(struct KVPair));
   if (!kv) return NULL;
 
-  set_kv(kv, key, value, type);
+  set_kv(kv, key, value, type, expire_at_p);
 
   const uint64_t new_capacity = database->size.capacity;
   const uint64_t index = (kv->hashed % new_capacity);

@@ -33,7 +33,7 @@ static string_t run(struct CommandEntry *entry) {
   } else {
     list = create_list();
     if (list == NULL) return RESP_ERROR_MESSAGE("Out of memory");
-    set_data(entry->database, kv, key, list, TELLY_LIST);
+    set_data(entry->database, kv, key, list, TELLY_LIST, NULL);
   }
 
   for (uint32_t i = 1; i < entry->args->count; ++i) {
@@ -88,7 +88,7 @@ const struct Command cmd_rpush = {
   .since = "0.1.3",
   .complexity = "O(N) where N is written element count",
   .permissions = P_WRITE,
-  .flags.value = CMD_FLAG_DATABASE,
+  .flags.value = (CMD_FLAG_ACCESS_DATABASE | CMD_FLAG_AFFECT_DATABASE),
   .subcommands = NULL,
   .subcommand_count = 0,
   .run = run

@@ -847,7 +847,7 @@ RENAME name user_name
 ---
 
 ### SET
-**Syntax**: `SET key value [NX|XX] [GET] [AS type]`  
+**Syntax**: `SET key value [NX|XX] [GET] [EX secs | PX msecs] [AS type]`  
 **Description**: Sets value.  
 **Since**: `0.1.0`  
 **Time complexity**: `O(1)`  
@@ -862,6 +862,8 @@ RENAME name user_name
 **Arguments**:
 - **NX**: Only set if the key does not exist.
 - **XX**: Only set if the key exists.
+- **EX secs**: Set the specified expire time in seconds.
+- **PX msecs**: Set the specified expire time in milliseconds.
 - **GET**: Returns the old value if it existed.
 - **AS type**: Determines value type, allowed values are:
   * `str` or `string`
@@ -875,6 +877,7 @@ SET user_name "Alice"
 SET user_age 25 NX
 SET session_token "abc123" XX GET
 SET user_id 369 AS str
+SET user_id 369 AS str EX 60
 ```
 
 ---

@@ -24,7 +24,7 @@ static string_t run(struct CommandEntry *entry) {
       return RESP_ERROR_MESSAGE("Out of memory");
     }
 
-    if (set_data(entry->database, kv, key, table, TELLY_HASHTABLE) == NULL) {
+    if (set_data(entry->database, kv, key, table, TELLY_HASHTABLE, NULL) == NULL) {
       free(table);
       PASS_NO_CLIENT(entry->client);
       return RESP_ERROR_MESSAGE("Out of memory");
@@ -128,7 +128,7 @@ const struct Command cmd_hset = {
   .since = "0.1.3",
   .complexity = "O(N) where N is written field name-value pair count",
   .permissions = P_WRITE,
-  .flags.value = CMD_FLAG_DATABASE,
+  .flags.value = (CMD_FLAG_ACCESS_DATABASE | CMD_FLAG_AFFECT_DATABASE),
   .subcommands = NULL,
   .subcommand_count = 0,
   .run = run

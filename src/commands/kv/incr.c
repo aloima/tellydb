@@ -39,7 +39,7 @@ static string_t run(struct CommandEntry *entry) {
         mpz_t *value = number;
         mpz_init_set_ui(*value, 0);
 
-        const bool success = set_data(entry->database, NULL, key, value, TELLY_INT);
+        const bool success = set_data(entry->database, NULL, key, value, TELLY_INT, NULL);
 
         if (!success) {
           at += create_resp_string(entry->client->write_buf + at, CREATE_STRING("error", 5));
@@ -87,7 +87,7 @@ static string_t run(struct CommandEntry *entry) {
         if (number == NULL) return RESP_ERROR_MESSAGE("Out of memory");
         mpz_init_set_ui(*((mpz_t *) number), 0);
 
-        const bool success = set_data(entry->database, NULL, key, number, TELLY_INT);
+        const bool success = set_data(entry->database, NULL, key, number, TELLY_INT, NULL);
 
         if (!success) {
           mpz_clear(*((mpz_t *) number));
@@ -129,7 +129,7 @@ const struct Command cmd_incr = {
   .since = "0.1.0",
   .complexity = "O(1)",
   .permissions = (P_READ | P_WRITE),
-  .flags.value = CMD_FLAG_DATABASE,
+  .flags.value = (CMD_FLAG_ACCESS_DATABASE | CMD_FLAG_AFFECT_DATABASE),
   .subcommands = NULL,
   .subcommand_count = 0,
   .run = run

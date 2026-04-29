@@ -17,6 +17,11 @@ static Config default_conf = {
     .seconds = 60
   },
 
+  .expire_check = {
+    .size = 20,
+    .seconds = 60
+  },
+
   .tls = false,
   .cert = {0},
   .private_key = {0}
@@ -157,6 +162,9 @@ static inline bool set_allowed_log_levels(void *value, const char *buf) {
     {"data_file", &conf.data_file, set_str},
     {"database_name", &conf.database_name, set_str},
 
+    {"expire_check_batch_size", &conf.expire_check.size, set_uint},
+    {"expire_check_interval_secs", &conf.expire_check.seconds, set_uint},
+
     {"tls", &conf.tls, set_bool},
     {"cert", &conf.cert, set_str},
     {"private_key", &conf.private_key, set_str},
@@ -214,6 +222,12 @@ static inline bool set_allowed_log_levels(void *value, const char *buf) {
   } else if (conf.max_transaction_blocks > UINT32_MAX) {
     write_log(LOG_ERR, "'max_transaction_blocks' in configuration violates limitations: value <= %u", UINT32_MAX);
     exit(EXIT_FAILURE);
+  } else if (conf.expire_check.seconds > UINT32_MAX) {
+    write_log(LOG_ERR, "'expire_check_interval_secs' in configuration violates limitations: value <= %u", UINT32_MAX);
+    exit(EXIT_FAILURE);
+  } else if (conf.expire_check.size > UINT32_MAX) {
+    write_log(LOG_ERR, "'expire_check_batch_size' in configuration violates limitations: value <= %u", UINT32_MAX);
+    exit(EXIT_FAILURE);
   } else if (conf.max_log_lines > INT32_MAX || (conf.max_log_lines <= 0 && conf.max_log_lines != -1)) {
     write_log(LOG_ERR, "'max_log_lines' in configuration violates limitations: 0 < value <= %d", INT32_MAX);
     exit(EXIT_FAILURE);
@@ -266,6 +280,11 @@ size_t get_config_string(char *buf, Config *conf) {
     "# This length must be less than or equal to 64\n"
     "database_name = %s\n\n"
 
+    "# Randomly `expire_check_batch_size` keys will be checked\n"
+    "# if they have expired every `expire_check_interval_secs` seconds.\n"
+    "expire_check_batch_size = %d\n"
+    "expire_check_interval_secs = %d\n\n"
+
     "# Enables/disables creating TLS server\n"
     "#\n"
     "# If it is enabled:\n"
@@ -279,6 +298,7 @@ size_t get_config_string(char *buf, Config *conf) {
   ), conf->port, conf->max_clients, conf->max_transaction_blocks,
      allowed_log_levels, conf->max_log_lines, conf->log_file,
      conf->autosave.seconds, conf->autosave.count, conf->data_file, conf->database_name,
+     conf->expire_check.size, conf->expire_check.seconds,
      conf->tls ? "true" : "false", conf->cert, conf->private_key
   );
 }

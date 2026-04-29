@@ -28,7 +28,11 @@ static string_t run(struct CommandEntry *entry) {
   bool is_double = false;
 
   bool get = false;
-  bool nx = false, xx = false, as = false;
+  bool nx = false, xx = false;
+  bool as = false;
+
+  uint64_t expire_at;
+  bool expire = false;
 
   enum TellyTypes type;
 
@@ -42,6 +46,56 @@ static string_t run(struct CommandEntry *entry) {
       nx = true;
     } else if (streq(arg.value, "XX")) {
       xx = true;
+    } else if (streq(arg.value, "EX")) {
+      if ((i + 1) >= entry->args->count) {
+        PASS_NO_CLIENT(entry->client);
+        return RESP_ERROR_MESSAGE("There is no specified value for 'EX' argument");
+      }
+
+      expire = true;
+      i += 1;
+
+      const char *secs_s = entry->args->data[i].value;
+
+      if (!try_parse_integer(secs_s)) {
+        PASS_NO_CLIENT(entry->client);
+        return RESP_ERROR_MESSAGE("The value of 'EX' argument must be an integer");
+      }
+
+      struct timespec expire;
+
+      if (clock_gettime(CLOCK_REALTIME, &expire) == -1) {
+        PASS_NO_CLIENT(entry->client);
+        return RESP_ERROR_MESSAGE("Cannot take the current time for 'EX' argument");
+      }
+
+      const uint64_t secs = strtoull(secs_s, (char **) NULL, 10);
+      expire_at = (expire.tv_sec * 1000) + (expire.tv_nsec / 1e6) + (secs * 1000);
+    } else if (streq(arg.value, "PX")) {
+      if ((i + 1) >= entry->args->count) {
+        PASS_NO_CLIENT(entry->client);
+        return RESP_ERROR_MESSAGE("There is no specified value for 'PX' argument");
+      }
+
+      expire = true;
+      i += 1;
+
+      const char *msecs_s = entry->args->data[i].value;
+
+      if (!try_parse_integer(msecs_s)) {
+        PASS_NO_CLIENT(entry->client);
+        return RESP_ERROR_MESSAGE("The value of 'PX' argument must be an integer");
+      }
+
+      struct timespec expire;
+
+      if (clock_gettime(CLOCK_REALTIME, &expire) == -1) {
+        PASS_NO_CLIENT(entry->client);
+        return RESP_ERROR_MESSAGE("Cannot take the current time for 'PX' argument");
+      }
+
+      const uint64_t msecs = strtoull(msecs_s, (char **) NULL, 10);
+      expire_at = (expire.tv_sec * 1000) + (expire.tv_nsec / 1e6) + msecs;
     } else if (streq(arg.value, "AS")) {
       as = true;
 
@@ -207,7 +261,7 @@ static string_t run(struct CommandEntry *entry) {
 
   if (get) {
     if (entry->password->permissions & P_READ) {
-      const bool success = (set_data(entry->database, res, key, value, type) != NULL);
+      const bool success = (set_data(entry->database, res, key, value, type, (expire ? &expire_at : NULL)) != NULL);
 
       if (!success) {
         PASS_NO_CLIENT(entry->client);
@@ -227,7 +281,7 @@ static string_t run(struct CommandEntry *entry) {
       return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_READ");
     }
   } else {
-    const bool success = (set_data(entry->database, res, key, value, type) != NULL);
+    const bool success = (set_data(entry->database, res, key, value, type, (expire ? &expire_at : NULL)) != NULL);
     PASS_NO_CLIENT(entry->client);
 
     if (success) {
@@ -244,7 +298,7 @@ const struct Command cmd_set = {
   .since = "0.1.0",
   .complexity = "O(1)",
   .permissions = P_WRITE,
-  .flags.value = CMD_FLAG_DATABASE,
+  .flags.value = (CMD_FLAG_ACCESS_DATABASE | CMD_FLAG_AFFECT_DATABASE),
   .subcommands = NULL,
   .subcommand_count = 0,
   .run = run

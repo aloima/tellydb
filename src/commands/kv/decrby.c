@@ -1,3 +1,4 @@
+#include "commands/commands.h"
 #include <telly.h>
 
 static string_t run(struct CommandEntry *entry) {
@@ -37,7 +38,7 @@ static string_t run(struct CommandEntry *entry) {
       mpf_neg(*raw, *raw);
     }
 
-    result = set_data(entry->database, NULL, key, number, type);
+    result = set_data(entry->database, NULL, key, number, type, NULL);
 
     if (!result) {
       free_value(type, number);
@@ -102,7 +103,7 @@ const struct Command cmd_decrby = {
   .since = "0.2.0",
   .complexity = "O(1)",
   .permissions = (P_READ | P_WRITE),
-  .flags.value = CMD_FLAG_DATABASE,
+  .flags.value = (CMD_FLAG_ACCESS_DATABASE | CMD_FLAG_AFFECT_DATABASE),
   .subcommands = NULL,
   .subcommand_count = 0,
   .run = run

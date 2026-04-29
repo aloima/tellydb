@@ -65,6 +65,7 @@ static inline void cleanup() {
   if (server->eventfd != -1)
     ASSERT(close(server->eventfd), ==, 0);
 
+  destroy_expiry_set();
   free_constant_passwords();
   free_kdf();
   free_passwords();
@@ -190,18 +191,16 @@ void start_server(Config *config) {
   server->last_error_at = 0;
   server->status = SERVER_STATUS_STARTING;
 
-  if (initialize_logs() == -1) {
+  if (initialize_logs() == -1)
     write_log(LOG_INFO, "Initialized configuration.");
-  } else {
+  else
     write_log(LOG_INFO, "Initialized logs and configuration.");
-  }
 
   const pid_t pid = getpid();
   write_log(LOG_INFO, "version: " VERSION ", commit hash: " GIT_HASH ", process id: %d", pid);
 
-  if (config == NULL) {
+  if (config == NULL)
     write_log(LOG_WARN, "No configuration file. To specify, create .tellyconf or use `telly config /path/to/file`.");
-  }
 
   if (server->conf->tls)
     CLEANUP_RETURN_IF(initialize_server_ssl() == -1);
@@ -222,6 +221,7 @@ void start_server(Config *config) {
   CLEANUP_RETURN_IF(initialize_socket() == -1);
   CLEANUP_RETURN_IF(initialize_authorization() == -1);
   CLEANUP_RETURN_IF(open_database_fd(&server->age) == -1);
+  CLEANUP_RETURN_LOG_IF(create_expiry_set() == -1, "Cannot create expiry set for key-value pairs.");
 
   write_log(LOG_INFO, "tellydb server age: %" PRIu32 " seconds", server->age);
 
