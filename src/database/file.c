@@ -517,8 +517,8 @@ int save_data(const uint32_t server_age) {
   ret = 0;
 
 cleanup:
-  free(data);
-  free(block);
+  if (data) free(data);
+  if (block) free(block);
   saving = false;
   if (io_failed) close_database_fd();
   return ret;
