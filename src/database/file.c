@@ -320,16 +320,52 @@ static inline void generate_headers(char *headers, const uint32_t server_age) {
   memcpy(headers + 2, &server_age, sizeof(uint32_t));
 }
 
-// TODO: better error handling
-// TODO: maybe mmap() will be used for directly saving instead of parsing all data individually
+static inline void log_save_io_error(const char *what) {
+  switch (errno) {
+    case EIO:
+      write_log(LOG_ERR, "%s: I/O error.", what);
+      break;
+    case ENOSPC:
+      write_log(LOG_ERR, "%s: no space left on device.", what);
+      break;
+    case EDQUOT:
+      write_log(LOG_ERR, "%s: disk quota exceeded.", what);
+      break;
+    case EFBIG:
+      write_log(LOG_ERR, "%s: file size limit exceeded.", what);
+      break;
+    case EBADF:
+      write_log(LOG_ERR, "%s: bad file descriptor.", what);
+      break;
+    case EINTR:
+      write_log(LOG_ERR, "%s: interrupted by signal.", what);
+      break;
+    default:
+      write_log(LOG_ERR, "%s: errno %d.", what, errno);
+      break;
+  }
+}
+
 int save_data(const uint32_t server_age) {
   if (saving) return -1;
-
   saving = true;
-  lseek(fd, 0, SEEK_SET);
 
-  char *block;
-  if (posix_memalign((void **) &block, block_size, block_size) != 0) return -1;
+  char *block = NULL;
+  char *data = NULL;
+  bool io_failed = false;
+  int ret = -1;
+
+  if (lseek(fd, 0, SEEK_SET) == (off_t) -1) {
+    log_save_io_error("Cannot seek to start of database file");
+    io_failed = true;
+    goto cleanup;
+  }
+
+  if (posix_memalign((void **) &block, block_size, block_size) != 0) {
+    write_log(LOG_ERR, "Cannot allocate aligned memory for database block, out of memory.");
+    block = NULL; // posix_memalign leaves *memptr undefined on failure
+    goto cleanup;
+  }
 
   memset(block, 0, block_size);
 
@@ -360,11 +396,9 @@ int save_data(const uint32_t server_age) {
         memcpy(block + length, password->data, allowed);
 
         if (write(fd, block, block_size) == -1) {
-          saving = false;
-          free(block);
-          close_database_fd();
-          write_log(LOG_ERR, "The passwords cannot be written to database file, it is a OS-specific error.");
-          return -1;
+          log_save_io_error("Cannot write passwords block to database file");
+          io_failed = true;
+          goto cleanup;
         }
 
         const uint32_t remaining = (48 - allowed); // remaining byte count except permissions
@@ -409,8 +443,11 @@ int save_data(const uint32_t server_age) {
         continue;
       }
 
-      char *data = malloc(data_size);
-      if (!data) return -1;
+      data = malloc(data_size);
+      if (!data) {
+        write_log(LOG_ERR, "Cannot allocate buffer for KV data while saving, out of memory.");
+        goto cleanup;
+      }
 
       for (uint32_t i = 0; i < capacity; ++i) {
         struct KVPair *kv = database->data[i];
@@ -426,12 +463,9 @@ int save_data(const uint32_t server_age) {
           memcpy(block + length, data, complete);
 
           if (write(fd, block, block_size) == -1) {
-            saving = false;
-            free(data);
-            free(block);
-            close_database_fd();
-            write_log(LOG_ERR, "The data cannot be written to database file, it is a OS-specific error.");
-            return -1;
+            log_save_io_error("Cannot write KV block to database file");
+            io_failed = true;
+            goto cleanup;
           }
 
           remaining -= complete;
@@ -441,12 +475,9 @@ int save_data(const uint32_t server_age) {
               memcpy(block, data + (kv_size - remaining), block_size);
 
               if (write(fd, block, block_size) == -1) {
-                saving = false;
-                free(data);
-                free(block);
-                close_database_fd();
-                write_log(LOG_ERR, "The data cannot be written to database file, it is a OS-specific error.");
-                return -1;
+                log_save_io_error("Cannot write KV continuation block to database file");
+                io_failed = true;
+                goto cleanup;
               }
 
               remaining -= block_size;
@@ -464,32 +495,33 @@ int save_data(const uint32_t server_age) {
       }
 
       free(data);
+      data = NULL;
       node = node->next;
     }
   }
 
   if (length != block_size) {
     if (write(fd, block, block_size) == -1) {
-      saving = false;
-      free(block);
-      close_database_fd();
-      write_log(LOG_ERR, "The data cannot be written to database file, it is a OS-specific error.");
-      return -1;
+      log_save_io_error("Cannot write final block to database file");
+      io_failed = true;
+      goto cleanup;
     }
   }
 
   if (ftruncate(fd, total) == -1) {
-    saving = false;
-    free(block);
-    close_database_fd();
-    write_log(LOG_ERR, "The data cannot be written to database file, it is a OS-specific error.");
-    return -1;
+    log_save_io_error("Cannot truncate database file to actual data size");
+    io_failed = true;
+    goto cleanup;
   }
 
-  free(block);
+  ret = 0;
 
+cleanup:
+  free(data);
+  free(block);
   saving = false;
-  return 0;
+  if (io_failed) close_database_fd();
+  return ret;
 }
 
 void *save_thread(void *arg) {
