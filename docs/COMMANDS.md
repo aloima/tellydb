@@ -88,6 +88,8 @@ The list of unwritten behavior to commands.
 **Returns**: `OK`  
 **Behavior**:
 * Waits until saving all data to database file, so **it blocks all client commands.**
+* If cannot take server time, throws an error.
+* If saving data is unsuccessful, throws an error.
 
 ### SELECT
 **Syntax**: `SELECT database`  
