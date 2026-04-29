@@ -27,5 +27,6 @@ const struct Command cmd_exec = {
   .flags.value = CMD_FLAG_WAITING_TX,
   .subcommands = NULL,
   .subcommand_count = 0,
-  .run = run
+  .run = run,
+  .get_keys = NULL
 };

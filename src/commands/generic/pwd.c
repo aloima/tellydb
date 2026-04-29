@@ -222,5 +222,6 @@ const struct Command cmd_pwd = {
   .flags.value = CMD_FLAG_NO_FLAG,
   .subcommands = subcommands,
   .subcommand_count = 0,
-  .run = run
+  .run = run,
+  .get_keys = NULL
 };

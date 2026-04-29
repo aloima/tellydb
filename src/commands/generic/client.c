@@ -390,5 +390,6 @@ const struct Command cmd_client = {
   .flags.value = CMD_FLAG_NO_FLAG,
   .subcommands = subcommands,
   .subcommand_count = 6,
-  .run = run
+  .run = run,
+  .get_keys = NULL
 };

@@ -9,14 +9,14 @@ static string_t run(struct CommandEntry *entry) {
 
   const time_t current_time = time(NULL);
   if (current_time == INVALID_TIME)
-    return RESP_ERROR_MESSAGE("time() system call is failed.");
+    return RESP_ERROR_MESSAGE("time() system call is failed");
 
   server_age += difftime(current_time, start_at);
 
   if (save_data(server_age) != -1) {
     return RESP_OK();
   } else {
-    return RESP_ERROR_MESSAGE("Saving data is failed.");
+    return RESP_ERROR_MESSAGE("Saving data is failed");
   }
 }
 
@@ -29,5 +29,6 @@ const struct Command cmd_save = {
   .flags.value = CMD_FLAG_NO_FLAG,
   .subcommands = NULL,
   .subcommand_count = 0,
-  .run = run
+  .run = run,
+  .get_keys = NULL
 };

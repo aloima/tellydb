@@ -25,5 +25,6 @@ const struct Command cmd_dbsize = {
   .flags.value = CMD_FLAG_NO_FLAG,
   .subcommands = NULL,
   .subcommand_count = 0,
-  .run = run
+  .run = run,
+  .get_keys = NULL
 };

@@ -140,4 +140,5 @@ const struct Command cmd_command = {
   .subcommands = subcommands,
   .subcommand_count = 3,
   .run = run,
+  .get_keys = NULL
 };

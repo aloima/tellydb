@@ -16,5 +16,6 @@ const struct Command cmd_flushdb = {
   .flags.value = CMD_FLAG_AFFECT_DATABASE,
   .subcommands = NULL,
   .subcommand_count = 0,
-  .run = run
+  .run = run,
+  .get_keys = NULL
 };
