@@ -10,8 +10,8 @@
 
 enum CommandFlags {
   CMD_FLAG_NO_FLAG         = 0b000,
-  CMD_FLAG_AFFECT_DATABASE = 0b010, // affecting on databases, not including file operations nor getting data
-  CMD_FLAG_ACCESS_DATABASE = 0b100, // accessing to databases, not including file operations, setting data nor deleting data
+  CMD_FLAG_AFFECT_DATABASE = 0b001, // affecting on databases, not including file operations nor getting data
+  CMD_FLAG_ACCESS_DATABASE = 0b010, // accessing to databases, not including file operations, setting data nor deleting data
   CMD_FLAG_WAITING_TX      = 0b100  // related to waiting transactions (MULTI, DISCARD or EXEC)
 };
 
