@@ -5,12 +5,16 @@ static bool get_section(char *section, const Config *conf, const char *name) {
     char gcc_version[16];
     sprintf(gcc_version, "%d.%d.%d", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 
+    char age_text[64];
     uint32_t age = server->age;
 
     const time_t current_time = time(NULL);
-    ASSERT(current_time, !=, INVALID_TIME);
-
-    age += difftime(current_time, server->start_at);
+    if (current_time == INVALID_TIME) {
+      sprintf(age_text, "unknown");
+    } else {
+      age += difftime(current_time, server->start_at);
+      sprintf(age_text, "%" PRIu32 " seconds", age);
+    }
 
     char str_start_at[21];
     generate_date_string(str_start_at, server->start_at);
@@ -27,9 +31,9 @@ static bool get_section(char *section, const Config *conf, const char *name) {
 #endif
       "GCC version: %s\r\n"
       "TLS server: %s\r\n"
-      "Age: %" PRIu32 " seconds\r\n"
+      "Age: %s\r\n"
       "Started at: %.20s\r\n"
-    ), getpid(), gcc_version, (conf->tls ? "yes" : "no"), age, str_start_at);
+    ), getpid(), gcc_version, (conf->tls ? "yes" : "no"), age_text, str_start_at);
   } else if (streq(name, "clients")) {
     sprintf(section, (
       "# Clients\r\n"
