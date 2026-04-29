@@ -22,3 +22,4 @@ bool delete_from_vector(Vector *vector, void *element);
 
 void foreach_vector(Vector *vector, void (*procedure)(void *element));
 bool any_in_vector(Vector *vector, bool (*procedure)(void *element));
+void clear_vector(Vector *vector, void (*destroy_element)(void *element));

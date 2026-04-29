@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <telly.h>
 
 Vector *create_vector(const uint64_t capacity) {
@@ -81,6 +82,18 @@ bool any_in_vector(Vector *vector, bool (*procedure)(void *element)) {
   }
 
   return false;
+}
+
+void clear_vector(Vector *vector, void (*destroy_element)(void *element)) {
+  if (destroy_element != NULL)
+    foreach_vector(vector, destroy_element);
+
+  const uint64_t capacity = vector->size.capacity;
+  vector->size.count = 0;
+
+  for (uint64_t i = 0; i < capacity; ++i) {
+    vector->elements[i] = NULL;
+  }
 }
 
 void destroy_vector(Vector *vector, void (*destroy_element)(void *element)) {
