@@ -109,6 +109,23 @@ static inline string_t execute_transaction(Client *client, struct Password *pass
     return EMPTY_STRING();
   }
 
+  if (command->flags.bits.access_database && (command->get_keys != NULL)) {
+    command->get_keys(&entry);
+    const uint64_t kv_count = server->keyspace->size.count;
+
+    if (kv_count != 0) {
+      string_t **keyspace = (string_t **) server->keyspace->elements;
+
+      for (uint64_t i = 0; i < kv_count; ++i) {
+        // *keyspace[i] can be used, it belongs to transactions->args[i] and it is not disappeared yet.
+        struct KVPair *kv = get_data(transaction->database, *keyspace[i]);
+        if (!kv) continue;
+
+        (void) check_kv_expiry(transaction->database, kv);
+      }
+    }
+  }
+
   return command->run(&entry);
 }
 
