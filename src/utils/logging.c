@@ -20,7 +20,7 @@ int initialize_logs() {
 
   // All errors from stat() method are already handled by open_file() method
   struct stat sostat;
-  GASSERT(stat(conf->log_file, &sostat), !=, -1);
+  ASSERT(stat(conf->log_file, &sostat), !=, -1);
 
   const off_t size = sostat.st_size;
   atomic_init(&new_size, size);
@@ -71,7 +71,7 @@ int initialize_logs() {
     old_at = at;
   }
 
-  GASSERT(munmap(data, size), ==, 0);
+  ASSERT(munmap(data, size), ==, 0);
   return 0;
 }
 
@@ -79,8 +79,11 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
   Config *conf = server->conf ?: get_default_config();
   const uint8_t check = (conf->allowed_log_levels & level);
 
+  const time_t at = time(NULL);
+  ASSERT(at, !=, INVALID_TIME);
+
   char time_text[21];
-  generate_date_string(time_text, time(NULL));
+  generate_date_string(time_text, at);
 
   const uint32_t buf_size = LOG_LENGTH + 1;
   char buf[buf_size];
@@ -90,7 +93,7 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
   vsnprintf(buf, buf_size, fmt, args);
   va_end(args);
 
-  uint32_t message_len = 0;
+  int64_t message_len = 0;
   char message[LOG_LENGTH + 34];
 
   FILE *stream;
@@ -111,6 +114,8 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
       message_len = sprintf(message, "[%s / ERR]  | %s\n", time_text, buf);
       if (server) {
         server->last_error_at = time(NULL);
+        ASSERT(server->last_error_at, !=, INVALID_TIME);
+
         server->status = SERVER_STATUS_ERROR;
       }
       break;
@@ -124,22 +129,29 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
       return;
   }
 
-  fputs(message, stream);
+  ASSERT(message_len, >=, 34);
+  ASSERT(fputs(message, stream), !=, EOF);
+
   if (fd == -1) return;
 
   if (conf->max_log_lines == -1) {
-    write(fd, message, message_len);
+    ASSERT(write(fd, message, message_len), ==, message_len);
   } else {
     if (estimate_tqueue_size(lines) >= conf->max_log_lines) {
       char *line;
-      pop_tqueue(lines, &line);
+      ASSERT(pop_tqueue(lines, &line), ==, true);
+
       atomic_fetch_sub_explicit(&new_size, strlen(line), memory_order_relaxed);
       free(line);
     }
 
+    // TODO: handle memory allocation error
     char *line = malloc(message_len + 1);
+    if (line == NULL) return;
+
     memcpy(line, message, (message_len + 1));
-    push_tqueue(lines, &line);
+    ASSERT(push_tqueue(lines, &line), !=, NULL);
+
     atomic_fetch_add_explicit(&new_size, message_len, memory_order_relaxed);
   }
 }
@@ -183,14 +195,14 @@ void save_and_close_logs() {
   }
 
   map[size] = '\0';
-  GASSERT(estimate_tqueue_size(lines), ==, 0);
+  ASSERT(estimate_tqueue_size(lines), ==, 0);
 
 CLEANUP:
   free_tqueue(lines);
-  msync(map, size + 1, MS_ASYNC);
+  ASSERT(msync(map, size + 1, MS_ASYNC), ==, 0);
 
-  munmap(map, size + 1);
-  GASSERT(close(fd), ==, 0);
+  ASSERT(munmap(map, size + 1), ==, 0);
+  ASSERT(close(fd), ==, 0);
 
   #undef CHECK_ERROR
 }

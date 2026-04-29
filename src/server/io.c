@@ -23,9 +23,9 @@ int64_t get_io_thread_count() {
 }
 
 int create_io_threads() {
-  GASSERT(sigemptyset(&set), ==, 0);
-  GASSERT(sigaddset(&set, SIGINT), ==, 0);
-  GASSERT(sigaddset(&set, SIGTERM), ==, 0);
+  ASSERT(sigemptyset(&set), ==, 0);
+  ASSERT(sigaddset(&set, SIGINT), ==, 0);
+  ASSERT(sigaddset(&set, SIGTERM), ==, 0);
 
   io_thread_count = max(sysconf(_SC_NPROCESSORS_ONLN) - 1, 2);
   io_threads = malloc(io_thread_count * sizeof(IOThread));
@@ -60,7 +60,7 @@ int create_io_threads() {
     const int code = pthread_create(&io_thread->thread, NULL, io_thread_procedure, io_thread);
     if (code == EAGAIN) goto CLEANUP_THREAD;
 
-    GASSERT(pthread_detach(io_thread->thread), ==, 0);
+    ASSERT(pthread_detach(io_thread->thread), ==, 0);
     succeed += 1;
   }
 
@@ -105,7 +105,7 @@ int add_io_request(const enum IOOpType type, Client *client, string_t to_write) 
 }
 
 void *io_thread_procedure(void *arg) {
-  GASSERT(pthread_sigmask(SIG_BLOCK, &set, NULL), ==, 0);
+  ASSERT(pthread_sigmask(SIG_BLOCK, &set, NULL), ==, 0);
 
   IOThread *thread = (IOThread *) arg;
   int added = -1, efd = -1;

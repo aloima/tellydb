@@ -75,13 +75,15 @@ static inline bool set_uint(void *value, const char *buf) {
 
   char *end;
   *((uint64_t *) value) = strtoull(buf, &end, 10);
+  ASSERT(errno, !=, EINVAL);
 
   return (*end == '\0');
 }
 
 static inline bool set_int(void *value, const char *buf) {
   char *end;
-  *((uint64_t *) value) = strtoll(buf, &end, 10);
+  *((int64_t *) value) = strtoll(buf, &end, 10);
+  ASSERT(errno, !=, EINVAL);
 
   return (*end == '\0');
 }
@@ -89,8 +91,12 @@ static inline bool set_int(void *value, const char *buf) {
 static inline bool set_autosave(void *value, const char *buf) {
   typeof(default_conf.autosave) *data = value;
   char *end;
+
   data->seconds = strtoll(buf, &end, 10);
+  ASSERT(errno, !=, EINVAL);
+
   data->count   = strtoll(end, &end, 10);
+  ASSERT(errno, !=, EINVAL);
 
   return (*end == '\0');
 }
@@ -314,7 +320,7 @@ Config *get_config(const char *filename) {
     if (file) {
       const Config data = parse_config(file);
       memcpy(conf, &data, sizeof(Config));
-      fclose(file);
+      ASSERT(fclose(file), !=, EOF);
     } else {
       memcpy(conf, &default_conf, sizeof(Config));
     }
@@ -326,7 +332,7 @@ Config *get_config(const char *filename) {
     if (file) {
       const Config data = parse_config(file);
       memcpy(conf, &data, sizeof(Config));
-      fclose(file);
+      ASSERT(fclose(file), !=, EOF);
 
       return conf;
     } else {
@@ -337,5 +343,6 @@ Config *get_config(const char *filename) {
 }
 
 void free_config(Config *conf) {
-  if (conf != &default_conf) free(conf);
+  if (conf != &default_conf)
+    free(conf);
 }

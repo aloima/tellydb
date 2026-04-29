@@ -24,6 +24,7 @@ int open_file(const char *file, int flags);
 #include "tqueue.h"     // IWYU pragma: export
 #include "integer.h"    // IWYU pragma: export
 #include "hashset.h"    // IWYU pragma: export
+#include "vector.h"     // IWYU pragma: export
 #include "linkedlist.h" // IWYU pragma: export
 #include "string.h"     // IWYU pragma: export
 #include "arena.h"      // IWYU pragma: export

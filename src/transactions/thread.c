@@ -61,6 +61,7 @@ static inline int initialize_thread_variables() {
 
   atomic_init(&kill_pending, false);
   tx_last_saved_at = time(NULL);
+  ASSERT(tx_last_saved_at, !=, INVALID_TIME);
 
   return 0;
 }

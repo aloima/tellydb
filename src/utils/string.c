@@ -29,7 +29,7 @@ static inline void number_pad(char *res, const uint32_t value) {
 
 void generate_date_string(char *text, const time_t value) {
   struct tm tm;
-  struct tm *_ = gmtime_r(&value, &tm);
+  ASSERT(gmtime_r(&value, &tm), ==, &tm);
 
   const char *month = months[tm.tm_mon];
 
@@ -43,7 +43,7 @@ void generate_date_string(char *text, const time_t value) {
   text[5] = month[2];
 
   text[6] = ' ';
-  ltoa(1900 + tm.tm_year, text + 7); // 1970
+  ASSERT(ltoa(1900 + tm.tm_year, text + 7), ==, 4); // 1970
   text[11] = ' ';
   number_pad(text + 12, tm.tm_hour); // 00
   text[14] = ':';

@@ -58,8 +58,12 @@ static inline void cleanup() {
   free_clients();
 
   if (server->ctx) SSL_CTX_free(server->ctx);
-  if (server->sockfd != -1) close(server->sockfd);
-  if (server->eventfd != -1) close(server->eventfd);
+
+  if (server->sockfd != -1)
+    ASSERT(close(server->sockfd), ==, 0);
+
+  if (server->eventfd != -1)
+    ASSERT(close(server->eventfd), ==, 0);
 
   destroy_expiry_set();
   free_constant_passwords();
@@ -77,7 +81,10 @@ static inline void cleanup() {
 }
 
 static inline void close_server() {
-  const uint32_t server_age = server->age + difftime(time(NULL), server->start_at);
+  const time_t current_time = time(NULL);
+  ASSERT(current_time, !=, INVALID_TIME);
+
+  const uint32_t server_age = server->age + difftime(current_time, server->start_at);
   const clock_t start = clock();
 
   if (save_data(server_age) == 0) {
@@ -124,19 +131,29 @@ static int initialize_server_ssl() {
 }
 
 static int initialize_socket() {
-  if ((server->sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) LOG_RETURN(-1, "Cannot open socket.");
+  if ((server->sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    LOG_RETURN(-1, "Cannot open socket.");
+
   const int sockfd = server->sockfd;
 
-  if (fcntl(sockfd, F_SETFL, fcntl(server->sockfd, F_GETFL, 0) | O_NONBLOCK) == -1) LOG_RETURN(-1, "Cannot set non-blocking socket.");
+  {
+    const int flags = fcntl(server->sockfd, F_GETFL, 0);
+    ASSERT(flags, !=, -1);
+
+    if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) == -1)
+      LOG_RETURN(-1, "Cannot set non-blocking socket.");
+  }
 
   { // Flags needs to be defined as independently, it may be change.
     const int flag = 1;
-    if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) == -1) LOG_RETURN(-1, "Cannot set no-delay socket.");
+    if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) == -1)
+      LOG_RETURN(-1, "Cannot set no-delay socket.");
   }
 
   {
     const int flag = 1;
-    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) == -1) LOG_RETURN(-1, "Cannot set reusable socket.");
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) == -1)
+      LOG_RETURN(-1, "Cannot set reusable socket.");
   }
 
   struct sockaddr_in servaddr;
@@ -144,8 +161,11 @@ static int initialize_socket() {
   servaddr.sin_port = htons(server->conf->port);
   servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-  if ((bind(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr))) != 0) LOG_RETURN(-1, "Cannot bind socket and address.");
-  if (listen(sockfd, 64) != 0) LOG_RETURN(-1, "Cannot listen socket.");
+  if ((bind(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr))) != 0)
+    LOG_RETURN(-1, "Cannot bind socket and address.");
+
+  if (listen(sockfd, 64) != 0)
+    LOG_RETURN(-1, "Cannot listen socket.");
 
   return 0;
 }
@@ -195,8 +215,8 @@ void start_server(Config *config) {
   CLEANUP_RETURN_IF(create_transaction_thread() == -1);
   write_log(LOG_INFO, "Created transaction thread.");
 
-  signal(SIGTERM, close_signal);
-  signal(SIGINT, close_signal);
+  ASSERT(signal(SIGTERM, close_signal), !=, SIG_ERR);
+  ASSERT(signal(SIGINT, close_signal), !=, SIG_ERR);
 
   CLEANUP_RETURN_IF(initialize_socket() == -1);
   CLEANUP_RETURN_IF(initialize_authorization() == -1);
@@ -218,6 +238,8 @@ void start_server(Config *config) {
   write_log(LOG_INFO, "Created I/O thread.");
 
   server->start_at = time(NULL);
+  ASSERT(server->start_at, !=, INVALID_TIME);
+
   server->status = SERVER_STATUS_ONLINE;
   write_log(LOG_INFO, "Server is listening on %" PRIu16 " port for accepting connections...", server->conf->port);
 
