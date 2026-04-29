@@ -355,11 +355,7 @@ int save_data(const uint32_t server_age) {
   bool io_failed = false;
   int ret = -1;
 
-  if (lseek(fd, 0, SEEK_SET) == (off_t) -1) {
-    log_save_io_error("Cannot seek to start of database file");
-    io_failed = true;
-    goto cleanup;
-  }
+  ASSERT(lseek(fd, 0, SEEK_SET), !=, -1);
 
   if (posix_memalign((void **) &block, block_size, block_size) != 0) {
     write_log(LOG_ERR, "Cannot allocate aligned memory for database block, out of memory.");
