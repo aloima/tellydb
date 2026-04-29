@@ -115,7 +115,9 @@ The list of unwritten behavior to commands.
 **Since**: `0.1.6`  
 **Time complexity**: `O(1)`  
 **Permissions**: None  
-**Returns**: Integer
+**Returns**: Integer  
+**Behavior**:
+* If cannot take server time, throws an error.
 
 ---
 
@@ -126,7 +128,7 @@ The list of unwritten behavior to commands.
 **Time complexity**: `O(1)`  
 **Permissions**: None  
 **Returns**: `OK`  
-**Behaviour**:
+**Behavior**:
 * If the client is already using a password, it throws an error without `ok` argument.
 
 ---

@@ -6,7 +6,12 @@ static string_t run(struct CommandEntry *entry) {
   uint32_t age;
   time_t start_at;
   get_server_time(&start_at, &age);
-  age += difftime(time(NULL), start_at);
+
+  const time_t current_time = time(NULL);
+  if (current_time == INVALID_TIME)
+    return RESP_ERROR_MESSAGE("time() system call is failed");
+
+  age += difftime(current_time, start_at);
 
   const size_t nbytes = create_resp_integer(entry->client->write_buf, age);
   return CREATE_STRING(entry->client->write_buf, nbytes);
