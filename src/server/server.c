@@ -223,6 +223,9 @@ void start_server(Config *config) {
   CLEANUP_RETURN_IF(open_database_fd(&server->age) == -1);
   CLEANUP_RETURN_LOG_IF(create_expiry_set() == -1, "Cannot create expiry set for key-value pairs.");
 
+  server->keyspace = create_vector(1024);
+  CLEANUP_RETURN_LOG_IF(server->keyspace == NULL, "Cannot create keyspace.");
+
   write_log(LOG_INFO, "tellydb server age: %" PRIu32 " seconds", server->age);
 
   server->eventfd = CREATE_EVENTFD();

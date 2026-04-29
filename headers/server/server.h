@@ -41,6 +41,9 @@ typedef struct {
   sig_atomic_t closed;
   struct Command *commands;
   Client *clients;
+
+  // Given keys in the command, one keyspace is enough because of that transactions is ran individually.
+  Vector *keyspace;
 } Server;
 
 extern Server *server;

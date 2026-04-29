@@ -53,7 +53,9 @@ struct Command {
     uint8_t value;
   } flags;
 
+  void (*get_keys)(struct CommandEntry *entry);
   string_t (*run)(struct CommandEntry *entry);
+
   struct Subcommand *subcommands;
   uint32_t subcommand_count;
 };
