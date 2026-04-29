@@ -113,7 +113,7 @@ static inline string_t execute_transaction(Client *client, struct Password *pass
 }
 
 static inline void check_autosave(struct Command *command) {
-  if (command->flags.bits.database) {
+  if (command->flags.bits.affect_database) {
     const time_t current_time = time(NULL);
     ASSERT(current_time, !=, INVALID_TIME);
 
