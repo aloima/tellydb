@@ -527,14 +527,16 @@ void *save_thread(void *arg) {
   pthread_exit(NULL);
 }
 
-bool bg_save(const uint32_t server_age) {
-  if (saving) {
-    return false;
-  }
+BackgroundSavingStatus bg_save(const uint32_t server_age) {
+  if (saving)
+    return BGSAVE_ALREADY_SAVING;
 
   pthread_t thread;
-  pthread_create(&thread, NULL, save_thread, (uint32_t *) &server_age);
-  pthread_detach(thread);
+  const int code = pthread_create(&thread, NULL, save_thread, (uint32_t *) &server_age);
+  if (code == EAGAIN)
+    return BGSAVE_THREAD_FAILED;
 
-  return true;
+  ASSERT(pthread_detach(thread), ==, 0);
+
+  return BGSAVE_SUCCESSFUL;
 }

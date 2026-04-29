@@ -31,6 +31,7 @@ The list of unwritten behavior to commands.
 * Creates a thread to save all data to the database.
 * The created thread will be closed after saving.
 * If a saving process from [BGSAVE](#bgsave) or [SAVE](#save) is active, throws an error.
+* If cannot take server time, throws an error.
 
 ---
 
