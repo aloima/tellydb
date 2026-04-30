@@ -17,7 +17,7 @@ typedef enum {
   LL_FRONT
 } LLSearchDirection;
 
-LinkedList *ll_create(void *initial_data);
+LinkedList *ll_create();
 LinkedListNode *ll_insert_back(LinkedList *list, void *data);
 LinkedListNode *ll_insert_front(LinkedList *list, void *data);
 LinkedListNode *ll_search_node(LinkedList *list, const LLSearchDirection dir, void *external, bool (*cmp)(void *data, void *external));

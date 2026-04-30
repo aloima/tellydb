@@ -2,7 +2,6 @@
 
 static LinkedList *databases = NULL;
 static Database *main = NULL;
-static uint32_t database_count = 0;
 
 Database *create_database(const string_t name, const uint64_t capacity) {
   Database *database = NULL;
@@ -18,15 +17,13 @@ Database *create_database(const string_t name, const uint64_t capacity) {
   data = calloc(capacity, sizeof(struct KVPair *));
   if (data == NULL) goto CLEANUP;
 
-  if (database_count != 0) {
-    bool inserted = (ll_insert_back(databases, database) != NULL);
-    if (!inserted) goto CLEANUP;
-  } else {
-    databases = ll_create(database);
+  if (databases == NULL) {
+    databases = ll_create();
     if (databases == NULL) goto CLEANUP;
   }
 
-  database_count += 1;
+  if (ll_insert_back(databases, database) == NULL)
+    goto CLEANUP;
 
   database->name = CREATE_STRING(name_str, name.len);
   memcpy(database->name.value, name.value, name.len);

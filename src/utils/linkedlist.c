@@ -1,4 +1,3 @@
-#include "utils/linkedlist.h"
 #include <telly.h>
 
 static inline LinkedListNode *ll_create_node(void *data) {
@@ -10,15 +9,12 @@ static inline LinkedListNode *ll_create_node(void *data) {
   return node;
 }
 
-LinkedList *ll_create(void *initial_data) {
+LinkedList *ll_create() {
   LinkedList *list = malloc(sizeof(LinkedList));
   if (list == NULL) return NULL;
 
-  LinkedListNode *node = ll_create_node(initial_data);
-  if (node == NULL) return NULL;
-
-  list->begin = node;
-  list->end = node;
+  list->begin = NULL;
+  list->end = NULL;
   list->size = 0;
 
   return list;
