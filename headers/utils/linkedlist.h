@@ -14,8 +14,7 @@ typedef struct LinkedList {
 
 typedef enum {
   LL_BACK,
-  LL_FRONT,
-  LL_DOUBLE
+  LL_FRONT
 } LLSearchDirection;
 
 LinkedList *ll_create(void *initial_data);

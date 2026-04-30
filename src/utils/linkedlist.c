@@ -86,21 +86,6 @@ LinkedListNode *ll_search_node(LinkedList *list, const LLSearchDirection dir, vo
       }
 
       return NULL;
-
-    case LL_DOUBLE:
-      while (front != NULL || back != NULL) {
-        if (front) {
-          if (cmp(front->data, external)) return front;
-          front = front->prev;
-        }
-
-        if (back) {
-          if (cmp(back->data, external)) return back;
-          back = back->next;
-        }
-      }
-
-      return NULL;
   }
 }
 
