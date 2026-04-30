@@ -1,11 +1,18 @@
 #include <telly.h>
 
-enum SearchDirection {
+static void get_keys(struct CommandEntry *entry) {
+  if (entry->args->count != 2) return;
+  (void) insert_into_vector(server->keyspace, &entry->args->data[0]);
+}
+
+
+
+typedef enum {
   FORWARD,
   BACKWARD
-};
+} SearchDirection;
 
-static inline struct ListNode *get_node(const struct List *list, const uint32_t index, const enum SearchDirection direction) {
+static inline struct ListNode *get_node(const struct List *list, const uint32_t index, const SearchDirection direction) {
   uint32_t effective_index;
 
   switch (direction) {
@@ -102,5 +109,6 @@ const struct Command cmd_lindex = {
   .flags.value = CMD_FLAG_ACCESS_DATABASE,
   .subcommands = NULL,
   .subcommand_count = 0,
-  .run = run
+  .run = run,
+  .get_keys = get_keys
 };

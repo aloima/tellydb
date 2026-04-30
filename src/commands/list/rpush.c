@@ -1,5 +1,12 @@
 #include <telly.h>
 
+static void get_keys(struct CommandEntry *entry) {
+  if (entry->args->count < 2) return;
+  (void) insert_into_vector(server->keyspace, &entry->args->data[0]);
+}
+
+
+
 static void inline rpush_to_list(struct List *list, void *value, enum TellyTypes type) {
   struct ListNode *node = create_listnode(value, type);
   node->prev = list->end;
@@ -91,5 +98,6 @@ const struct Command cmd_rpush = {
   .flags.value = (CMD_FLAG_ACCESS_DATABASE | CMD_FLAG_AFFECT_DATABASE),
   .subcommands = NULL,
   .subcommand_count = 0,
-  .run = run
+  .run = run,
+  .get_keys = get_keys
 };
