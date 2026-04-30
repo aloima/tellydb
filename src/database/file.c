@@ -412,7 +412,7 @@ int save_data(const uint32_t server_age) {
   }
 
   {
-    struct LinkedListNode *node = get_front_database_node();
+    LinkedListNode *node = get_databases()->begin;
 
     while (node) {
       Database *database = (Database *) node->data;

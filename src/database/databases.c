@@ -1,6 +1,6 @@
 #include <telly.h>
 
-static LinkedListNode *front = NULL;
+static LinkedList *databases = NULL;
 static Database *main = NULL;
 static uint32_t database_count = 0;
 
@@ -19,11 +19,11 @@ Database *create_database(const string_t name, const uint64_t capacity) {
   if (data == NULL) goto CLEANUP;
 
   if (database_count != 0) {
-    bool inserted = (ll_insert_back(front, database) != NULL);
+    bool inserted = (ll_insert_back(databases, database) != NULL);
     if (!inserted) goto CLEANUP;
   } else {
-    front = ll_create_node(database);
-    if (front == NULL) goto CLEANUP;
+    databases = ll_create(database);
+    if (databases == NULL) goto CLEANUP;
   }
 
   database_count += 1;
@@ -54,8 +54,8 @@ Database *get_main_database() {
   return main;
 }
 
-LinkedListNode *get_front_database_node() {
-  return front;
+LinkedList *get_databases() {
+  return databases;
 }
 
 struct ExternalData {
@@ -76,7 +76,7 @@ Database *get_database(const string_t name) {
     .target = OPENSSL_LH_strhash(name.value)
   };
 
-  LinkedListNode *node = ll_search_node(front, LL_BACK, &external, cmp);
+  LinkedListNode *node = ll_search_node(databases, LL_BACK, &external, cmp);
   return node != NULL ? (Database *) node->data : NULL;
 }
 
@@ -87,7 +87,7 @@ bool rename_database(const string_t old_name, const string_t new_name) {
       .target = OPENSSL_LH_strhash(old_name.value)
     };
 
-    LinkedListNode *node = ll_search_node(front, LL_BACK, &external, cmp);
+    LinkedListNode *node = ll_search_node(databases, LL_BACK, &external, cmp);
     node != NULL ? (Database *) node->data : NULL;
   });
 
@@ -122,5 +122,5 @@ static void free_database(void *database_ptr) {
 }
 
 void free_databases() {
-  ll_free_each(front, free_database);
+  ll_free(databases, free_database);
 }

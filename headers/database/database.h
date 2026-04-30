@@ -22,7 +22,7 @@ typedef struct {
 } Database;
 
 Database *create_database(const string_t name, const uint64_t capacity);
-struct LinkedListNode *get_front_database_node();
+LinkedList *get_databases();
 
 void set_main_database(Database *database);
 Database *get_main_database();
