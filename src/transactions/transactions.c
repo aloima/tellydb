@@ -123,9 +123,9 @@ static inline string_t execute_transaction(Client *client, struct Password *pass
 
         (void) check_kv_expiry(transaction->database, kv);
       }
-    }
 
-    clear_vector(server->keyspace, NULL);
+      clear_vector(server->keyspace, NULL);
+    }
   }
 
   return command->run(&entry);
