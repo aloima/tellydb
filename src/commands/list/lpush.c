@@ -72,6 +72,7 @@ static string_t run(struct CommandEntry *entry) {
       const uint32_t size = input.len + 1;
       value->len = input.len;
       value->value = malloc(size);
+
       if (value->value == NULL) {
         free(value);
         return RESP_ERROR_MESSAGE("Out of memory");

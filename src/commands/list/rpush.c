@@ -41,8 +41,8 @@ static string_t run(struct CommandEntry *entry) {
     DatabaseListNode *node = malloc(sizeof(DatabaseListNode));
     if (node == NULL) return RESP_ERROR_MESSAGE("Out of memory");
 
-    string_t input = entry->args->data[i];
-    bool is_true = streq(input.value, "true");
+    const string_t input = entry->args->data[i];
+    const bool is_true = streq(input.value, "true");
 
     if (try_parse_integer(input.value)) {
       mpz_t *value = malloc(sizeof(mpz_t));
@@ -79,7 +79,7 @@ static string_t run(struct CommandEntry *entry) {
       }
 
       memcpy(value->value, input.value, size);
-      RPUSH(list, node, NULL, TELLY_STR);
+      RPUSH(list, node, value, TELLY_STR);
     }
   }
 
