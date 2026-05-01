@@ -7,52 +7,6 @@ static void get_keys(struct CommandEntry *entry) {
 
 
 
-typedef enum {
-  FORWARD,
-  BACKWARD
-} SearchDirection;
-
-static inline struct ListNode *get_node(const struct List *list, const uint32_t index, const SearchDirection direction) {
-  uint32_t effective_index;
-
-  switch (direction) {
-    case FORWARD:
-      if (index >= list->size) {
-        return NULL;
-      }
-
-      effective_index = index;
-      break;
-
-    case BACKWARD:
-      if (index > list->size) {
-        return NULL;
-      }
-
-      effective_index = list->size - index;
-      break;
-  }
-
-  struct ListNode *node;
-
-  if (effective_index < (list->size / 2)) {
-    node = list->begin;
-
-    for (uint32_t i = 0; i < effective_index; ++i) {
-      node = node->next;
-    }
-  } else {
-    const uint32_t bound = list->size - effective_index - 1;
-    node = list->end;
-
-    for (uint32_t i = 0; i < bound; ++i) {
-      node = node->prev;
-    }
-  }
-
-  return node;
-}
-
 static string_t run(struct CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
@@ -72,32 +26,34 @@ static string_t run(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("Second argument must be an integer");
   }
 
-  const struct List *list = kv->value;
-  struct ListNode *node;
+  LinkedList *list = kv->value;
+  LinkedListNode *node;
 
-  if (index_str[0] != '-') {
+  if (index_str[0] == '-') {
+    uint64_t index = strtoull(index_str + 1, (char **) NULL, 10);
+    index -= 1;
+
+    if (index == ULLONG_MAX) {
+      return RESP_ERROR_MESSAGE("Index exceeded integer bounds");
+    }
+
+    node = ll_get_from_index(list, index, LL_BACK);
+  } else {
     const uint64_t index = strtoull(index_str, (char **) NULL, 10);
 
     if (index == ULLONG_MAX) {
       return RESP_ERROR_MESSAGE("Index exceeded integer bounds");
     }
 
-    node = get_node(list, index, FORWARD);
-  } else {
-    const uint64_t index = strtoull(index_str + 1, (char **) NULL, 10);
-
-    if (index == ULLONG_MAX) {
-      return RESP_ERROR_MESSAGE("Index exceeded integer bounds");
-    }
-
-    node = get_node(list, index, BACKWARD);
+    node = ll_get_from_index(list, index, LL_FRONT);
   }
 
   if (!node) {
     return RESP_NULL(entry->client->protover);
   }
 
-  return write_value(node->value, node->type, entry->client->protover, entry->client->write_buf);
+  const DatabaseListNode *data = (DatabaseListNode *) node->data;
+  return write_value(data->data, data->type, entry->client->protover, entry->client->write_buf);
 }
 
 const struct Command cmd_lindex = {
