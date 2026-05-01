@@ -6,25 +6,13 @@ static void get_keys(struct CommandEntry *entry) {
 }
 
 
+
 #define RPUSH(list, node, value, _type) do {    \
   (node)->type = (_type);                       \
   (node)->data = (value);                       \
   if (ll_insert_back((list), (node)) == NULL)  \
     return RESP_ERROR_MESSAGE("Out of memory"); \
 } while (0)
-
-static void inline rpush_to_list(struct List *list, void *value, enum TellyTypes type) {
-  struct ListNode *node = create_listnode(value, type);
-  node->prev = list->end;
-  list->end = node;
-  list->size += 1;
-
-  if (list->size == 1) {
-    list->begin = node;
-  } else {
-    node->prev->next = node;
-  }
-}
 
 static string_t run(struct CommandEntry *entry) {
   if (entry->args->count < 2) {
@@ -99,6 +87,8 @@ static string_t run(struct CommandEntry *entry) {
   const size_t nbytes = create_resp_integer(entry->client->write_buf, entry->args->count - 1);
   return CREATE_STRING(entry->client->write_buf, nbytes);
 }
+
+#undef RPUSH
 
 const struct Command cmd_rpush = {
   .name = "RPUSH",
