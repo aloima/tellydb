@@ -9,6 +9,8 @@ typedef struct DatabaseListNode {
   void *data;
 } DatabaseListNode;
 
+void free_databaselistnode(void *data);
+
 struct ListNode {
   void *value;
   enum TellyTypes type;
