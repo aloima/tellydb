@@ -62,6 +62,44 @@ LinkedListNode *ll_insert_front(LinkedList *list, void *data) {
   return node;
 }
 
+bool ll_remove_front(LinkedList *list, void (*free_data)(void *data)) {
+  if (list->size == 0)
+    return false;
+
+  LinkedListNode *front = list->begin;
+  list->begin = front->next;
+
+  if (free_data)
+    free_data(front->data);
+
+  free(front);
+
+  if (list->size == 1)
+    list->end = NULL;
+
+  list->size -= 1;
+  return true;
+}
+
+bool ll_remove_back(LinkedList *list, void (*free_data)(void *data)) {
+  if (list->size == 0)
+    return false;
+
+  LinkedListNode *back = list->end;
+  list->end = back->prev;
+
+  if (free_data)
+    free_data(back->data);
+
+  free(back);
+
+  if (list->size == 1)
+    list->begin = NULL;
+
+  list->size -= 1;
+  return true;
+}
+
 LinkedListNode *ll_search_node(LinkedList *list, const LLSearchDirection dir, void *external, bool (*cmp)(void *data, void *external)) {
   LinkedListNode *front = list->begin;
   LinkedListNode *back = list->end;
