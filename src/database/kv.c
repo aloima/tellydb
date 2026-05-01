@@ -100,6 +100,13 @@ int check_kv_expiry(Database *database, struct KVPair *kv) {
   return 0;
 }
 
+void free_databaselistnode(void *data) {
+  DatabaseListNode *value = (DatabaseListNode *) data;
+
+  free_value(value->type, value->data);
+  free(value);
+}
+
 void free_value(const enum TellyTypes type, void *value) {
   switch (type) {
     case TELLY_NULL:
@@ -129,7 +136,7 @@ void free_value(const enum TellyTypes type, void *value) {
       break;
 
     case TELLY_LIST:
-      free_list(value);
+      ll_free(value, free_databaselistnode);
       break;
   }
 }
