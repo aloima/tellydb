@@ -1,6 +1,6 @@
 #include <telly.h>
 
-LinkedListNode *ll_create_node(void *data) {
+static inline LinkedListNode *ll_create_node(void *data) {
   LinkedListNode *node = malloc(sizeof(LinkedListNode));
   node->data = data;
   node->prev = NULL;
@@ -9,33 +9,100 @@ LinkedListNode *ll_create_node(void *data) {
   return node;
 }
 
-LinkedListNode *ll_insert_back(LinkedListNode *node, void *data) {
-  while (node->next != NULL) {
-    node = node->next;
-  }
+LinkedList *ll_create() {
+  LinkedList *list = malloc(sizeof(LinkedList));
+  if (list == NULL) return NULL;
 
-  LinkedListNode *source = ll_create_node(data);
-  source->prev = node;
-  node->next = source;
+  list->begin = NULL;
+  list->end = NULL;
+  list->size = 0;
 
-  return source;
+  return list;
 }
 
-LinkedListNode *ll_insert_front(LinkedListNode *node, void *data) {
-  while (node->prev != NULL) {
-    node = node->prev;
+LinkedListNode *ll_insert_back(LinkedList *list, void *data) {
+  LinkedListNode *node = ll_create_node(data);
+  if (node == NULL) return NULL;
+
+  if (list->size == 0) {
+    list->begin = node;
+    list->end = node;
+    list->size = 1;
+    return node;
   }
 
-  LinkedListNode *source = ll_create_node(data);
-  source->next = node;
-  node->prev = source;
+  LinkedListNode *old_node = list->end;
+  list->end->next = node;
 
-  return source;
+  list->end = node;
+  list->end->prev = old_node;
+
+  list->size += 1;
+  return node;
 }
 
-LinkedListNode *ll_search_node(LinkedListNode *node, const LLSearchDirection dir, void *external, bool (*cmp)(void *data, void *external)) {
-  LinkedListNode *front = node;
-  LinkedListNode *back = node;
+LinkedListNode *ll_insert_front(LinkedList *list, void *data) {
+  LinkedListNode *node = ll_create_node(data);
+  if (node == NULL) return NULL;
+
+  if (list->size == 0) {
+    list->begin = node;
+    list->end = node;
+    list->size = 1;
+    return node;
+  }
+
+  LinkedListNode *old_node = list->begin;
+  list->begin->prev = node;
+
+  list->begin = node;
+  list->begin->next = old_node;
+
+  list->size += 1;
+  return node;
+}
+
+bool ll_remove_front(LinkedList *list, void (*free_data)(void *data)) {
+  if (list->size == 0)
+    return false;
+
+  LinkedListNode *front = list->begin;
+  list->begin = front->next;
+
+  if (free_data)
+    free_data(front->data);
+
+  free(front);
+
+  if (list->size == 1)
+    list->end = NULL;
+
+  list->size -= 1;
+  return true;
+}
+
+bool ll_remove_back(LinkedList *list, void (*free_data)(void *data)) {
+  if (list->size == 0)
+    return false;
+
+  LinkedListNode *back = list->end;
+  list->end = back->prev;
+
+  if (free_data)
+    free_data(back->data);
+
+  free(back);
+
+  if (list->size == 1)
+    list->begin = NULL;
+
+  list->size -= 1;
+  return true;
+}
+
+LinkedListNode *ll_search_node(LinkedList *list, const LLSearchDirection dir, void *external, bool (*cmp)(void *data, void *external)) {
+  LinkedListNode *front = list->begin;
+  LinkedListNode *back = list->end;
 
   switch (dir) {
     case LL_BACK:
@@ -53,41 +120,52 @@ LinkedListNode *ll_search_node(LinkedListNode *node, const LLSearchDirection dir
       }
 
       return NULL;
-
-    case LL_DOUBLE:
-      while (front != NULL || back != NULL) {
-        if (front) {
-          if (cmp(front->data, external)) return front;
-          front = front->prev;
-        }
-
-        if (back) {
-          if (cmp(back->data, external)) return back;
-          back = back->next;
-        }
-      }
-
-      return NULL;
   }
 }
 
-void ll_free_each(LinkedListNode *node, void (*free_data)(void *data)) {
-  LinkedListNode *front = node->prev;
-  LinkedListNode *back = node->next;
+LinkedListNode *ll_get_from_index(LinkedList *list, uint64_t index, const LLSearchDirection direction) {
+  LinkedListNode *node;
 
-  free_data(node->data);
-  free(node);
+  switch (direction) {
+    case LL_FRONT:
+      node = list->begin;
 
+      while ((index != 0) && (node != NULL)) {
+        node = node->next;
+        index -= 1;
+      }
+
+      break;
+
+    case LL_BACK:
+      node = list->end;
+
+      while ((index != 0) && (node != NULL)) {
+        node = node->prev;
+        index -= 1;
+      }
+
+      break;
+  }
+
+  return node;
+}
+
+void ll_free(LinkedList *list, void (*free_data)(void *data)) {
+  LinkedListNode *front = list->begin;
+  LinkedListNode *back = list->end;
+
+  // Checking free_data existence is unperformant, but it's readable
   while (front != NULL || back != NULL) {
     if (front) {
-      free_data(front->data);
+      if (free_data) free_data(front->data);
       LinkedListNode *tmp = front;
       front = front->prev;
       free(tmp);
     }
 
     if (back) {
-      free_data(back->data);
+      if (free_data) free_data(back->data);
       LinkedListNode *tmp = back;
       back = back->next;
       free(tmp);

@@ -22,7 +22,7 @@ static string_t run(struct CommandEntry *entry) {
     return INVALID_TYPE_ERROR("LLEN");
   }
 
-  const size_t nbytes = create_resp_integer(entry->client->write_buf, ((struct List *) kv->value)->size);
+  const size_t nbytes = create_resp_integer(entry->client->write_buf, ((LinkedList *) kv->value)->size);
   return CREATE_STRING(entry->client->write_buf, nbytes);
 }
 

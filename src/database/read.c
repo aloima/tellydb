@@ -145,6 +145,7 @@ static size_t collect_double(mpf_t *number, const int fd, char *block, const uin
   return (2 + byte_count);
 }
 
+// TODO: memory checking
 static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uint16_t block_size, uint16_t *at) {
   string_t key;
   void *value = NULL;
@@ -237,8 +238,7 @@ static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uin
       collect_bytes(fd, block, block_size, at, 4, &size);
       collected_bytes += (4 + size); // includes size bytes and type bytes of listnodes
 
-      struct List *list = (value = create_list());
-      list->size = size;
+      LinkedList *list = (value = ll_create());
 
       for (uint32_t i = 0; i < size; ++i) {
         uint8_t byte;
@@ -271,16 +271,11 @@ static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uin
             break;
         }
 
-        struct ListNode *node = create_listnode(list_value, byte);
+        DatabaseListNode *value = malloc(sizeof(DatabaseListNode));
+        value->type = byte;
+        value->data = list_value;
 
-        node->prev = list->end;
-        list->end = node;
-
-        if (i == 0) {
-          list->begin = node;
-        } else {
-          node->prev->next = node;
-        }
+        ll_insert_back(list, value);
       }
     }
 

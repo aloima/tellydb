@@ -64,8 +64,10 @@ int close_database_fd() {
     write_log(LOG_ERR, "The database file cannot be unlocked because of OS-specific problem.");
   }
 
-  if (close(fd) == 0) return 0;
-  else return -1;
+  if (close(fd) == 0)
+    return 0;
+  else
+    return -1;
 }
 
 static inline off_t get_value_size(const enum TellyTypes type, void *value) {
@@ -118,12 +120,13 @@ static inline off_t get_value_size(const enum TellyTypes type, void *value) {
     }
 
     case TELLY_LIST: {
-      const struct List *list = value;
-      struct ListNode *node = list->begin;
+      const LinkedList *list = value;
+      const LinkedListNode *node = list->begin;
       off_t length = 4;
 
       while (node) {
-        length += (1 + get_value_size(node->type, node->value));
+        const DatabaseListNode *value = (DatabaseListNode *) node->data;
+        length += (1 + get_value_size(value->type, value->data));
         node = node->next;
       }
 
@@ -283,18 +286,19 @@ static inline off_t generate_value(char **data, struct KVPair *kv) {
     }
 
     case TELLY_LIST: {
-      struct List *list = kv->value;
+      const LinkedList *list = kv->value;
       memcpy(*data + len, &list->size, 4);
       len += 4;
 
-      struct ListNode *node = list->begin;
+      const LinkedListNode *node = list->begin;
 
       while (node) {
-        (*data)[len] = node->type;
+        DatabaseListNode *value = (DatabaseListNode *) node->data;
+        (*data)[len] = value->type;
         len += 1;
 
-        switch (node->type) {
-          GENERATE_PRIMITIVE_VALUES(data, len, node->value);
+        switch (value->type) {
+          GENERATE_PRIMITIVE_VALUES(data, len, value->data);
 
           default:
             break;
@@ -412,7 +416,7 @@ int save_data(const uint32_t server_age) {
   }
 
   {
-    struct LinkedListNode *node = get_front_database_node();
+    LinkedListNode *node = get_databases()->begin;
 
     while (node) {
       Database *database = (Database *) node->data;

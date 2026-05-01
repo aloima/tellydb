@@ -26,22 +26,20 @@ static string_t run(struct CommandEntry *entry) {
     return INVALID_TYPE_ERROR("RPOP");
   }
 
-  struct List *list = kv->value;
-  struct ListNode *node = list->end;
+  LinkedList *list = kv->value;
+  LinkedListNode *node = list->end;
   string_t response = EMPTY_STRING();
 
   if (entry->client) {
-    response = write_value(list->end->value, list->end->type, entry->client->protover, entry->client->write_buf);
+    DatabaseListNode *value = (DatabaseListNode *) list->end->data;
+    response = write_value(value->data, value->type, entry->client->protover, entry->client->write_buf);
   }
 
   if (list->size == 1) {
     delete_data(entry->database, key);
   } else {
-    list->end = list->end->prev;
-    list->end->next = NULL;
-
-    list->size -= 1;
-    free_listnode(node);
+    // Guaranteed that list exists and its size is least 1
+    ASSERT(ll_remove_back(list, free_databaselistnode), ==, true);
   }
 
   return response;
