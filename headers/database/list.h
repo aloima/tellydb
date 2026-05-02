@@ -2,8 +2,6 @@
 
 #include "../utils/utils.h"
 
-#include <stdint.h>
-
 typedef struct DatabaseListNode {
   enum TellyTypes type;
   void *data;

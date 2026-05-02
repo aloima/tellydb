@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../server/client.h" // IWYU pragma: export
 #include "../utils/string.h"
 #include "types.h"
 
@@ -23,3 +22,4 @@
 #define RESP_OK_MESSAGE(message)    CREATE_STRING(RDT_SSTRING message "\r\n", sizeof(message) + 2)
 #define RESP_ERROR()                CREATE_STRING(RDT_ERROR   "ERROR\r\n",    8)
 #define RESP_ERROR_MESSAGE(message) CREATE_STRING(RDT_ERROR   message "\r\n", sizeof(message) + 2)
+#define OUT_OF_MEMORY()             RESP_ERROR_MESSAGE("Out of memory")
