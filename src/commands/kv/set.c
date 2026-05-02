@@ -169,27 +169,34 @@ static string_t run(struct CommandEntry *entry) {
     }
 
     switch (type) {
-      case TELLY_INT: {
+      case TELLY_INT:
         value = malloc(sizeof(mpz_t));
-        if (value == NULL) return RESP_ERROR_MESSAGE("Out of memory");
+        if (value == NULL) {
+          PASS_NO_CLIENT(entry->client);
+          return OUT_OF_MEMORY();
+        }
 
         mpz_init_set_str(*((mpz_t *) value), value_in, 10);
         break;
-      }
 
-      case TELLY_DOUBLE: {
+      case TELLY_DOUBLE:
         value = malloc(sizeof(mpf_t));
-        if (value == NULL) return RESP_ERROR_MESSAGE("Out of memory");
+        if (value == NULL) {
+          PASS_NO_CLIENT(entry->client);
+          return OUT_OF_MEMORY();
+        }
 
         mpf_init2(*((mpf_t *) value), FLOAT_PRECISION);
         mpf_set_str(*((mpf_t *) value), value_in, 10);
         break;
-      }
 
-      case TELLY_STR: {
-        take_as_string(&value, entry->args->data[1]);
+      case TELLY_STR:
+        if (take_as_string(&value, entry->args->data[1]) == -1) {
+          PASS_NO_CLIENT(entry->client);
+          return OUT_OF_MEMORY();
+        }
+
         break;
-      }
 
       default:
         break;
@@ -205,7 +212,10 @@ static string_t run(struct CommandEntry *entry) {
     switch (type) {
       case TELLY_BOOL:
         value = malloc(sizeof(bool));
-        if (value == NULL) return RESP_ERROR_MESSAGE("Out of memory");
+        if (value == NULL) {
+          PASS_NO_CLIENT(entry->client);
+          return OUT_OF_MEMORY();
+        }
 
         *((bool *) value) = is_true;
         break;
@@ -213,7 +223,7 @@ static string_t run(struct CommandEntry *entry) {
       case TELLY_STR:
         if (take_as_string(&value, entry->args->data[1]) == -1) {
           PASS_NO_CLIENT(entry->client);
-          return RESP_ERROR_MESSAGE("Out of memory");
+          return OUT_OF_MEMORY();
         }
 
         break;
@@ -237,7 +247,7 @@ static string_t run(struct CommandEntry *entry) {
       case TELLY_STR:
         if (take_as_string(&value, entry->args->data[1]) == -1) {
           PASS_NO_CLIENT(entry->client);
-          return RESP_ERROR_MESSAGE("Out of memory");
+          return OUT_OF_MEMORY();
         }
 
         break;
@@ -255,7 +265,7 @@ static string_t run(struct CommandEntry *entry) {
 
     if (take_as_string(&value, entry->args->data[1]) == -1) {
       PASS_NO_CLIENT(entry->client);
-      return RESP_ERROR_MESSAGE("Out of memory");
+      return OUT_OF_MEMORY();
     }
   }
 
@@ -265,7 +275,7 @@ static string_t run(struct CommandEntry *entry) {
 
       if (!success) {
         PASS_NO_CLIENT(entry->client);
-        return RESP_ERROR_MESSAGE("Out of memory");
+        return OUT_OF_MEMORY();
       }
 
       if (res) {
@@ -284,11 +294,7 @@ static string_t run(struct CommandEntry *entry) {
     const bool success = (set_data(entry->database, res, key, value, type, (expire ? &expire_at : NULL)) != NULL);
     PASS_NO_CLIENT(entry->client);
 
-    if (success) {
-      return RESP_OK();
-    } else {
-      return RESP_ERROR_MESSAGE("Out of memory");
-    }
+    return (success ? RESP_OK() : OUT_OF_MEMORY());
   }
 }
 
