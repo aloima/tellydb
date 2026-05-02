@@ -1,5 +1,14 @@
 #include <telly.h>
 
+// Runs before run(), so old key must be used.
+static void get_keys(struct CommandEntry *entry) {
+  if (entry->args->count != 2) return;
+
+  (void) insert_into_vector(server->keyspace, &entry->args->data[0]);
+}
+
+
+
 static inline uint64_t add_to_index(const uint64_t index, const uint64_t capacity) {
   return ((index + 1) % capacity);
 }

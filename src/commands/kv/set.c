@@ -1,5 +1,13 @@
 #include <telly.h>
 
+static void get_keys(struct CommandEntry *entry) {
+  if (entry->args->count < 2) return;
+
+  (void) insert_into_vector(server->keyspace, &entry->args->data[0]);
+}
+
+
+
 static inline int take_as_string(void **value, const string_t data) {
   string_t *string = (*value = malloc(sizeof(string_t)));
   if (string == NULL) return -1;
@@ -307,5 +315,6 @@ const struct Command cmd_set = {
   .flags.value = (CMD_FLAG_ACCESS_DATABASE | CMD_FLAG_AFFECT_DATABASE),
   .subcommands = NULL,
   .subcommand_count = 0,
-  .run = run
+  .run = run,
+  .get_keys = get_keys
 };

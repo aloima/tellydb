@@ -1,5 +1,15 @@
 #include <telly.h>
 
+static void get_keys(struct CommandEntry *entry) {
+  if (entry->args->count == 0) return;
+
+  for (uint32_t i = 0; i < entry->args->count; ++i) {
+    (void) insert_into_vector(server->keyspace, &entry->args->data[i]);
+  }
+}
+
+
+
 static string_t run(struct CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
@@ -44,5 +54,6 @@ const struct Command cmd_exists = {
   .flags.value = CMD_FLAG_ACCESS_DATABASE,
   .subcommands = NULL,
   .subcommand_count = 0,
-  .run = run
+  .run = run,
+  .get_keys = get_keys
 };

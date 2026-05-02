@@ -1,17 +1,23 @@
 #include <telly.h>
 
+static void get_keys(struct CommandEntry *entry) {
+  if (entry->args->count != 1) return;
+
+  (void) insert_into_vector(server->keyspace, &entry->args->data[0]);
+}
+
+
+
 static string_t run(struct CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
-  if (entry->args->count != 1) {
+  if (entry->args->count != 1)
     return WRONG_ARGUMENT_ERROR("TYPE");
-  }
 
   struct KVPair *res = get_data(entry->database, entry->args->data[0]);
 
-  if (!res) {
+  if (!res)
     return RESP_NULL(entry->client->protover);
-  }
 
   switch (res->type) {
     case TELLY_NULL:
@@ -34,10 +40,9 @@ static string_t run(struct CommandEntry *entry) {
 
     case TELLY_BOOL:
       return RESP_OK_MESSAGE("boolean");
-
-    default:
-      PASS_COMMAND();
   }
+
+  PASS_COMMAND();
 }
 
 const struct Command cmd_type = {
@@ -49,5 +54,6 @@ const struct Command cmd_type = {
   .flags.value = CMD_FLAG_ACCESS_DATABASE,
   .subcommands = NULL,
   .subcommand_count = 0,
-  .run = run
+  .run = run,
+  .get_keys = get_keys
 };
