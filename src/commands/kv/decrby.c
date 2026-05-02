@@ -1,4 +1,3 @@
-#include "commands/commands.h"
 #include <telly.h>
 
 static string_t run(struct CommandEntry *entry) {
@@ -26,13 +25,15 @@ static string_t run(struct CommandEntry *entry) {
     if (is_integer) {
       type = TELLY_INT;
       mpz_t *raw = (number = malloc(sizeof(mpz_t)));
-      if (raw == NULL) return RESP_ERROR_MESSAGE("Out of memory");
+      if (raw == NULL) return OUT_OF_MEMORY();
+
       mpz_init_set_str(*raw, input, 10);
       mpz_neg(*raw, *raw);
     } else if (is_double) {
       type = TELLY_DOUBLE;
       mpf_t *raw = (number = malloc(sizeof(mpf_t)));
-      if (raw == NULL) return RESP_ERROR_MESSAGE("Out of memory");
+      if (raw == NULL) return OUT_OF_MEMORY();
+
       mpf_init2(*raw, FLOAT_PRECISION);
       mpf_set_str(*raw, input, 10);
       mpf_neg(*raw, *raw);
