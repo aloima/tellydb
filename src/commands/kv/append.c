@@ -29,14 +29,25 @@ static string_t run(struct CommandEntry *entry) {
     const string_t arg = entry->args->data[1];
 
     string_t *string = malloc(sizeof(string_t));
-    if (string == NULL) return RESP_ERROR_MESSAGE("Out of memory");
+    if (string == NULL) {
+      PASS_NO_CLIENT(entry->client);
+      return OUT_OF_MEMORY();
+    }
 
     string->len = arg.len;
     string->value = malloc(string->len);
-    if (string->value == NULL) return RESP_ERROR_MESSAGE("Out of memory");
+    if (string->value == NULL) {
+      PASS_NO_CLIENT(entry->client);
+      return OUT_OF_MEMORY();
+    }
 
     memcpy(string->value, arg.value, string->len);
-    set_data(entry->database, NULL, key, string, TELLY_STR, NULL);
+
+    const bool succeed = set_data(entry->database, NULL, key, string, TELLY_STR, NULL);
+    if (!succeed) {
+      PASS_NO_CLIENT(entry->client);
+      return OUT_OF_MEMORY();
+    }
 
     PASS_NO_CLIENT(entry->client);
     const size_t nbytes = create_resp_integer(entry->client->write_buf, string->len);
