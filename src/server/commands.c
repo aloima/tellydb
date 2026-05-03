@@ -20,8 +20,8 @@ static const struct Command *command_list[] = {
   &cmd_type,
 
   // List commands
-  &cmd_lindex, &cmd_llen, &cmd_lpop, &cmd_lpush, &cmd_rpop,
-  &cmd_rpush
+  &cmd_lindex, &cmd_llen, &cmd_lpop, &cmd_lpush, &cmd_ltype,
+  &cmd_rpop, &cmd_rpush
 };
 
 static struct Command *commands = NULL;

@@ -58,6 +58,7 @@ extern const struct Command cmd_lindex;
 extern const struct Command cmd_llen;
 extern const struct Command cmd_lpop;
 extern const struct Command cmd_lpush;
+extern const struct Command cmd_ltype;
 extern const struct Command cmd_rpop;
 extern const struct Command cmd_rpush;
 /* /LIST COMMANDS */

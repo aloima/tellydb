@@ -410,6 +410,8 @@ The list of unwritten behavior to commands.
 * **Returns**: A value or null reply if the index is not exist
 * **Behavior**:
   * Index starts from 0; -1 represents the last element.
+  * If the key is holding a value that is not a list, throws invalid type error.
+  * If the key is not holding a value, throws invalid type error.
 * **Examples**:
   ```shell
   LINDEX tasks 1
@@ -466,6 +468,25 @@ The list of unwritten behavior to commands.
 * **Example**:
   ```shell
   LPUSH tasks "Write report" "Send email"
+  ```
+
+---
+
+### LTYPE
+* **Syntax**: `LTYPE key index`
+* **Description**: Returns type of the element at the index in the list.
+* **Since**: `1.0.0`
+* **Time complexity**: `O(N) where N is min(absolute index, list size - absolute index - 1) number`
+* **Permissions**: `P_READ`
+* **Returns**: A type name or null reply if the index is not exist
+* **Behavior**:
+  * Index starts from 0; -1 represents the last element.
+  * If the key is holding a value that is not a list, throws invalid type error.
+  * If the key is not holding a value, throws invalid type error.
+* **Examples**:
+  ```shell
+  LINDEX tasks 1
+  LINDEX tasks -3
   ```
 
 ---
