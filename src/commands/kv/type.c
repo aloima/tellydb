@@ -19,30 +19,7 @@ static string_t run(struct CommandEntry *entry) {
   if (!res)
     return RESP_NULL(entry->client->protover);
 
-  switch (res->type) {
-    case TELLY_NULL:
-      return RESP_OK_MESSAGE("null");
-
-    case TELLY_INT:
-      return RESP_OK_MESSAGE("integer");
-
-    case TELLY_DOUBLE:
-      return RESP_OK_MESSAGE("double");
-
-    case TELLY_STR:
-      return RESP_OK_MESSAGE("string");
-
-    case TELLY_HASHTABLE:
-      return RESP_OK_MESSAGE("hash table");
-
-    case TELLY_LIST:
-      return RESP_OK_MESSAGE("list");
-
-    case TELLY_BOOL:
-      return RESP_OK_MESSAGE("boolean");
-  }
-
-  PASS_COMMAND();
+  return get_resp_type_name(res->type);
 }
 
 const struct Command cmd_type = {

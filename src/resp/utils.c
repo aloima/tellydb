@@ -1,6 +1,18 @@
 #include <telly.h>
 #include "resp.h"
 
+const string_t get_resp_type_name(const enum TellyTypes type) {
+  switch (type) {
+    case TELLY_NULL:      return RESP_OK_MESSAGE("null");
+    case TELLY_INT:       return RESP_OK_MESSAGE("integer");
+    case TELLY_DOUBLE:    return RESP_OK_MESSAGE("double");
+    case TELLY_STR:       return RESP_OK_MESSAGE("string");
+    case TELLY_HASHTABLE: return RESP_OK_MESSAGE("hashtable");
+    case TELLY_LIST:      return RESP_OK_MESSAGE("list");
+    case TELLY_BOOL:      return RESP_OK_MESSAGE("boolean");
+  }
+}
+
 bool check_crlf(Client *client, char *buf, int32_t *at, int32_t *size) {
   char *crlf;
   TAKE_BYTES(crlf, 2, false);

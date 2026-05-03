@@ -21,25 +21,7 @@ static string_t run(struct CommandEntry *entry) {
   const struct HashTableField *field = get_field_from_hashtable(kv->value, entry->args->data[1]);
   if (!field) return RESP_NULL(entry->client->protover);
 
-  switch (field->type) {
-    case TELLY_NULL:
-      return RESP_OK_MESSAGE("null");
-
-    case TELLY_INT:
-      return RESP_OK_MESSAGE("integer");
-
-    case TELLY_DOUBLE:
-      return RESP_OK_MESSAGE("double");
-
-    case TELLY_STR:
-      return RESP_OK_MESSAGE("string");
-
-    case TELLY_BOOL:
-      return RESP_OK_MESSAGE("boolean");
-
-    default:
-      PASS_COMMAND();
-  }
+  return get_resp_type_name(field->type);
 }
 
 const struct Command cmd_htype = {
