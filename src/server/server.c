@@ -60,7 +60,6 @@ static inline void cleanup() {
   if (server->eventfd != -1)
     ASSERT(close(server->eventfd), ==, 0);
 
-  destroy_expiry_set();
   free_constant_passwords();
   free_kdf();
   free_passwords();
@@ -216,7 +215,6 @@ void start_server(Config *config) {
   CLEANUP_RETURN_IF(initialize_socket() == -1);
   CLEANUP_RETURN_IF(initialize_authorization() == -1);
   CLEANUP_RETURN_IF(open_database_fd(&server->age) == -1);
-  CLEANUP_RETURN_LOG_IF(create_expiry_set() == -1, "Cannot create expiry set for key-value pairs.");
 
   server->keyspace = create_vector(1024);
   CLEANUP_RETURN_LOG_IF(server->keyspace == NULL, "Cannot create keyspace.");

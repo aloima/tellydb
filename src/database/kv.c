@@ -1,16 +1,5 @@
 #include <telly.h>
 
-static HashSet *expiry_set;
-
-int create_expiry_set() {
-  expiry_set = create_hashset(128);
-  return (expiry_set != NULL) ? 0 : -1;
-}
-
-void destroy_expiry_set() {
-  destroy_hashset(expiry_set, NULL);
-}
-
 static inline uint64_t add_to_index(const uint64_t index, const uint64_t capacity) {
   return ((index + 1) % capacity);
 }
@@ -29,9 +18,6 @@ int set_kv(struct KVPair *kv, const string_t key, void *value, const enum TellyT
   if (expire_at_p != NULL) {
     kv->expire.enabled = true;
     kv->expire.at = *expire_at_p;
-
-    if (insert_into_hashset(expiry_set, kv) < 0)
-      return -2;
   } else {
     kv->expire.enabled = false;
   }
@@ -57,7 +43,6 @@ bool delete_kv(Database *database, struct KVPair *kv) {
   }
 
   free_kv(kv);
-  delete_from_hashset(expiry_set, database->data[index]);
   database->data[index] = NULL; // Needs it for uncollised indexes and filled next index
 
   for (uint64_t i = add_to_index(index, capacity); i != index; i = add_to_index(index, capacity)) {
