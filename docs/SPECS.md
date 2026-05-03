@@ -44,7 +44,6 @@ To get information, look at [AUTH.md](./AUTH.md).
 tellydb handles database as follows:
 * Database will be taken from persistent database file, then be saved to cache.
 * When closing the server, database will be taken from cache and written to persistent database file.
-
 * There may be databases more than one, look at [SELECT command](./COMMANDS.md#SELECT).
 * Each database stores the data in a HashMap.
 * The hashmap uses **djb2 hash algorithm** and all hashed values of key-value pairs will be stored in, so there is no re-hashing.

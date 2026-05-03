@@ -2,25 +2,31 @@
 An in-memory key-value database project.
 
 ## Features
-+ Follows [RESP2/RESP3](https://redis.io/docs/latest/develop/reference/protocol-spec/) from redis, so all redis clients are compatible
-+ Fully configurable via [.tellyconf](./docs/FILE.md)
-+ Includes command queue system using a thread
-+ Supports integer, double, string, null, boolean, list and hash table types
-+ Provides atomicity when saving to the database file
-+ Provides saving to the database file using a background thread
-+ Provides authorization system with permissions using passwords
-+ Uses Direct I/O for logging and database files
-+ Uses pipelining for combine multiple commands sent by same clients
-+ Supports multiple databases
-+ Data persists on one-file
+* To make it work by all redis clients, follows [RESP2/RESP3](https://redis.io/docs/latest/develop/reference/protocol-spec
+* Fully configurable via [.tellyconf](./docs/FILE.md)
+* **Persistency**
+  * Holds all databases inside [a file](./docs/FILE.md#database-file--tellydb)
+  * Provides saving database into file using [an external thread](./docs/SPECS.md#background-saving-thread) asynchrously
+  * Atomicity on execution of saving process
+* **Database**
+  * Provides many data types such as hash table, list, and double
+  * Includes key expiry
+  * Multiple databases
+* **Architecture**
+  * Executes commands in [a single thread](./docs/SPECS.md#transaction-thread) sequentially
+  * Uses [multiple threads](./docs/SPECS.md#io-threads) for handling I/O requests such as reading, and writing
+  * Allows pipelining to combine multiple commands from a single client simultaneously
+* **Permissions**
+  * Relies independent passwords to authorize clients
+  * Includes [precise permissions](./docs/AUTH.md#permissions) for commands such as database reading, and managing clients
 
 The project is documented as follows:
-|                  File                  |            Includes            |
-| :------------------------------------: | :----------------------------: |
-|    [docs/SPECS.md](./docs/SPECS.md)    |  architecture of the project   |
-|     [docs/FILE.md](./docs/FILE.md)     |   provided files by tellydb    |
+| File                                   | Scope                          |
+| :------------------------------------- | :----------------------------- |
+| [docs/SPECS.md](./docs/SPECS.md)       | architecture of the project    |
+| [docs/FILE.md](./docs/FILE.md)         | provided files by tellydb      |
 | [docs/COMMANDS.md](./docs/COMMANDS.md) | commands and their information |
-|     [docs/AUTH.md](./docs/AUTH.md)     |      authorization logic       |
+| [docs/AUTH.md](./docs/AUTH.md)         | authorization logic            |
 
 ## Installation
 
@@ -29,12 +35,13 @@ The project is documented as follows:
 > It downloads dependencies and makes Docker operations, so it needs to be used via `sudo`.
 
 ```bash
-curl -o- https://raw.githubusercontent.com/aloima/tellydb/master/install.sh | bash
+curl -o- https://raw.githubusercontent.com/aloima/tellydb/master/install.sh | sudo bash
 ```
 
 
 ### Install from GitHub Releases:
 * Download the [latest release file](https://github.com/aloima/tellydb/releases/latest)
+* Give permission to make file executable using `chmod a+x ./telly`
 * Start the server using `./telly`
 
 ### Compile on Local Machine:
