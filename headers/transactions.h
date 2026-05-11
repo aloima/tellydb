@@ -8,8 +8,6 @@
 
 #include <stdint.h>
 
-#include <pthread.h>
-
 #define MAX_RESPONSE_SIZE 262144
 
 enum TransactionBlockType : uint8_t {

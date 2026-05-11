@@ -20,8 +20,7 @@ jobs:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/tellydb
           tags: |
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
-            type=ref,event=tag
-            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}.{{patch}}
 
       - name: Install Docker Buildx
         uses: docker/setup-buildx-action@v3

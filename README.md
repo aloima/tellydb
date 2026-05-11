@@ -59,7 +59,8 @@ curl -o- https://raw.githubusercontent.com/aloima/tellydb/master/install.sh | su
 ### Install via Docker:
 Pull docker image:
 ```sh
-docker pull aloima/tellydb
+docker pull aloima/tellydb        # for master branch
+docker pull aloima/tellydb:1.0.0  # for specific release
 ```
 
 Run docker container to start the server:
