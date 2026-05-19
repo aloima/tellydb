@@ -63,8 +63,11 @@ struct ExternalData {
 static inline bool cmp(void *data, void *external) {
   Database *database = (Database *) data;
   struct ExternalData *external_s = ((struct ExternalData *) external);
-  return (database->id == external_s->target) &&
-            (database->name.len == external_s->name.len && memcmp(database->name.value, external_s->name.value, 0) == 0);
+
+  const string_t a = database->name;
+  const string_t b = external_s->name;
+
+  return (database->id == external_s->target) && (a.len == b.len && memcmp(a.value, b.value, a.len) == 0);
 }
 
 Database *get_database(const string_t name) {
