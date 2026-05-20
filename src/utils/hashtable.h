@@ -164,6 +164,25 @@ HashTableElement *get_from_hashtable(HashTable *table, void *key) {
   return &table->elements[index];
 }
 
+void foreach_hashtable(HashTable *table, void (*procedure)(HashTableElement element)) {
+  for (uint64_t i = 0; i < table->size.count; ++i) {
+    procedure(table->elements[i]);
+  }
+}
+
+void clear_hashtable(HashTable *table, void (*destroy_element)(HashTableElement element)) {
+  if (destroy_element != NULL)
+    foreach_hashtable(table, destroy_element);
+
+  const uint64_t capacity = table->size.capacity;
+  table->size.count = 0;
+
+  for (uint64_t i = 0; i < capacity; ++i) {
+    table->elements->key = NULL;
+    table->elements->value = NULL;
+  }
+}
+
 void destroy_hashtable(HashTable *table, void (*destroy_element)(HashTableElement element)) {
   if (destroy_element != NULL) {
     for (uint64_t i = 0; i < table->size.count; ++i) {
