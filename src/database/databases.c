@@ -3,10 +3,15 @@
 static LinkedList *databases = NULL;
 static Database *main = NULL;
 
+uint64_t key_hash(void *data) {
+  string_t *key = (string_t *) data;
+  return OPENSSL_LH_strhash(key->value);
+}
+
 Database *create_database(const string_t name, const uint64_t capacity) {
   Database *database = NULL;
   char *name_str = NULL;
-  struct KVPair **data = NULL;
+  HashTable *data = NULL;
 
   database = malloc(sizeof(Database));
   if (database == NULL) goto CLEANUP;
@@ -14,7 +19,7 @@ Database *create_database(const string_t name, const uint64_t capacity) {
   name_str = malloc(name.len + 1);
   if (name_str == NULL) goto CLEANUP;
 
-  data = calloc(capacity, sizeof(struct KVPair *));
+  data = create_hashtable(capacity, key_hash);
   if (data == NULL) goto CLEANUP;
 
   if (databases == NULL) {
@@ -30,15 +35,13 @@ Database *create_database(const string_t name, const uint64_t capacity) {
 
   database->id = OPENSSL_LH_strhash(name.value);
   database->data = data;
-  database->size.stored = 0;
-  database->size.capacity = capacity;
 
   return database;
 
 CLEANUP:
   if (database) free(database);
   if (name_str) free(name_str);
-  if (data) free(data);
+  if (data) destroy_hashtable(data, NULL); // There is no data yet, so there is no need freeing method.
 
   return NULL;
 }
@@ -108,15 +111,7 @@ bool rename_database(const string_t old_name, const string_t new_name) {
 static void free_database(void *database_ptr) {
   Database *database = (Database *) database_ptr;
 
-  for (uint64_t i = 0; i < database->size.capacity; ++i) {
-    struct KVPair *kv = database->data[i];
-
-    if (kv) {
-      free_kv(kv);
-    }
-  }
-
-  free(database->data);
+  destroy_hashtable(database->data, free_hashtablekeyvalue);
   free(database->name.value);
   free(database);
 }

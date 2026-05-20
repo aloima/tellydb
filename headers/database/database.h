@@ -13,12 +13,7 @@
 typedef struct {
   string_t name;
   uint64_t id; // hashed from name
-
-  struct KVPair **data;
-  struct {
-    uint64_t stored;
-    uint64_t capacity;
-  } size;
+  HashTable *data;
 } Database;
 
 Database *create_database(const string_t name, const uint64_t capacity);
