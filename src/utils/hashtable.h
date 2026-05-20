@@ -146,6 +146,24 @@ bool exist_in_hashtable(HashTable *table, void *key) {
   return true;
 }
 
+HashTableElement *get_from_hashtable(HashTable *table, void *key) {
+  const uint64_t capacity = table->size.capacity;
+  const uint64_t start = table->hash(key) % capacity;
+  uint64_t index = start;
+
+  while (table->elements[index].key != key) {
+    if (table->elements[index].key == NULL)
+      return NULL;
+
+    index = (index + 1) % capacity;
+
+    if (index == start)
+      return NULL;
+  }
+
+  return &table->elements[index];
+}
+
 void destroy_hashtable(HashTable *table, void (*destroy_element)(HashTableElement element)) {
   if (destroy_element != NULL) {
     for (uint64_t i = 0; i < table->size.count; ++i) {
