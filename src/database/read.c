@@ -146,7 +146,7 @@ static size_t collect_double(mpf_t *number, const int fd, char *block, const uin
 }
 
 // TODO: memory checking
-static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uint16_t block_size, uint16_t *at) {
+static size_t collect_kv(KeyValue *kv, const int fd, char *block, const uint16_t block_size, uint16_t *at) {
   string_t key;
   void *value = NULL;
   uint8_t type;
@@ -184,7 +184,7 @@ static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uin
       collect_bytes(fd, block, block_size, at, 4, &size);
       collected_bytes += 5; // includes size bytes and last (0x17) byte
 
-      struct HashTable *table = (value = create_hashtable(size));
+      HashTable *table = (value = create_hashtable(size, key_hash));
 
       while (true) {
         uint8_t byte;
@@ -192,42 +192,45 @@ static size_t collect_kv(struct KVPair *kv, const int fd, char *block, const uin
 
         if (byte == 0x17) {
           break;
-        } else {
-          void *fv_value = NULL;
-          collected_bytes += 1; // type byte
-
-          string_t name;
-          collected_bytes += collect_string(&name, fd, block, block_size, at, false);
-
-          switch (byte) {
-            case TELLY_NULL:
-              break;
-
-            case TELLY_INT:
-              fv_value = malloc(sizeof(mpz_t));
-              collected_bytes += collect_integer(fv_value, fd, block, block_size, at);
-              break;
-
-            case TELLY_DOUBLE:
-              fv_value = malloc(sizeof(mpf_t));
-              collected_bytes += collect_double(fv_value, fd, block, block_size, at);
-              break;
-
-            case TELLY_STR:
-              fv_value = malloc(sizeof(string_t));
-              collected_bytes += collect_string(fv_value, fd, block, block_size, at, false);
-              break;
-
-            case TELLY_BOOL:
-              fv_value = malloc(sizeof(bool));
-              collect_bytes(fd, block, block_size, at, 1, fv_value);
-              collected_bytes += 1;
-              break;
-          }
-
-          set_field_of_hashtable(table, name, fv_value, byte);
-          free(name.value);
         }
+
+        NameValue *field = malloc(sizeof(NameValue));
+        collected_bytes += collect_string(&field->name, fd, block, block_size, at, false);
+        field->value->type = byte;
+        collected_bytes += 1; // type byte
+
+        void **data = &field->value->data;
+
+        switch (field->value->type) {
+          case TELLY_NULL:
+            break;
+
+          case TELLY_INT:
+            *data = malloc(sizeof(mpz_t));
+            collected_bytes += collect_integer(*data, fd, block, block_size, at);
+            break;
+
+          case TELLY_DOUBLE:
+            *data = malloc(sizeof(mpf_t));
+            collected_bytes += collect_double(*data, fd, block, block_size, at);
+            break;
+
+          case TELLY_STR:
+            *data = malloc(sizeof(string_t));
+            collected_bytes += collect_string(*data, fd, block, block_size, at, false);
+            break;
+
+          case TELLY_BOOL:
+            *data = malloc(sizeof(bool));
+            collect_bytes(fd, block, block_size, at, 1, *data);
+            collected_bytes += 1;
+            break;
+
+          // TELLY_LIST and TELLY_HASHTABLE
+          default: break;
+        }
+
+        insert_into_hashtable(table, &field->name, field);
       }
 
       break;
@@ -298,22 +301,13 @@ static size_t collect_database(Database **database, const int fd, char *block, c
   const uint64_t capacity = ((needed > DATABASE_INITIAL_SIZE) ? needed : DATABASE_INITIAL_SIZE);
 
   *database = create_database(name, capacity);
-  (*database)->size.stored = *count;
   free(name.value);
 
-  struct KVPair **cache = (*database)->data;
-
   for (uint64_t i = 0; i < *count; ++i) {
-    struct KVPair *kv = malloc(sizeof(struct KVPair));
+    KeyValue *kv = malloc(sizeof(KeyValue));
     collected_bytes += collect_kv(kv, fd, block, block_size, at);
 
-    uint64_t index = (OPENSSL_LH_strhash(kv->key.value) % capacity);
-
-    while ((*database)->data[index]) {
-      index = ((index + 1) % capacity);
-    }
-
-    (*database)->data[index] = kv;
+    insert_into_hashtable((*database)->data, &kv->key, kv);
   }
 
   return collected_bytes;

@@ -20,6 +20,17 @@ typedef struct KeyValue {
   Expiry expiry;
 } KeyValue;
 
+typedef struct NameValue {
+  string_t name;
+  Value *value;
+} NameValue;
+
+// Compatibility layer for HashTable and NameValue
+typedef struct HashTableNameValue {
+  string_t *key;
+  NameValue *value;
+} HashTableNameValue;
+
 // Compatibility layer for HashTable and KeyValue
 typedef struct HashTableKeyValue {
   string_t *key;
