@@ -70,6 +70,15 @@ int close_database_fd() {
     return -1;
 }
 
+static inline off_t get_value_size(const enum TellyTypes type, void *value);
+
+static void get_hashtable_size(HashTableElement element, void *external) {
+  const Value *value = ((HashTableNameValue *) &element)->value->value;
+  uint64_t *length = (uint64_t *) external;
+
+  *length += (1 + get_value_size(TELLY_STR, element.key) + get_value_size(value->type, value->data));
+}
+
 static inline off_t get_value_size(const enum TellyTypes type, void *value) {
   switch (type) {
     case TELLY_NULL:
@@ -105,17 +114,10 @@ static inline off_t get_value_size(const enum TellyTypes type, void *value) {
       return 1;
 
     case TELLY_HASHTABLE: {
-      const struct HashTable *table = value;
+      HashTable *table = (HashTable *) value;
       off_t length = 5;
 
-      for (uint32_t i = 0; i < table->size.capacity; ++i) {
-        struct HashTableField *field = table->fields[i];
-
-        if (field) {
-          length += (1 + get_value_size(TELLY_STR, &field->name) + get_value_size(field->type, field->value));
-        }
-      }
-
+      foreach_hashtable(table, get_hashtable_size, &length);
       return length;
     }
 
