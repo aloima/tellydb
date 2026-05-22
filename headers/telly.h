@@ -69,7 +69,6 @@
 #include "commands/commands.h" // IWYU pragma: export
 #include "config.h"            // IWYU pragma: export
 #include "database/database.h" // IWYU pragma: export
-#include "hashtable.h"         // IWYU pragma: export
 #include "resp/resp.h"         // IWYU pragma: export
 #include "server/server.h"     // IWYU pragma: export
 #include "transactions.h"      // IWYU pragma: export
