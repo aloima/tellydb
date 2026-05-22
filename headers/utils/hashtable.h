@@ -24,7 +24,7 @@ HashTable *create_hashtable(const uint64_t capacity, uint64_t (*hash)(void *));
 void clear_hashtable(HashTable *table, void (*destroy_element)(HashTableElement element));
 void destroy_hashtable(HashTable *table, void (*destroy_element)(HashTableElement element));
 
-void foreach_hashtable(HashTable *table, void (*procedure)(HashTableElement element));
+void foreach_hashtable(HashTable *table, void (*procedure)(HashTableElement element, void *external), void *external);
 
 int insert_into_hashtable(HashTable *table, void *key, void *value);
 bool delete_from_hashtable(HashTable *table, void *key);

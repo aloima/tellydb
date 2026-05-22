@@ -1,4 +1,3 @@
-#include "utils/hashtable.h"
 #include <telly.h>
 
 HashTable *create_hashtable(const uint64_t capacity, uint64_t (*hash)(void *)) {
@@ -164,15 +163,15 @@ HashTableElement *get_from_hashtable(HashTable *table, void *key) {
   return &table->elements[index];
 }
 
-void foreach_hashtable(HashTable *table, void (*procedure)(HashTableElement element)) {
+void foreach_hashtable(HashTable *table, void (*procedure)(HashTableElement element, void *external), void *external) {
   for (uint64_t i = 0; i < table->size.count; ++i) {
-    procedure(table->elements[i]);
+    procedure(table->elements[i], external);
   }
 }
 
 void clear_hashtable(HashTable *table, void (*destroy_element)(HashTableElement element)) {
   if (destroy_element != NULL)
-    foreach_hashtable(table, destroy_element);
+    foreach_hashtable(table, (void (*)(HashTableElement element, void *)) destroy_element, NULL);
 
   const uint64_t capacity = table->size.capacity;
   table->size.count = 0;
