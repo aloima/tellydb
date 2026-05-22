@@ -228,24 +228,24 @@ static void generate_boolean_value(char **data, off_t *len, const bool *boolean)
   *len += 1;
 }
 
-#define GENERATE_PRIMITIVE_VALUES(data, len, value) \
-  case TELLY_NULL: \
-    break; \
-\
-  case TELLY_INT: \
+#define GENERATE_PRIMITIVE_VALUES(data, len, value)  \
+  case TELLY_NULL:                                   \
+    break;                                           \
+                                                     \
+  case TELLY_INT:                                    \
     generate_integer_value((data), &(len), (value)); \
-    break; \
-\
-  case TELLY_DOUBLE: \
-    generate_double_value((data), &(len), (value)); \
-    break; \
-\
-  case TELLY_STR: \
-    generate_string_value((data), &len, (value)); \
-    break; \
-\
-  case TELLY_BOOL: \
-    generate_boolean_value((data), &len, (value)); \
+    break;                                           \
+                                                     \
+  case TELLY_DOUBLE:                                 \
+    generate_double_value((data), &(len), (value));  \
+    break;                                           \
+                                                     \
+  case TELLY_STR:                                    \
+    generate_string_value((data), &len, (value));    \
+    break;                                           \
+                                                     \
+  case TELLY_BOOL:                                   \
+    generate_boolean_value((data), &len, (value));   \
     break
 
 static inline off_t generate_value(char **data, struct KVPair *kv) {
