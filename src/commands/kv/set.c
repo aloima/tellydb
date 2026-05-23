@@ -151,7 +151,7 @@ static string_t run(struct CommandEntry *entry) {
 
   const string_t key = entry->args->data[0];
   void *value;
-  struct KVPair *res = get_data(entry->database, key);
+  KeyValue *res = get_data(entry->database, key);
 
   if (nx && res) {
     PASS_NO_CLIENT(entry->client);

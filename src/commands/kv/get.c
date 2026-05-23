@@ -15,15 +15,13 @@ static string_t run(struct CommandEntry *entry) {
     return WRONG_ARGUMENT_ERROR("GET");
   }
 
-  const struct KVPair *kv = get_data(entry->database, entry->args->data[0]);
+  const KeyValue *kv = get_data(entry->database, entry->args->data[0]);
 
   if (kv) {
-    return write_value(kv->value, kv->type, entry->client->protover, entry->client->write_buf);
+    return write_value(kv->value.data, kv->value.type, entry->client->protover, entry->client->write_buf);
   } else {
     return RESP_NULL(entry->client->protover);
   }
-
-  PASS_COMMAND();
 }
 
 const struct Command cmd_get = {

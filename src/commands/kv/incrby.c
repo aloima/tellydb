@@ -24,7 +24,7 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   const string_t key = entry->args->data[0];
-  struct KVPair *result = get_data(entry->database, key);
+  KeyValue *result = get_data(entry->database, key);
 
   if (!result) {
     void *number;
@@ -33,46 +33,57 @@ static string_t run(struct CommandEntry *entry) {
     if (is_integer) {
       type = TELLY_INT;
       mpz_t *raw = (number = malloc(sizeof(mpz_t)));
-      if (raw == NULL) return OUT_OF_MEMORY();
+      if (raw == NULL)
+        return OUT_OF_MEMORY();
 
       mpz_init_set_str(*raw, input, 10);
+      result = set_data(entry->database, NULL, key, number, type, NULL);
+
+      if (!result) {
+        mpz_clear(*raw);
+        free(raw);
+
+        PASS_NO_CLIENT(entry->client);
+        return RESP_ERROR();
+      }
     } else if (is_double) {
       type = TELLY_DOUBLE;
       mpf_t *raw = (number = malloc(sizeof(mpf_t)));
-      if (raw == NULL) return OUT_OF_MEMORY();
+      if (raw == NULL)
+        return OUT_OF_MEMORY();
 
       mpf_init2(*raw, FLOAT_PRECISION);
       mpf_set_str(*raw, input, 10);
-    }
 
-    result = set_data(entry->database, NULL, key, number, type, NULL);
+      if (!result) {
+        mpf_clear(*raw);
+        free(raw);
 
-    if (!result) {
-      free_value(type, number);
-      PASS_NO_CLIENT(entry->client);
-      return RESP_ERROR();
+        PASS_NO_CLIENT(entry->client);
+        return RESP_ERROR();
+      }
     }
   } else {
-    switch (result->type) {
+    switch (result->value.type) {
       case TELLY_INT:
         if (is_integer) {
           mpz_t value;
           mpz_init_set_str(value, input, 10);
 
-          result->type = TELLY_INT;
-          mpz_t *raw = result->value;
+          result->value.type = TELLY_INT;
+          mpz_t *raw = result->value.data;
           mpz_add(*raw, *raw, value);
           mpz_clear(value);
         } else {
           mpf_t original;
           mpf_init2(original, FLOAT_PRECISION);
-          mpf_set_z(original, result->value);
+          mpf_set_z(original, result->value.data);
 
-          mpz_clear(result->value);
-          free(result->value);
+          mpz_clear(result->value.data);
+          free(result->value.data);
 
-          result->type = TELLY_DOUBLE;
-          mpf_t *raw = (result->value = malloc(sizeof(mpf_t)));
+          result->value.type = TELLY_DOUBLE;
+          mpf_t *raw = (result->value.data = malloc(sizeof(mpf_t)));
           if (raw == NULL) return RESP_ERROR_MESSAGE("Out of memory");
           mpf_init2(*raw, FLOAT_PRECISION);
           mpf_set_str(*raw, input, 10);
@@ -87,8 +98,8 @@ static string_t run(struct CommandEntry *entry) {
         mpf_init2(value, FLOAT_PRECISION);
         mpf_set_str(value, input, 10);
 
-        result->type = TELLY_DOUBLE;
-        mpf_t *raw = result->value;
+        result->value.type = TELLY_DOUBLE;
+        mpf_t *raw = result->value.data;
         mpf_add(*raw, *raw, value);
         mpf_clear(value);
         break;
@@ -100,7 +111,7 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   PASS_NO_CLIENT(entry->client);
-  return write_value(result->value, result->type, entry->client->protover, entry->client->write_buf);
+  return write_value(result->value.data, result->value.type, entry->client->protover, entry->client->write_buf);
 }
 
 const struct Command cmd_incrby = {

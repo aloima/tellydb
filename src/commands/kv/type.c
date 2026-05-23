@@ -14,12 +14,12 @@ static string_t run(struct CommandEntry *entry) {
   if (entry->args->count != 1)
     return WRONG_ARGUMENT_ERROR("TYPE");
 
-  struct KVPair *res = get_data(entry->database, entry->args->data[0]);
+  KeyValue *res = get_data(entry->database, entry->args->data[0]);
 
   if (!res)
     return RESP_NULL(entry->client->protover);
 
-  return get_resp_type_name(res->type);
+  return get_resp_type_name(res->value.type);
 }
 
 const struct Command cmd_type = {
