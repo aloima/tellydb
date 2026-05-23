@@ -16,7 +16,7 @@ static string_t run(struct CommandEntry *entry) {
 
   const KeyValue *kv = get_data(entry->database, entry->args->data[0]);
 
-  if (!kv || kv->value->type != TELLY_LIST) {
+  if (!kv || kv->value.type != TELLY_LIST) {
     return INVALID_TYPE_ERROR("LINDEX");
   }
 
@@ -26,7 +26,7 @@ static string_t run(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("Second argument must be an integer");
   }
 
-  LinkedList *list = kv->value->data;
+  LinkedList *list = kv->value.data;
   LinkedListNode *node;
 
   if (index_str[0] == '-') {

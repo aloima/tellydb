@@ -16,7 +16,7 @@ static string_t run(struct CommandEntry *entry) {
 
   const KeyValue *kv = get_data(entry->database, entry->args->data[0]);
 
-  if (!kv || kv->value->type != TELLY_LIST) {
+  if (!kv || kv->value.type != TELLY_LIST) {
     return INVALID_TYPE_ERROR("LTYPE");
   }
 

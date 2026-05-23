@@ -16,7 +16,7 @@ typedef struct Expiry {
 
 typedef struct KeyValue {
   string_t key;
-  Value *value;
+  Value value;
   Expiry expiry;
 } KeyValue;
 
@@ -38,6 +38,6 @@ typedef struct HashTableKeyValue {
 } HashTableKeyValue;
 
 int set_kv(KeyValue *kv, const string_t key, void *value, const enum TellyTypes type, const uint64_t *expire_at);
-void free_value(Value *value);
+void free_value(Value value);
 void free_kv(KeyValue *kv);
 void free_hashtablekeyvalue(HashTableElement element);

@@ -277,14 +277,14 @@ static inline off_t generate_value(char **data, KeyValue *kv) {
   off_t len = 0;
 
   generate_string_value(data, &len, &kv->key);
-  (*data)[len] = kv->value->type;
+  (*data)[len] = kv->value.type;
   len += 1;
 
-  switch (kv->value->type) {
-    GENERATE_PRIMITIVE_VALUES(data, len, kv->value->data);
+  switch (kv->value.type) {
+    GENERATE_PRIMITIVE_VALUES(data, len, kv->value.data);
 
     case TELLY_HASHTABLE: {
-      HashTable *table = kv->value->data;
+      HashTable *table = kv->value.data;
       memcpy(*data + len, &table->size.capacity, 4);
       len += 4;
 
@@ -298,7 +298,7 @@ static inline off_t generate_value(char **data, KeyValue *kv) {
     }
 
     case TELLY_LIST: {
-      const LinkedList *list = kv->value->data;
+      const LinkedList *list = kv->value.data;
       memcpy(*data + len, &list->size, 4);
       len += 4;
 

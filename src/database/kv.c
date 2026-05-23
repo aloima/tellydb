@@ -7,9 +7,8 @@ int set_kv(KeyValue *kv, const string_t key, void *value, const enum TellyTypes 
   kv->key.len = key.len;
   memcpy(kv->key.value, key.value, key.len);
 
-  kv->value = malloc(sizeof(Value));
-  kv->value->data = value;
-  kv->value->type = type;
+  kv->value.data = value;
+  kv->value.type = type;
 
   if (expire_at != NULL) {
     kv->expiry.enabled = true;
@@ -46,6 +45,7 @@ int check_kv_expiry(Database *database, KeyValue *kv) {
   return 0;
 }
 
+// TODO
 void free_databaselistnode(void *data) {
   DatabaseListNode *value = (DatabaseListNode *) data;
 
@@ -54,12 +54,13 @@ void free_databaselistnode(void *data) {
 }
 
 void free_hashtablekeyvalue(HashTableElement element) {
-  free_value(element.value);
+  KeyValue *value = element.value;
+  free_value(value->value);
 }
 
-void free_value(Value *value) {
-  const enum TellyTypes type = value->type;
-  void *data = value->data;
+void free_value(Value value) {
+  const enum TellyTypes type = value.type;
+  void *data = value.data;
 
   switch (type) {
     case TELLY_NULL:
@@ -89,7 +90,7 @@ void free_value(Value *value) {
       break;
 
     case TELLY_LIST:
-      ll_free(data, free_databaselistnode);
+      ll_free(data, free_value);
       free(data);
       break;
   }

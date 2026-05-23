@@ -21,12 +21,12 @@ static string_t run(struct CommandEntry *entry) {
     return RESP_NULL(entry->client->protover);
   }
 
-  if (kv->value->type != TELLY_LIST) {
+  if (kv->value.type != TELLY_LIST) {
     PASS_NO_CLIENT(entry->client);
     return INVALID_TYPE_ERROR("RPOP");
   }
 
-  LinkedList *list = kv->value->data;
+  LinkedList *list = kv->value.data;
   LinkedListNode *node = list->end;
   string_t response = EMPTY_STRING();
 

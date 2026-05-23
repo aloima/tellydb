@@ -18,11 +18,11 @@ static string_t run(struct CommandEntry *entry) {
 
   if (!kv) {
     return CREATE_STRING(":0\r\n", 4);
-  } else if (kv->value->type != TELLY_LIST) {
+  } else if (kv->value.type != TELLY_LIST) {
     return INVALID_TYPE_ERROR("LLEN");
   }
 
-  const size_t nbytes = create_resp_integer(entry->client->write_buf, ((LinkedList *) kv->value)->size);
+  const size_t nbytes = create_resp_integer(entry->client->write_buf, ((LinkedList *) kv->value.data)->size);
   return CREATE_STRING(entry->client->write_buf, nbytes);
 }
 

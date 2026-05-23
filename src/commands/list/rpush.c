@@ -25,12 +25,12 @@ static string_t run(struct CommandEntry *entry) {
   LinkedList *list;
 
   if (kv) {
-    if (kv->value->type != TELLY_LIST) {
+    if (kv->value.type != TELLY_LIST) {
       PASS_NO_CLIENT(entry->client);
       return INVALID_TYPE_ERROR("RPUSH");
     }
 
-    list = kv->value->data;
+    list = kv->value.data;
   } else {
     list = ll_create();
     if (list == NULL) return RESP_ERROR_MESSAGE("Out of memory");
