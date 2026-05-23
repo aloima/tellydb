@@ -41,3 +41,6 @@ int set_kv(KeyValue *kv, const string_t key, void *value, const enum TellyTypes 
 void free_value(Value value);
 void free_kv(KeyValue *kv);
 void free_hashtablekeyvalue(HashTableElement element);
+
+// Compatibility layer for LinkedList and Database Value
+void free_list_value(void *data);

@@ -4,7 +4,6 @@
 
 #include "file.h" // IWYU pragma: export
 #include "kv.h"   // IWYU pragma: export
-#include "list.h" // IWYU pragma: export
 
 #include "../utils/utils.h"
 

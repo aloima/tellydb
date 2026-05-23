@@ -274,7 +274,7 @@ static size_t collect_kv(KeyValue *kv, const int fd, char *block, const uint16_t
             break;
         }
 
-        DatabaseListNode *value = malloc(sizeof(DatabaseListNode));
+        Value *value = malloc(sizeof(Value));
         value->type = byte;
         value->data = list_value;
 

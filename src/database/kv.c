@@ -45,12 +45,9 @@ int check_kv_expiry(Database *database, KeyValue *kv) {
   return 0;
 }
 
-// TODO
-void free_databaselistnode(void *data) {
-  DatabaseListNode *value = (DatabaseListNode *) data;
-
-  free_value(value->data);
-  free(value);
+void free_list_value(void *data) {
+  Value *value = (Value *) value;
+  free_value(*value);
 }
 
 void free_hashtablekeyvalue(HashTableElement element) {
@@ -90,7 +87,7 @@ void free_value(Value value) {
       break;
 
     case TELLY_LIST:
-      ll_free(data, free_value);
+      ll_free(data, free_list_value);
       free(data);
       break;
   }

@@ -52,8 +52,8 @@ static string_t run(struct CommandEntry *entry) {
     return RESP_NULL(entry->client->protover);
   }
 
-  const DatabaseListNode *data = (DatabaseListNode *) node->data;
-  return write_value(data->data, data->type, entry->client->protover, entry->client->write_buf);
+  const Value *value = (Value *) node->data;
+  return write_value(value->data, value->type, entry->client->protover, entry->client->write_buf);
 }
 
 const struct Command cmd_lindex = {

@@ -31,7 +31,7 @@ static string_t run(struct CommandEntry *entry) {
   string_t response = EMPTY_STRING();
 
   if (entry->client) {
-    DatabaseListNode *value = (DatabaseListNode *) list->end->data;
+    Value *value = (Value *) list->end->data;
     response = write_value(value->data, value->type, entry->client->protover, entry->client->write_buf);
   }
 
@@ -39,7 +39,7 @@ static string_t run(struct CommandEntry *entry) {
     delete_data(entry->database, key);
   } else {
     // Guaranteed that list exists and its size is least 1
-    ASSERT(ll_remove_back(list, free_databaselistnode), ==, true);
+    ASSERT(ll_remove_back(list, free_list_value), ==, true);
   }
 
   return response;

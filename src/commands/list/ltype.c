@@ -26,7 +26,7 @@ static string_t run(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("Second argument must be an integer");
   }
 
-  LinkedList *list = kv->value->data;
+  LinkedList *list = kv->value.data;
   LinkedListNode *node;
 
   if (index_str[0] == '-') {
@@ -52,7 +52,7 @@ static string_t run(struct CommandEntry *entry) {
     return RESP_NULL(entry->client->protover);
   }
 
-  const DatabaseListNode *data = (DatabaseListNode *) node->data;
+  const Value *data = (Value *) node->data;
   return get_resp_type_name(data->type);
 }
 

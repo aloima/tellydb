@@ -38,7 +38,7 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   for (uint32_t i = 1; i < entry->args->count; ++i) {
-    DatabaseListNode *node = malloc(sizeof(DatabaseListNode));
+    Value *node = malloc(sizeof(Value));
     if (node == NULL) return RESP_ERROR_MESSAGE("Out of memory");
 
     const string_t input = entry->args->data[i];

@@ -127,7 +127,7 @@ static inline off_t get_value_size(const enum TellyTypes type, void *value) {
       off_t length = 4;
 
       while (node) {
-        const DatabaseListNode *value = (DatabaseListNode *) node->data;
+        const Value *value = (Value *) node->data;
         length += (1 + get_value_size(value->type, value->data));
         node = node->next;
       }
@@ -305,7 +305,7 @@ static inline off_t generate_value(char **data, KeyValue *kv) {
       const LinkedListNode *node = list->begin;
 
       while (node) {
-        DatabaseListNode *value = (DatabaseListNode *) node->data;
+        Value *value = (Value *) node->data;
         (*data)[len] = value->type;
         len += 1;
 
