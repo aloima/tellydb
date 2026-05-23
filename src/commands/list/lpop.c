@@ -14,19 +14,19 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   const string_t key = entry->args->data[0];
-  const struct KVPair *kv = get_data(entry->database, key);
+  const KeyValue *kv = get_data(entry->database, key);
 
   if (!kv) {
     PASS_NO_CLIENT(entry->client);
     return RESP_NULL(entry->client->protover);
   }
 
-  if (kv->type != TELLY_LIST) {
+  if (kv->value->type != TELLY_LIST) {
     PASS_NO_CLIENT(entry->client);
     return INVALID_TYPE_ERROR("LPOP");
   }
 
-  LinkedList *list = kv->value;
+  LinkedList *list = kv->value->data;
   string_t response = EMPTY_STRING();
 
   if (entry->client) {

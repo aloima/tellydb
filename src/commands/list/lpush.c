@@ -21,16 +21,16 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   const string_t key = entry->args->data[0];
-  struct KVPair *kv = get_data(entry->database, key);
-  struct LinkedList *list;
+  KeyValue *kv = get_data(entry->database, key);
+  LinkedList *list;
 
   if (kv) {
-    if (kv->type != TELLY_LIST) {
+    if (kv->value->type != TELLY_LIST) {
       PASS_NO_CLIENT(entry->client);
       return INVALID_TYPE_ERROR("LPUSH");
     }
 
-    list = kv->value;
+    list = kv->value->data;
   } else {
     list = ll_create();
     if (list == NULL) return RESP_ERROR_MESSAGE("Out of memory");
@@ -42,7 +42,7 @@ static string_t run(struct CommandEntry *entry) {
     if (node == NULL) return RESP_ERROR_MESSAGE("Out of memory");
 
     const string_t input = entry->args->data[i];
-    bool is_true = streq(input.value, "true");
+    const bool is_true = streq(input.value, "true");
 
     if (try_parse_integer(input.value)) {
       mpz_t *value = malloc(sizeof(mpz_t));

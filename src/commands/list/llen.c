@@ -14,11 +14,11 @@ static string_t run(struct CommandEntry *entry) {
     return WRONG_ARGUMENT_ERROR("LLEN");
   }
 
-  const struct KVPair *kv = get_data(entry->database, entry->args->data[0]);
+  const KeyValue *kv = get_data(entry->database, entry->args->data[0]);
 
   if (!kv) {
     return CREATE_STRING(":0\r\n", 4);
-  } else if (kv->type != TELLY_LIST) {
+  } else if (kv->value->type != TELLY_LIST) {
     return INVALID_TYPE_ERROR("LLEN");
   }
 

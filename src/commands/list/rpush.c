@@ -21,16 +21,16 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   const string_t key = entry->args->data[0];
-  struct KVPair *kv = get_data(entry->database, key);
-  struct LinkedList *list;
+  KeyValue *kv = get_data(entry->database, key);
+  LinkedList *list;
 
   if (kv) {
-    if (kv->type != TELLY_LIST) {
+    if (kv->value->type != TELLY_LIST) {
       PASS_NO_CLIENT(entry->client);
       return INVALID_TYPE_ERROR("RPUSH");
     }
 
-    list = kv->value;
+    list = kv->value->data;
   } else {
     list = ll_create();
     if (list == NULL) return RESP_ERROR_MESSAGE("Out of memory");
