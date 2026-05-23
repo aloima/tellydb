@@ -352,6 +352,14 @@ static inline void log_save_io_error(const char *what) {
   }
 }
 
+static inline void get_maximum_keyvalue_size(HashTableElement element, void *external) {
+  const Value *value = ((HashTableKeyValue *) &element)->value->value;
+  uint64_t *max_size = (uint64_t *) external;
+
+  const uint64_t size = (1 + get_value_size(TELLY_STR, (string_t *) element.key) + get_value_size(value->type, value->data));
+  *max_size = ((*max_size > size) ? *max_size : size);
+}
+
 int save_data(const uint32_t server_age) {
   if (saving) return -1;
   saving = true;
@@ -422,23 +430,15 @@ int save_data(const uint32_t server_age) {
 
     while (node) {
       Database *database = (Database *) node->data;
-      const uint64_t capacity = database->size.capacity;
-      const uint64_t size = database->size.stored;
+      const uint64_t capacity = database->data->size.capacity;
+      const uint64_t size = database->data->size.count;
 
       memcpy(block + length, &size, 8);
       length += 8;
       total += generate_string_value(&block, &length, &database->name) + 8;
 
       uint64_t data_size = 0;
-
-      for (uint32_t i = 0; i < capacity; ++i) {
-        struct KVPair *kv = database->data[i];
-
-        if (kv) {
-          const uint64_t kv_size = (1 + get_value_size(TELLY_STR, &kv->key) + get_value_size(kv->type, kv->value));
-          data_size = ((data_size > kv_size) ? data_size : kv_size);
-        }
-      }
+      foreach_hashtable(database->data, get_maximum_keyvalue_size, &data_size);
 
       if (data_size == 0) {
         node = node->next;
