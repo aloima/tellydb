@@ -17,6 +17,54 @@ static constexpr string_t c_bool[4][2] = {
   [RESP3] = { [false] = CREATE_STRING("#f\r\n", 4), [true] = CREATE_STRING("#t\r\n", 4) },
 };
 
+typedef struct Response {
+  enum ProtocolVersion protover;
+  char *data;
+  uint64_t at;
+} Response;
+
+static void dump_hashtable(HashTableElement element, void *external) {
+  const string_t *name = (string_t *) element.key;
+  const Value value = ((NameValue *) element.value)->value;
+
+  Response *response = (Response *) external;
+  const enum ProtocolVersion protover = response->protover;
+
+  response->at += create_resp_string(response->data + response->at, *name);
+  char *buf = response->data + response->at;
+
+  switch (value.type) {
+    case TELLY_NULL: {
+      const string_t constant = c_null[protover];
+      memcpy(buf, constant.value, constant.len);
+      response->at += constant.len;
+      break;
+    }
+
+    case TELLY_INT:
+      response->at += create_resp_integer_mpz(protover, buf, *((mpz_t *) value.data));
+      break;
+
+    case TELLY_DOUBLE:
+      response->at += create_resp_integer_mpf(protover, buf, *((mpf_t *) value.data));
+      break;
+
+    case TELLY_STR:
+      response->at += create_resp_string(buf, *((string_t *) value.data));
+      break;
+
+    case TELLY_BOOL: {
+      string_t constant = c_bool[protover][*((bool *) value.data)];
+      memcpy(buf, constant.value, constant.len);
+      response->at += constant.len;
+      break;
+    }
+
+    default:
+      break;
+  }
+}
+
 static string_t run(struct CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
@@ -24,7 +72,7 @@ static string_t run(struct CommandEntry *entry) {
     return WRONG_ARGUMENT_ERROR("HGETALL");
   }
 
-  const struct KVPair *kv = get_data(entry->database, entry->args->data[0]);
+  const KeyValue *kv = get_data(entry->database, entry->args->data[0]);
 
   if (!kv) {
     switch (entry->client->protover) {
@@ -36,71 +84,36 @@ static string_t run(struct CommandEntry *entry) {
     }
   }
 
-  if (kv->type != TELLY_HASHTABLE) {
+  if (kv->value->type != TELLY_HASHTABLE) {
     return INVALID_TYPE_ERROR("HGETALL");
   }
 
-  const struct HashTable *table = kv->value;
+  HashTable *table = (HashTable *) kv->value->data;
   const enum ProtocolVersion protover = entry->client->protover;
 
-  char *response = entry->client->write_buf;
+  char *data = entry->client->write_buf;
   uint64_t at;
 
   switch (protover) {
     case RESP2:
-      response[0] = '*';
-      at = ltoa(table->size.used * 2, response + 1) + 1;
+      data[0] = '*';
+      at = ltoa(table->size.count * 2, data + 1) + 1;
       break;
 
     case RESP3:
-      response[0] = '%';
-      at = ltoa(table->size.used, response + 1) + 1;
+      data[0] = '%';
+      at = ltoa(table->size.count, data + 1) + 1;
       break;
   }
 
-  response[at++] = '\r';
-  response[at++] = '\n';
+  data[at++] = '\r';
+  data[at++] = '\n';
 
-  for (uint32_t i = 0; i < table->size.capacity; ++i) {
-    struct HashTableField *field = table->fields[i];
-    if (!field) continue;
+  Response response = { protover, data, at };
+  foreach_hashtable(table, dump_hashtable, &response);
 
-    at += create_resp_string(response + at, field->name);
-    char *buf = response + at;
-
-    switch (field->type) {
-      case TELLY_NULL: {
-        const string_t constant = c_null[protover];
-        memcpy(buf, constant.value, constant.len);
-        at += constant.len;
-        break;
-      }
-
-      case TELLY_INT:
-        at += create_resp_integer_mpz(protover, buf, *((mpz_t *) field->value));
-        break;
-
-      case TELLY_DOUBLE:
-        at += create_resp_integer_mpf(protover, buf, *((mpf_t *) field->value));
-        break;
-
-      case TELLY_STR:
-        at += create_resp_string(buf, *((string_t *) field->value));
-        break;
-
-      case TELLY_BOOL: {
-        string_t constant = c_bool[protover][*((bool *) field->value)];
-        memcpy(buf, constant.value, constant.len);
-        at += constant.len;
-        break;
-      }
-
-      default:
-        break;
-    }
-  }
-
-  return CREATE_STRING(response, at);
+  // `at` has old value, we copied `at` into `response`. So, we need to use that.
+  return CREATE_STRING(response.data, response.at);
 }
 
 const struct Command cmd_hgetall = {

@@ -7,6 +7,25 @@ static void get_keys(struct CommandEntry *entry) {
 
 
 
+static inline bool insert_into_hashtable_in_database(HashTable *table, string_t key, void *value, enum TellyTypes type) {
+  Value _value = { value, type };
+  NameValue *field = malloc(sizeof(NameValue));
+  if (field == NULL)
+    return false;
+
+  field->name = key;
+  field->value.data = value;
+  field->value.type = type;
+
+  insert_into_hashtable(table, &field->name, field);
+  return true;
+}
+
+uint64_t key_hash(void *data) {
+  string_t *key = (string_t *) data;
+  return OPENSSL_LH_strhash(key->value);
+}
+
 static string_t run(struct CommandEntry *entry) {
   if (entry->args->count == 1 || (entry->args->count - 1) % 2 != 0) {
     PASS_NO_CLIENT(entry->client);
@@ -14,18 +33,18 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   const string_t key = entry->args->data[0];
-  struct KVPair *kv = get_data(entry->database, key);
-  struct HashTable *table;
+  KeyValue *kv = get_data(entry->database, key);
+  HashTable *table;
 
   if (kv) {
-    if (kv->type == TELLY_HASHTABLE) {
-      table = kv->value;
+    if (kv->value->type == TELLY_HASHTABLE) {
+      table = (HashTable *) kv->value->data;
     } else {
       PASS_NO_CLIENT(entry->client);
       return INVALID_TYPE_ERROR("HSET");
     }
   } else {
-    table = create_hashtable(16);
+    table = create_hashtable(16, key_hash);
     if (table == NULL) {
       PASS_NO_CLIENT(entry->client);
       return RESP_ERROR_MESSAGE("Out of memory");
@@ -58,7 +77,7 @@ static string_t run(struct CommandEntry *entry) {
 
         mpz_init_set_str(*value, input.value, 10);
 
-        if (!set_field_of_hashtable(table, name, value, TELLY_INT)) {
+        if (!insert_into_hashtable_in_database(table, name, value, TELLY_INT)) {
           free(value);
           PASS_NO_CLIENT(entry->client);
           return RESP_ERROR_MESSAGE("Out of memory");
@@ -73,7 +92,7 @@ static string_t run(struct CommandEntry *entry) {
         mpf_init2(*value, FLOAT_PRECISION);
         mpf_set_str(*value, input.value, 10);
 
-        if (!set_field_of_hashtable(table, name, value, TELLY_DOUBLE)) {
+        if (!insert_into_hashtable_in_database(table, name, value, TELLY_DOUBLE)) {
           free(value);
           PASS_NO_CLIENT(entry->client);
           return RESP_ERROR_MESSAGE("Out of memory");
@@ -88,13 +107,13 @@ static string_t run(struct CommandEntry *entry) {
 
       *value = is_true;
 
-      if (!set_field_of_hashtable(table, name, value, TELLY_BOOL)) {
+      if (!insert_into_hashtable_in_database(table, name, value, TELLY_BOOL)) {
         free(value);
         PASS_NO_CLIENT(entry->client);
         return RESP_ERROR_MESSAGE("Out of memory");
       }
     } else if (streq(input.value, "null")) {
-      if (!set_field_of_hashtable(table, name, NULL, TELLY_NULL)) {
+      if (!insert_into_hashtable_in_database(table, name, NULL, TELLY_NULL)) {
         PASS_NO_CLIENT(entry->client);
         return RESP_ERROR_MESSAGE("Out of memory");
       }
@@ -115,7 +134,7 @@ static string_t run(struct CommandEntry *entry) {
 
       memcpy(value->value, input.value, value->len);
 
-      if (!set_field_of_hashtable(table, name, value, TELLY_STR)) {
+      if (!insert_into_hashtable_in_database(table, name, value, TELLY_STR)) {
         free(value->value);
         free(value);
         PASS_NO_CLIENT(entry->client);

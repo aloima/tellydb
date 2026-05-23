@@ -22,7 +22,7 @@ typedef struct KeyValue {
 
 typedef struct NameValue {
   string_t name;
-  Value *value;
+  Value value;
 } NameValue;
 
 // Compatibility layer for HashTable and NameValue

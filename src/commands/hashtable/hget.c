@@ -1,3 +1,4 @@
+#include "database/kv.h"
 #include <telly.h>
 
 static void get_keys(struct CommandEntry *entry) {
@@ -14,14 +15,20 @@ static string_t run(struct CommandEntry *entry) {
     return WRONG_ARGUMENT_ERROR("HGET");
   }
 
-  const struct KVPair *kv = get_data(entry->database, entry->args->data[0]);
-  if (!kv) return RESP_NULL(entry->client->protover);
-  if (kv->type != TELLY_HASHTABLE) return INVALID_TYPE_ERROR("HGET");
+  const KeyValue *kv = get_data(entry->database, entry->args->data[0]);
+  if (!kv)
+    return RESP_NULL(entry->client->protover);
+  if (kv->value->type != TELLY_HASHTABLE)
+    return INVALID_TYPE_ERROR("HGET");
 
-  const struct HashTableField *field = get_field_from_hashtable(kv->value, entry->args->data[1]);
+  HashTable *table = (HashTable *) kv->value->data;
+  char *name = entry->args->data[1].value;
+
+  const HashTableNameValue *field = (HashTableNameValue *) get_from_hashtable(table, name);
+  const Value value = field->value->value;
 
   if (field) {
-    return write_value(field->value, field->type, entry->client->protover, entry->client->write_buf);
+    return write_value(value.data, value.type, entry->client->protover, entry->client->write_buf);
   } else {
     return RESP_NULL(entry->client->protover);
   }
