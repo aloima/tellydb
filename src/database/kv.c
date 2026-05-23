@@ -48,6 +48,7 @@ void free_list_value(void *data) {
 
 void free_hashtablekeyvalue(HashTableElement element) {
   KeyValue *value = element.value;
+  free(value->key.value);
   free_value(value->value);
 }
 
