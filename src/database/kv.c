@@ -20,10 +20,6 @@ int set_kv(KeyValue *kv, const string_t key, void *value, const enum TellyTypes 
   return 0;
 }
 
-bool delete_kv(Database *database, KeyValue *kv) {
-  return delete_from_hashtable(database->data, kv->key.value);
-}
-
 int check_kv_expiry(Database *database, KeyValue *kv) {
   typeof(kv->expiry) expiry = kv->expiry;
 
@@ -36,7 +32,7 @@ int check_kv_expiry(Database *database, KeyValue *kv) {
   const uint64_t now = (ts.tv_sec * 1e3) + (ts.tv_nsec / 1e6);
 
   if (expiry.at <= now) {
-    if (!delete_kv(database, kv))
+    if (!delete_from_hashtable(database->data, kv->key.value))
       return -1;
 
     return 1;

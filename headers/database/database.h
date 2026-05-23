@@ -27,8 +27,7 @@ Database *get_database(const string_t name);
 bool rename_database(const string_t old_name, const string_t new_name);
 void free_databases();
 
-// TODO: find a way to move them into kv.h
-bool delete_kv(Database *database, KeyValue *kv);
+// TODO: find a way to move it into kv.h
 int check_kv_expiry(Database *database, KeyValue *kv);
 
 KeyValue *get_data(Database *database, string_t key);
