@@ -248,38 +248,48 @@ static void generate_boolean_value(char **data, off_t *len, const bool *boolean)
     generate_boolean_value((data), &len, (value));   \
     break
 
-static inline off_t generate_value(char **data, struct KVPair *kv) {
+
+typedef struct Buffer {
+  char *data;
+  off_t *len;
+} Buffer;
+
+static void generate_hashtable_element(HashTableElement element, void *external) {
+  const Value *value = ((HashTableNameValue *) &element)->value->value;
+
+  char *data = ((Buffer *) external)->data;
+  off_t *len = ((Buffer *) external)->len;
+
+  data[*len] = value->type;
+  *len += 1;
+
+  generate_string_value(&data, len, (string_t *) element.key);
+
+  switch (value->type) {
+    GENERATE_PRIMITIVE_VALUES(&data, *len, value->data);
+
+    default:
+      break;
+  }
+}
+
+static inline off_t generate_value(char **data, KeyValue *kv) {
   off_t len = 0;
 
   generate_string_value(data, &len, &kv->key);
-  (*data)[len] = kv->type;
+  (*data)[len] = kv->value->type;
   len += 1;
 
-  switch (kv->type) {
-    GENERATE_PRIMITIVE_VALUES(data, len, kv->value);
+  switch (kv->value->type) {
+    GENERATE_PRIMITIVE_VALUES(data, len, kv->value->data);
 
     case TELLY_HASHTABLE: {
-      struct HashTable *table = kv->value;
+      HashTable *table = kv->value->data;
       memcpy(*data + len, &table->size.capacity, 4);
       len += 4;
 
-      for (uint32_t i = 0; i < table->size.capacity; ++i) {
-        struct HashTableField *field = table->fields[i];
-
-        if (field) {
-          (*data)[len] = field->type;
-          len += 1;
-
-          generate_string_value(data, &len, &field->name);
-
-          switch (field->type) {
-            GENERATE_PRIMITIVE_VALUES(data, len, field->value);
-
-            default:
-              break;
-          }
-        }
-      }
+      Buffer external = {*data, &len};
+      foreach_hashtable(table, generate_hashtable_element, &external);
 
       (*data)[len] = 0x17;
       len += 1;
@@ -288,7 +298,7 @@ static inline off_t generate_value(char **data, struct KVPair *kv) {
     }
 
     case TELLY_LIST: {
-      const LinkedList *list = kv->value;
+      const LinkedList *list = kv->value->data;
       memcpy(*data + len, &list->size, 4);
       len += 4;
 
