@@ -1,7 +1,16 @@
 #include <telly.h>
 
 bool delete_data(Database *database, string_t key) {
-  return delete_from_hashtable(database->data, &key);
+  const KeyValue *kv = get_data(database, key);
+  if (kv == NULL)
+    return false;
+
+  // When deleted, value is not appeared, it is reachable
+  const bool deleted = delete_from_hashtable(database->data, &key);
+  free(kv->key.value);
+  free_value(kv->value);
+
+  return true;
 }
 
 void clear_database(Database *database) {
