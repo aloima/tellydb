@@ -21,7 +21,9 @@ KeyValue *set_data(Database *database, KeyValue *kv, string_t key, void *data, c
 
   set_kv(kv, key, data, type, expire_at);
 
-  // TODO: retrieve hashtableelement from this method
-  insert_into_hashtable(database->data, &key, kv);
-  return NULL;
+  HashTableKeyValue *element = (HashTableKeyValue *) insert_into_hashtable(database->data, &key, kv);
+  if (element == NULL)
+    return NULL;
+
+  return element->value;
 }
