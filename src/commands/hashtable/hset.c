@@ -20,7 +20,8 @@ static inline bool insert_into_hashtable_in_database(HashTable *table, string_t 
     return NULL;
   }
 
-  strncpy(field->name.value, key.value, key.len);
+  memcpy(field->name.value, key.value, key.len);
+  field->name.value[key.len] = '\0';
 
   field->value.data = value;
   field->value.type = type;
