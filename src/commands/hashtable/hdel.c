@@ -39,7 +39,7 @@ static string_t run(struct CommandEntry *entry) {
   const uint32_t old_size = table->size.count;
 
   for (uint32_t i = 1; i < entry->args->count; ++i) {
-    delete_from_hashtable(table, entry->args->data[i].value);
+    delete_from_hashtable(table, &entry->args->data[i]);
   }
 
   const uint32_t current_size = table->size.count;
