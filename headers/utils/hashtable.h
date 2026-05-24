@@ -18,9 +18,10 @@ typedef struct {
 
   HashTableElement *elements;
   uint64_t (*hash)(void *key);
+  bool (*key_compare)(void *key_a, void *key_b);
 } HashTable;
 
-HashTable *create_hashtable(const uint64_t capacity, uint64_t (*hash)(void *));
+HashTable *create_hashtable(const uint64_t capacity, uint64_t (*hash)(void *), bool (*key_compare)(void *key_a, void *key_b));
 void clear_hashtable(HashTable *table, void (*destroy_element)(HashTableElement element));
 void destroy_hashtable(HashTable *table, void (*destroy_element)(HashTableElement element));
 

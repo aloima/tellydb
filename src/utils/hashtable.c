@@ -1,6 +1,6 @@
 #include <telly.h>
 
-HashTable *create_hashtable(const uint64_t capacity, uint64_t (*hash)(void *)) {
+HashTable *create_hashtable(const uint64_t capacity, uint64_t (*hash)(void *), bool (*key_compare)(void *, void *)) {
   HashTable *table;
   if (amalloc(table, HashTable, 1) != 0)
     return NULL;
@@ -16,6 +16,7 @@ HashTable *create_hashtable(const uint64_t capacity, uint64_t (*hash)(void *)) {
   }
 
   table->hash = hash;
+  table->key_compare = key_compare;
   table->size.capacity = capacity;
   table->size.count = 0;
 
@@ -63,7 +64,7 @@ HashTableElement *insert_into_hashtable(HashTable *table, void *key, void *value
   uint64_t index = start;
 
   while (table->elements[index].key != NULL) {
-    if (table->elements[index].key == key)
+    if (table->key_compare(table->elements[index].key, key))
       return &table->elements[index];
 
     index = (index + 1) % capacity;
@@ -81,7 +82,7 @@ bool delete_from_hashtable(HashTable *table, void *key) {
   const uint64_t start = table->hash(key) % capacity;
   uint64_t deletion = start;
 
-  while (table->elements[deletion].key != key) {
+  while (!table->key_compare(table->elements[deletion].key, key)) {
     if (table->elements[deletion].key == NULL)
       return false;
 
@@ -132,7 +133,7 @@ bool exist_in_hashtable(HashTable *table, void *key) {
   const uint64_t start = table->hash(key) % capacity;
   uint64_t index = start;
 
-  while (table->elements[index].key != key) {
+  while (!table->key_compare(table->elements[index].key, key)) {
     if (table->elements[index].key == NULL)
       return false;
 
@@ -150,7 +151,7 @@ HashTableElement *get_from_hashtable(HashTable *table, void *key) {
   const uint64_t start = table->hash(key) % capacity;
   uint64_t index = start;
 
-  while (table->elements[index].key != key) {
+  while (table->key_compare(table->elements[index].key, key)) {
     if (table->elements[index].key == NULL)
       return NULL;
 
@@ -165,6 +166,7 @@ HashTableElement *get_from_hashtable(HashTable *table, void *key) {
 
 void foreach_hashtable(HashTable *table, void (*procedure)(HashTableElement element, void *external), void *external) {
   for (uint64_t i = 0; i < table->size.count; ++i) {
+    if (table->elements[i].key == NULL) continue;
     procedure(table->elements[i], external);
   }
 }

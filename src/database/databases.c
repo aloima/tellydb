@@ -8,6 +8,13 @@ uint64_t string_hash(void *data) {
   return OPENSSL_LH_strhash(key->value);
 }
 
+bool string_compare(void *string_a, void *string_b) {
+  string_t *a = (string_t *) string_a;
+  string_t *b = (string_t *) string_b;
+
+  return (a->len == b->len) && (memcmp(a->value, b->value, a->len) == 0);
+}
+
 Database *create_database(const string_t name, const uint64_t capacity) {
   Database *database = NULL;
   char *name_str = NULL;
@@ -19,7 +26,7 @@ Database *create_database(const string_t name, const uint64_t capacity) {
   name_str = malloc(name.len + 1);
   if (name_str == NULL) goto CLEANUP;
 
-  data = create_hashtable(capacity, string_hash);
+  data = create_hashtable(capacity, string_hash, string_compare);
   if (data == NULL) goto CLEANUP;
 
   if (databases == NULL) {

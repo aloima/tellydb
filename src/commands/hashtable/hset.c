@@ -17,7 +17,7 @@ static inline bool insert_into_hashtable_in_database(HashTable *table, string_t 
   field->value.data = value;
   field->value.type = type;
 
-  insert_into_hashtable(table, &field->name, field);
+  (void) insert_into_hashtable(table, &field->name, field);
   return true;
 }
 
@@ -39,7 +39,7 @@ static string_t run(struct CommandEntry *entry) {
       return INVALID_TYPE_ERROR("HSET");
     }
   } else {
-    table = create_hashtable(16, string_hash);
+    table = create_hashtable(16, string_hash, string_compare);
     if (table == NULL) {
       PASS_NO_CLIENT(entry->client);
       return RESP_ERROR_MESSAGE("Out of memory");
