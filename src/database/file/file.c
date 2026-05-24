@@ -179,9 +179,8 @@ int save_data(const uint32_t server_age) {
 
   memset(block, 0, block_capacity);
 
-  // length represents filled block size
-  // total represents total calculated file size
-  off_t block_size, size = 0;
+  off_t block_size; // `block_size` represents filled block size
+  off_t size = 0;   // `size` represents total calculated file size
   generate_headers(block, server_age);
 
   {
@@ -253,6 +252,10 @@ int save_data(const uint32_t server_age) {
 
       State state = { size, block_size, block_capacity, data, block };
       foreach_hashtable(database->data, dump_into_file, &state);
+
+      // required to exchange, `size` and `block_size` will be used after
+      size = state.size;
+      block_size = state.block_size;
 
       free(data);
       data = NULL;
