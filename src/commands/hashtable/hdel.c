@@ -18,8 +18,8 @@ static string_t run(struct CommandEntry *entry) {
   HashTable *table;
 
   if (kv) {
-    if (kv->value->type == TELLY_HASHTABLE) {
-      table = kv->value->data;
+    if (kv->value.type == TELLY_HASHTABLE) {
+      table = kv->value.data;
     } else {
       PASS_NO_CLIENT(entry->client);
       return INVALID_TYPE_ERROR("HDEL");

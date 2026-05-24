@@ -17,10 +17,10 @@ static string_t run(struct CommandEntry *entry) {
   const KeyValue *kv = get_data(entry->database, entry->args->data[0]);
   if (!kv)
     return RESP_NULL(entry->client->protover);
-  if (kv->value->type != TELLY_HASHTABLE)
+  if (kv->value.type != TELLY_HASHTABLE)
     return INVALID_TYPE_ERROR("HLEN");
 
-  const HashTable *table = kv->value->data;
+  const HashTable *table = kv->value.data;
 
   const size_t nbytes = sprintf(entry->client->write_buf, (
     "*2\r\n"

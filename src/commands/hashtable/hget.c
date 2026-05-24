@@ -18,10 +18,10 @@ static string_t run(struct CommandEntry *entry) {
   const KeyValue *kv = get_data(entry->database, entry->args->data[0]);
   if (!kv)
     return RESP_NULL(entry->client->protover);
-  if (kv->value->type != TELLY_HASHTABLE)
+  if (kv->value.type != TELLY_HASHTABLE)
     return INVALID_TYPE_ERROR("HGET");
 
-  HashTable *table = (HashTable *) kv->value->data;
+  HashTable *table = (HashTable *) kv->value.data;
   char *name = entry->args->data[1].value;
 
   const HashTableNameValue *field = (HashTableNameValue *) get_from_hashtable(table, name);

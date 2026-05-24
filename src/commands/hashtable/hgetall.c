@@ -84,11 +84,11 @@ static string_t run(struct CommandEntry *entry) {
     }
   }
 
-  if (kv->value->type != TELLY_HASHTABLE) {
+  if (kv->value.type != TELLY_HASHTABLE) {
     return INVALID_TYPE_ERROR("HGETALL");
   }
 
-  HashTable *table = (HashTable *) kv->value->data;
+  HashTable *table = (HashTable *) kv->value.data;
   const enum ProtocolVersion protover = entry->client->protover;
 
   char *data = entry->client->write_buf;
