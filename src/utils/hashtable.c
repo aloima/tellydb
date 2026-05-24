@@ -151,7 +151,7 @@ HashTableElement *get_from_hashtable(HashTable *table, void *key) {
   const uint64_t start = table->hash(key) % capacity;
   uint64_t index = start;
 
-  while (table->key_compare(table->elements[index].key, key)) {
+  while (!table->key_compare(table->elements[index].key, key)) {
     if (table->elements[index].key == NULL)
       return NULL;
 

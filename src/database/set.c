@@ -17,7 +17,8 @@ KeyValue *set_data(Database *database, KeyValue *kv, string_t key, void *data, c
   }
 
   kv = malloc(sizeof(KeyValue));
-  if (kv == NULL) return NULL;
+  if (kv == NULL)
+    return NULL;
 
   set_kv(kv, key, data, type, expire_at);
 
