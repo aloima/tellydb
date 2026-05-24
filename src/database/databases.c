@@ -34,7 +34,8 @@ Database *create_database(const string_t name, const uint64_t capacity) {
 
   if (databases == NULL) {
     databases = ll_create();
-    if (databases == NULL) goto CLEANUP;
+    if (databases == NULL)
+      goto CLEANUP;
   }
 
   if (ll_insert_back(databases, database) == NULL)
