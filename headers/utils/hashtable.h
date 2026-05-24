@@ -26,7 +26,7 @@ void destroy_hashtable(HashTable *table, void (*destroy_element)(HashTableElemen
 
 void foreach_hashtable(HashTable *table, void (*procedure)(HashTableElement element, void *external), void *external);
 
-int insert_into_hashtable(HashTable *table, void *key, void *value);
+HashTableElement *insert_into_hashtable(HashTable *table, void *key, void *value);
 bool delete_from_hashtable(HashTable *table, void *key);
 HashTableElement *get_from_hashtable(HashTable *table, void *key);
 bool exist_in_hashtable(HashTable *table, void *key);

@@ -53,10 +53,10 @@ static int grow_hashtable(HashTable *table) {
   return 1;
 }
 
-int insert_into_hashtable(HashTable *table, void *key, void *value) {
+HashTableElement *insert_into_hashtable(HashTable *table, void *key, void *value) {
   // Guaranteed that capacity is enough
   if (grow_hashtable(table) < 0)
-    return -2;
+    return NULL;
 
   const uint64_t capacity = table->size.capacity;
   const uint64_t start = table->hash(key) % capacity;
@@ -64,7 +64,7 @@ int insert_into_hashtable(HashTable *table, void *key, void *value) {
 
   while (table->elements[index].key != NULL) {
     if (table->elements[index].key == key)
-      return -1;
+      return &table->elements[index];
 
     index = (index + 1) % capacity;
   }
@@ -73,7 +73,7 @@ int insert_into_hashtable(HashTable *table, void *key, void *value) {
   table->elements[index].value = value;
   table->size.count += 1;
 
-  return 0;
+  return &table->elements[index];
 }
 
 bool delete_from_hashtable(HashTable *table, void *key) {
