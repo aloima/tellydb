@@ -52,6 +52,7 @@ void free_hashtablekeyvalue(HashTableElement element) {
   KeyValue *value = ((HashTableKeyValue *) &element)->value;
   free(value->key.value);
   free_value(value->value);
+  free(value);
 }
 
 void free_value(Value value) {

@@ -307,7 +307,7 @@ static size_t collect_database(Database **database, const int fd, char *block, c
     KeyValue *kv = malloc(sizeof(KeyValue));
     collected_bytes += collect_kv(kv, fd, block, block_size, at);
 
-    insert_into_hashtable((*database)->data, &kv->key, kv);
+    (void) insert_into_hashtable((*database)->data, &kv->key, kv);
   }
 
   return collected_bytes;
