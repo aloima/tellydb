@@ -2,7 +2,7 @@
 
 static int fd = -1;
 static bool saving = false;
-static uint16_t block_size;
+static uint16_t block_capacity;
 
 size_t read_file(const int fd, const off_t file_size, char *block, const uint16_t block_size, const uint16_t filled_block_size);
 
@@ -13,15 +13,15 @@ int open_database_fd(uint32_t *server_age) {
   stat(server->conf->data_file, &sostat);
 
   const off_t file_size = sostat.st_size;
-  block_size = sostat.st_blksize;
+  block_capacity = sostat.st_blksize;
 
   if (file_size != 0) {
     char *block;
 
-    if (posix_memalign((void **) &block, block_size, block_size) == 0) {
+    if (posix_memalign((void **) &block, block_capacity, block_capacity) == 0) {
       const clock_t start = clock();
 
-      if (read(fd, block, block_size) == -1) {
+      if (read(fd, block, block_capacity) == -1) {
         close(fd);
         free(block);
         write_log(LOG_ERR, "Cannot read headers because of OS-specific problem");
@@ -37,8 +37,8 @@ int open_database_fd(uint32_t *server_age) {
 
       memcpy(server_age, block + 2, 8);
 
-      const uint16_t filled_block_size = get_authorization_from_file(fd, block, block_size);
-      const size_t data_count = read_file(fd, file_size, block, block_size, filled_block_size);
+      const uint16_t filled_block_size = get_authorization_from_file(fd, block, block_capacity);
+      const size_t data_count = read_file(fd, file_size, block, block_capacity, filled_block_size);
       write_log(LOG_INFO,
         "Read database file in %.3f seconds. Loaded password count: %u, loaded data count: %d",
         ((float) clock() - start) / CLOCKS_PER_SEC, get_password_count(), data_count
@@ -73,10 +73,10 @@ int close_database_fd() {
 static inline off_t get_value_size(const enum TellyTypes type, void *value);
 
 static void get_hashtable_size(HashTableElement element, void *external) {
-  const Value *value = ((HashTableNameValue *) &element)->value->value;
+  const Value value = ((HashTableNameValue *) &element)->value->value;
   uint64_t *length = (uint64_t *) external;
 
-  *length += (1 + get_value_size(TELLY_STR, element.key) + get_value_size(value->type, value->data));
+  *length += (1 + get_value_size(TELLY_STR, element.key) + get_value_size(value.type, value.data));
 }
 
 static inline off_t get_value_size(const enum TellyTypes type, void *value) {
@@ -255,18 +255,18 @@ typedef struct Buffer {
 } Buffer;
 
 static void generate_hashtable_element(HashTableElement element, void *external) {
-  const Value *value = ((HashTableNameValue *) &element)->value->value;
+  const Value value = ((HashTableNameValue *) &element)->value->value;
 
   char *data = ((Buffer *) external)->data;
   off_t *len = ((Buffer *) external)->len;
 
-  data[*len] = value->type;
+  data[*len] = value.type;
   *len += 1;
 
   generate_string_value(&data, len, (string_t *) element.key);
 
-  switch (value->type) {
-    GENERATE_PRIMITIVE_VALUES(&data, *len, value->data);
+  switch (value.type) {
+    GENERATE_PRIMITIVE_VALUES(&data, *len, value.data);
 
     default:
       break;
@@ -363,11 +363,79 @@ static inline void log_save_io_error(const char *what) {
 }
 
 static inline void get_maximum_keyvalue_size(HashTableElement element, void *external) {
-  const Value *value = ((HashTableKeyValue *) &element)->value->value;
+  const Value value = ((HashTableKeyValue *) &element)->value->value;
   uint64_t *max_size = (uint64_t *) external;
 
-  const uint64_t size = (1 + get_value_size(TELLY_STR, (string_t *) element.key) + get_value_size(value->type, value->data));
+  const uint64_t size = (1 + get_value_size(TELLY_STR, (string_t *) element.key) + get_value_size(value.type, value.data));
   *max_size = ((*max_size > size) ? *max_size : size);
+}
+
+typedef struct Buffer {
+  char *data;
+  off_t *len;
+} Buffer;
+
+typedef struct State {
+  off_t size; // Represents calculated file size
+  off_t block_size;
+  const off_t block_capacity;
+
+  char *data; // Represents buffer that KeyValue will be written into individually
+  char *block; // Represents buffer will be written into database file
+} State;
+
+static inline void interrupt_dumping_into_file(State *state) {
+  if (state->data) free(state->data);
+  if (state->block) free(state->block);
+  saving = false;
+  close_database_fd();
+}
+
+static inline void dump_into_file(HashTableElement element, void *external) {
+  KeyValue *kv = ((HashTableKeyValue *) &element)->value;
+  State *state = (State *) external;
+
+  char *block = state->block;
+  char *data = state->data;
+  const off_t block_capacity = state->block_capacity;
+
+  const off_t kv_size = generate_value(&data, kv);
+  const uint32_t block_count = ((state->block_size + kv_size + block_capacity - 1) / block_capacity);
+
+  if (block_count != 1) {
+    off_t remaining = kv_size;
+    const uint16_t complete = (block_capacity - state->block_size);
+
+    memcpy(block + state->block_size, data, complete);
+
+    if (write(fd, block, block_capacity) == -1) {
+      interrupt_dumping_into_file(state);
+      return;
+    }
+
+    remaining -= complete;
+
+    if (remaining > block_capacity) {
+      do {
+        memcpy(block, data + (kv_size - remaining), block_capacity);
+
+        if (write(fd, block, block_capacity) == -1) {
+          interrupt_dumping_into_file(state);
+          return;
+        }
+
+        remaining -= block_capacity;
+      } while (remaining > block_capacity);
+    }
+
+    state->block_size = remaining;
+    memcpy(block, data + (kv_size - remaining), state->block_size);
+  } else {
+    memcpy(block + state->block_size, data, kv_size);
+    state->block_size += kv_size;
+  }
+
+  state->size += kv_size;
 }
 
 int save_data(const uint32_t server_age) {
@@ -381,41 +449,41 @@ int save_data(const uint32_t server_age) {
 
   ASSERT(lseek(fd, 0, SEEK_SET), !=, -1);
 
-  if (posix_memalign((void **) &block, block_size, block_size) != 0) {
+  if (posix_memalign((void **) &block, block_capacity, block_capacity) != 0) {
     write_log(LOG_ERR, "Cannot allocate aligned memory for database block, out of memory.");
     block = NULL; // posix_memalign leaves *memptr undefined on failure
     goto cleanup;
   }
 
-  memset(block, 0, block_size);
+  memset(block, 0, block_capacity);
 
   // length represents filled block size
   // total represents total calculated file size
-  off_t length, total = 0;
+  off_t block_size, size = 0;
   generate_headers(block, server_age);
 
   {
     struct Password **passwords = get_passwords();
     const uint32_t password_count = get_password_count();
     const uint8_t password_count_byte_count = (password_count != 0) ? (log2(password_count) + 1) : 0;
-    length = 11 + password_count_byte_count;
+    block_size = 11 + password_count_byte_count;
 
     block[10] = password_count_byte_count;
     memcpy(block + 11, &password_count, password_count_byte_count);
 
     if (password_count == 0) {
-      total += length;
+      size += block_size;
     }
 
     for (uint32_t i = 0; i < password_count; ++i) {
       struct Password *password = passwords[i];
-      const uint32_t new_length = (length + 49);
+      const uint32_t new_length = (block_size + 49);
 
-      if (new_length > block_size) {
-        const uint32_t allowed = (new_length - block_size);
-        memcpy(block + length, password->data, allowed);
+      if (new_length > block_capacity) {
+        const uint32_t allowed = (new_length - block_capacity);
+        memcpy(block + block_size, password->data, allowed);
 
-        if (write(fd, block, block_size) == -1) {
+        if (write(fd, block, block_capacity) == -1) {
           log_save_io_error("Cannot write passwords block to database file");
           io_failed = true;
           goto cleanup;
@@ -424,13 +492,13 @@ int save_data(const uint32_t server_age) {
         const uint32_t remaining = (48 - allowed); // remaining byte count except permissions
         memcpy(block, password->data, remaining);
         block[remaining] = password->permissions;
-        length = (remaining + 1);
-        total += block_size + length;
+        block_size = (remaining + 1);
+        size += block_capacity + block_size;
       } else {
-        memcpy(block + length, password->data, 48);
-        block[length + 48] = password->permissions;
-        length = new_length;
-        total += length;
+        memcpy(block + block_size, password->data, 48);
+        block[block_size + 48] = password->permissions;
+        block_size = new_length;
+        size += block_size;
       }
     }
   }
@@ -441,11 +509,11 @@ int save_data(const uint32_t server_age) {
     while (node) {
       Database *database = (Database *) node->data;
       const uint64_t capacity = database->data->size.capacity;
-      const uint64_t size = database->data->size.count;
+      const uint64_t count = database->data->size.count;
 
-      memcpy(block + length, &size, 8);
-      length += 8;
-      total += generate_string_value(&block, &length, &database->name) + 8;
+      memcpy(block + block_size, &count, 8);
+      block_size += 8;
+      size += generate_string_value(&block, &block_size, &database->name) + 8;
 
       uint64_t data_size = 0;
       foreach_hashtable(database->data, get_maximum_keyvalue_size, &data_size);
@@ -461,50 +529,8 @@ int save_data(const uint32_t server_age) {
         goto cleanup;
       }
 
-      for (uint32_t i = 0; i < capacity; ++i) {
-        struct KVPair *kv = database->data[i];
-        if (!kv) continue;
-
-        const off_t kv_size = generate_value(&data, kv);
-        const uint32_t block_count = ((length + kv_size + block_size - 1) / block_size);
-
-        if (block_count != 1) {
-          off_t remaining = kv_size;
-          const uint16_t complete = (block_size - length);
-
-          memcpy(block + length, data, complete);
-
-          if (write(fd, block, block_size) == -1) {
-            log_save_io_error("Cannot write KV block to database file");
-            io_failed = true;
-            goto cleanup;
-          }
-
-          remaining -= complete;
-
-          if (remaining > block_size) {
-            do {
-              memcpy(block, data + (kv_size - remaining), block_size);
-
-              if (write(fd, block, block_size) == -1) {
-                log_save_io_error("Cannot write KV continuation block to database file");
-                io_failed = true;
-                goto cleanup;
-              }
-
-              remaining -= block_size;
-            } while (remaining > block_size);
-          }
-
-          length = remaining;
-          memcpy(block, data + (kv_size - remaining), length);
-        } else {
-          memcpy(block + length, data, kv_size);
-          length += kv_size;
-        }
-
-        total += kv_size;
-      }
+      State state = { size, block_size, block_capacity, data, block };
+      foreach_hashtable(database->data, dump_into_file, &state);
 
       free(data);
       data = NULL;
@@ -512,15 +538,15 @@ int save_data(const uint32_t server_age) {
     }
   }
 
-  if (length != block_size) {
-    if (write(fd, block, block_size) == -1) {
+  if (block_size != block_capacity) {
+    if (write(fd, block, block_capacity) == -1) {
       log_save_io_error("Cannot write final block to database file");
       io_failed = true;
       goto cleanup;
     }
   }
 
-  if (ftruncate(fd, total) == -1) {
+  if (ftruncate(fd, size) == -1) {
     log_save_io_error("Cannot truncate database file to actual data size");
     io_failed = true;
     goto cleanup;
