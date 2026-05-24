@@ -22,7 +22,7 @@ static string_t run(struct CommandEntry *entry) {
     return INVALID_TYPE_ERROR("HGET");
 
   HashTable *table = (HashTable *) kv->value.data;
-  char *name = entry->args->data[1].value;
+  string_t *name = &entry->args->data[1];
 
   const HashTableNameValue *field = (HashTableNameValue *) get_from_hashtable(table, name);
   const Value value = field->value->value;
