@@ -20,7 +20,7 @@ static void dump_hashtable_keys(HashTableElement element, void *external) {
   uint64_t at = response->at;
 
   buf[at++] = '$';
-  response->at += ltoa(name->len, buf + at);
+  at += ltoa(name->len, buf + at);
   buf[at++] = '\r';
   buf[at++] = '\n';
 
