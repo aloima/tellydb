@@ -22,7 +22,7 @@ KeyValue *set_data(Database *database, KeyValue *kv, string_t key, void *data, c
 
   set_kv(kv, key, data, type, expire_at);
 
-  HashTableKeyValue *element = (HashTableKeyValue *) insert_into_hashtable(database->data, &key, kv);
+  HashTableKeyValue *element = (HashTableKeyValue *) insert_into_hashtable(database->data, &kv->key, kv);
   if (element == NULL)
     return NULL;
 
