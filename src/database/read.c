@@ -195,7 +195,7 @@ static size_t collect_kv(KeyValue *kv, const int fd, char *block, const uint16_t
         }
 
         NameValue *field = malloc(sizeof(NameValue));
-        collected_bytes += collect_string(&field->name, fd, block, block_size, at, false);
+        collected_bytes += collect_string(&field->name, fd, block, block_size, at, true);
         field->value.type = byte;
         collected_bytes += 1; // type byte
 
