@@ -187,6 +187,7 @@ void clear_hashtable(HashTable *table, void (*destroy_element)(HashTableElement 
 void destroy_hashtable(HashTable *table, void (*destroy_element)(HashTableElement element)) {
   if (destroy_element != NULL) {
     for (uint64_t i = 0; i < table->size.count; ++i) {
+      if (table->elements[i].key == NULL) continue;
       destroy_element(table->elements[i]);
     }
   }
