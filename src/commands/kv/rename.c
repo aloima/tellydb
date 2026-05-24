@@ -15,7 +15,7 @@ static string_t run(struct CommandEntry *entry) {
     return WRONG_ARGUMENT_ERROR("RENAME");
   }
 
-  const string_t search = entry->args->data[0];
+  string_t search = entry->args->data[0];
   const string_t name = entry->args->data[1];
 
   KeyValue *kv = get_data(entry->database, search);
@@ -24,7 +24,7 @@ static string_t run(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("The new key already exists");
   }
 
-  (void) delete_from_hashtable(entry->database->data, search.value);
+  (void) delete_from_hashtable(entry->database->data, &search);
 
   free(kv->key.value);
   kv->key.len = name.len;
