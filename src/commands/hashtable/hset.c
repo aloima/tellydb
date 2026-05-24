@@ -13,7 +13,15 @@ static inline bool insert_into_hashtable_in_database(HashTable *table, string_t 
   if (field == NULL)
     return false;
 
-  field->name = key;
+  field->name.len = key.len;
+  field->name.value = malloc(key.len + 1);
+  if (field->name.value == NULL) {
+    free(field);
+    return NULL;
+  }
+
+  strncpy(field->name.value, key.value, key.len);
+
   field->value.data = value;
   field->value.type = type;
 
