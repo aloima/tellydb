@@ -9,6 +9,9 @@ uint64_t string_hash(void *data) {
 }
 
 bool string_compare(void *string_a, void *string_b) {
+  if (string_a == NULL || string_b == NULL)
+    return NULL;
+
   string_t *a = (string_t *) string_a;
   string_t *b = (string_t *) string_b;
 
