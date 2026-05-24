@@ -21,11 +21,6 @@ static inline bool insert_into_hashtable_in_database(HashTable *table, string_t 
   return true;
 }
 
-uint64_t key_hash(void *data) {
-  string_t *key = (string_t *) data;
-  return OPENSSL_LH_strhash(key->value);
-}
-
 static string_t run(struct CommandEntry *entry) {
   if (entry->args->count == 1 || (entry->args->count - 1) % 2 != 0) {
     PASS_NO_CLIENT(entry->client);
@@ -44,7 +39,7 @@ static string_t run(struct CommandEntry *entry) {
       return INVALID_TYPE_ERROR("HSET");
     }
   } else {
-    table = create_hashtable(16, key_hash);
+    table = create_hashtable(16, string_hash);
     if (table == NULL) {
       PASS_NO_CLIENT(entry->client);
       return RESP_ERROR_MESSAGE("Out of memory");

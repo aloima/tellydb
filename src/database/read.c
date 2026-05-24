@@ -184,7 +184,7 @@ static size_t collect_kv(KeyValue *kv, const int fd, char *block, const uint16_t
       collect_bytes(fd, block, block_size, at, 4, &size);
       collected_bytes += 5; // includes size bytes and last (0x17) byte
 
-      HashTable *table = (value = create_hashtable(size, key_hash));
+      HashTable *table = (value = create_hashtable(size, string_hash));
 
       while (true) {
         uint8_t byte;

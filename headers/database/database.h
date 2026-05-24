@@ -15,7 +15,7 @@ typedef struct {
   HashTable *data;
 } Database;
 
-uint64_t key_hash(void *data);
+uint64_t string_hash(void *data);
 
 Database *create_database(const string_t name, const uint64_t capacity);
 LinkedList *get_databases();

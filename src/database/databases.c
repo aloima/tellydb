@@ -3,7 +3,7 @@
 static LinkedList *databases = NULL;
 static Database *main = NULL;
 
-uint64_t key_hash(void *data) {
+uint64_t string_hash(void *data) {
   string_t *key = (string_t *) data;
   return OPENSSL_LH_strhash(key->value);
 }
@@ -19,7 +19,7 @@ Database *create_database(const string_t name, const uint64_t capacity) {
   name_str = malloc(name.len + 1);
   if (name_str == NULL) goto CLEANUP;
 
-  data = create_hashtable(capacity, key_hash);
+  data = create_hashtable(capacity, string_hash);
   if (data == NULL) goto CLEANUP;
 
   if (databases == NULL) {
