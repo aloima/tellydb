@@ -165,7 +165,7 @@ HashTableElement *get_from_hashtable(HashTable *table, void *key) {
 }
 
 void foreach_hashtable(HashTable *table, void (*procedure)(HashTableElement element, void *external), void *external) {
-  for (uint64_t i = 0; i < table->size.count; ++i) {
+  for (uint64_t i = 0; i < table->size.capacity; ++i) {
     if (table->elements[i].key == NULL) continue;
     procedure(table->elements[i], external);
   }
@@ -186,7 +186,7 @@ void clear_hashtable(HashTable *table, void (*destroy_element)(HashTableElement 
 
 void destroy_hashtable(HashTable *table, void (*destroy_element)(HashTableElement element)) {
   if (destroy_element != NULL) {
-    for (uint64_t i = 0; i < table->size.count; ++i) {
+    for (uint64_t i = 0; i < table->size.capacity; ++i) {
       if (table->elements[i].key == NULL) continue;
       destroy_element(table->elements[i]);
     }

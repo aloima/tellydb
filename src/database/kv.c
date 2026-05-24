@@ -2,7 +2,8 @@
 
 int set_kv(KeyValue *kv, const string_t key, void *value, const enum TellyTypes type, const uint64_t *expire_at) {
   kv->key.value = malloc(key.len + 1);
-  if (!kv->key.value) return -1;
+  if (kv->key.value == NULL)
+    return -1;
 
   kv->key.len = key.len;
   memcpy(kv->key.value, key.value, key.len);
