@@ -121,10 +121,12 @@ LinkedListNode *ll_search_node(LinkedList *list, const LLSearchDirection dir, vo
 
       return NULL;
   }
+
+  return NULL;
 }
 
 LinkedListNode *ll_get_from_index(LinkedList *list, uint64_t index, const LLSearchDirection direction) {
-  LinkedListNode *node;
+  LinkedListNode *node = NULL;
 
   switch (direction) {
     case LL_FRONT:
