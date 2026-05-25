@@ -14,9 +14,9 @@ static string_t run(struct CommandEntry *entry) {
     return WRONG_ARGUMENT_ERROR("LINDEX");
   }
 
-  const struct KVPair *kv = get_data(entry->database, entry->args->data[0]);
+  const KeyValue *kv = get_data(entry->database, entry->args->data[0]);
 
-  if (!kv || kv->type != TELLY_LIST) {
+  if (!kv || kv->value.type != TELLY_LIST) {
     return INVALID_TYPE_ERROR("LINDEX");
   }
 
@@ -26,7 +26,7 @@ static string_t run(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("Second argument must be an integer");
   }
 
-  LinkedList *list = kv->value;
+  LinkedList *list = kv->value.data;
   LinkedListNode *node;
 
   if (index_str[0] == '-') {
@@ -52,8 +52,8 @@ static string_t run(struct CommandEntry *entry) {
     return RESP_NULL(entry->client->protover);
   }
 
-  const DatabaseListNode *data = (DatabaseListNode *) node->data;
-  return write_value(data->data, data->type, entry->client->protover, entry->client->write_buf);
+  const Value *value = (Value *) node->data;
+  return write_value(value->data, value->type, entry->client->protover, entry->client->write_buf);
 }
 
 const struct Command cmd_lindex = {

@@ -14,17 +14,19 @@ static string_t run(struct CommandEntry *entry) {
     return WRONG_ARGUMENT_ERROR("HLEN");
   }
 
-  const struct KVPair *kv = get_data(entry->database, entry->args->data[0]);
-  if (!kv) return RESP_NULL(entry->client->protover);
-  if (kv->type != TELLY_HASHTABLE) return INVALID_TYPE_ERROR("HLEN");
+  const KeyValue *kv = get_data(entry->database, entry->args->data[0]);
+  if (!kv)
+    return RESP_NULL(entry->client->protover);
+  if (kv->value.type != TELLY_HASHTABLE)
+    return INVALID_TYPE_ERROR("HLEN");
 
-  const struct HashTable *table = kv->value;
+  const HashTable *table = kv->value.data;
 
   const size_t nbytes = sprintf(entry->client->write_buf, (
     "*2\r\n"
-      ":%u\r\n"
-      ":%u\r\n"
-  ), table->size.used, table->size.capacity);
+      ":%lu\r\n"
+      ":%lu\r\n"
+  ), table->size.count, table->size.capacity);
 
   return CREATE_STRING(entry->client->write_buf, nbytes);
 }

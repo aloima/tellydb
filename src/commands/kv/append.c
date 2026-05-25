@@ -15,17 +15,17 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   const string_t key = entry->args->data[0];
-  const struct KVPair *kv = get_data(entry->database, key);
+  const KeyValue *kv = get_data(entry->database, key);
 
   if (kv) {
-    if (kv->type != TELLY_STR) {
+    if (kv->value.type != TELLY_STR) {
       PASS_NO_CLIENT(entry->client);
       return INVALID_TYPE_ERROR("APPEND");
     }
 
     const string_t arg = entry->args->data[1];
 
-    string_t *string = kv->value;
+    string_t *string = kv->value.data;
     string->value = realloc(string->value, string->len + arg.len);
     memcpy(string->value + string->len, arg.value, arg.len);
     string->len += arg.len;

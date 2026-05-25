@@ -3,9 +3,9 @@
 #include <stdint.h>
 
 typedef enum {
-  BGSAVE_ALREADY_SAVING,
-  BGSAVE_THREAD_FAILED,
-  BGSAVE_SUCCESSFUL
+  BGSAVE_THREAD_FAILED  = -1,
+  BGSAVE_ALREADY_SAVING = 0,
+  BGSAVE_SUCCESSFUL     = 1
 } BackgroundSavingStatus;
 
 int open_database_fd(uint32_t *server_age);

@@ -153,21 +153,18 @@ LinkedListNode *ll_get_from_index(LinkedList *list, uint64_t index, const LLSear
 
 void ll_free(LinkedList *list, void (*free_data)(void *data)) {
   LinkedListNode *front = list->begin;
-  LinkedListNode *back = list->end;
 
-  // Checking free_data existence is unperformant, but it's readable
-  while (front != NULL || back != NULL) {
-    if (front) {
-      if (free_data) free_data(front->data);
+  if (free_data) {
+    while (front != NULL) {
+      free_data(front->data);
       LinkedListNode *tmp = front;
-      front = front->prev;
+      front = front->next;
       free(tmp);
     }
-
-    if (back) {
-      if (free_data) free_data(back->data);
-      LinkedListNode *tmp = back;
-      back = back->next;
+  } else {
+    while (front != NULL) {
+      LinkedListNode *tmp = front;
+      front = front->next;
       free(tmp);
     }
   }

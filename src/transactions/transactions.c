@@ -100,6 +100,13 @@ void free_transaction_blocks() {
   free_tqueue(tx_queue);
 }
 
+static inline void check_kv_expiries(HashTableElement element, void *external) {
+  KeyValue *kv = ((HashTableKeyValue *) &element)->value;
+  Database *database = (Database *) external;
+
+  (void) check_kv_expiry(database, kv);
+}
+
 static inline string_t execute_transaction(Client *client, struct Password *password, Transaction *transaction) {
   struct Command *command = transaction->command;
   struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction->args, transaction->database, password);
@@ -116,14 +123,8 @@ static inline string_t execute_transaction(Client *client, struct Password *pass
     if (kv_count != 0) {
       string_t **keyspace = (string_t **) server->keyspace->elements;
 
-      for (uint64_t i = 0; i < kv_count; ++i) {
-        // *keyspace[i] can be used, it belongs to transactions->args[i] and it is not disappeared yet.
-        struct KVPair *kv = get_data(transaction->database, *keyspace[i]);
-        if (!kv) continue;
-
-        (void) check_kv_expiry(transaction->database, kv);
-      }
-
+      // *keyspace[i] can be used, it belongs to transactions->args[i] and it is not disappeared yet.
+      foreach_hashtable(transaction->database->data, check_kv_expiries, transaction->database);
       clear_vector(server->keyspace, NULL);
     }
   }

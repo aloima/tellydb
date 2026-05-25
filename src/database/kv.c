@@ -1,73 +1,31 @@
 #include <telly.h>
 
-static inline uint64_t add_to_index(const uint64_t index, const uint64_t capacity) {
-  return ((index + 1) % capacity);
-}
+int set_kv(KeyValue *kv, const string_t key, void *value, const enum TellyTypes type, const uint64_t *expire_at) {
+  kv->key.value = malloc(key.len + 1);
+  if (kv->key.value == NULL)
+    return -1;
 
-int set_kv(struct KVPair *kv, const string_t key, void *value, const enum TellyTypes type, const uint64_t *expire_at_p) {
-  kv->key.value = malloc(key.len);
-  if (!kv->key.value) return -1;
-
-  kv->hashed = OPENSSL_LH_strhash(key.value);
   kv->key.len = key.len;
   memcpy(kv->key.value, key.value, key.len);
+  kv->key.value[key.len] = '\0';
 
-  kv->type = type;
-  kv->value = value;
+  kv->value.data = value;
+  kv->value.type = type;
 
-  if (expire_at_p != NULL) {
-    kv->expire.enabled = true;
-    kv->expire.at = *expire_at_p;
+  if (expire_at != NULL) {
+    kv->expiry.enabled = true;
+    kv->expiry.at = *expire_at;
   } else {
-    kv->expire.enabled = false;
+    kv->expiry.enabled = false;
   }
 
   return 0;
 }
 
-bool delete_kv(Database *database, struct KVPair *kv) {
-  const uint64_t capacity = database->size.capacity;
-  const uint64_t start_idx = (kv->hashed % capacity);
-  uint64_t index = start_idx;
+int check_kv_expiry(Database *database, KeyValue *kv) {
+  typeof(kv->expiry) expiry = kv->expiry;
 
-  while (true) {
-    if (kv == database->data[index]) {
-      break;
-    }
-
-    index = add_to_index(index, capacity);
-
-    if (index == start_idx) {
-      return false;
-    }
-  }
-
-  free_kv(kv);
-  database->data[index] = NULL; // Needs it for uncollised indexes and filled next index
-
-  for (uint64_t i = add_to_index(index, capacity); i != index; i = add_to_index(index, capacity)) {
-    struct KVPair *pair = database->data[i];
-    const uint64_t prev = ((i == 0) ? (capacity - 1) : (i - 1));
-
-    if (!pair) {
-      database->size.stored -= 1;
-      database->data[prev] = NULL;
-      break;
-    }
-
-    // On collised index
-    if (index == (pair->hashed % capacity)) {
-      database->data[prev] = pair;
-    } else {
-      break;
-    }
-  }
-
-  return true;
-}
-
-int check_kv_expiry(Database *database, struct KVPair *kv) {
-  if (!kv->expire.enabled) return 0;
+  if (!expiry.enabled) return 0;
 
   struct timespec ts;
   if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
@@ -75,8 +33,8 @@ int check_kv_expiry(Database *database, struct KVPair *kv) {
 
   const uint64_t now = (ts.tv_sec * 1e3) + (ts.tv_nsec / 1e6);
 
-  if (kv->expire.at <= now) {
-    if (!delete_kv(database, kv))
+  if (expiry.at <= now) {
+    if (!delete_from_hashtable(database->data, kv->key.value))
       return -1;
 
     return 1;
@@ -85,49 +43,59 @@ int check_kv_expiry(Database *database, struct KVPair *kv) {
   return 0;
 }
 
-void free_databaselistnode(void *data) {
-  DatabaseListNode *value = (DatabaseListNode *) data;
-
-  free_value(value->type, value->data);
+void free_list_value(void *data) {
+  Value *value = (Value *) data;
+  free_value(*value);
   free(value);
 }
 
-void free_value(const enum TellyTypes type, void *value) {
+void free_hashtablekeyvalue(HashTableElement element) {
+  KeyValue *value = ((HashTableKeyValue *) &element)->value;
+  free(value->key.value);
+  free_value(value->value);
+  free(value);
+}
+
+void free_value(Value value) {
+  const enum TellyTypes type = value.type;
+  void *data = value.data;
+
   switch (type) {
     case TELLY_NULL:
       break;
 
     case TELLY_INT:
-      mpz_clear(*((mpz_t *) value));
-      free(value);
+      mpz_clear(*((mpz_t *) data));
+      free(data);
       break;
 
     case TELLY_DOUBLE:
-      mpf_clear(*((mpf_t *) value));
-      free(value);
+      mpf_clear(*((mpf_t *) data));
+      free(data);
       break;
 
     case TELLY_STR:
-      free(((string_t *) value)->value);
-      free(value);
+      free(((string_t *) data)->value);
+      free(data);
       break;
 
     case TELLY_BOOL:
-      free(value);
+      free(data);
       break;
 
     case TELLY_HASHTABLE:
-      free_hashtable(value);
+      destroy_hashtable(data, free_hashtablekeyvalue);
       break;
 
     case TELLY_LIST:
-      ll_free(value, free_databaselistnode);
+      ll_free(data, free_list_value);
+      free(data);
       break;
   }
 }
 
-void free_kv(struct KVPair *kv) {
-  free_value(kv->type, kv->value);
+void free_kv(KeyValue *kv) {
+  free_value(kv->value);
   free(kv->key.value);
   free(kv);
 }

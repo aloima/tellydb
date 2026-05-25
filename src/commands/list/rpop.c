@@ -14,24 +14,24 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   const string_t key = entry->args->data[0];
-  const struct KVPair *kv = get_data(entry->database, key);
+  const KeyValue *kv = get_data(entry->database, key);
 
   if (!kv) {
     PASS_NO_CLIENT(entry->client);
     return RESP_NULL(entry->client->protover);
   }
 
-  if (kv->type != TELLY_LIST) {
+  if (kv->value.type != TELLY_LIST) {
     PASS_NO_CLIENT(entry->client);
     return INVALID_TYPE_ERROR("RPOP");
   }
 
-  LinkedList *list = kv->value;
+  LinkedList *list = kv->value.data;
   LinkedListNode *node = list->end;
   string_t response = EMPTY_STRING();
 
   if (entry->client) {
-    DatabaseListNode *value = (DatabaseListNode *) list->end->data;
+    Value *value = (Value *) list->end->data;
     response = write_value(value->data, value->type, entry->client->protover, entry->client->write_buf);
   }
 
@@ -39,7 +39,7 @@ static string_t run(struct CommandEntry *entry) {
     delete_data(entry->database, key);
   } else {
     // Guaranteed that list exists and its size is least 1
-    ASSERT(ll_remove_back(list, free_databaselistnode), ==, true);
+    ASSERT(ll_remove_back(list, free_list_value), ==, true);
   }
 
   return response;

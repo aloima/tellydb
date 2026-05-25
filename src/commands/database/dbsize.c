@@ -12,7 +12,7 @@ static string_t run(struct CommandEntry *entry) {
     if (!database) return RESP_ERROR_MESSAGE("Database cannot be found");
   }
 
-  const size_t nbytes = create_resp_integer(entry->client->write_buf, database->size.stored);
+  const size_t nbytes = create_resp_integer(entry->client->write_buf, database->data->size.count);
   return CREATE_STRING(entry->client->write_buf, nbytes);
 }
 

@@ -7,6 +7,31 @@ static void get_keys(struct CommandEntry *entry) {
 
 
 
+typedef struct Response {
+  char *buf;
+  uint64_t at;
+} Response;
+
+static void dump_hashtable_keys(HashTableElement element, void *external) {
+  const string_t *name = (string_t *) element.key;
+  Response *response = (Response *) external;
+
+  char *buf = response->buf;
+  uint64_t at = response->at;
+
+  buf[at++] = '$';
+  at += ltoa(name->len, buf + at);
+  buf[at++] = '\r';
+  buf[at++] = '\n';
+
+  memcpy(buf + at, name->value, name->len);
+  at += name->len;
+  buf[at++] = '\r';
+  buf[at++] = '\n';
+
+  response->at = at;
+}
+
 static string_t run(struct CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
@@ -14,34 +39,25 @@ static string_t run(struct CommandEntry *entry) {
     return WRONG_ARGUMENT_ERROR("HKEYS");
   }
 
-  const struct KVPair *kv = get_data(entry->database, entry->args->data[0]);
-  if (!kv) return CREATE_STRING("*0\r\n", 4);
-  if (kv->type != TELLY_HASHTABLE) return INVALID_TYPE_ERROR("HKEYS");
+  const KeyValue *kv = get_data(entry->database, entry->args->data[0]);
+  if (!kv)
+    return CREATE_STRING("*0\r\n", 4);
+  if (kv->value.type != TELLY_HASHTABLE)
+    return INVALID_TYPE_ERROR("HKEYS");
 
-  const struct HashTable *table = kv->value;
-  char *response = entry->client->write_buf;
+  HashTable *table = (HashTable *) kv->value.data;
+  char *buf = entry->client->write_buf;
 
-  response[0] = '*';
-  uint64_t at = ltoa(table->size.used, response + 1) + 1;
-  response[at++] = '\r';
-  response[at++] = '\n';
+  buf[0] = '*';
+  uint64_t at = ltoa(table->size.count, buf + 1) + 1;
+  buf[at++] = '\r';
+  buf[at++] = '\n';
 
-  for (uint32_t i = 0; i < table->size.capacity; ++i) {
-    struct HashTableField *field = table->fields[i];
-    if (!field) continue;
+  Response response = {buf, at};
+  foreach_hashtable(table, dump_hashtable_keys, &response);
 
-    response[at++] = '$';
-    at += ltoa(field->name.len, response + at);
-    response[at++] = '\r';
-    response[at++] = '\n';
-
-    memcpy(response + at, field->name.value, field->name.len);
-    at += field->name.len;
-    response[at++] = '\r';
-    response[at++] = '\n';
-  }
-
-  return CREATE_STRING(response, at);
+  // `at` has old value, we copied `at` into `response`. So, we need to use that.
+  return CREATE_STRING(response.buf, response.at);
 }
 
 const struct Command cmd_hkeys = {

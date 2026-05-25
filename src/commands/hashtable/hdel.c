@@ -14,12 +14,12 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   const string_t key = entry->args->data[0];
-  struct KVPair *kv = get_data(entry->database, key);
-  struct HashTable *table;
+  KeyValue *kv = get_data(entry->database, key);
+  HashTable *table;
 
   if (kv) {
-    if (kv->type == TELLY_HASHTABLE) {
-      table = kv->value;
+    if (kv->value.type == TELLY_HASHTABLE) {
+      table = kv->value.data;
     } else {
       PASS_NO_CLIENT(entry->client);
       return INVALID_TYPE_ERROR("HDEL");
@@ -29,36 +29,30 @@ static string_t run(struct CommandEntry *entry) {
     return CREATE_STRING(":0\r\n", 4);
   }
 
-  if (!entry->client) {
-    for (uint32_t i = 1; i < entry->args->count; ++i) {
-      del_field_from_hashtable(table, entry->args->data[i]);
-    }
-
-    if (table->size.used == 0) {
-      delete_data(entry->database, key);
-    }
-
-    PASS_COMMAND();
-  }
-
   if (!(entry->password->permissions & P_READ)) {
-    return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_READ");
+    if (entry->client)
+      return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_READ");
+    else
+      PASS_COMMAND();
   }
 
-  const uint32_t old_size = table->size.used;
+  const uint32_t old_size = table->size.count;
 
   for (uint32_t i = 1; i < entry->args->count; ++i) {
-    del_field_from_hashtable(table, entry->args->data[i]);
+    delete_from_hashtable(table, &entry->args->data[i]);
   }
 
-  const uint32_t current_size = table->size.used;
+  const uint32_t current_size = table->size.count;
 
-  if (table->size.used == 0) {
+  if (table->size.count == 0) {
     delete_data(entry->database, key);
   }
 
-  const size_t nbytes = create_resp_integer(entry->client->write_buf, old_size - current_size);
-  return CREATE_STRING(entry->client->write_buf, nbytes);
+  if (entry->client) {
+    const size_t nbytes = create_resp_integer(entry->client->write_buf, old_size - current_size);
+    return CREATE_STRING(entry->client->write_buf, nbytes);
+  } else
+    PASS_COMMAND();
 }
 
 const struct Command cmd_hdel = {

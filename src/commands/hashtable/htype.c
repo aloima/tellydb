@@ -14,14 +14,21 @@ static string_t run(struct CommandEntry *entry) {
     return WRONG_ARGUMENT_ERROR("HTYPE");
   }
 
-  const struct KVPair *kv = get_data(entry->database, entry->args->data[0]);
-  if (!kv) return RESP_NULL(entry->client->protover);
-  if (kv->type != TELLY_HASHTABLE) return INVALID_TYPE_ERROR("HTYPE");
+  const KeyValue *kv = get_data(entry->database, entry->args->data[0]);
+  if (!kv)
+    return RESP_NULL(entry->client->protover);
+  if (kv->value.type != TELLY_HASHTABLE)
+    return INVALID_TYPE_ERROR("HTYPE");
 
-  const struct HashTableField *field = get_field_from_hashtable(kv->value, entry->args->data[1]);
-  if (!field) return RESP_NULL(entry->client->protover);
+  HashTable *table = (HashTable *) kv->value.data;
+  char *key = entry->args->data[1].value;
 
-  return get_resp_type_name(field->type);
+  const HashTableNameValue *field = (HashTableNameValue *) get_from_hashtable(table, key);
+  if (field == NULL)
+    return RESP_NULL(entry->client->protover);
+
+  const Value value = field->value->value;
+  return get_resp_type_name(value.type);
 }
 
 const struct Command cmd_htype = {

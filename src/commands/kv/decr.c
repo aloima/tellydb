@@ -38,7 +38,7 @@ static string_t run(struct CommandEntry *entry) {
 
     for (uint32_t i = 0; i < entry->args->count; ++i) {
       const string_t key = entry->args->data[i];
-      struct KVPair *result = get_data(entry->database, key);
+      KeyValue *result = get_data(entry->database, key);
       void *number;
       at += create_resp_string(entry->client->write_buf + at, key);
 
@@ -63,9 +63,9 @@ static string_t run(struct CommandEntry *entry) {
 
         at += create_resp_integer_mpz(entry->client->protover, entry->client->write_buf + at, *value);
       } else {
-        switch (result->type) {
+        switch (result->value.type) {
           case TELLY_INT: {
-            number = result->value;
+            number = result->value.data;
 
             mpz_t *value = number;
             mpz_sub_ui(*value, *value, 1);
@@ -74,7 +74,7 @@ static string_t run(struct CommandEntry *entry) {
           }
 
           case TELLY_DOUBLE: {
-            number = result->value;
+            number = result->value.data;
 
             mpf_t *value = number;
             mpf_sub_ui(*value, *value, 1);
@@ -91,7 +91,7 @@ static string_t run(struct CommandEntry *entry) {
   } else {
     for (uint32_t i = 0; i < entry->args->count; ++i) {
       const string_t key = entry->args->data[i];
-      struct KVPair *result = get_data(entry->database, key);
+      KeyValue *result = get_data(entry->database, key);
       void *number;
       at += create_resp_string(entry->client->write_buf + at, key);
 
@@ -108,9 +108,9 @@ static string_t run(struct CommandEntry *entry) {
           continue;
         }
       } else {
-        switch (result->type) {
+        switch (result->value.type) {
           case TELLY_INT: {
-            number = result->value;
+            number = result->value.data;
 
             mpz_t *value = number;
             mpz_sub_ui(*value, *value, 1);
@@ -118,7 +118,7 @@ static string_t run(struct CommandEntry *entry) {
           }
 
           case TELLY_DOUBLE: {
-            number = result->value;
+            number = result->value.data;
 
             mpf_t *value = number;
             mpf_sub_ui(*value, *value, 1);
