@@ -109,14 +109,14 @@ uint64_t create_resp_integer_mpf(const enum ProtocolVersion protover, char *buf,
   }
 
   for (uint64_t i = 0; i < len; ++i) {
-    if (i == exp) {
+    if (i == (const uint64_t) exp) {
       buf[nbytes++] = '.';
     }
 
     buf[nbytes++] = str[i];
   }
 
-  if (len == exp) { // if value is in double type, but it is integer like 4.000000
+  if (len == (const uint64_t) exp) { // if value is in double type, but it is integer like 4.000000
     nbytes = 1;
 
     if (mpf_fits_slong_p(value) == 0) {
