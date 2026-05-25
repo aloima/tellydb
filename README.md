@@ -49,12 +49,12 @@ curl -o- https://raw.githubusercontent.com/aloima/tellydb/master/install.sh | su
 + Install `OpenSSL` library and its development headers
 + Install `jemalloc` library and its development headers
 + Install `gmp` library and its development headers
-+ Install `cmake` to generate compile files
++ Install `meson` and `ninja` to configure and build the project
 + Install `gperf` to generate perfect hash method
-+ Create build directory using `mkdir build` and enter `cd build`
-+ Generate compilation files using `cmake ..`
-  - Compile inside the directory using `make telly`, then start the server using `./telly`
-  - Install your local machine using `sudo make install`, then start the server using `telly`
++ Configure the build directory using `meson setup build`
+  - Compile the project using `meson compile -C build`, then start the server using `./build/telly`
+  - Install to your local machine using `sudo meson install -C build`, then start the server using `telly`
+  - Run the test suite using `meson test -C build --verbose`
 
 ### Install via Docker:
 Pull docker image:

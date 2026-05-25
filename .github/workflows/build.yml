@@ -17,16 +17,13 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Dependencies
-      run: sudo apt-get install gperf libjemalloc2 libjemalloc-dev
+      run: sudo apt-get install gperf libjemalloc2 libjemalloc-dev meson ninja-build libssl-dev libgmp-dev
 
-    - name: Create build directory
-      run: mkdir build
-
-    - name: Run CMake
-      run: cmake -S . -B build
+    - name: Run Meson Setup
+      run: meson setup build --native-file meson/release.ini
 
     - name: Build
-      run: cmake --build build -- -j$(nproc)
+      run: meson compile -C build
 
     - name: Rename output file
       run: mv build/telly build/telly-linux-amd64
@@ -46,16 +43,16 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Dependencies
-      run: brew install gperf jemalloc
+      run: brew install gperf jemalloc meson ninja gmp openssl
 
-    - name: Create build directory
-      run: mkdir build
-
-    - name: Run CMake
-      run: cmake -S . -B build
+    - name: Run Meson Setup
+      run: |
+        export OPENSSL_ROOT="$(brew --prefix openssl 2>/dev/null || brew --prefix openssl@3 2>/dev/null || true)"
+        export PKG_CONFIG_PATH="${OPENSSL_ROOT}/lib/pkgconfig:$(brew --prefix jemalloc)/lib/pkgconfig:$(brew --prefix gmp)/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+        meson setup build --native-file meson/release.ini
 
     - name: Build
-      run: cmake --build build -- -j$(sysctl -n hw.logicalcpu)
+      run: meson compile -C build
 
     - name: Rename output file
       if: startsWith(github.ref, 'refs/tags/')

@@ -177,50 +177,50 @@ install_packages() {
       fi
 
       run_cmd "Updating Homebrew" brew update
-      run_cmd "Installing build dependencies" brew install git cmake gperf openssl jemalloc gmp pkg-config
+      run_cmd "Installing build dependencies" brew install git meson ninja gperf openssl jemalloc gmp pkg-config
       ;;
     apt)
       run_cmd "Updating apt package index" apt-get update
       run_cmd "Installing build dependencies" env DEBIAN_FRONTEND=noninteractive apt-get install -y \
-        git build-essential cmake gperf \
+        git build-essential meson ninja-build gperf \
         libssl-dev libjemalloc-dev libgmp-dev \
         pkg-config ca-certificates
       ;;
     dnf)
       run_cmd "Installing build dependencies" dnf install -y \
-        git gcc gcc-c++ make cmake gperf \
+        git gcc gcc-c++ meson ninja-build gperf \
         openssl-devel jemalloc-devel gmp-devel \
         pkgconf-pkg-config ca-certificates
       ;;
     yum)
       run_cmd "Installing EPEL (if needed)" yum install -y epel-release
       run_cmd "Installing build dependencies" yum install -y \
-        git gcc gcc-c++ make cmake gperf \
+        git gcc gcc-c++ meson ninja-build gperf \
         openssl-devel jemalloc-devel gmp-devel \
         pkgconfig ca-certificates
       ;;
     pacman)
       run_cmd "Installing build dependencies" pacman -Sy --noconfirm \
-        git base-devel cmake gperf \
+        git base-devel meson ninja gperf \
         openssl jemalloc gmp ca-certificates
       ;;
     apk)
       run_cmd "Installing build dependencies" apk add --no-cache \
-        git build-base cmake gperf \
+        git build-base meson ninja gperf \
         openssl-dev jemalloc-dev gmp-dev \
         pkgconf ca-certificates
       ;;
     zypper)
       run_cmd "Refreshing zypper repositories" zypper refresh
       run_cmd "Installing build dependencies" zypper install -y \
-        git gcc gcc-c++ make cmake gperf \
+        git gcc gcc-c++ meson ninja gperf \
         libopenssl-devel jemalloc-devel gmp-devel \
         pkg-config ca-certificates
       ;;
     *)
       error "Unsupported package manager."
       echo "Please install these dependencies manually:"
-      echo "  git cmake gperf openssl jemalloc gmp pkg-config"
+      echo "  git meson ninja gperf openssl jemalloc gmp pkg-config"
       exit 1
       ;;
   esac
@@ -262,12 +262,12 @@ build_native() {
   cd "${BUILD_DIR}"
 
   if is_macos; then
-    export OPENSSL_ROOT_DIR="$(brew --prefix openssl 2>/dev/null || brew --prefix openssl@3 2>/dev/null || true)"
-    export CMAKE_PREFIX_PATH="${OPENSSL_ROOT_DIR}:$(brew --prefix jemalloc):$(brew --prefix gmp)"
+    export OPENSSL_ROOT="$(brew --prefix openssl 2>/dev/null || brew --prefix openssl@3 2>/dev/null || true)"
+    export PKG_CONFIG_PATH="${OPENSSL_ROOT}/lib/pkgconfig:$(brew --prefix jemalloc)/lib/pkgconfig:$(brew --prefix gmp)/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
   fi
 
-  run_cmd "Configuring project with CMake" cmake ..
-  run_cmd "Compiling TellyDB" make -j"$(getconf _NPROCESSORS_ONLN 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)" telly
+  run_cmd "Configuring project with Meson" meson setup --reconfigure ..
+  run_cmd "Compiling TellyDB" meson compile
 
   if [[ ! -f "${BUILD_DIR}/telly" ]]; then
     error "Build finished, but the telly binary was not found."
