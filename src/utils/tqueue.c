@@ -84,7 +84,6 @@ uint64_t estimate_tqueue_size(const ThreadQueue *queue) {
 void *push_tqueue(ThreadQueue *queue, void *value) {
   __builtin_prefetch(value, 0, 3);
 
-  _Atomic(uint64_t) *qat = &queue->at;
   _Atomic(uint64_t) *qend = &queue->end;
   const uint64_t capacity = queue->capacity;
 
@@ -122,7 +121,6 @@ bool pop_tqueue(ThreadQueue *queue, void *dst) {
   __builtin_prefetch(dst, 1, 3);
 
   _Atomic(uint64_t) *qat = &queue->at;
-  _Atomic(uint64_t) *qend = &queue->end;
 
   ThreadQueueSlot *slot;
   const uint64_t mask = (queue->capacity - 1);
