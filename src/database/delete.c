@@ -1,7 +1,7 @@
 #include <telly.h>
 
 bool delete_data(Database *database, string_t key) {
-  const KeyValue *kv = get_data(database, key);
+  KeyValue *kv = get_data(database, key);
   if (kv == NULL)
     return false;
 
@@ -9,6 +9,8 @@ bool delete_data(Database *database, string_t key) {
   const bool deleted = delete_from_hashtable(database->data, &key);
   free(kv->key.value);
   free_value(kv->value);
+
+  free(kv);
 
   return true;
 }
