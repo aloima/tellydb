@@ -44,8 +44,9 @@ int check_kv_expiry(Database *database, KeyValue *kv) {
 }
 
 void free_list_value(void *data) {
-  Value *value = (Value *) value;
+  Value *value = (Value *) data;
   free_value(*value);
+  free(value);
 }
 
 void free_hashtablekeyvalue(HashTableElement element) {
