@@ -1,7 +1,7 @@
 #include <telly.h>
 #include "resp.h"
 
-const string_t get_resp_type_name(const enum TellyTypes type) {
+string_t get_resp_type_name(const enum TellyTypes type) {
   switch (type) {
     case TELLY_NULL:      return RESP_OK_MESSAGE("null");
     case TELLY_INT:       return RESP_OK_MESSAGE("integer");
