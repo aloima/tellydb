@@ -67,9 +67,9 @@ bool delete_from_vector(Vector *vector, void *element) {
   return false;
 }
 
-void foreach_vector(Vector *vector, void (*procedure)(void *element)) {
+void foreach_vector(Vector *vector, void (*procedure)(void *element, void *external), void *external) {
   for (uint64_t i = 0; i < vector->size.count; ++i) {
-    procedure(vector->elements[i]);
+    procedure(vector->elements[i], external);
   }
 }
 
@@ -86,7 +86,7 @@ bool any_in_vector(Vector *vector, bool (*procedure)(void *element)) {
 
 void clear_vector(Vector *vector, void (*destroy_element)(void *element)) {
   if (destroy_element != NULL)
-    foreach_vector(vector, destroy_element);
+    foreach_vector(vector, (void (*)(void *element, void *)) destroy_element, NULL);
 
   const uint64_t capacity = vector->size.capacity;
   vector->size.count = 0;
@@ -98,7 +98,7 @@ void clear_vector(Vector *vector, void (*destroy_element)(void *element)) {
 
 void destroy_vector(Vector *vector, void (*destroy_element)(void *element)) {
   if (destroy_element != NULL)
-    foreach_vector(vector, destroy_element);
+    foreach_vector(vector, (void (*)(void *element, void *)) destroy_element, NULL);
 
   free(vector->elements);
   free(vector);
