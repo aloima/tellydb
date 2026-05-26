@@ -69,14 +69,14 @@ static inline int accept_client() {
 // TODO: thread-race for transactions, some executions will not be executed for inline commands
 void handle_events() {
   const uint32_t event_capacity = server->conf->max_clients + 2; // sockfd + empty for safety
-  event_t events[256];
+  event_t events[event_capacity];
 
   const int sockfd = server->sockfd;
   const int eventfd = server->eventfd;
   struct Command *commands = server->commands;
 
   while (!server->closed) {
-    const int nfds = WAIT_EVENTS(eventfd, events, 256, -1);
+    const int nfds = WAIT_EVENTS(eventfd, events, event_capacity, -1);
 
     for (int i = 0; i < nfds; ++i) {
       __builtin_prefetch(&events[i + 1], 0, 0);
