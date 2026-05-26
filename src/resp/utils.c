@@ -11,6 +11,8 @@ string_t get_resp_type_name(const enum TellyTypes type) {
     case TELLY_LIST:      return RESP_OK_MESSAGE("list");
     case TELLY_BOOL:      return RESP_OK_MESSAGE("boolean");
   }
+
+  unreachable();
 }
 
 bool check_crlf(Client *client, char *buf, int32_t *at, int32_t *size) {

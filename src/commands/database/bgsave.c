@@ -22,6 +22,8 @@ static string_t run(struct CommandEntry *entry) {
     case BGSAVE_SUCCESSFUL:
       return RESP_OK();
   }
+
+  unreachable();
 }
 
 const struct Command cmd_bgsave = {

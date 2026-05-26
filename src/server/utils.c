@@ -9,6 +9,8 @@ string_t write_value(void *value, const enum TellyTypes type, const enum Protoco
 
         case RESP3:
           return CREATE_STRING("_\r\n", 3);
+
+        default: unreachable();
       }
 
     case TELLY_INT: {
@@ -46,6 +48,8 @@ string_t write_value(void *value, const enum TellyTypes type, const enum Protoco
           } else {
             return CREATE_STRING("#f\r\n", 4);
           }
+
+        default: unreachable();
       }
     }
 
@@ -55,6 +59,8 @@ string_t write_value(void *value, const enum TellyTypes type, const enum Protoco
     case TELLY_LIST:
       return RESP_OK_MESSAGE("list");
   }
+
+  unreachable();
 }
 
 int read_from_socket(Client *client, char *buf, const size_t nbytes) {

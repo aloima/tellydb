@@ -58,9 +58,11 @@ int main(int argc, char *argv[]) {
         fputs("Invalid argument, use help command\n", stderr);
         return EXIT_FAILURE;
       }
+
+      unreachable();
     }
 
-    case 3:
+    case 3: {
       if (streq(argv[1], "config")) {
         Config *config = get_config(argv[2]);
         start_server(config);
@@ -69,6 +71,9 @@ int main(int argc, char *argv[]) {
         fputs("Invalid argument usage, use help command\n", stderr);
         return EXIT_FAILURE;
       }
+
+      unreachable();
+    }
 
     default:
       fputs("Invalid argument count, use help command\n", stderr);
