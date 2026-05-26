@@ -8,7 +8,6 @@ static void get_keys(struct CommandEntry *entry) {
 
 
 static inline bool insert_into_hashtable_in_database(HashTable *table, string_t key, void *value, enum TellyTypes type) {
-  Value _value = { value, type };
   NameValue *field = malloc(sizeof(NameValue));
   if (field == NULL)
     return false;

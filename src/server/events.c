@@ -73,7 +73,6 @@ void handle_events() {
 
   const int sockfd = server->sockfd;
   const int eventfd = server->eventfd;
-  struct Command *commands = server->commands;
 
   while (!server->closed) {
     const int nfds = WAIT_EVENTS(eventfd, events, event_capacity, -1);
@@ -94,9 +93,10 @@ void handle_events() {
       }
 
       Client *client = GET_EVENT_DATA(events[i]);
-      int io_thread_idx = add_io_request(IOOP_READ, client, EMPTY_STRING());
+      (void) add_io_request(IOOP_READ, client, EMPTY_STRING());
 
-      if (IS_CONNECTION_CLOSED(events[i])) add_io_request(IOOP_TERMINATE, client, EMPTY_STRING());
+      if (IS_CONNECTION_CLOSED(events[i]))
+        (void) add_io_request(IOOP_TERMINATE, client, EMPTY_STRING());
     }
   }
 }

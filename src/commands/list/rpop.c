@@ -27,7 +27,6 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   LinkedList *list = kv->value.data;
-  LinkedListNode *node = list->end;
   string_t response = EMPTY_STRING();
 
   if (entry->client) {

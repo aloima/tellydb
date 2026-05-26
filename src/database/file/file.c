@@ -229,7 +229,6 @@ int save_data(const uint32_t server_age) {
 
     while (node) {
       Database *database = (Database *) node->data;
-      const uint64_t capacity = database->data->size.capacity;
       const uint64_t count = database->data->size.count;
 
       memcpy(block + block_size, &count, 8);

@@ -24,7 +24,6 @@ typedef struct Response {
 } Response;
 
 static void dump_hashtable(HashTableElement element, void *external) {
-  string_t *name = (string_t *) element.key;
   const Value value = ((NameValue *) element.value)->value;
 
   Response *response = (Response *) external;
