@@ -40,5 +40,6 @@ const struct Command cmd_hlen = {
   .flags.value = CMD_FLAG_ACCESS_DATABASE,
   .subcommands = NULL,
   .subcommand_count = 0,
-  .run = run
+  .run = run,
+  .get_keys = get_keys
 };
