@@ -51,18 +51,20 @@ int write_to_socket(Client *client, char *buf, const size_t nbytes);
 
   #define GET_EVENT_FD(event) (event).ident
 
-  #define WAIT_EVENTS(eventfd, events, count, timeout_ms) ({ \
-    struct timespec ts;                                      \
-    struct timespec *ts_ptr = NULL;                          \
-                                                             \
-    if ((timeout_ms) >= 0) {                                 \
-      ts.tv_sec = (timeout_ms) / 1000;                       \
-      ts.tv_nsec = ((timeout_ms) % 1000) * 1000000L;         \
-      ts_ptr = &ts;                                          \
-    }                                                        \
-                                                             \
-    kevent((eventfd), NULL, 0, (events), (count), ts_ptr);   \
-  })
+  #define WAIT_EVENTS(eventfd, events, count, timeout_ms) (__extension__ \
+    ({                                                                   \
+      struct timespec ts;                                                \
+      struct timespec *ts_ptr = NULL;                                    \
+                                                                         \
+      if ((timeout_ms) >= 0) {                                           \
+        ts.tv_sec = (timeout_ms) / 1000;                                 \
+        ts.tv_nsec = ((timeout_ms) % 1000) * 1000000L;                   \
+        ts_ptr = &ts;                                                    \
+      }                                                                  \
+                                                                         \
+      kevent((eventfd), NULL, 0, (events), (count), ts_ptr)              \
+    })                                                                   \
+  )
 
   #define GET_EVENT_DATA(event) (event).udata
   #define IS_CONNECTION_CLOSED(event) ((event).flags & EV_EOF)
