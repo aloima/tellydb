@@ -157,21 +157,27 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
 }
 
 void save_and_close_logs() {
-  if (fd == -1 || server->conf->max_log_lines == -1) return;
+  char *map = NULL;
   const off_t size = atomic_load_explicit(&new_size, memory_order_consume);
 
+  if (fd == -1 || server->conf->max_log_lines == -1)
+    goto CLEANUP;
+
   if (ftruncate(fd, size) == -1) {
-    if (errno == EIO) fprintf(stderr, "Cannot write logs to file, truncate I/O error.");
-    return;
+    if (errno == EIO)
+      fprintf(stderr, "Cannot write logs to file, truncate I/O error.");
+
+    goto CLEANUP;
   }
 
   #define CHECK_ERROR(ERROR_CODE, message) \
     case (ERROR_CODE): \
       fprintf(stderr, (message)); \
-      return
+      goto CLEANUP
 
   off_t written = 0;
-  char *map = mmap(NULL, size + 1, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  map = mmap(NULL, size + 1, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
   if (map == MAP_FAILED) {
     switch (errno) {
       CHECK_ERROR(ENOMEM, "Cannot write logs to file, out of memory.");
@@ -198,10 +204,12 @@ void save_and_close_logs() {
   ASSERT(estimate_tqueue_size(lines), ==, 0ULL);
 
 CLEANUP:
-  free_tqueue(lines);
-  ASSERT(msync(map, size + 1, MS_ASYNC), ==, 0);
+  if (map != NULL) {
+    ASSERT(msync(map, size + 1, MS_ASYNC), ==, 0);
+    ASSERT(munmap(map, size + 1), ==, 0);
+  }
 
-  ASSERT(munmap(map, size + 1), ==, 0);
+  free_tqueue(lines);
   ASSERT(close(fd), ==, 0);
 
   #undef CHECK_ERROR
