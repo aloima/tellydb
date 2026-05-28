@@ -62,7 +62,7 @@ int write_to_socket(Client *client, char *buf, const size_t nbytes);
         ts_ptr = &ts;                                                    \
       }                                                                  \
                                                                          \
-      kevent((eventfd), NULL, 0, (events), (count), ts_ptr)              \
+      kevent((eventfd), NULL, 0, (events), (count), ts_ptr);             \
     })                                                                   \
   )
 
