@@ -137,7 +137,7 @@ void write_log(enum LogLevel level, const char *fmt, ...) {
   if (conf->max_log_lines == -1) {
     ASSERT(write(fd, message, message_len), ==, message_len);
   } else {
-    if (estimate_tqueue_size(lines) >= conf->max_log_lines) {
+    if (estimate_tqueue_size(lines) >= (uint64_t) conf->max_log_lines) {
       char *line;
       ASSERT(pop_tqueue(lines, &line), ==, true);
 
@@ -195,7 +195,7 @@ void save_and_close_logs() {
   }
 
   map[size] = '\0';
-  ASSERT(estimate_tqueue_size(lines), ==, 0);
+  ASSERT(estimate_tqueue_size(lines), ==, 0ULL);
 
 CLEANUP:
   free_tqueue(lines);
