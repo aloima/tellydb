@@ -74,7 +74,7 @@ void *transaction_thread(void *arg) {
   sem_post(thread_sem);
 
   while (!atomic_load_explicit(&kill_pending, memory_order_relaxed)) {
-    WAIT_EVENTS(efd, events, 1, -1);
+    TEMP_FAILURE_RETRY(WAIT_EVENTS(efd, events, 1, -1));
 
     TransactionBlock *block;
     uint64_t count = consume_notifier(tx_notifier);

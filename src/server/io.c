@@ -125,7 +125,7 @@ void *io_thread_procedure(void *arg) {
   event_t events[1];
 
   while (true) {
-    WAIT_EVENTS(efd, events, 1, -1);
+    TEMP_FAILURE_RETRY(WAIT_EVENTS(efd, events, 1, -1));
     if (atomic_load_explicit(&thread->status, memory_order_relaxed) == IO_THREAD_PENDING_DESTROY) break;
 
     const uint64_t count = consume_notifier(thread->notifier);

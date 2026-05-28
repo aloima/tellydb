@@ -75,7 +75,7 @@ void handle_events() {
   const int eventfd = server->eventfd;
 
   while (!server->closed) {
-    const int nfds = WAIT_EVENTS(eventfd, events, event_capacity, -1);
+    const int nfds = TEMP_FAILURE_RETRY(WAIT_EVENTS(eventfd, events, event_capacity, -1));
 
     for (int i = 0; i < nfds; ++i) {
       __builtin_prefetch(&events[i + 1], 0, 0);

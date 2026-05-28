@@ -40,10 +40,10 @@
 #include <openssl/core_names.h> // IWYU pragma: export
 
 // To guarantee code execution
-#define ASSERT(actual, op, expected) do { \
-  typeof(actual) __actual_val = (actual);   \
-  typeof(expected) __expected_val = (expected);   \
-  assert(__actual_val op __expected_val);        \
+#define ASSERT(actual, op, expected) do {       \
+  typeof(actual) __actual_val = (actual);       \
+  typeof(expected) __expected_val = (expected); \
+  assert(__actual_val op __expected_val);       \
 } while (0)
 
 #define INVALID_TIME ((time_t) -1)
@@ -57,6 +57,18 @@
   #define cpu_relax() __asm__ __volatile__("pause\n" ::: "memory")
 #elif defined(__aarch64__)
   #define cpu_relax() __asm__ __volatile__("yield\n" ::: "memory")
+#endif
+
+#ifndef TEMP_FAILURE_RETRY
+#define TEMP_FAILURE_RETRY(expression) (__extension__ \
+  ({                                                  \
+    __typeof__(expression) __result;                  \
+    do {                                              \
+      __result = (long int) (expression);             \
+    } while (__result == -1 && errno == EINTR);       \
+    __result;                                         \
+  })                                                  \
+)
 #endif
 
 // Aligned memory allocation
