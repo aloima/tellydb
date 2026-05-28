@@ -4,7 +4,7 @@
 extern bool check_crlf(Client *client, char *buf, int32_t *at, int32_t *size);
 
 static inline bool get_resp_command_name(Arena *arena, Client *client, string_t *name, char *buf, int32_t *at, int32_t *size) {
-  uint64_t len = 0;
+  uint32_t len = 0;
   char *value;
 
   __builtin_prefetch(&name->len, 1, 0);

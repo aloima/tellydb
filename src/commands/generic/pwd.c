@@ -24,7 +24,7 @@ static inline PermissionValue read_permissions_value(struct CommandEntry *entry,
   char c;
 
   while ((c = *cval) != '\0') {
-    const enum Permissions data = permissions_mapping[c];
+    const enum Permissions data = permissions_mapping[(int8_t) c];
 
     if (data == 0) {
       permissions |= data;
