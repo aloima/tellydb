@@ -8,16 +8,17 @@ ARG GIT_VERSION
 RUN apk add --no-cache \
     openssl openssl-dev \
     musl-dev \
-    gcc make cmake \
+    gcc python3 py3-pip \
     gperf git \
     gmp gmp-dev \
     jemalloc jemalloc-dev
 
+RUN pip install --no-cache-dir --break-system-packages meson ninja
+
 COPY . .
 RUN mkdir -p build && \
-    cd build && \
-    cmake .. && \
-    make telly
+    meson setup build --native-file meson/release.ini && \
+    meson compile -C build
 
 FROM alpine
 WORKDIR /tellydb
