@@ -84,9 +84,14 @@ bool any_in_vector(Vector *vector, bool (*procedure)(void *element)) {
   return false;
 }
 
+static void destroy_element_layer(void *element, void *data) {
+  void (*destroy_element)(void *element) = (void (*)(void *element)) data;
+  destroy_element(element);
+}
+
 void clear_vector(Vector *vector, void (*destroy_element)(void *element)) {
   if (destroy_element != NULL)
-    foreach_vector(vector, (void (*)(void *element, void *)) destroy_element, NULL);
+    foreach_vector(vector, destroy_element_layer, destroy_element);
 
   const uint64_t capacity = vector->size.capacity;
   vector->size.count = 0;
@@ -98,7 +103,7 @@ void clear_vector(Vector *vector, void (*destroy_element)(void *element)) {
 
 void destroy_vector(Vector *vector, void (*destroy_element)(void *element)) {
   if (destroy_element != NULL)
-    foreach_vector(vector, (void (*)(void *element, void *)) destroy_element, NULL);
+    foreach_vector(vector, destroy_element_layer, destroy_element);
 
   free(vector->elements);
   free(vector);

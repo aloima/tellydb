@@ -171,9 +171,14 @@ void foreach_hashtable(HashTable *table, void (*procedure)(HashTableElement elem
   }
 }
 
+static void destroy_element_layer(HashTableElement element, void *data) {
+  void (*destroy_element)(HashTableElement element) = (void (*)(HashTableElement element)) data;
+  destroy_element(element);
+}
+
 void clear_hashtable(HashTable *table, void (*destroy_element)(HashTableElement element)) {
   if (destroy_element != NULL)
-    foreach_hashtable(table, (void (*)(HashTableElement element, void *)) destroy_element, NULL);
+    foreach_hashtable(table, destroy_element_layer, destroy_element);
 
   const uint64_t capacity = table->size.capacity;
   table->size.count = 0;
