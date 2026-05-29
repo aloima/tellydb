@@ -2,7 +2,7 @@
 An in-memory key-value database project.
 
 ## Features
-* To make it work by all redis clients, follows [RESP2/RESP3](https://redis.io/docs/latest/develop/reference/protocol-spec
+* To make it work by all redis clients, follows [RESP2/RESP3](https://redis.io/docs/latest/develop/reference/protocol-spec)
 * Fully configurable via [.tellyconf](./docs/FILE.md)
 * **Persistency**
   * Holds all databases inside [a file](./docs/FILE.md#database-file--tellydb)

@@ -24,8 +24,8 @@ static string_t run(struct CommandEntry *entry) {
 
   const size_t nbytes = sprintf(entry->client->write_buf, (
     "*2\r\n"
-      ":%lu\r\n"
-      ":%lu\r\n"
+      ":%" PRIu64 "\r\n"
+      ":%" PRIu64 "\r\n"
   ), table->size.count, table->size.capacity);
 
   return CREATE_STRING(entry->client->write_buf, nbytes);
