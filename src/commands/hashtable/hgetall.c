@@ -92,7 +92,7 @@ static string_t run(struct CommandEntry *entry) {
   const enum ProtocolVersion protover = entry->client->protover;
 
   char *data = entry->client->write_buf;
-  uint64_t at;
+  uint64_t at = 0;
 
   switch (protover) {
     case RESP2:

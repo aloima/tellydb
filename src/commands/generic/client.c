@@ -94,7 +94,7 @@ static inline string_t subcommand_info(struct CommandEntry *entry) {
   generate_date_string(connected_at, client->connected_at);
 
   const struct Command *command = atomic_load_explicit(&client->command->data, memory_order_relaxed);
-  char *command_name;
+  char *command_name = NULL;
 
   if (command != NULL) {
     const struct Subcommand *subcommand = atomic_load_explicit(&client->command->subcommand, memory_order_relaxed);
@@ -118,7 +118,7 @@ static inline string_t subcommand_info(struct CommandEntry *entry) {
     "Library version: %s\r\n"
     "Protocol: %s\r\n"
     "Permissions: %.*s\r\n"
-  ), client->id, client->connfd, connected_at, command_name, lib_name, lib_ver, protocol, permissions_len, permissions);
+  ), client->id, client->connfd, connected_at, (command_name ?: "unknown"), lib_name, lib_ver, protocol, permissions_len, permissions);
 
   const size_t nbytes = create_resp_string(entry->client->write_buf, CREATE_STRING(res, res_len));
   return CREATE_STRING(entry->client->write_buf, nbytes);
@@ -313,27 +313,25 @@ static string_t run(struct CommandEntry *entry) {
   const string_t subcommand = entry->args->data[0];
   to_uppercase(subcommand, subcommand.value);
 
-  string_t response;
-
   if (streq("ID", subcommand.value) && entry->client) {
-    response = subcommand_id(entry->client, entry->client->write_buf);
+    return subcommand_id(entry->client, entry->client->write_buf);
   } else if (streq("INFO", subcommand.value) && entry->client) {
-    response = subcommand_info(entry);
+    return subcommand_info(entry);
   } else if (streq("LIST", subcommand.value) && entry->client) {
-    response = subcommand_list(entry);
+    return subcommand_list(entry);
   } else if (streq("LOCK", subcommand.value)) {
-    response = subcommand_lock(entry);
+    return subcommand_lock(entry);
   } else if (streq("SETINFO", subcommand.value) && entry->client) {
-    response = subcommand_setinfo(entry);
+    return subcommand_setinfo(entry);
   } else if (streq("KILL", subcommand.value)) {
-    response = subcommand_kill(entry);
+    return subcommand_kill(entry);
   } else if (streq("UNLOCK", subcommand.value)) {
-    response = subcommand_unlock(entry);
+    return subcommand_unlock(entry);
   } else if (entry->client) {
-    response = INVALID_SUBCOMMAND_ERROR("CLIENT");
+    return INVALID_SUBCOMMAND_ERROR("CLIENT");
   }
 
-  return response;
+  return EMPTY_STRING();
 }
 
 static struct Subcommand subcommands[] = {

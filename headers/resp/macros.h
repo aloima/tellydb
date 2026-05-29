@@ -4,7 +4,7 @@
 #include "types.h"
 
 #define RESP_NULL(protover) ({\
-  string_t response;\
+  string_t response = EMPTY_STRING();\
   switch (protover) {\
     case RESP2:\
       response = CREATE_STRING("$-1\r\n", 5);\
