@@ -4,7 +4,8 @@
 static inline off_t get_value_size(const enum TellyTypes type, void *value);
 
 static inline void get_hashtable_size(HashTableElement element, void *external) {
-  const Value value = ((HashTableNameValue *) &element)->value->value;
+  const HashTableNameValue *field = (HashTableNameValue *) ((void *) &element);
+  const Value value = field->value->value;
   uint64_t *length = (uint64_t *) external;
 
   *length += (1 + get_value_size(TELLY_STR, element.key) + get_value_size(value.type, value.data));
@@ -72,7 +73,8 @@ static inline off_t get_value_size(const enum TellyTypes type, void *value) {
 }
 
 void get_maximum_keyvalue_size(HashTableElement element, void *external) {
-  const Value value = ((HashTableKeyValue *) &element)->value->value;
+  const HashTableKeyValue *kv = (HashTableKeyValue *) ((void *) &element);
+  const Value value = kv->value->value;
   uint64_t *max_size = (uint64_t *) external;
 
   const uint64_t size = (1 + get_value_size(TELLY_STR, (string_t *) element.key) + get_value_size(value.type, value.data));

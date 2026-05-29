@@ -50,7 +50,9 @@ void free_list_value(void *data) {
 }
 
 void free_hashtablekeyvalue(HashTableElement element) {
-  KeyValue *value = ((HashTableKeyValue *) &element)->value;
+  const HashTableKeyValue *kv = (HashTableKeyValue *) ((void *) &element);
+  KeyValue *value = kv->value;
+
   free(value->key.value);
   free_value(value->value);
   free(value);

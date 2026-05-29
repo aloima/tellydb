@@ -102,7 +102,8 @@ static inline void generate_boolean_value(char **data, off_t *len, const bool *b
 }
 
 static inline void generate_hashtable_element(HashTableElement element, void *external) {
-  const Value value = ((HashTableNameValue *) &element)->value->value;
+  const HashTableNameValue *field = (HashTableNameValue *) ((void *) &element);
+  const Value value = field->value->value;
 
   char *data = ((Buffer *) external)->data;
   off_t *len = ((Buffer *) external)->len;
