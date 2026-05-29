@@ -46,6 +46,14 @@
   assert(__actual_val op __expected_val);       \
 } while (0)
 
+#if !defined(unreachable)
+  #if defined(__has_builtin) && __has_builtin(__builtin_unreachable)
+    #define unreachable() __builtin_unreachable()
+  #else
+    #define unreachable() ((void) 0)
+  #endif
+#endif
+
 #define INVALID_TIME ((time_t) -1)
 
 #define VERY_LIKELY(x) (__builtin_expect_with_probability(!!(x), 1, 0.999))
