@@ -16,7 +16,7 @@ static string_t run(struct CommandEntry *entry) {
     return WRONG_ARGUMENT_ERROR("INCR");
   }
 
-  uint32_t at;
+  uint32_t at = 0;
 
   if (entry->client) {
     switch (entry->client->protover) {
