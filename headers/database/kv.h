@@ -4,6 +4,13 @@
 
 #include <stdint.h>
 
+typedef enum ExpiryState {
+  EXPIRY_SYSCALL_ERROR = -2,
+  EXPIRY_DELETING_ERROR = -1,
+  EXPIRY_NOT_EXPIRED = 0,
+  EXPIRY_EXPIRED = 1
+} ExpiryState;
+
 typedef struct Value {
   void *data;
   enum TellyTypes type;

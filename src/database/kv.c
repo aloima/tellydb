@@ -22,25 +22,25 @@ int set_kv(KeyValue *kv, const string_t key, void *value, const enum TellyTypes 
   return 0;
 }
 
-int check_kv_expiry(Database *database, KeyValue *kv) {
-  typeof(kv->expiry) expiry = kv->expiry;
-
-  if (!expiry.enabled) return 0;
+ExpiryState check_kv_expiry(Database *database, KeyValue *kv) {
+  Expiry expiry = kv->expiry;
+  if (!expiry.enabled)
+    return EXPIRY_NOT_EXPIRED;
 
   struct timespec ts;
   if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
-    return -2;
+    return EXPIRY_SYSCALL_ERROR;
 
   const uint64_t now = (ts.tv_sec * 1e3) + (ts.tv_nsec / 1e6);
 
   if (expiry.at <= now) {
     if (!delete_from_hashtable(database->data, &kv->key))
-      return -1;
+      return EXPIRY_DELETING_ERROR;
 
-    return 1;
+    return EXPIRY_EXPIRED;
   }
 
-  return 0;
+  return EXPIRY_NOT_EXPIRED;
 }
 
 void free_list_value(void *data) {
