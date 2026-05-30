@@ -1,6 +1,7 @@
 #pragma once
 
 #define DATABASE_INITIAL_SIZE 1024
+#define EXPIRY_RETRY_COUNT 32
 
 #include "file.h" // IWYU pragma: export
 #include "kv.h"   // IWYU pragma: export

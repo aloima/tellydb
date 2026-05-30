@@ -100,12 +100,24 @@ void free_transaction_blocks() {
   free_tqueue(tx_queue);
 }
 
-static inline void check_kv_expiries(void *element, void *external) {
+static inline bool check_kv_expiries(void *element, void *external) {
   Database *database = (Database *) external;
   const string_t *key = (string_t *) element;
   KeyValue *kv = get_data(database, *key);
+  if (kv == NULL)
+    return true;
 
-  (void) check_kv_expiry(database, kv);
+  const ExpiryState state = check_kv_expiry(database, kv);
+
+  switch (state) {
+    case EXPIRY_NOT_EXPIRED: case EXPIRY_EXPIRED:
+      return true;
+
+    case EXPIRY_SYSCALL_ERROR: case EXPIRY_DELETING_ERROR:
+      return false;
+  }
+
+  unreachable();
 }
 
 static inline string_t execute_transaction(Client *client, struct Password *password, Transaction *transaction) {
@@ -122,8 +134,15 @@ static inline string_t execute_transaction(Client *client, struct Password *pass
     const uint64_t kv_count = server->keyspace->size.count;
 
     if (kv_count != 0) {
-      // *server->keyspace[i] can be used, it belongs to transactions->args[i] and it is not disappeared yet.
-      foreach_vector(server->keyspace, check_kv_expiries, transaction->database);
+      int retry_count = 0;
+
+      while(retry_count++ < EXPIRY_RETRY_COUNT) {
+        // *server->keyspace[i] can be used, it belongs to transactions->args[i] and it is not disappeared yet.
+        const bool status = foreach_vector(server->keyspace, check_kv_expiries, transaction->database);
+        if (status)
+          break;
+      }
+
       clear_vector(server->keyspace, NULL);
     }
   }
