@@ -67,10 +67,13 @@ bool delete_from_vector(Vector *vector, void *element) {
   return false;
 }
 
-void foreach_vector(Vector *vector, void (*procedure)(void *element, void *external), void *external) {
+bool foreach_vector(Vector *vector, bool (*procedure)(void *element, void *external), void *external) {
   for (uint64_t i = 0; i < vector->size.count; ++i) {
-    procedure(vector->elements[i], external);
+    if (procedure(vector->elements[i], external) == false)
+      return false;
   }
+
+  return true;
 }
 
 bool any_in_vector(Vector *vector, bool (*procedure)(void *element)) {
@@ -84,9 +87,11 @@ bool any_in_vector(Vector *vector, bool (*procedure)(void *element)) {
   return false;
 }
 
-static void destroy_element_layer(void *element, void *data) {
+static bool destroy_element_layer(void *element, void *data) {
   void (*destroy_element)(void *element) = (void (*)(void *element)) data;
   destroy_element(element);
+
+  return true;
 }
 
 void clear_vector(Vector *vector, void (*destroy_element)(void *element)) {
