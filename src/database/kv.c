@@ -34,7 +34,7 @@ int check_kv_expiry(Database *database, KeyValue *kv) {
   const uint64_t now = (ts.tv_sec * 1e3) + (ts.tv_nsec / 1e6);
 
   if (expiry.at <= now) {
-    if (!delete_from_hashtable(database->data, kv->key.value))
+    if (!delete_from_hashtable(database->data, &kv->key))
       return -1;
 
     return 1;
