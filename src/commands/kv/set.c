@@ -36,11 +36,36 @@ typedef enum OptionParsingCode : uint8_t {
   INVALID_OPTIONS,
 
   MUST_BE_NUMBER,
+  MUST_BE_BOOLEAN,
+  MUST_BE_DOUBLE,
+  MUST_BE_INTEGER,
 
   SIMULTANEOUSLY_NX_XX,
 
   VALID_OPTIONS
 } OptionParsingCode;
+
+static constexpr string_t parsing_code_response[] = {
+  [MISSING_EX_VALUE]     = RESP_ERROR_MESSAGE("There is no specified value for 'EX' argument"),
+  [INVALID_EX_VALUE]     = RESP_ERROR_MESSAGE("The value of 'EX' argument must be an integer"),
+  [SYSCALL_ERROR_FOR_EX] = RESP_ERROR_MESSAGE("Cannot take the current time for 'EX' argument"),
+
+  [MISSING_PX_VALUE]     = RESP_ERROR_MESSAGE("There is no specified value for 'PX' argument"),
+  [INVALID_PX_VALUE]     = RESP_ERROR_MESSAGE("The value of 'PX' argument must be an integer"),
+  [SYSCALL_ERROR_FOR_PX] = RESP_ERROR_MESSAGE("Cannot take the current time for 'PX' argument"),
+
+  [INVALID_TYPE_IN_AS]   = RESP_ERROR_MESSAGE("'AS' argument must be followed by a valid type name for 'SET' command"),
+  [INVALID_OPTIONS]      = RESP_ERROR_MESSAGE("Invalid argument(s) for 'SET' command"),
+
+  [MUST_BE_NUMBER]       = RESP_ERROR_MESSAGE("The type must be double or integer for this value"),
+  [MUST_BE_BOOLEAN]      = RESP_ERROR_MESSAGE("The type must be boolean for this value"),
+  [MUST_BE_DOUBLE]       = RESP_ERROR_MESSAGE("The type must be double for this value"),
+  [MUST_BE_INTEGER]      = RESP_ERROR_MESSAGE("The type must be integer for this value"),
+
+  [SIMULTANEOUSLY_NX_XX] = RESP_ERROR_MESSAGE("XX and NX arguments cannot be specified simultaneously for 'SET' command"),
+
+  [VALID_OPTIONS]        = RESP_OK()
+};
 
 typedef enum ExpiryType : uint8_t {
   EXPIRY_EX,
@@ -178,10 +203,22 @@ static OptionParsingCode parse_options(struct CommandEntry *entry, Options *opti
 
           case TELLY_INT:
             response->is_integer = try_parse_integer(response->input);
+            if (!response->is_integer)
+              return MUST_BE_INTEGER;
+
             break;
 
           case TELLY_DOUBLE:
             response->is_double = try_parse_double(response->input);
+            if (!response->is_double)
+              return MUST_BE_DOUBLE;
+
+            break;
+
+          case TELLY_BOOL:
+            if (!response->is_true && !streq(response->input, "false"))
+              return MUST_BE_BOOLEAN;
+
             break;
 
           default:
@@ -214,45 +251,6 @@ static inline int take_as_string(void **value, const string_t data) {
   return 0;
 }
 
-static inline string_t take_error_of_option_code(const OptionParsingCode code) {
-  switch (code) {
-    case MISSING_EX_VALUE:
-      return RESP_ERROR_MESSAGE("There is no specified value for 'EX' argument");
-
-    case INVALID_EX_VALUE:
-      return RESP_ERROR_MESSAGE("The value of 'EX' argument must be an integer");
-
-    case SYSCALL_ERROR_FOR_EX:
-      return RESP_ERROR_MESSAGE("Cannot take the current time for 'EX' argument");
-
-    case MISSING_PX_VALUE:
-      return RESP_ERROR_MESSAGE("There is no specified value for 'PX' argument");
-
-    case INVALID_PX_VALUE:
-      return RESP_ERROR_MESSAGE("The value of 'PX' argument must be an integer");
-
-    case SYSCALL_ERROR_FOR_PX:
-      return RESP_ERROR_MESSAGE("Cannot take the current time for 'PX' argument");
-
-    case INVALID_TYPE_IN_AS:
-      return RESP_ERROR_MESSAGE("'AS' argument must be followed by a valid type name for 'SET' command");
-
-    case SIMULTANEOUSLY_NX_XX:
-      return RESP_ERROR_MESSAGE("XX and NX arguments cannot be specified simultaneously for 'SET' command");
-
-    case INVALID_OPTIONS:
-      return RESP_ERROR_MESSAGE("Invalid argument(s) for 'SET' command");
-
-    case MUST_BE_NUMBER:
-      return RESP_ERROR_MESSAGE("The type must be double or integer for this value");
-
-    case VALID_OPTIONS:
-      return EMPTY_STRING();
-  }
-
-  unreachable();
-}
-
 static string_t run(struct CommandEntry *entry) {
   if (entry->args->count < 2) {
     PASS_NO_CLIENT(entry->client);
@@ -275,7 +273,7 @@ static string_t run(struct CommandEntry *entry) {
 
   if (options_code != VALID_OPTIONS) {
     PASS_NO_CLIENT(entry->client);
-    const string_t error = take_error_of_option_code(options_code);
+    const string_t error = parsing_code_response[options_code];
     ASSERT(error.len, !=, 0U);
 
     return error;
@@ -338,12 +336,8 @@ static string_t run(struct CommandEntry *entry) {
         break;
     }
   } else if (response.is_true || streq(response.input, "false")) {
-    if (!options.as) {
+    if (!options.as)
       response.type = TELLY_BOOL;
-    } else if (response.type != TELLY_BOOL) {
-      PASS_NO_CLIENT(entry->client);
-      return RESP_ERROR_MESSAGE("The type must be boolean for this value");
-    }
 
     switch (response.type) {
       case TELLY_BOOL:
@@ -368,12 +362,8 @@ static string_t run(struct CommandEntry *entry) {
         break;
     }
   } else if (streq(response.input, "null")) {
-    if (!options.as) {
+    if (!options.as)
       response.type = TELLY_NULL;
-    } else if (response.type != TELLY_NULL) {
-      PASS_NO_CLIENT(entry->client);
-      return RESP_ERROR_MESSAGE("The type must be null for this value");
-    }
 
     switch (response.type) {
       case TELLY_NULL:
@@ -392,12 +382,8 @@ static string_t run(struct CommandEntry *entry) {
         break;
     }
   } else {
-    if (!options.as) {
+    if (!options.as)
       response.type = TELLY_STR;
-    } else if (response.type != TELLY_STR) {
-      PASS_NO_CLIENT(entry->client);
-      return RESP_ERROR_MESSAGE("The type must be string for this value");
-    }
 
     if (take_as_string(&value, entry->args->data[1]) == -1) {
       PASS_NO_CLIENT(entry->client);
