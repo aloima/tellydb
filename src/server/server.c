@@ -52,7 +52,11 @@ static inline void cleanup() {
   free_commands();
   free_clients();
 
-  if (server->ctx) SSL_CTX_free(server->ctx);
+  if (server->keyspace)
+    destroy_vector(server->keyspace, NULL);
+
+  if (server->ctx)
+    SSL_CTX_free(server->ctx);
 
   if (server->sockfd != -1)
     ASSERT(close(server->sockfd), ==, 0);
@@ -216,6 +220,7 @@ void start_server(Config *config) {
   CLEANUP_RETURN_IF(initialize_authorization() == -1);
   CLEANUP_RETURN_IF(open_database_fd(&server->age) == -1);
 
+  // includes references of CommandEntry arguments
   server->keyspace = create_vector(1024);
   CLEANUP_RETURN_LOG_IF(server->keyspace == NULL, "Cannot create keyspace.");
 
