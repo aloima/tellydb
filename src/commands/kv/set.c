@@ -7,6 +7,196 @@ static void get_keys(struct CommandEntry *entry) {
 }
 
 
+typedef struct Response {
+  const char *input;
+  enum TellyTypes type;
+
+  bool is_integer, is_double;
+  bool is_true;
+} Response;
+
+typedef struct Options {
+  bool get;
+  bool nx, xx;
+  bool as;
+
+  Expiry expiry;
+} Options;
+
+typedef enum OptionParsingCode : uint8_t {
+  MISSING_EX_VALUE,
+  INVALID_EX_VALUE,
+  SYSCALL_ERROR_FOR_EX,
+
+  MISSING_PX_VALUE,
+  INVALID_PX_VALUE,
+  SYSCALL_ERROR_FOR_PX,
+
+  INVALID_TYPE_IN_AS,
+  INVALID_OPTIONS,
+
+  MUST_BE_NUMBER,
+
+  SIMULTANEOUSLY_NX_XX,
+
+  VALID_OPTIONS
+} OptionParsingCode;
+
+typedef enum ExpiryType : uint8_t {
+  EXPIRY_EX,
+  EXPIRY_PX
+} ExpiryType;
+
+typedef struct TypeIdentifier {
+  const enum TellyTypes type;
+  const char **values;
+} TypeIdentifier;
+
+static inline OptionParsingCode parse_expiry_option(const ExpiryType type, Options *options, const char *input) {
+  static constexpr const OptionParsingCode errors[][2] = {
+    [EXPIRY_EX] = {INVALID_EX_VALUE, SYSCALL_ERROR_FOR_EX},
+    [EXPIRY_PX] = {INVALID_PX_VALUE, SYSCALL_ERROR_FOR_PX}
+  };
+
+  if (!try_parse_integer(input))
+    return errors[type][0]; // INVALID_VALUE
+
+  struct timespec expire;
+  if (clock_gettime(CLOCK_REALTIME, &expire) == -1)
+    return errors[type][1]; // SYSCALL_ERROR
+
+  const uint64_t value = strtoull(input, (char **) NULL, 10);
+  options->expiry.at = (expire.tv_sec * 1000) + (expire.tv_nsec / 1e6);
+
+  switch (type) {
+    case EXPIRY_EX:
+      options->expiry.at += (value * 1000);
+      break;
+
+    case EXPIRY_PX:
+      options->expiry.at += value;
+      break;
+  }
+
+  unreachable();
+}
+
+static inline void take_as_number(Response *response) {
+  response->is_integer = try_parse_integer(response->input);
+  response->is_double = try_parse_double(response->input);
+
+  if (response->is_integer) {
+    response->type = TELLY_INT;
+    return;
+  } else if (response->is_double) {
+    response->type = TELLY_DOUBLE;
+    return;
+  }
+
+  response->type = TELLY_UNKNOWN;
+}
+
+static OptionParsingCode parse_options(struct CommandEntry *entry, Options *options, Response *response) {
+  options->expiry.enabled = false;
+  options->as = false;
+
+  const TypeIdentifier types[] = {
+    {TELLY_STR,     (const char *[]) {"STR", "STRING", NULL}},
+    {TELLY_BOOL,    (const char *[]) {"BOOL", "BOOLEAN", NULL}},
+    {TELLY_NULL,    (const char *[]) {"NULL", NULL}},
+    {TELLY_INT,     (const char *[]) {"INT", "INTEGER", NULL}},
+    {TELLY_DOUBLE,  (const char *[]) {"DOUBLE", NULL}},
+    {TELLY_UNKNOWN, (const char *[]) {"NUM", "NUMBER", NULL}},
+  };
+
+  for (uint32_t i = 2; i < entry->args->count; ++i) {
+    const string_t arg = entry->args->data[i];
+    to_uppercase(arg, arg.value);
+
+    if (streq(arg.value, "GET")) {
+      options->get = true;
+    } else if (streq(arg.value, "NX")) {
+      if (options->xx)
+        return SIMULTANEOUSLY_NX_XX;
+
+      options->nx = true;
+    } else if (streq(arg.value, "XX")) {
+      if (options->nx)
+        return SIMULTANEOUSLY_NX_XX;
+
+      options->xx = true;
+    } else if (streq(arg.value, "EX")) {
+      if ((i + 1) >= entry->args->count)
+        return MISSING_EX_VALUE;
+
+      options->expiry.enabled = true;
+      i += 1;
+
+      parse_expiry_option(EXPIRY_EX, options, entry->args->data[i].value);
+    } else if (streq(arg.value, "PX")) {
+      if ((i + 1) >= entry->args->count)
+        return MISSING_PX_VALUE;
+
+      options->expiry.enabled = true;
+      i += 1;
+
+      parse_expiry_option(EXPIRY_EX, options, entry->args->data[i].value);
+    } else if (streq(arg.value, "AS")) {
+      options->as = true;
+
+      if ((i + 1) < entry->args->count) {
+        i += 1;
+        string_t name = entry->args->data[i];
+        to_uppercase(name, name.value);
+
+        for (uint32_t j = 0; j < sizeof(types) / sizeof(TypeIdentifier); ++j) {
+          const TypeIdentifier identifier = types[j];
+          uint32_t k = 0;
+
+          while (identifier.values[k] != NULL) {
+            if (streq(name.value, identifier.values[k])) {
+              response->type = identifier.type;
+              j = UINT32_MAX - 1; // `goto` is unpredictable action for compiler
+              break;
+            }
+
+            k += 1;
+          }
+        }
+
+        switch (response->type) {
+          case TELLY_UNKNOWN:
+            if (streq(name.value, "NUM") || streq(name.value, "NUMBER")) {
+              take_as_number(response);
+              if (response->type == TELLY_UNKNOWN)
+                return MUST_BE_NUMBER;
+
+              break;
+            }
+
+            return INVALID_TYPE_IN_AS;
+
+          case TELLY_INT:
+            response->is_integer = try_parse_integer(response->input);
+            break;
+
+          case TELLY_DOUBLE:
+            response->is_double = try_parse_double(response->input);
+            break;
+
+          default:
+            break;
+        }
+
+        return VALID_OPTIONS;
+      }
+    }
+
+    return INVALID_OPTIONS;
+  }
+
+  return VALID_OPTIONS;
+}
 
 static inline int take_as_string(void **value, const string_t data) {
   string_t *string = (*value = malloc(sizeof(string_t)));
@@ -24,159 +214,97 @@ static inline int take_as_string(void **value, const string_t data) {
   return 0;
 }
 
+static inline string_t take_error_of_option_code(const OptionParsingCode code) {
+  switch (code) {
+    case MISSING_EX_VALUE:
+      return RESP_ERROR_MESSAGE("There is no specified value for 'EX' argument");
+
+    case INVALID_EX_VALUE:
+      return RESP_ERROR_MESSAGE("The value of 'EX' argument must be an integer");
+
+    case SYSCALL_ERROR_FOR_EX:
+      return RESP_ERROR_MESSAGE("Cannot take the current time for 'EX' argument");
+
+    case MISSING_PX_VALUE:
+      return RESP_ERROR_MESSAGE("There is no specified value for 'PX' argument");
+
+    case INVALID_PX_VALUE:
+      return RESP_ERROR_MESSAGE("The value of 'PX' argument must be an integer");
+
+    case SYSCALL_ERROR_FOR_PX:
+      return RESP_ERROR_MESSAGE("Cannot take the current time for 'PX' argument");
+
+    case INVALID_TYPE_IN_AS:
+      return RESP_ERROR_MESSAGE("'AS' argument must be followed by a valid type name for 'SET' command");
+
+    case SIMULTANEOUSLY_NX_XX:
+      return RESP_ERROR_MESSAGE("XX and NX arguments cannot be specified simultaneously for 'SET' command");
+
+    case INVALID_OPTIONS:
+      return RESP_ERROR_MESSAGE("Invalid argument(s) for 'SET' command");
+
+    case MUST_BE_NUMBER:
+      return RESP_ERROR_MESSAGE("The type must be double or integer for this value");
+
+    case VALID_OPTIONS:
+      return EMPTY_STRING();
+  }
+
+  unreachable();
+}
+
 static string_t run(struct CommandEntry *entry) {
   if (entry->args->count < 2) {
     PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("SET");
   }
 
-  char *value_in = entry->args->data[1].value;
-  const bool is_true = streq(value_in, "true");
-  bool is_integer = false;
-  bool is_double = false;
+  const char *input = entry->args->data[1].value;
 
-  bool get = false;
-  bool nx = false, xx = false;
-  bool as = false;
+  Response response = {
+    .input = input,
+    .type = TELLY_UNKNOWN,
 
-  uint64_t expire_at;
-  bool expire = false;
+    .is_true = streq(input, "true"),
+    .is_integer = false,
+    .is_double = false
+  };
 
-  enum TellyTypes type;
+  Options options;
+  OptionParsingCode options_code = parse_options(entry, &options, &response);
 
-  for (uint32_t i = 2; i < entry->args->count; ++i) {
-    string_t arg = entry->args->data[i];
-    to_uppercase(arg, arg.value);
-
-    if (streq(arg.value, "GET")) {
-      get = true;
-    } else if (streq(arg.value, "NX")) {
-      nx = true;
-    } else if (streq(arg.value, "XX")) {
-      xx = true;
-    } else if (streq(arg.value, "EX")) {
-      if ((i + 1) >= entry->args->count) {
-        PASS_NO_CLIENT(entry->client);
-        return RESP_ERROR_MESSAGE("There is no specified value for 'EX' argument");
-      }
-
-      expire = true;
-      i += 1;
-
-      const char *secs_s = entry->args->data[i].value;
-
-      if (!try_parse_integer(secs_s)) {
-        PASS_NO_CLIENT(entry->client);
-        return RESP_ERROR_MESSAGE("The value of 'EX' argument must be an integer");
-      }
-
-      struct timespec expire;
-
-      if (clock_gettime(CLOCK_REALTIME, &expire) == -1) {
-        PASS_NO_CLIENT(entry->client);
-        return RESP_ERROR_MESSAGE("Cannot take the current time for 'EX' argument");
-      }
-
-      const uint64_t secs = strtoull(secs_s, (char **) NULL, 10);
-      expire_at = (expire.tv_sec * 1000) + (expire.tv_nsec / 1e6) + (secs * 1000);
-    } else if (streq(arg.value, "PX")) {
-      if ((i + 1) >= entry->args->count) {
-        PASS_NO_CLIENT(entry->client);
-        return RESP_ERROR_MESSAGE("There is no specified value for 'PX' argument");
-      }
-
-      expire = true;
-      i += 1;
-
-      const char *msecs_s = entry->args->data[i].value;
-
-      if (!try_parse_integer(msecs_s)) {
-        PASS_NO_CLIENT(entry->client);
-        return RESP_ERROR_MESSAGE("The value of 'PX' argument must be an integer");
-      }
-
-      struct timespec expire;
-
-      if (clock_gettime(CLOCK_REALTIME, &expire) == -1) {
-        PASS_NO_CLIENT(entry->client);
-        return RESP_ERROR_MESSAGE("Cannot take the current time for 'PX' argument");
-      }
-
-      const uint64_t msecs = strtoull(msecs_s, (char **) NULL, 10);
-      expire_at = (expire.tv_sec * 1000) + (expire.tv_nsec / 1e6) + msecs;
-    } else if (streq(arg.value, "AS")) {
-      as = true;
-
-      if ((i + 1) < entry->args->count) {
-        i += 1;
-        string_t name = entry->args->data[i];
-        to_uppercase(name, name.value);
-
-        if (streq(name.value, "STRING") || streq(name.value, "STR")) {
-          type = TELLY_STR;
-        } else if (streq(name.value, "BOOLEAN") || streq(name.value, "BOOL")) {
-          type = TELLY_BOOL;
-        } else if (streq(name.value, "INTEGER") || streq(name.value, "INT")) {
-          is_integer = try_parse_integer(value_in);
-          type = TELLY_INT;
-        } else if (streq(name.value, "NUMBER") || streq(name.value, "NUM")) {
-          is_integer = try_parse_integer(value_in);
-          is_double = try_parse_double(value_in);
-
-          if (is_integer) {
-            type = TELLY_INT;
-          } else if (is_double) {
-            type = TELLY_DOUBLE;
-          }
-        } else if (streq(name.value, "DOUBLE")) {
-          is_double = try_parse_double(value_in);
-          type = TELLY_DOUBLE;
-        } else if (streq(name.value, "NULL")) {
-          type = TELLY_NULL;
-        } else {
-          PASS_NO_CLIENT(entry->client);
-          return RESP_ERROR_MESSAGE("'AS' argument must be followed by a valid type name for 'SET' command");;
-        }
-      }
-    } else {
-      PASS_NO_CLIENT(entry->client);
-      return RESP_ERROR_MESSAGE("Invalid argument(s) for 'SET' command");;
-    }
-  }
-
-  if (nx && xx) {
+  if (options_code != VALID_OPTIONS) {
     PASS_NO_CLIENT(entry->client);
-    return RESP_ERROR_MESSAGE("XX and NX arguments cannot be specified simultaneously for 'SET' command");
+    const string_t error = take_error_of_option_code(options_code);
+    ASSERT(error.len, !=, 0U);
+
+    return error;
   }
 
   const string_t key = entry->args->data[0];
   void *value;
   KeyValue *res = get_data(entry->database, key);
 
-  if (nx && res) {
+  if (options.nx && res) {
     PASS_NO_CLIENT(entry->client);
     return RESP_NULL(entry->client->protover);
   }
 
-  if (xx && !res) {
+  if (options.xx && !res) {
     PASS_NO_CLIENT(entry->client);
     return RESP_NULL(entry->client->protover);
   }
 
-  if (!as) {
-    is_integer = try_parse_integer(value_in);
-    is_double = try_parse_double(value_in);
+  if (!options.as) {
+    response.is_integer = try_parse_integer(response.input);
+    response.is_double = try_parse_double(response.input);
   }
 
-  if (is_integer || is_double) {
-    if (!as) {
-      type = (is_integer ? TELLY_INT : TELLY_DOUBLE);
-    } else if (type != TELLY_INT && type != TELLY_DOUBLE && type != TELLY_STR) {
-      PASS_NO_CLIENT(entry->client);
-      return RESP_ERROR_MESSAGE("The type must be string or integer for this value");;
-    }
+  if (response.is_integer || response.is_double) {
+    if (!options.as)
+      response.type = (response.is_integer ? TELLY_INT : TELLY_DOUBLE);
 
-    switch (type) {
+    switch (response.type) {
       case TELLY_INT:
         value = malloc(sizeof(mpz_t));
         if (value == NULL) {
@@ -184,7 +312,7 @@ static string_t run(struct CommandEntry *entry) {
           return OUT_OF_MEMORY();
         }
 
-        mpz_init_set_str(*((mpz_t *) value), value_in, 10);
+        mpz_init_set_str(*((mpz_t *) value), response.input, 10);
         break;
 
       case TELLY_DOUBLE:
@@ -195,7 +323,7 @@ static string_t run(struct CommandEntry *entry) {
         }
 
         mpf_init2(*((mpf_t *) value), FLOAT_PRECISION);
-        mpf_set_str(*((mpf_t *) value), value_in, 10);
+        mpf_set_str(*((mpf_t *) value), response.input, 10);
         break;
 
       case TELLY_STR:
@@ -209,15 +337,15 @@ static string_t run(struct CommandEntry *entry) {
       default:
         break;
     }
-  } else if (is_true || streq(value_in, "false")) {
-    if (!as) {
-      type = TELLY_BOOL;
-    } else if (type != TELLY_BOOL && type != TELLY_STR) {
+  } else if (response.is_true || streq(response.input, "false")) {
+    if (!options.as) {
+      response.type = TELLY_BOOL;
+    } else if (response.type != TELLY_BOOL) {
       PASS_NO_CLIENT(entry->client);
-      return RESP_ERROR_MESSAGE("The type must be string or boolean for this value");;
+      return RESP_ERROR_MESSAGE("The type must be boolean for this value");
     }
 
-    switch (type) {
+    switch (response.type) {
       case TELLY_BOOL:
         value = malloc(sizeof(bool));
         if (value == NULL) {
@@ -225,7 +353,7 @@ static string_t run(struct CommandEntry *entry) {
           return OUT_OF_MEMORY();
         }
 
-        *((bool *) value) = is_true;
+        *((bool *) value) = response.is_true;
         break;
 
       case TELLY_STR:
@@ -239,15 +367,15 @@ static string_t run(struct CommandEntry *entry) {
       default:
         break;
     }
-  } else if (streq(value_in, "null")) {
-    if (!as) {
-      type = TELLY_NULL;
-    } else if (type != TELLY_NULL && type != TELLY_STR) {
+  } else if (streq(response.input, "null")) {
+    if (!options.as) {
+      response.type = TELLY_NULL;
+    } else if (response.type != TELLY_NULL) {
       PASS_NO_CLIENT(entry->client);
-      return RESP_ERROR_MESSAGE("The type must be string or null for this value");
+      return RESP_ERROR_MESSAGE("The type must be null for this value");
     }
 
-    switch (type) {
+    switch (response.type) {
       case TELLY_NULL:
         value = NULL;
         break;
@@ -264,9 +392,9 @@ static string_t run(struct CommandEntry *entry) {
         break;
     }
   } else {
-    if (!as) {
-      type = TELLY_STR;
-    } else if (type != TELLY_STR) {
+    if (!options.as) {
+      response.type = TELLY_STR;
+    } else if (response.type != TELLY_STR) {
       PASS_NO_CLIENT(entry->client);
       return RESP_ERROR_MESSAGE("The type must be string for this value");
     }
@@ -277,9 +405,10 @@ static string_t run(struct CommandEntry *entry) {
     }
   }
 
-  if (get) {
+  if (options.get) {
     if (entry->password->permissions & P_READ) {
-      const bool success = (set_data(entry->database, res, key, value, type, (expire ? &expire_at : NULL)) != NULL);
+      const uint64_t *expire_at = (options.expiry.enabled ? &options.expiry.at : NULL);
+      const bool success = (set_data(entry->database, res, key, value, response.type, expire_at) != NULL);
 
       if (!success) {
         PASS_NO_CLIENT(entry->client);
@@ -288,7 +417,7 @@ static string_t run(struct CommandEntry *entry) {
 
       if (res) {
         if (entry->client) {
-          return write_value(value, type, entry->client->protover, entry->client->write_buf);
+          return write_value(value, response.type, entry->client->protover, entry->client->write_buf);
         }
       }
 
@@ -299,7 +428,8 @@ static string_t run(struct CommandEntry *entry) {
       return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_READ");
     }
   } else {
-    const bool success = (set_data(entry->database, res, key, value, type, (expire ? &expire_at : NULL)) != NULL);
+    const uint64_t *expire_at = (options.expiry.enabled ? &options.expiry.at : NULL);
+    const bool success = (set_data(entry->database, res, key, value, response.type, expire_at) != NULL);
     PASS_NO_CLIENT(entry->client);
 
     return (success ? RESP_OK() : OUT_OF_MEMORY());
@@ -308,7 +438,7 @@ static string_t run(struct CommandEntry *entry) {
 
 const struct Command cmd_set = {
   .name = "SET",
-  .summary = "Sets value.",
+  .summary = "Set key to hold the string value.",
   .since = "0.1.0",
   .complexity = "O(1)",
   .permissions = P_WRITE,

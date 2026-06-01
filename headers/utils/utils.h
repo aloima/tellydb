@@ -19,6 +19,7 @@
 #define ATOMIC_CAS_WEAK atomic_compare_exchange_weak_explicit
 
 enum TellyTypes : uint8_t {
+  TELLY_UNKNOWN,
   TELLY_NULL,
   TELLY_INT,
   TELLY_DOUBLE,

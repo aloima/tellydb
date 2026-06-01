@@ -822,7 +822,7 @@ The list of unwritten behavior to commands.
 
 ### SET
 * **Syntax**: `SET key value [NX|XX] [GET] [EX secs | PX msecs] [AS type]`
-* **Description**: Sets value.
+* **Description**: Set key to hold the string value.
 * **Since**: `0.1.0`
 * **Time complexity**: `O(1)`
 * **Permissions**: (`P_READ` if used `GET` argument) and `P_WRITE`
