@@ -122,9 +122,6 @@ static inline void take_as_number(Response *response) {
 }
 
 static OptionParsingCode parse_options(struct CommandEntry *entry, Options *options, Response *response) {
-  options->expiry.enabled = false;
-  options->as = false;
-
   const TypeIdentifier types[] = {
     {TELLY_STR,     (const char *[]) {"STR", "STRING", NULL}},
     {TELLY_BOOL,    (const char *[]) {"BOOL", "BOOLEAN", NULL}},
@@ -268,8 +265,15 @@ static string_t run(struct CommandEntry *entry) {
     .is_double = false
   };
 
-  Options options;
-  OptionParsingCode options_code = parse_options(entry, &options, &response);
+  Options options = {
+    .as = false,
+    .expiry.enabled = false,
+    .get = false,
+    .nx = false,
+    .xx = false
+  };
+
+  const OptionParsingCode options_code = parse_options(entry, &options, &response);
 
   if (options_code != VALID_OPTIONS) {
     PASS_NO_CLIENT(entry->client);
