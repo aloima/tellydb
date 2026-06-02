@@ -53,9 +53,7 @@ void free_hashtablekeyvalue(HashTableElement element) {
   const HashTableKeyValue *kv = (HashTableKeyValue *) ((void *) &element);
   KeyValue *value = kv->value;
 
-  free(value->key.value);
-  free_value(value->value);
-  free(value);
+  free_kv(value);
 }
 
 void free_value(Value value) {
@@ -63,7 +61,7 @@ void free_value(Value value) {
   void *data = value.data;
 
   switch (type) {
-    case TELLY_NULL:
+    case TELLY_NULL: case TELLY_UNKNOWN:
       break;
 
     case TELLY_INT:
