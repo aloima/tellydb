@@ -17,15 +17,18 @@
   }
 
   void signal_notifier(event_notifier_t *notifier, uint64_t n) {
-    if (VERY_UNLIKELY(notifier == NULL)) return;
-    ASSERT(write(notifier->efd, &n, sizeof(n)), ==, sizeof(n));
+    if (VERY_UNLIKELY(notifier == NULL))
+      return;
+
+    ASSERT(write(notifier->efd, &n, sizeof(n)), ==, (int64_t) sizeof(n));
   }
 
   uint64_t consume_notifier(event_notifier_t *notifier) {
-    if (VERY_UNLIKELY(notifier == NULL)) return -1;
+    if (VERY_UNLIKELY(notifier == NULL))
+      return -1;
 
     uint64_t val = 0;
-    ASSERT(read(notifier->efd, &val, sizeof(val)), ==, sizeof(val));
+    ASSERT(read(notifier->efd, &val, sizeof(val)), ==, (int64_t) sizeof(val));
 
     return val;
   }
