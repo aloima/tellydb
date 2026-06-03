@@ -284,7 +284,7 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   const string_t key = entry->args->data[0];
-  void *value;
+  void *value = NULL;
   KeyValue *res = get_data(entry->database, key);
 
   if (options.nx && res) {
@@ -418,6 +418,8 @@ static string_t run(struct CommandEntry *entry) {
       return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_READ");
     }
   } else {
+    ASSERT(value, !=, NULL);
+
     const uint64_t *expire_at = (options.expiry.enabled ? &options.expiry.at : NULL);
     const bool success = (set_data(entry->database, res, key, value, response.type, expire_at) != NULL);
     PASS_NO_CLIENT(entry->client);

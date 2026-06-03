@@ -6,14 +6,16 @@ static inline int accept_client() {
 
 #if defined(__linux__)
   const int connfd = accept4(server->sockfd, (struct sockaddr *) &addr, &addr_len, SOCK_NONBLOCK);
-  if (connfd == -1) return -1; // There should be logs, but it is interrupting condition for infinite loop.
+  if (connfd == -1)
+    return -1; // There should be logs, but it is interrupting condition for infinite loop.
 #elif defined(__APPLE__)
   const int connfd = accept(server->sockfd, (struct sockaddr *) &addr, &addr_len);
-  if (connfd == -1) return -1; // There should be logs, but it is interrupting condition for infinite loop.
+  if (connfd == -1)
+    return -1; // There should be logs, but it is interrupting condition for infinite loop.
 
   if ((fcntl(connfd, F_SETFL, fcntl(connfd, F_GETFL, 0) | O_NONBLOCK)) == -1) {
     write_log(LOG_WARN, "Cannot accept a connection, because cannot set as non-blocking file descriptor.");
-    close(connfd);
+    ASSERT(close(connfd), ==, 0);
     return -1;
   }
 #endif
@@ -23,13 +25,13 @@ static inline int accept_client() {
 
     if (setsockopt(connfd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) == -1) {
       write_log(LOG_WARN, "Cannot accept a connection, because cannot set as non-delaying file descriptor.");
-      close(connfd);
+      ASSERT(close(connfd), ==, 0);
       return -1;
     }
   }
 
   if (get_client_count() == server->conf->max_clients) {
-    write(connfd, "-Server is reached maximum client limit\r\n", 14);
+    ASSERT(write(connfd, "-Server is reached maximum client limit\r\n", 14), ==, 14L);
     close(connfd);
     return -1;
   }
@@ -38,7 +40,7 @@ static inline int accept_client() {
 
   if (client == NULL) {
     write_log(LOG_WARN, "Cannot accept a client, out of memory.");
-    close(connfd);
+    ASSERT(close(connfd), ==, 0);
     return -1;
   }
 
@@ -53,7 +55,7 @@ static inline int accept_client() {
 
   if (server->conf->tls) {
     client->ssl = SSL_new(server->ctx);
-    SSL_set_fd(client->ssl, client->connfd);
+    ASSERT(SSL_set_fd(client->ssl, client->connfd), ==, 1);
 
     if (SSL_accept(client->ssl) <= 0) {
       write_log(LOG_WARN, "Cannot accept Client #%" PRIu32 " because of SSL. Please check client authority file.", client->id);

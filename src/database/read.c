@@ -6,12 +6,12 @@ static void collect_bytes(const int fd, char *block, const uint16_t block_size, 
   if ((*at + remaining) >= block_size) {
     const uint16_t available = (block_size - *at);
     memcpy(data + (count - remaining), block + *at, available);
-    read(fd, block, block_size);
+    ASSERT(read(fd, block, block_size), ==, (int64_t) block_size);
     remaining -= available;
 
     while (remaining >= block_size) {
       memcpy(data + (count - remaining), block, block_size);
-      read(fd, block, block_size);
+      ASSERT(read(fd, block, block_size), ==, (int64_t) block_size);
       remaining -= block_size;
     }
 
