@@ -3,6 +3,7 @@
 
 string_t get_resp_type_name(const enum TellyTypes type) {
   switch (type) {
+    case TELLY_UNKNOWN:   unreachable();
     case TELLY_NULL:      return RESP_OK_MESSAGE("null");
     case TELLY_INT:       return RESP_OK_MESSAGE("integer");
     case TELLY_DOUBLE:    return RESP_OK_MESSAGE("double");
