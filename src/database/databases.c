@@ -15,7 +15,7 @@ bool string_compare(void *string_a, void *string_b) {
   string_t *a = (string_t *) string_a;
   string_t *b = (string_t *) string_b;
 
-  return (a->len == b->len) && (memcmp(a->value, b->value, a->len) == 0);
+  return SSTREQ(*a, *b);
 }
 
 Database *create_database(const string_t name, const uint64_t capacity) {
@@ -81,7 +81,7 @@ static inline bool cmp(void *data, void *external) {
   const string_t a = database->name;
   const string_t b = external_s->name;
 
-  return (database->id == external_s->target) && (a.len == b.len && memcmp(a.value, b.value, a.len) == 0);
+  return (database->id == external_s->target) && SSTREQ(a, b);
 }
 
 Database *get_database(const string_t name) {
