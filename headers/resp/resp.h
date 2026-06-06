@@ -1,17 +1,12 @@
 #pragma once
 
 #include "../server/client.h"
-#include "../utils/arena.h"
 #include "../utils/utils.h"
 
 #include <stdint.h>
 
 #include <gmp.h>
 
-#define INITIAL_RESP_ARENA_SIZE 65536
-
-#define COMMAND_NAME_MAX_LENGTH 64
-#define RESP_INLINE_BUFFER 128
 #define RESP_INLINE_ARGUMENT_COUNT 32
 
 typedef struct CommandArgs {
