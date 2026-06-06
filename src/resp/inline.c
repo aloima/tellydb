@@ -3,68 +3,55 @@
 
 extern bool check_crlf(Client *client, char *buf, int32_t *at, int32_t *size);
 
-static inline bool parse_name(Arena *arena, Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *cmd, char *c) {
+static inline bool parse_name(Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *cmd, char *c) {
   if (*c == ' ') return false;
-  uint8_t idx = 0;
+  uint32_t start_offset = *at - 1;
+  uint32_t len = 1;
 
-  cmd->name = arena_alloc(arena, sizeof(string_t));
-  if (cmd->name == NULL) return false;
+  while (true) {
+    if ((*at + 2) == *size) break;
 
-  cmd->name->value = arena_alloc(arena, RESP_INLINE_BUFFER * sizeof(char));
-  if (cmd->name->value == NULL) return false;
-
-  do {
-    cmd->name->value[idx] = *c;
-    if ((*at + 2) == *size) {
-      idx += 1;
+    char *next_c;
+    if (take_n_bytes(client, at, &next_c, 1, size) != 1) {
       break;
     }
+    
+    if (*next_c == ' ') break;
+    len += 1;
+  }
 
-    if (take_n_bytes(client, buf, at, &c, 1, size) != 1) {
-      idx += 1;
-      cmd->name->value[idx] = '\0';
-      cmd->name->len = idx;
-      return true;
-    }
-
-    idx += 1;
-  } while (*c != ' ');
-
-  cmd->name->value[idx] = '\0';
-  cmd->name->len = idx;
+  cmd->name.value = (char *)(uintptr_t)start_offset;
+  cmd->name.len = len;
 
   if ((*at + 2) == *size) return check_crlf(client, buf, at, size);
   else return true;
 }
 
-static inline bool parse_arguments(Arena *arena, Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *cmd, char *c) {
+static inline bool parse_arguments(Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *cmd, char *c) {
   bool retrieving = true;
-  cmd->args.data = arena_alloc(arena, RESP_INLINE_ARGUMENT_COUNT * sizeof(string_t));
+  cmd->args.data = malloc(RESP_INLINE_ARGUMENT_COUNT * sizeof(string_t));
   if (cmd->args.data == NULL) return false;
 
   while (retrieving) {
     string_t *arg = &cmd->args.data[cmd->args.count];
-    arg->value = arena_alloc(arena, RESP_INLINE_BUFFER * sizeof(char));
-    if (arg->value == NULL) return false;
     arg->len = 0;
     cmd->args.count += 1;
 
-    uint8_t idx = 0;
-    char *value = arg->value;
-    TAKE_BYTES(c, 1, false);
+    char *next_c;
+    TAKE_BYTES(next_c, 1, false);
+    
+    uint32_t start_offset = *at - 1;
+    uint32_t len = 1;
 
-    while (*c != ' ') {
-      value[idx] = *c;
-      idx += 1;
-
+    while (*next_c != ' ') {
       if ((*at + 2) == *size) break;
-      TAKE_BYTES(c, 1, false);
+      TAKE_BYTES(next_c, 1, false);
+      if (*next_c == ' ') break;
+      len += 1;
     }
 
-    if (idx != 0) {
-      arg->value[idx] = '\0';
-      arg->len += idx;
-    }
+    arg->value = (char *)(uintptr_t)start_offset;
+    arg->len = len;
 
     if ((*at + 2) == *size) {
       if (check_crlf(client, buf, at, size)) break;
@@ -75,13 +62,25 @@ static inline bool parse_arguments(Arena *arena, Client *client, char *buf, int3
   return true;
 }
 
-bool parse_inline_command(Arena *arena, Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *cmd, char c) {
+bool parse_inline_command(Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *cmd, char c) {
   cmd->args.data = NULL;
   cmd->args.count = 0;
+  cmd->name.len = 0;
 
-  if (!parse_name(arena, client, buf, at, size, cmd, &c)) THROW_RESP_ERROR(client->id);
-  if (*at == *size) return true;
+  if (!parse_name(client, buf, at, size, cmd, &c)) THROW_RESP_ERROR(client->id);
+  
+  if (*at != *size) {
+    if (!parse_arguments(client, buf, at, size, cmd, &c)) THROW_RESP_ERROR(client->id);
+  }
 
-  if (!parse_arguments(arena, client, buf, at, size, cmd, &c)) THROW_RESP_ERROR(client->id);
+  // Resolve offsets
+  cmd->name.value = client->read_buf->data + (uintptr_t)cmd->name.value;
+  cmd->name.value[cmd->name.len] = '\0';
+  
+  for (uint32_t i = 0; i < cmd->args.count; ++i) {
+    cmd->args.data[i].value = client->read_buf->data + (uintptr_t)cmd->args.data[i].value;
+    cmd->args.data[i].value[cmd->args.data[i].len] = '\0';
+  }
+
   return true;
 }

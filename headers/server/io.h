@@ -26,9 +26,6 @@ typedef struct {
 
   _Atomic(enum IOThreadStatus) status;
 
-  // Read buffers
-  char *buf;
-  Arena *resp_arena;
   Arena *ucmd_arena;
 } IOThread;
 

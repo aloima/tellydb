@@ -39,18 +39,14 @@ int create_io_threads() {
     event_notifier_t *notifier = (io_thread->notifier = create_notifier());
     ThreadQueue *queue = (io_thread->queue = create_tqueue(IO_QUEUE_SIZE, sizeof(IOOperation), alignof(IOOperation)));
 
-    char *buf = (io_thread->buf = malloc(RESP_BUF_SIZE));
     Arena *ucmd_arena = (io_thread->ucmd_arena = arena_create(INITIAL_UNKNOWN_COMMAND_ARENA_SIZE));
-    Arena *resp_arena = (io_thread->resp_arena = arena_create(INITIAL_RESP_ARENA_SIZE));
 
-    if (notifier == NULL || queue == NULL || buf == NULL || ucmd_arena == NULL || resp_arena == NULL) {
+    if (notifier == NULL || queue == NULL || ucmd_arena == NULL) {
       CLEANUP_THREAD:
       if (notifier) destroy_notifier(notifier);
       if (queue) free_tqueue(queue);
 
-      if (buf) free(buf);
       if (ucmd_arena) arena_destroy(ucmd_arena);
-      if (resp_arena) arena_destroy(resp_arena);
 
       break;
     }
@@ -165,8 +161,6 @@ DESTROY:
   destroy_notifier(thread->notifier);
   free_tqueue(thread->queue);
 
-  free(thread->buf);
-  arena_destroy(thread->resp_arena);
   arena_destroy(thread->ucmd_arena);
 
   atomic_store_explicit(&thread->status, IO_THREAD_DESTROYED, memory_order_release);

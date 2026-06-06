@@ -21,6 +21,7 @@ typedef struct Transaction {
   commandargs_t args;
   struct Command *command;
   Database *database;
+  QueryBuffer *read_buf;
 } Transaction;
 
 typedef struct {

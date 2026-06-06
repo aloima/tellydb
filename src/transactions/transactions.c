@@ -24,6 +24,8 @@ static inline void prepare_transaction(Transaction *transaction, Client *client,
   transaction->command = command->data;
   transaction->args = data->args;
   transaction->database = client->database;
+  transaction->read_buf = client->read_buf;
+  atomic_fetch_add_explicit(&transaction->read_buf->refcount, 1, memory_order_relaxed);
 }
 
 bool add_transaction(Client *client, const UsedCommand *command, commanddata_t *data) {
@@ -71,6 +73,17 @@ void remove_transaction_block(TransactionBlock *block) {
     case TX_DIRECT: {
       Transaction *transaction = block->data.transaction;
       processed_transaction_count += 1;
+
+      if (transaction->read_buf) {
+        if (atomic_fetch_sub_explicit(&transaction->read_buf->refcount, 1, memory_order_relaxed) == 1) {
+          free(transaction->read_buf->data);
+          free(transaction->read_buf);
+        }
+      }
+
+      if (transaction->args.data != NULL)
+        free(transaction->args.data);
+
       free(transaction);
       break;
     }
@@ -78,6 +91,20 @@ void remove_transaction_block(TransactionBlock *block) {
     case TX_WAITING: case TX_MULTIPLE: {
       MultipleTransactions multiple = block->data.multiple;
       if (block->type == TX_MULTIPLE) processed_transaction_count += multiple.transaction_count;
+
+      for (uint32_t i = 0; i < multiple.transaction_count; ++i) {
+        Transaction *tx = &multiple.transactions[i];
+
+        if (tx->read_buf) {
+          if (atomic_fetch_sub_explicit(&tx->read_buf->refcount, 1, memory_order_relaxed) == 1) {
+            free(tx->read_buf->data);
+            free(tx->read_buf);
+          }
+        }
+
+        if (tx->args.data != NULL)
+          free(tx->args.data);
+      }
 
       free(multiple.transactions);
       break;
