@@ -4,7 +4,7 @@
 
 static inline void unknown_command(Client *client, string_t *name, Arena *arena) {
   char *ubuf = arena_alloc(arena, name->len + 22);
-  const size_t nbytes = sprintf(ubuf, "-Unknown command '%s'\r\n", name->value);
+  const size_t nbytes = sprintf(ubuf, "-Unknown command '%.*s'\r\n", name->len, name->value);
 
   add_io_request(IOOP_WRITE, client, CREATE_STRING(ubuf, nbytes));
 }
@@ -46,7 +46,7 @@ void read_command(IOThread *thread, Client *client) {
     new_buf->data = malloc(RESP_BUF_SIZE);
     new_buf->size = RESP_BUF_SIZE;
     atomic_init(&new_buf->refcount, 1);
-    
+
     atomic_fetch_sub_explicit(&client->read_buf->refcount, 1, memory_order_relaxed);
     client->read_buf = new_buf;
   }
@@ -65,7 +65,8 @@ void read_command(IOThread *thread, Client *client) {
     if (!get_command_data(client, client->read_buf->data, &at, &size, &data)) continue;
 
     if (size == at) {
-      if (size != client->read_buf->size) {
+      // TODO: safe type-casting
+      if (size != (int32_t) client->read_buf->size) {
         size = -1;
       } else {
         if (atomic_load_explicit(&client->read_buf->refcount, memory_order_relaxed) > 1) {
@@ -73,7 +74,7 @@ void read_command(IOThread *thread, Client *client) {
           new_buf->data = malloc(RESP_BUF_SIZE);
           new_buf->size = RESP_BUF_SIZE;
           atomic_init(&new_buf->refcount, 1);
-          
+
           atomic_fetch_sub_explicit(&client->read_buf->refcount, 1, memory_order_relaxed);
           client->read_buf = new_buf;
         }
