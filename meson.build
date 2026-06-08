@@ -60,7 +60,7 @@ gperf = find_program('gperf', required: true)
 command_hash_c = custom_target('command_hash.c',
   input: 'src/utils/command_hash.gperf',
   output: 'command_hash.c',
-  command: [gperf, '-L', 'ANSI-C', '--ignore-case', '@INPUT@', '--output-file', '@OUTPUT@']
+  command: [gperf, '-L', 'ANSI-C', '--compare-strncmp', '--ignore-case', '@INPUT@', '--output-file', '@OUTPUT@']
 )
 
 aligned_c_args = []
