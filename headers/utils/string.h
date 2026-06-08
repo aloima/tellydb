@@ -14,7 +14,8 @@ typedef struct String {
 } string_t;
 
 #define EMPTY_STRING() ((string_t) {"", 0})
-#define CREATE_STRING(value, len) ((string_t) {value, len})
+#define CREATE_STRING(value, len) ((string_t) {(value), (len)})
+#define CREATE_SIZED_STRING(value) ((string_t) {(value), (sizeof(value) - 1)})
 
 void to_uppercase(string_t src, char *dst);
 
