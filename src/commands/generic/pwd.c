@@ -18,12 +18,12 @@ typedef struct {
   } response;
 } PermissionValue;
 
-static inline PermissionValue read_permissions_value(struct CommandEntry *entry, const char *value) {
-  int permissions = 0;
-  char *cval = (char *) value;
-  char c;
+static inline PermissionValue read_permissions_value(struct CommandEntry *entry, const string_t value) {
+  uint64_t length = value.len;
+  uint8_t permissions = 0;
 
-  while ((c = *cval) != '\0') {
+  while (length > 0) {
+    const char c = value.value[length];
     const enum Permissions data = permissions_mapping[(int8_t) c];
 
     if (data == 0) {
@@ -36,7 +36,7 @@ static inline PermissionValue read_permissions_value(struct CommandEntry *entry,
       }};
     }
 
-    cval += 1;
+    length -= 1;
   }
 
   return (PermissionValue) {0, {
@@ -52,10 +52,10 @@ static inline string_t add_pwd(struct CommandEntry *entry) {
 
   const string_t data = entry->args->data[1];
 
-  const char *value = entry->args->data[2].value;
+  const string_t value = entry->args->data[2];
   int permissions = -1;
 
-  if (streq(value, "all")) {
+  if (SSTREQ(value, CREATE_SIZED_STRING("all"))) {
     const uint8_t all_permissions = get_full_password()->permissions;
     permissions = all_permissions;
   } else {
@@ -66,7 +66,7 @@ static inline string_t add_pwd(struct CommandEntry *entry) {
       return permission_value.response.error;
     }
 
-    permissions = permission_value.response.permissions;
+    permissions = (int) permission_value.response.permissions;
   }
 
   const uint8_t not_have = ~entry->password->permissions & permissions;
@@ -100,10 +100,10 @@ static inline string_t edit_pwd(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("This password does not exist");
   }
 
-  const char *value = entry->args->data[2].value;
+  const string_t value = entry->args->data[2];
   int permissions = -1;
 
-  if (streq(value, "all")) {
+  if (SSTREQ(value, CREATE_SIZED_STRING("all"))) {
     const uint8_t all_permissions = get_full_password()->permissions;
     permissions = all_permissions;
   } else {
@@ -169,13 +169,13 @@ static string_t run(struct CommandEntry *entry) {
 
   string_t response;
 
-  if (streq(subcommand.value, "ADD")) {
+  if (SSTREQ(subcommand, CREATE_SIZED_STRING("ADD"))) {
     response = add_pwd(entry);
-  } else if (streq(subcommand.value, "EDIT")) {
+  } else if (SSTREQ(subcommand, CREATE_SIZED_STRING("EDIT"))) {
     response = edit_pwd(entry);
-  } else if (streq(subcommand.value, "REMOVE")) {
+  } else if (SSTREQ(subcommand, CREATE_SIZED_STRING("REMOVE"))) {
     response = remove_pwd(entry);
-  } else if (streq(subcommand.value, "GENERATE")) {
+  } else if (SSTREQ(subcommand, CREATE_SIZED_STRING("GENERATE"))) {
     response = generate_pwd(entry);
   } else {
     PASS_NO_CLIENT(entry->client);

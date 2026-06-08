@@ -1,7 +1,7 @@
 #include <telly.h>
 
-static bool get_section(char *section, const Config *conf, const char *name) {
-  if (streq(name, "server")) {
+static bool get_section(char *section, const Config *conf, const string_t name) {
+  if (SSTREQ(name, CREATE_SIZED_STRING("server"))) {
     char gcc_version[16];
     sprintf(gcc_version, "%d.%d.%d", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 
@@ -34,7 +34,7 @@ static bool get_section(char *section, const Config *conf, const char *name) {
       "Age: %s\r\n"
       "Started at: %.20s\r\n"
     ), getpid(), gcc_version, (conf->tls ? "yes" : "no"), age_text, str_start_at);
-  } else if (streq(name, "clients")) {
+  } else if (SSTREQ(name, CREATE_SIZED_STRING("clients"))) {
     sprintf(section, (
       "# Clients\r\n"
       "Connected clients: %u\r\n"
@@ -61,37 +61,29 @@ static string_t run(struct CommandEntry *entry) {
     const uint32_t n = entry->args->count - 1;
 
     for (uint32_t i = 0; i < n; ++i) {
-      char *name = entry->args->data[i].value;
-
-      if (!get_section(section, server->conf, name)) {
+      if (!get_section(section, server->conf, entry->args->data[i]))
         return RESP_ERROR_MESSAGE("Invalid section name");
-      }
 
       strcat(buf, section);
       strcat(buf, "\r\n");
     }
 
-    const char *name = entry->args->data[n].value;
-
-    if (!get_section(section, server->conf, name)) {
+    if (!get_section(section, server->conf, entry->args->data[n]))
       return RESP_ERROR_MESSAGE("Invalid section name");
-    }
 
     strcat(buf, section);
   } else {
-    const char names[][32] = {"server", "clients"};
-    const uint32_t n = 1;
+    const string_t names[2] = {CREATE_SIZED_STRING("server"), CREATE_SIZED_STRING("clients")};
+    const uint32_t n = (sizeof(names) / sizeof(string_t)) - 1;
 
     for (uint32_t i = 0; i < n; ++i) {
-      const char *name = names[i];
-      get_section(section, server->conf, name);
+      get_section(section, server->conf, names[i]);
 
       strcat(buf, section);
       strcat(buf, "\r\n");
     }
 
-    const char *name = names[n];
-    get_section(section, server->conf, name);
+    get_section(section, server->conf, names[n]);
 
     strcat(buf, section);
   }
