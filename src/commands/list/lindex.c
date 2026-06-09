@@ -30,18 +30,23 @@ static string_t run(struct CommandEntry *entry) {
   LinkedListNode *node;
 
   if (index_str.value[0] == '-') {
-    uint64_t index = strtoull(index_str.value + 1, (char **) NULL, 10);
+    index_str.value[0] = '+'; // atoull_s throws EINVAL on '-'
+
+    uint64_t index = atoull_s(index_str);
+    ASSERT(errno, !=, EINVAL); // try_parse_integer prevents it
+
     index -= 1;
 
-    if (index == ULLONG_MAX) {
+    if (errno == ERANGE) {
       return RESP_ERROR_MESSAGE("Index exceeded integer bounds");
     }
 
     node = ll_get_from_index(list, index, LL_BACK);
   } else {
-    const uint64_t index = strtoull(index_str.value, (char **) NULL, 10);
+    const uint64_t index = atoull_s(index_str);
+    ASSERT(errno, !=, EINVAL); // try_parse_integer prevents it
 
-    if (index == ULLONG_MAX) {
+    if (errno == ERANGE) {
       return RESP_ERROR_MESSAGE("Index exceeded integer bounds");
     }
 

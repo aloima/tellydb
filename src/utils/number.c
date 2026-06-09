@@ -49,6 +49,63 @@ bool try_parse_double(const string_t str) {
   return point;
 }
 
+uint64_t atoull_s(const string_t str) {
+  ASSERT(str.value, !=, NULL);
+  ASSERT(str.len, !=, 0);
+
+  errno = 0;
+
+  const char *value = str.value;
+  uint64_t len = str.len;
+
+  if (value[0] == '-') {
+    errno = EINVAL;
+    return UINT64_MAX;
+  }
+
+  if (value[0] == '+') {
+    value += 1;
+    len -= 1;
+
+    if (VERY_UNLIKELY(len == 0)) {
+      errno = EINVAL;
+      return UINT64_MAX;
+    }
+  }
+
+  while (len != 0 && *value == '0') {
+    value += 1;
+    len -= 1;
+  }
+
+  static constexpr const uint64_t max_div_10 = UINT64_MAX / 10;
+  static constexpr const uint64_t max_mod_10 = UINT64_MAX % 10;
+
+  uint64_t result = 0;
+
+  while (len != 0) {
+    const char c = *value;
+
+    if (VERY_UNLIKELY(!('0' <= c && c <= '9'))) {
+      errno = EINVAL;
+      return UINT64_MAX;
+    }
+
+    const uint8_t digit = (c - '0');
+
+    if (VERY_UNLIKELY(result > max_div_10 || (result == max_div_10 && digit > max_mod_10))) {
+      errno = ERANGE;
+      return UINT64_MAX;
+    }
+
+    result = (result * 10) + digit;
+    len -= 1;
+    value += 1;
+  }
+
+  return result;
+}
+
 uint8_t ltoa(const int64_t value, char *dst) {
   const bool neg = (value < 0);
   uint64_t uval;

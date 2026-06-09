@@ -27,6 +27,7 @@ static constexpr uint64_t POW10_TABLE[20] = {
 
 bool try_parse_integer(const string_t value);
 bool try_parse_double(const string_t value);
+uint64_t atoull_s(const string_t str);
 uint8_t ltoa(const int64_t value, char *dst);
 
 uint8_t get_digit_count(const uint64_t value);
