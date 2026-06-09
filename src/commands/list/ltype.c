@@ -20,7 +20,7 @@ static string_t run(struct CommandEntry *entry) {
     return INVALID_TYPE_ERROR("LTYPE");
   }
 
-  const char *index_str = entry->args->data[1].value;
+  const string_t index_str = entry->args->data[1];
 
   if (!try_parse_integer(index_str)) {
     return RESP_ERROR_MESSAGE("Second argument must be an integer");
@@ -29,8 +29,8 @@ static string_t run(struct CommandEntry *entry) {
   LinkedList *list = kv->value.data;
   LinkedListNode *node;
 
-  if (index_str[0] == '-') {
-    uint64_t index = strtoull(index_str + 1, (char **) NULL, 10);
+  if (index_str.value[0] == '-') {
+    uint64_t index = strtoull(index_str.value + 1, (char **) NULL, 10);
     index -= 1;
 
     if (index == ULLONG_MAX) {
@@ -39,7 +39,7 @@ static string_t run(struct CommandEntry *entry) {
 
     node = ll_get_from_index(list, index, LL_BACK);
   } else {
-    const uint64_t index = strtoull(index_str, (char **) NULL, 10);
+    const uint64_t index = strtoull(index_str.value, (char **) NULL, 10);
 
     if (index == ULLONG_MAX) {
       return RESP_ERROR_MESSAGE("Index exceeded integer bounds");
