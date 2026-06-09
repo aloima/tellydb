@@ -1,7 +1,5 @@
 #include <telly.h>
 
-#define INITIAL_UNKNOWN_COMMAND_ARENA_SIZE 8192
-
 static inline void unknown_command(Client *client, string_t *name, Arena *arena) {
   char *ubuf = arena_alloc(arena, name->len + 22);
   const size_t nbytes = sprintf(ubuf, "-Unknown command '%.*s'\r\n", name->len, name->value);
