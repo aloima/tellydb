@@ -1,10 +1,12 @@
 #include <telly.h>
 #include "resp.h"
 
-extern bool check_crlf(Client *client, char *buf, int32_t *at, int32_t *size);
+extern bool check_crlf(Client *client, int32_t *at, int32_t *size);
 
-static inline bool parse_name(Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *cmd, char *c) {
-  if (*c == ' ') return false;
+static inline bool parse_name(Client *client, int32_t *at, int32_t *size, commanddata_t *cmd, char *c) {
+  if (*c == ' ')
+    return false;
+
   uint32_t start_offset = *at - 1;
   uint32_t len = 1;
 
@@ -20,14 +22,16 @@ static inline bool parse_name(Client *client, char *buf, int32_t *at, int32_t *s
     len += 1;
   }
 
-  cmd->name.value = (char *)(uintptr_t)start_offset;
+  cmd->name.value = (char *) (uintptr_t) start_offset;
   cmd->name.len = len;
 
-  if ((*at + 2) == *size) return check_crlf(client, buf, at, size);
-  else return true;
+  if ((*at + 2) == *size)
+    return check_crlf(client, at, size);
+  else
+    return true;
 }
 
-static inline bool parse_arguments(Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *cmd) {
+static inline bool parse_arguments(Client *client, int32_t *at, int32_t *size, commanddata_t *cmd) {
   cmd->args.data = malloc(RESP_INLINE_ARGUMENT_COUNT * sizeof(string_t));
   if (cmd->args.data == NULL)
     return false;
@@ -61,7 +65,7 @@ static inline bool parse_arguments(Client *client, char *buf, int32_t *at, int32
     arg->len = len;
 
     if ((*at + 2) == *size) {
-      if (check_crlf(client, buf, at, size)) break;
+      if (check_crlf(client, at, size)) break;
       return false;
     }
   }
@@ -69,16 +73,16 @@ static inline bool parse_arguments(Client *client, char *buf, int32_t *at, int32
   return true;
 }
 
-bool parse_inline_command(Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *cmd, char c) {
+bool parse_inline_command(Client *client, int32_t *at, int32_t *size, commanddata_t *cmd, char c) {
   cmd->args.data = NULL;
   cmd->args.count = 0;
   cmd->name.len = 0;
 
-  if (!parse_name(client, buf, at, size, cmd, &c))
+  if (!parse_name(client, at, size, cmd, &c))
     THROW_RESP_ERROR(client->id);
 
   if (*at != *size) {
-    if (!parse_arguments(client, buf, at, size, cmd))
+    if (!parse_arguments(client, at, size, cmd))
       THROW_RESP_ERROR(client->id);
   }
 

@@ -60,7 +60,8 @@ void read_command(IOThread *thread, Client *client) {
 
   while (size != -1) {
     commanddata_t data;
-    if (!get_command_data(client, client->read_buf->data, &at, &size, &data)) continue;
+    if (!get_command_data(client, &at, &size, &data))
+      continue;
 
     if (size == at) {
       // TODO: safe type-casting
