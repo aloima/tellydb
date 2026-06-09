@@ -1,36 +1,49 @@
 #include <telly.h>
 
-bool try_parse_integer(const char *value) {
-  char *v = (char *) value;
+bool try_parse_integer(const string_t str) {
+  char *v = str.value;
+  uint64_t len = str.len;
 
   if (*v == '-') {
     v += 1;
-    if (*v == '0' || *v == '\0') return false;
+    len -= 1;
+
+    if (len == 0 || *v == '0')
+      return false;
   }
 
   while ('0' <= *v && *v <= '9') {
     v += 1;
+    len -= 1;
   }
 
-  return (v != value) && (*v == '\0');
+  return (v != str.value) && (len == 0);
 }
 
-bool try_parse_double(const char *value) {
+bool try_parse_double(const string_t str) {
   bool point = false;
-  char *v = (char *) value;
-  if (*v == '-') v += 1;
+  char *v = str.value;
+  uint64_t len = str.len;
 
-  while (*v != '\0') {
+  if (*v == '-') {
+    v += 1;
+    len -= 1;
+  }
+
+  while (len != 0) {
     const char c = *v;
 
     if (c == '.') {
-      if (point) return false;
+      if (point)
+        return false;
+
       point = true;
     } else if (c < '0' || '9' < c) {
       return false;
     }
 
     v += 1;
+    len -= 1;
   }
 
   return point;

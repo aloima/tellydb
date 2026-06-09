@@ -66,9 +66,9 @@ static string_t run(struct CommandEntry *entry) {
     const string_t name = entry->args->data[(i * 2) - 1];
     const string_t input = entry->args->data[i * 2];
 
-    const bool is_true = streq(input.value, "true");
-    const bool is_integer = try_parse_integer(input.value);
-    const bool is_double = try_parse_double(input.value);
+    const bool is_true = SSTREQ(input, CREATE_SIZED_STRING("true"));
+    const bool is_integer = try_parse_integer(input);
+    const bool is_double = try_parse_double(input);
 
     if (is_integer || is_double) {
       if (is_integer) {

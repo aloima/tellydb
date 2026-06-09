@@ -47,7 +47,7 @@ static string_t run(struct CommandEntry *entry) {
     const string_t input = entry->args->data[i];
     const bool is_true = SSTREQ(input, CREATE_SIZED_STRING("true"));
 
-    if (try_parse_integer(input.value)) {
+    if (try_parse_integer(input)) {
       mpz_t *value = malloc(sizeof(mpz_t));
       if (value == NULL)
         return OUT_OF_MEMORY();
@@ -55,7 +55,7 @@ static string_t run(struct CommandEntry *entry) {
       mpz_init_set_str(*value, input.value, 10);
 
       LPUSH(list, node, value, TELLY_INT);
-    } else if (try_parse_double(input.value)) {
+    } else if (try_parse_double(input)) {
       mpf_t *value = malloc(sizeof(mpf_t));
       if (value == NULL)
         return OUT_OF_MEMORY();

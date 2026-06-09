@@ -1,5 +1,7 @@
 #pragma once
 
+#include "string.h"
+
 #include <stdint.h>
 
 static constexpr char TWO_DIGITS_TABLE[200] = {
@@ -23,8 +25,8 @@ static constexpr uint64_t POW10_TABLE[20] = {
   10000000000000000ULL, 100000000000000000ULL, 1000000000000000000ULL, 10000000000000000000ULL
 };
 
-bool try_parse_integer(const char *value);
-bool try_parse_double(const char *value);
+bool try_parse_integer(const string_t value);
+bool try_parse_double(const string_t value);
 uint8_t ltoa(const int64_t value, char *dst);
 
 uint8_t get_digit_count(const uint64_t value);

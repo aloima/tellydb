@@ -15,8 +15,8 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   const char *input = entry->args->data[1].value;
-  const bool is_integer = try_parse_integer(input);
-  const bool is_double = try_parse_double(input);
+  const bool is_integer = try_parse_integer(entry->args->data[1]);
+  const bool is_double = try_parse_double(entry->args->data[1]);
 
   if (!is_integer && !is_double) {
     PASS_NO_CLIENT(entry->client);

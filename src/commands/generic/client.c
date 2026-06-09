@@ -18,7 +18,7 @@ static inline string_t subcommand_info(struct CommandEntry *entry) {
         return RESP_ERROR_MESSAGE("Not allowed to use this command with argument, need P_CLIENT");
       }
 
-      if (!try_parse_integer(entry->args->data[1].value)) {
+      if (!try_parse_integer(entry->args->data[1])) {
         return RESP_ERROR_MESSAGE("Specified argument must be integer for the ID");
       }
 
@@ -157,7 +157,7 @@ static string_t subcommand_lock(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_CLIENT");
   }
 
-  if (!try_parse_integer(entry->args->data[1].value)) {
+  if (!try_parse_integer(entry->args->data[1])) {
     PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("Specified argument must be integer for the ID");
   }
@@ -238,7 +238,7 @@ static inline string_t subcommand_kill(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_CLIENT");
   }
 
-  if (!try_parse_integer(entry->args->data[1].value)) {
+  if (!try_parse_integer(entry->args->data[1])) {
     PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("Specified argument must be integer for the ID");
   }
@@ -276,7 +276,7 @@ static inline string_t subcommand_unlock(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_CLIENT");
   }
 
-  if (!try_parse_integer(entry->args->data[1].value)) {
+  if (!try_parse_integer(entry->args->data[1])) {
     PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("Specified argument must be integer for the ID");
   }
