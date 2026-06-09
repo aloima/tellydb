@@ -16,7 +16,7 @@ string_t get_resp_type_name(const enum TellyTypes type) {
   unreachable();
 }
 
-bool check_crlf(Client *client, char *buf, int32_t *at, int32_t *size) {
+bool check_crlf(Client *client, int32_t *at, int32_t *size) {
   char *crlf;
   TAKE_BYTES(crlf, 2, false);
 

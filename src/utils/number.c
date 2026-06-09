@@ -51,7 +51,7 @@ bool try_parse_double(const string_t str) {
 
 uint64_t atoull_s(const string_t str) {
   ASSERT(str.value, !=, NULL);
-  ASSERT(str.len, !=, 0);
+  ASSERT(str.len, !=, 0ULL);
 
   errno = 0;
 
@@ -67,7 +67,7 @@ uint64_t atoull_s(const string_t str) {
     value += 1;
     len -= 1;
 
-    if (VERY_UNLIKELY(len == 0)) {
+    if (VERY_UNLIKELY(len == 0ULL)) {
       errno = EINVAL;
       return UINT64_MAX;
     }
