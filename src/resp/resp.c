@@ -117,11 +117,9 @@ bool parse_resp_command(Client *client, int32_t *at, int32_t *size, commanddata_
   }
 
   command->name.value = client->read_buf->data + (uintptr_t) command->name.value;
-  command->name.value[command->name.len] = '\0';
 
   for (uint32_t i = 0; i < command->args.count; ++i) {
     command->args.data[i].value = client->read_buf->data + (uintptr_t) command->args.data[i].value;
-    command->args.data[i].value[command->args.data[i].len] = '\0';
   }
 
   return true;
