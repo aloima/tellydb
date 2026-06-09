@@ -220,7 +220,7 @@ static OptionParsingCode parse_options(struct CommandEntry *entry, Options *opti
             break;
 
           case TELLY_BOOL:
-            if (!response->is_true && !streq(response->input, "false"))
+            if (!response->is_true && !SSTREQ(response->input, CREATE_SIZED_STRING("false")))
               return MUST_BE_BOOLEAN;
 
             break;
@@ -261,13 +261,13 @@ static string_t run(struct CommandEntry *entry) {
     return WRONG_ARGUMENT_ERROR("SET");
   }
 
-  const char *input = entry->args->data[1].value;
+  const string_t input = entry->args->data[1];
 
   Response response = {
     .input = input,
     .type = TELLY_UNKNOWN,
 
-    .is_true = streq(input, "true"),
+    .is_true = SSTREQ(input, CREATE_SIZED_STRING("true")),
     .is_integer = false,
     .is_double = false
   };
@@ -321,7 +321,9 @@ static string_t run(struct CommandEntry *entry) {
           return OUT_OF_MEMORY();
         }
 
-        mpz_init_set_str(*((mpz_t *) value), response.input, 10);
+        // Required to be changed, not safe/best practice
+        response.input.value[response.input.len] = '\0';
+        mpz_init_set_str(*((mpz_t *) value), response.input.value, 10);
         break;
 
       case TELLY_DOUBLE:
@@ -331,8 +333,10 @@ static string_t run(struct CommandEntry *entry) {
           return OUT_OF_MEMORY();
         }
 
+        // Required to be changed, not safe/best practice
+        response.input.value[response.input.len] = '\0';
         mpf_init2(*((mpf_t *) value), FLOAT_PRECISION);
-        mpf_set_str(*((mpf_t *) value), response.input, 10);
+        mpf_set_str(*((mpf_t *) value), response.input.value, 10);
         break;
 
       case TELLY_STR:
@@ -346,7 +350,7 @@ static string_t run(struct CommandEntry *entry) {
       default:
         break;
     }
-  } else if (response.is_true || streq(response.input, "false")) {
+  } else if (response.is_true || SSTREQ(response.input, CREATE_SIZED_STRING("false"))) {
     if (!options.as)
       response.type = TELLY_BOOL;
 
@@ -372,7 +376,7 @@ static string_t run(struct CommandEntry *entry) {
       default:
         break;
     }
-  } else if (streq(response.input, "null")) {
+  } else if (SSTREQ(response.input, CREATE_SIZED_STRING("null"))) {
     if (!options.as)
       response.type = TELLY_NULL;
 
