@@ -7,11 +7,11 @@ static void get_keys(struct CommandEntry *entry) {
 
 
 
-#define RPUSH(list, node, value, _type) do {    \
-  (node)->type = (_type);                       \
-  (node)->data = (value);                       \
-  if (ll_insert_back((list), (node)) == NULL)  \
-    return RESP_ERROR_MESSAGE("Out of memory"); \
+#define RPUSH(list, node, value, _type) do {  \
+  (node)->type = (_type);                     \
+  (node)->data = (value);                     \
+  if (ll_insert_back((list), (node)) == NULL) \
+    return OUT_OF_MEMORY();                   \
 } while (0)
 
 static string_t run(struct CommandEntry *entry) {
@@ -33,33 +33,42 @@ static string_t run(struct CommandEntry *entry) {
     list = kv->value.data;
   } else {
     list = ll_create();
-    if (list == NULL) return RESP_ERROR_MESSAGE("Out of memory");
+    if (list == NULL)
+      return OUT_OF_MEMORY();
+
     set_data(entry->database, kv, key, list, TELLY_LIST, NULL);
   }
 
   for (uint32_t i = 1; i < entry->args->count; ++i) {
     Value *node = malloc(sizeof(Value));
-    if (node == NULL) return RESP_ERROR_MESSAGE("Out of memory");
+    if (node == NULL)
+      return OUT_OF_MEMORY();
 
     const string_t input = entry->args->data[i];
     const bool is_true = streq(input.value, "true");
 
     if (try_parse_integer(input.value)) {
       mpz_t *value = malloc(sizeof(mpz_t));
-      if (value == NULL) return RESP_ERROR_MESSAGE("Out of memory");
+      if (value == NULL)
+        return OUT_OF_MEMORY();
+
       mpz_init_set_str(*value, input.value, 10);
 
       RPUSH(list, node, value, TELLY_INT);
     } else if (try_parse_double(input.value)) {
       mpf_t *value = malloc(sizeof(mpf_t));
-      if (value == NULL) return RESP_ERROR_MESSAGE("Out of memory");
+      if (value == NULL)
+        return OUT_OF_MEMORY();
+
       mpf_init2(*value, FLOAT_PRECISION);
       mpf_set_str(*value, input.value, 10);
 
       RPUSH(list, node, value, TELLY_DOUBLE);
     } else if (is_true || streq(input.value, "false")) {
       bool *value = malloc(sizeof(bool));
-      if (value == NULL) return RESP_ERROR_MESSAGE("Out of memory");
+      if (value == NULL)
+        return OUT_OF_MEMORY();
+
       *value = is_true;
 
       RPUSH(list, node, value, TELLY_BOOL);
@@ -67,7 +76,8 @@ static string_t run(struct CommandEntry *entry) {
       RPUSH(list, node, NULL, TELLY_NULL);
     } else {
       string_t *value = malloc(sizeof(string_t));
-      if (value == NULL) return RESP_ERROR_MESSAGE("Out of memory");
+      if (value == NULL)
+        return OUT_OF_MEMORY();
 
       const uint32_t size = input.len + 1;
       value->len = input.len;
@@ -75,7 +85,7 @@ static string_t run(struct CommandEntry *entry) {
 
       if (value->value == NULL) {
         free(value);
-        return RESP_ERROR_MESSAGE("Out of memory");
+        return OUT_OF_MEMORY();
       }
 
       memcpy(value->value, input.value, size);
