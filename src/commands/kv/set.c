@@ -8,7 +8,7 @@ static void get_keys(struct CommandEntry *entry) {
 
 
 typedef struct Response {
-  const char *input;
+  const string_t input;
   enum TellyTypes type;
 
   bool is_integer, is_double;
@@ -26,10 +26,12 @@ typedef struct Options {
 typedef enum OptionParsingCode : uint8_t {
   MISSING_EX_VALUE,
   INVALID_EX_VALUE,
+  BOUNDS_OF_EX_VALUE,
   SYSCALL_ERROR_FOR_EX,
 
   MISSING_PX_VALUE,
   INVALID_PX_VALUE,
+  BOUNDS_OF_PX_VALUE,
   SYSCALL_ERROR_FOR_PX,
 
   INVALID_TYPE_IN_AS,
@@ -48,10 +50,12 @@ typedef enum OptionParsingCode : uint8_t {
 static constexpr string_t parsing_code_response[] = {
   [MISSING_EX_VALUE]     = RESP_ERROR_MESSAGE("There is no specified value for 'EX' argument"),
   [INVALID_EX_VALUE]     = RESP_ERROR_MESSAGE("The value of 'EX' argument must be an integer"),
+  [BOUNDS_OF_EX_VALUE]   = RESP_ERROR_MESSAGE("The value of 'EX' argument is out of bounds of maximum-width integer"),
   [SYSCALL_ERROR_FOR_EX] = RESP_ERROR_MESSAGE("Cannot take the current time for 'EX' argument"),
 
   [MISSING_PX_VALUE]     = RESP_ERROR_MESSAGE("There is no specified value for 'PX' argument"),
   [INVALID_PX_VALUE]     = RESP_ERROR_MESSAGE("The value of 'PX' argument must be an integer"),
+  [BOUNDS_OF_PX_VALUE]   = RESP_ERROR_MESSAGE("The value of 'PX' argument is out of bounds of maximum-width integer"),
   [SYSCALL_ERROR_FOR_PX] = RESP_ERROR_MESSAGE("Cannot take the current time for 'PX' argument"),
 
   [INVALID_TYPE_IN_AS]   = RESP_ERROR_MESSAGE("'AS' argument must be followed by a valid type name for 'SET' command"),
@@ -77,20 +81,23 @@ typedef struct TypeIdentifier {
   const char **values;
 } TypeIdentifier;
 
-static inline OptionParsingCode parse_expiry_option(const ExpiryType type, Options *options, const char *input) {
-  static constexpr const OptionParsingCode errors[][2] = {
-    [EXPIRY_EX] = {INVALID_EX_VALUE, SYSCALL_ERROR_FOR_EX},
-    [EXPIRY_PX] = {INVALID_PX_VALUE, SYSCALL_ERROR_FOR_PX}
+static inline OptionParsingCode parse_expiry_option(const ExpiryType type, Options *options, const string_t input) {
+  static constexpr const OptionParsingCode errors[][3] = {
+    [EXPIRY_EX] = {INVALID_EX_VALUE, BOUNDS_OF_EX_VALUE, SYSCALL_ERROR_FOR_EX},
+    [EXPIRY_PX] = {INVALID_PX_VALUE, BOUNDS_OF_PX_VALUE, SYSCALL_ERROR_FOR_PX}
   };
 
   if (!try_parse_integer(input))
     return errors[type][0]; // INVALID_VALUE
 
+  const uint64_t value = atoull_s(input);
+  if (value == ERANGE)
+    return errors[type][1]; // BOUNDS_OF_VALUE
+
   struct timespec expire;
   if (clock_gettime(CLOCK_REALTIME, &expire) == -1)
-    return errors[type][1]; // SYSCALL_ERROR
+    return errors[type][2]; // SYSCALL_ERROR
 
-  const uint64_t value = strtoull(input, (char **) NULL, 10);
   options->expiry.at = (expire.tv_sec * 1000) + (expire.tv_nsec / 1e6);
 
   switch (type) {
@@ -154,7 +161,7 @@ static OptionParsingCode parse_options(struct CommandEntry *entry, Options *opti
       options->expiry.enabled = true;
       i += 1;
 
-      parse_expiry_option(EXPIRY_EX, options, entry->args->data[i].value);
+      parse_expiry_option(EXPIRY_EX, options, entry->args->data[i]);
     } else if (streq(arg.value, "PX")) {
       if ((i + 1) >= entry->args->count)
         return MISSING_PX_VALUE;
@@ -162,7 +169,7 @@ static OptionParsingCode parse_options(struct CommandEntry *entry, Options *opti
       options->expiry.enabled = true;
       i += 1;
 
-      parse_expiry_option(EXPIRY_EX, options, entry->args->data[i].value);
+      parse_expiry_option(EXPIRY_EX, options, entry->args->data[i]);
     } else if (streq(arg.value, "AS")) {
       options->as = true;
 
@@ -213,7 +220,7 @@ static OptionParsingCode parse_options(struct CommandEntry *entry, Options *opti
             break;
 
           case TELLY_BOOL:
-            if (!response->is_true && !streq(response->input, "false"))
+            if (!response->is_true && !SSTREQ(response->input, CREATE_SIZED_STRING("false")))
               return MUST_BE_BOOLEAN;
 
             break;
@@ -254,13 +261,13 @@ static string_t run(struct CommandEntry *entry) {
     return WRONG_ARGUMENT_ERROR("SET");
   }
 
-  const char *input = entry->args->data[1].value;
+  const string_t input = entry->args->data[1];
 
   Response response = {
     .input = input,
     .type = TELLY_UNKNOWN,
 
-    .is_true = streq(input, "true"),
+    .is_true = SSTREQ(input, CREATE_SIZED_STRING("true")),
     .is_integer = false,
     .is_double = false
   };
@@ -314,7 +321,9 @@ static string_t run(struct CommandEntry *entry) {
           return OUT_OF_MEMORY();
         }
 
-        mpz_init_set_str(*((mpz_t *) value), response.input, 10);
+        // Required to be changed, not safe/best practice
+        response.input.value[response.input.len] = '\0';
+        mpz_init_set_str(*((mpz_t *) value), response.input.value, 10);
         break;
 
       case TELLY_DOUBLE:
@@ -324,8 +333,10 @@ static string_t run(struct CommandEntry *entry) {
           return OUT_OF_MEMORY();
         }
 
+        // Required to be changed, not safe/best practice
+        response.input.value[response.input.len] = '\0';
         mpf_init2(*((mpf_t *) value), FLOAT_PRECISION);
-        mpf_set_str(*((mpf_t *) value), response.input, 10);
+        mpf_set_str(*((mpf_t *) value), response.input.value, 10);
         break;
 
       case TELLY_STR:
@@ -339,7 +350,7 @@ static string_t run(struct CommandEntry *entry) {
       default:
         break;
     }
-  } else if (response.is_true || streq(response.input, "false")) {
+  } else if (response.is_true || SSTREQ(response.input, CREATE_SIZED_STRING("false"))) {
     if (!options.as)
       response.type = TELLY_BOOL;
 
@@ -365,7 +376,7 @@ static string_t run(struct CommandEntry *entry) {
       default:
         break;
     }
-  } else if (streq(response.input, "null")) {
+  } else if (SSTREQ(response.input, CREATE_SIZED_STRING("null"))) {
     if (!options.as)
       response.type = TELLY_NULL;
 
@@ -418,7 +429,8 @@ static string_t run(struct CommandEntry *entry) {
       return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_READ");
     }
   } else {
-    ASSERT(value, !=, NULL);
+    if (response.type != TELLY_NULL)
+      ASSERT(value, !=, NULL);
 
     const uint64_t *expire_at = (options.expiry.enabled ? &options.expiry.at : NULL);
     const bool success = (set_data(entry->database, res, key, value, response.type, expire_at) != NULL);

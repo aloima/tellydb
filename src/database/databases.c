@@ -3,9 +3,37 @@
 static LinkedList *databases = NULL;
 static Database *main = NULL;
 
+// Source: https://github.com/openssl/openssl/blob/master/crypto/lhash/lhash.c#L359 (OPENSSL_LH_strhash)
+// Modified for to use string length, not null terminator
 uint64_t string_hash(void *data) {
   string_t *key = (string_t *) data;
-  return OPENSSL_LH_strhash(key->value);
+
+  char *c = key->value;
+  uint64_t len = key->len;
+
+  unsigned long ret = 0;
+  long n;
+  unsigned long v;
+  int r;
+
+  if ((c == NULL) || (len == '\0'))
+      return ret;
+
+  n = 0x100;
+  while (len > 0) {
+      v = n | (*c);
+      n += 0x100;
+      r = (int) ((v >> 2) ^ v) & 0x0f;
+      /* cast to uint64_t to avoid 32 bit shift of 32 bit value */
+      ret = (ret << r) | (unsigned long) ((uint64_t) ret >> (32 - r));
+      ret &= 0xFFFFFFFFL;
+      ret ^= v * v;
+
+      c++;
+      len--;
+  }
+
+  return (ret >> 16) ^ ret;
 }
 
 bool string_compare(void *string_a, void *string_b) {
@@ -15,7 +43,7 @@ bool string_compare(void *string_a, void *string_b) {
   string_t *a = (string_t *) string_a;
   string_t *b = (string_t *) string_b;
 
-  return (a->len == b->len) && (memcmp(a->value, b->value, a->len) == 0);
+  return SSTREQ(*a, *b);
 }
 
 Database *create_database(const string_t name, const uint64_t capacity) {
@@ -44,7 +72,7 @@ Database *create_database(const string_t name, const uint64_t capacity) {
   database->name = CREATE_STRING(name_str, name.len);
   memcpy(database->name.value, name.value, name.len);
 
-  database->id = OPENSSL_LH_strhash(name.value);
+  database->id = string_hash((string_t *) &name);
   database->data = data;
 
   return database;
@@ -81,13 +109,13 @@ static inline bool cmp(void *data, void *external) {
   const string_t a = database->name;
   const string_t b = external_s->name;
 
-  return (database->id == external_s->target) && (a.len == b.len && memcmp(a.value, b.value, a.len) == 0);
+  return (database->id == external_s->target) && SSTREQ(a, b);
 }
 
 Database *get_database(const string_t name) {
   struct ExternalData external = {
     .name = name,
-    .target = OPENSSL_LH_strhash(name.value)
+    .target = string_hash((string_t *) &name)
   };
 
   LinkedListNode *node = ll_search_node(databases, LL_BACK, &external, cmp);
@@ -98,7 +126,7 @@ bool rename_database(const string_t old_name, const string_t new_name) {
   Database *database = ({
     struct ExternalData external = {
       .name = old_name,
-      .target = OPENSSL_LH_strhash(old_name.value)
+      .target = string_hash((string_t *) &old_name)
     };
 
     LinkedListNode *node = ll_search_node(databases, LL_BACK, &external, cmp);
@@ -110,7 +138,7 @@ bool rename_database(const string_t old_name, const string_t new_name) {
   char *name = malloc(new_name.len);
   if (!name) return false;
 
-  database->id = OPENSSL_LH_strhash(new_name.value);
+  database->id = string_hash((string_t *) &new_name);
   free(database->name.value);
 
   database->name = CREATE_STRING(name, new_name.len);

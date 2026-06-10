@@ -12,7 +12,7 @@ static string_t run(struct CommandEntry *entry) {
 
   string_t response;
 
-  if (streq("DOCS", subcommand.value)) {
+  if (SSTREQ(CREATE_SIZED_STRING("DOCS"), subcommand)) {
     const struct Command *commands = get_commands();
     const uint32_t command_count = get_command_count();
 
@@ -85,7 +85,7 @@ static string_t run(struct CommandEntry *entry) {
     }
 
     response = CREATE_STRING(res, res_len);
-  } else if (streq("LIST", subcommand.value)) {
+  } else if (SSTREQ(CREATE_SIZED_STRING("LIST"), subcommand)) {
     const struct Command *commands = get_commands();
     const uint32_t command_count = get_command_count();
 
@@ -99,7 +99,7 @@ static string_t run(struct CommandEntry *entry) {
     }
 
     response = CREATE_STRING(res, res_len);
-  } else if (streq("COUNT", subcommand.value)) {
+  } else if (SSTREQ(CREATE_SIZED_STRING("COUNT"), subcommand)) {
     const size_t nbytes = sprintf(entry->client->write_buf, ":%" PRIu32 "\r\n", get_command_count());
     response = CREATE_STRING(entry->client->write_buf, nbytes);
   } else {

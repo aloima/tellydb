@@ -319,7 +319,7 @@ size_t read_file(const int fd, const off_t file_size, char *block, const uint16_
   const string_t database_name = CREATE_STRING(server->conf->database_name, strlen(server->conf->database_name));
 
   if (at != file_size) {
-    const uint64_t hashed = OPENSSL_LH_strhash(database_name.value);
+    const uint64_t hashed = string_hash((string_t *) &database_name);
 
     off_t collected_bytes = at;
     uint64_t data_count = 0;

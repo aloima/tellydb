@@ -97,6 +97,18 @@ Client *add_client(const int connfd) {
   client->write_buf = arena_alloc(write_arena, MAX_RESPONSE_SIZE * sizeof(char));
   if (client->write_buf == NULL) return NULL;
 
+  client->read_buf = malloc(sizeof(QueryBuffer));
+  if (client->read_buf == NULL) return NULL;
+
+  client->read_buf->data = malloc(RESP_BUF_SIZE);
+  if (client->read_buf->data == NULL) {
+    free(client->read_buf);
+    return NULL;
+  }
+
+  client->read_buf->size = RESP_BUF_SIZE;
+  atomic_init(&client->read_buf->refcount, 1);
+
   if (get_password_count() == 0) {
     client->password = get_default_password();
   } else {
@@ -119,6 +131,13 @@ static inline void free_client(Client *client) {
   if (client->lib_ver) free(client->lib_ver);
   if (client->waiting_block) remove_transaction_block(client->waiting_block);
   if (client->command) free(client->command);
+
+  if (client->read_buf) {
+    if (atomic_fetch_sub_explicit(&client->read_buf->refcount, 1, memory_order_relaxed) == 1) {
+      free(client->read_buf->data);
+      free(client->read_buf);
+    }
+  }
 }
 
 bool remove_client(const int id) {

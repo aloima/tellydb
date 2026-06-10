@@ -29,6 +29,12 @@ typedef struct {
 } UsedCommand;
 
 typedef struct {
+  char *data;
+  uint32_t size;
+  _Atomic(uint32_t) refcount;
+} QueryBuffer;
+
+typedef struct {
   int id, connfd;
   SSL *ssl;
 
@@ -44,6 +50,7 @@ typedef struct {
   TransactionBlock *waiting_block;
 
   char *write_buf;
+  QueryBuffer *read_buf;
 } Client;
 
 int initialize_clients();

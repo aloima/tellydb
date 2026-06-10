@@ -18,7 +18,7 @@ static inline string_t subcommand_info(struct CommandEntry *entry) {
         return RESP_ERROR_MESSAGE("Not allowed to use this command with argument, need P_CLIENT");
       }
 
-      if (!try_parse_integer(entry->args->data[1].value)) {
+      if (!try_parse_integer(entry->args->data[1])) {
         return RESP_ERROR_MESSAGE("Specified argument must be integer for the ID");
       }
 
@@ -157,7 +157,7 @@ static string_t subcommand_lock(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_CLIENT");
   }
 
-  if (!try_parse_integer(entry->args->data[1].value)) {
+  if (!try_parse_integer(entry->args->data[1])) {
     PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("Specified argument must be integer for the ID");
   }
@@ -199,7 +199,7 @@ static inline string_t subcommand_setinfo(struct CommandEntry *entry) {
   string_t property = entry->args->data[1];
   to_uppercase(property, property.value);
 
-  if (streq(property.value, "LIB-NAME")) {
+  if (SSTREQ(property, CREATE_SIZED_STRING("LIB-NAME"))) {
     string_t value = entry->args->data[2];
     const uint32_t value_size = value.len + 1;
 
@@ -208,11 +208,12 @@ static inline string_t subcommand_setinfo(struct CommandEntry *entry) {
     }
 
     entry->client->lib_name = malloc(value_size);
-    if (entry->client->lib_name == NULL) return RESP_ERROR_MESSAGE("Out of memory");
-    memcpy(entry->client->lib_name, value.value, value_size);
+    if (entry->client->lib_name == NULL)
+      return RESP_ERROR_MESSAGE("Out of memory");
 
+    memcpy(entry->client->lib_name, value.value, value_size);
     return RESP_OK();
-  } else if (streq(property.value, "LIB-VERSION")) {
+  } else if (SSTREQ(property, CREATE_SIZED_STRING("LIB-VERSION"))) {
     string_t value = entry->args->data[2];
     const uint32_t value_size = value.len + 1;
 
@@ -221,9 +222,10 @@ static inline string_t subcommand_setinfo(struct CommandEntry *entry) {
     }
 
     entry->client->lib_ver = malloc(value_size);
-    if (entry->client->lib_ver == NULL) return RESP_ERROR_MESSAGE("Out of memory");
-    memcpy(entry->client->lib_ver, value.value, value_size);
+    if (entry->client->lib_ver == NULL)
+      return RESP_ERROR_MESSAGE("Out of memory");
 
+    memcpy(entry->client->lib_ver, value.value, value_size);
     return RESP_OK();
   } else {
     return RESP_ERROR_MESSAGE("Unknown property");
@@ -236,7 +238,7 @@ static inline string_t subcommand_kill(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_CLIENT");
   }
 
-  if (!try_parse_integer(entry->args->data[1].value)) {
+  if (!try_parse_integer(entry->args->data[1])) {
     PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("Specified argument must be integer for the ID");
   }
@@ -274,7 +276,7 @@ static inline string_t subcommand_unlock(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_CLIENT");
   }
 
-  if (!try_parse_integer(entry->args->data[1].value)) {
+  if (!try_parse_integer(entry->args->data[1])) {
     PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("Specified argument must be integer for the ID");
   }
@@ -313,19 +315,19 @@ static string_t run(struct CommandEntry *entry) {
   const string_t subcommand = entry->args->data[0];
   to_uppercase(subcommand, subcommand.value);
 
-  if (streq("ID", subcommand.value) && entry->client) {
+  if (SSTREQ(CREATE_SIZED_STRING("ID"), subcommand) && entry->client) {
     return subcommand_id(entry->client, entry->client->write_buf);
-  } else if (streq("INFO", subcommand.value) && entry->client) {
+  } else if (SSTREQ(CREATE_SIZED_STRING("INFO"), subcommand) && entry->client) {
     return subcommand_info(entry);
-  } else if (streq("LIST", subcommand.value) && entry->client) {
+  } else if (SSTREQ(CREATE_SIZED_STRING("LIST"), subcommand) && entry->client) {
     return subcommand_list(entry);
-  } else if (streq("LOCK", subcommand.value)) {
+  } else if (SSTREQ(CREATE_SIZED_STRING("LOCK"), subcommand)) {
     return subcommand_lock(entry);
-  } else if (streq("SETINFO", subcommand.value) && entry->client) {
+  } else if (SSTREQ(CREATE_SIZED_STRING("SETINFO"), subcommand) && entry->client) {
     return subcommand_setinfo(entry);
-  } else if (streq("KILL", subcommand.value)) {
+  } else if (SSTREQ(CREATE_SIZED_STRING("KILL"), subcommand)) {
     return subcommand_kill(entry);
-  } else if (streq("UNLOCK", subcommand.value)) {
+  } else if (SSTREQ(CREATE_SIZED_STRING("UNLOCK"), subcommand)) {
     return subcommand_unlock(entry);
   } else if (entry->client) {
     return INVALID_SUBCOMMAND_ERROR("CLIENT");

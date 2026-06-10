@@ -1,16 +1,14 @@
 #include <telly.h>
 
-#define INITIAL_UNKNOWN_COMMAND_ARENA_SIZE 8192
-
 static inline void unknown_command(Client *client, string_t *name, Arena *arena) {
   char *ubuf = arena_alloc(arena, name->len + 22);
-  const size_t nbytes = sprintf(ubuf, "-Unknown command '%s'\r\n", name->value);
+  const size_t nbytes = sprintf(ubuf, "-Unknown command '%.*s'\r\n", name->len, name->value);
 
   add_io_request(IOOP_WRITE, client, CREATE_STRING(ubuf, nbytes));
 }
 
 static inline void get_used_command(const commanddata_t *data, UsedCommand *command) {
-  const struct CommandIndex *command_index = get_command_index(data->name->value, data->name->len);
+  const struct CommandIndex *command_index = get_command_index(data->name.value, data->name.len);
   if (!command_index) {
     atomic_store_explicit(&command->idx, UINT64_MAX, memory_order_relaxed);
     atomic_store_explicit(&command->data, NULL, memory_order_relaxed);
@@ -41,7 +39,17 @@ static inline void get_used_command(const commanddata_t *data, UsedCommand *comm
 }
 
 void read_command(IOThread *thread, Client *client) {
-  int size = read_from_socket(client, thread->buf, RESP_BUF_SIZE);
+  if (atomic_load_explicit(&client->read_buf->refcount, memory_order_relaxed) > 1) {
+    QueryBuffer *new_buf = malloc(sizeof(QueryBuffer));
+    new_buf->data = malloc(RESP_BUF_SIZE);
+    new_buf->size = RESP_BUF_SIZE;
+    atomic_init(&new_buf->refcount, 1);
+
+    atomic_fetch_sub_explicit(&client->read_buf->refcount, 1, memory_order_relaxed);
+    client->read_buf = new_buf;
+  }
+
+  int size = read_from_socket(client, client->read_buf->data, client->read_buf->size);
 
   if (size == 0) {
     add_io_request(IOOP_TERMINATE, client, EMPTY_STRING());
@@ -52,13 +60,25 @@ void read_command(IOThread *thread, Client *client) {
 
   while (size != -1) {
     commanddata_t data;
-    if (!get_command_data(thread->resp_arena, client, thread->buf, &at, &size, &data)) continue;
+    if (!get_command_data(client, &at, &size, &data))
+      continue;
 
     if (size == at) {
-      if (size != RESP_BUF_SIZE) {
+      // TODO: safe type-casting
+      if (size != (int32_t) client->read_buf->size) {
         size = -1;
       } else {
-        size = read_from_socket(client, thread->buf, RESP_BUF_SIZE);
+        if (atomic_load_explicit(&client->read_buf->refcount, memory_order_relaxed) > 1) {
+          QueryBuffer *new_buf = malloc(sizeof(QueryBuffer));
+          new_buf->data = malloc(RESP_BUF_SIZE);
+          new_buf->size = RESP_BUF_SIZE;
+          atomic_init(&new_buf->refcount, 1);
+
+          atomic_fetch_sub_explicit(&client->read_buf->refcount, 1, memory_order_relaxed);
+          client->read_buf = new_buf;
+        }
+
+        size = read_from_socket(client, client->read_buf->data, client->read_buf->size);
         at = 0;
       }
     }
@@ -68,10 +88,10 @@ void read_command(IOThread *thread, Client *client) {
       continue;
     }
 
-    const struct CommandIndex *command_index = get_command_index(data.name->value, data.name->len);
+    const struct CommandIndex *command_index = get_command_index(data.name.value, data.name.len);
 
     if (!command_index) {
-      unknown_command(client, data.name, thread->ucmd_arena);
+      unknown_command(client, &data.name, thread->ucmd_arena);
       continue;
     }
 

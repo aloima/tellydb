@@ -2,7 +2,7 @@
 
 static const struct Command *command_list[] = {
   // Database commands
-  &cmd_dbsize, &cmd_flushall, &cmd_flushdb, &cmd_bgsave, &cmd_lastsave,
+  &cmd_bgsave, &cmd_dbsize, &cmd_flushall, &cmd_flushdb, &cmd_lastsave,
   &cmd_save, &cmd_select,
 
   // Generic commands
@@ -36,6 +36,7 @@ struct Command *load_commands() {
   for (uint32_t i = 0; i < command_count; ++i) {
     const struct Command *command = command_list[i];
     const uint32_t index = get_command_index(command->name, strlen(command->name))->idx;
+    ASSERT(i, ==, index); // In command_hash.gperf file, commands are ordered in the same way
 
     commands[index] = *command;
   }

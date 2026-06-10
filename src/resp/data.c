@@ -1,15 +1,15 @@
 #include <telly.h>
 #include "resp.h"
 
-#define PARSE_COMMAND(type) do {                                                  \
-  if (VERY_LIKELY(type[0] == *RDT_ARRAY)) {                                       \
-    return parse_resp_command(arena, client, buf, at, size, command);             \
-  } else if (VERY_LIKELY(isalnum(type[0]))) {                                     \
-    return parse_inline_command(arena, client, buf, at, size, command, *type);    \
-  }                                                                               \
+#define PARSE_COMMAND(type) do {                                        \
+  if (VERY_LIKELY(type[0] == *RDT_ARRAY)) {                             \
+    return parse_resp_command(client, at, size, command);          \
+  } else if (VERY_LIKELY(isalnum(type[0]))) {                           \
+    return parse_inline_command(client, at, size, command, *type); \
+  }                                                                     \
 } while (0)
 
-bool get_command_data(Arena *arena, Client *client, char *buf, int32_t *at, int32_t *size, commanddata_t *command) {
+bool get_command_data(Client *client, int32_t *at, int32_t *size, commanddata_t *command) {
   char *type;
   TAKE_BYTES(type, 1, false);
 

@@ -6,6 +6,7 @@
 #include <time.h>
 
 #define streq(s1, s2) (strcmp((s1), (s2)) == 0)
+#define SSTREQ(s1, s2) (((s1).len == (s2).len) && (memcmp((s1).value, (s2).value, (s1).len) == 0))
 
 typedef struct String {
   char *value;
@@ -13,7 +14,8 @@ typedef struct String {
 } string_t;
 
 #define EMPTY_STRING() ((string_t) {"", 0})
-#define CREATE_STRING(value, len) ((string_t) {value, len})
+#define CREATE_STRING(value, len) ((string_t) {(value), (len)})
+#define CREATE_SIZED_STRING(value) ((string_t) {(value), (sizeof(value) - 1)})
 
 void to_uppercase(string_t src, char *dst);
 

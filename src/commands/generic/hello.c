@@ -9,11 +9,11 @@ static string_t run(struct CommandEntry *entry) {
     return WRONG_ARGUMENT_ERROR("HELLO");
   }
 
-  const char *protover = entry->args->data[0].value;
+  const string_t protover = entry->args->data[0];
 
-  if (streq(protover, "2")) {
+  if (SSTREQ(protover, CREATE_SIZED_STRING("2"))) {
     entry->client->protover = RESP2;
-  } else if (streq(protover, "3")) {
+  } else if (SSTREQ(protover, CREATE_SIZED_STRING("3"))) {
     entry->client->protover = RESP3;
   } else {
     return RESP_ERROR_MESSAGE("Invalid protocol version");

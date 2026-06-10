@@ -6,7 +6,7 @@
 
 #include "notifier.h"   // IWYU pragma: export
 #include "tqueue.h"     // IWYU pragma: export
-#include "integer.h"    // IWYU pragma: export
+#include "number.h"     // IWYU pragma: export
 #include "hashset.h"    // IWYU pragma: export
 #include "hashtable.h"  // IWYU pragma: export
 #include "vector.h"     // IWYU pragma: export

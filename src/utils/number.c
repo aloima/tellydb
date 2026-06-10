@@ -1,39 +1,109 @@
 #include <telly.h>
 
-bool try_parse_integer(const char *value) {
-  char *v = (char *) value;
+bool try_parse_integer(const string_t str) {
+  char *v = str.value;
+  uint64_t len = str.len;
 
   if (*v == '-') {
     v += 1;
-    if (*v == '0' || *v == '\0') return false;
+    len -= 1;
+
+    if (len == 0 || *v == '0')
+      return false;
   }
 
   while ('0' <= *v && *v <= '9') {
     v += 1;
+    len -= 1;
   }
 
-  return (v != value) && (*v == '\0');
+  return (v != str.value) && (len == 0);
 }
 
-bool try_parse_double(const char *value) {
+bool try_parse_double(const string_t str) {
   bool point = false;
-  char *v = (char *) value;
-  if (*v == '-') v += 1;
+  char *v = str.value;
+  uint64_t len = str.len;
 
-  while (*v != '\0') {
+  if (*v == '-') {
+    v += 1;
+    len -= 1;
+  }
+
+  while (len != 0) {
     const char c = *v;
 
     if (c == '.') {
-      if (point) return false;
+      if (point)
+        return false;
+
       point = true;
     } else if (c < '0' || '9' < c) {
       return false;
     }
 
     v += 1;
+    len -= 1;
   }
 
   return point;
+}
+
+uint64_t atoull_s(const string_t str) {
+  ASSERT(str.value, !=, NULL);
+  ASSERT(str.len, !=, 0ULL);
+
+  errno = 0;
+
+  const char *value = str.value;
+  uint64_t len = str.len;
+
+  if (value[0] == '-') {
+    errno = EINVAL;
+    return UINT64_MAX;
+  }
+
+  if (value[0] == '+') {
+    value += 1;
+    len -= 1;
+
+    if (VERY_UNLIKELY(len == 0ULL)) {
+      errno = EINVAL;
+      return UINT64_MAX;
+    }
+  }
+
+  while (len != 0 && *value == '0') {
+    value += 1;
+    len -= 1;
+  }
+
+  static constexpr const uint64_t max_div_10 = UINT64_MAX / 10;
+  static constexpr const uint64_t max_mod_10 = UINT64_MAX % 10;
+
+  uint64_t result = 0;
+
+  while (len != 0) {
+    const char c = *value;
+
+    if (VERY_UNLIKELY(!('0' <= c && c <= '9'))) {
+      errno = EINVAL;
+      return UINT64_MAX;
+    }
+
+    const uint8_t digit = (c - '0');
+
+    if (VERY_UNLIKELY(result > max_div_10 || (result == max_div_10 && digit > max_mod_10))) {
+      errno = ERANGE;
+      return UINT64_MAX;
+    }
+
+    result = (result * 10) + digit;
+    len -= 1;
+    value += 1;
+  }
+
+  return result;
 }
 
 uint8_t ltoa(const int64_t value, char *dst) {
