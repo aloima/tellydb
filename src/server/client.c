@@ -142,7 +142,8 @@ static inline void free_client(Client *client) {
 
 bool remove_client(const int id) {
   Client *client = get_client(id);
-  if (client == NULL) return false;
+  if (client == NULL)
+    return false;
 
   client->id = -1;
   free_client(client);

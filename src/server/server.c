@@ -28,6 +28,8 @@ Server *server = NULL;
 } while (0)
 
 void terminate_connection(Client *client) {
+  ASSERT(client, !=, NULL);
+
   const int connfd = client->connfd;
   event_t ev;
   PREPARE_REMOVING_EVENT(ev, connfd);
@@ -38,7 +40,7 @@ void terminate_connection(Client *client) {
   write_log(LOG_DBG, "Client #%" PRIi32 " is disconnected.", client->id);
 
   ASSERT(close(connfd), ==, 0);
-  remove_client(client->id);
+  ASSERT(remove_client(client->id), ==, true);
 }
 
 static inline void cleanup() {
