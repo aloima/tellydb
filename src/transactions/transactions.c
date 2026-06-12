@@ -196,9 +196,18 @@ static inline void check_autosave(struct Command *command) {
 
       uint32_t server_age = server->age;
       server_age += difftime(current_time, server->start_at);
-      save_data(server_age);
 
-      write_log(LOG_INFO, "More than %" PRIu32 " keys are changed in %" PRIu32 " seconds, auto-saving...", count, seconds);
+      const int saved = save_data(server_age);
+
+      if (saved == 0) {
+        const char *format = "More than %" PRIu32 " keys are changed in %" PRIu32 " seconds, auto-saved successfully.";
+        write_log(LOG_INFO, format, count, seconds);
+      } else if (saved == -1) {
+        const char *format = "More than %" PRIu32 " keys are changed in %" PRIu32 " seconds, but cannot auto-saved.";
+        write_log(LOG_INFO, format, count, seconds);
+      }
+
+      unreachable();
     } else if (current_time >= (tx_last_saved_at + seconds)) {
       database_operations = 1;
       tx_last_saved_at = current_time;
