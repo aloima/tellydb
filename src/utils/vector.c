@@ -1,4 +1,3 @@
-#include <stdint.h>
 #include <telly.h>
 
 Vector *create_vector(const uint64_t capacity) {
@@ -22,6 +21,8 @@ Vector *create_vector(const uint64_t capacity) {
 }
 
 static int grow_vector(Vector *vector) {
+  ASSERT(vector, !=, NULL);
+
   const uint64_t old_capacity = vector->size.capacity;
 
   if (vector->size.count < (old_capacity * VECTOR_GROW_LOAD_FACTOR))
@@ -33,7 +34,7 @@ static int grow_vector(Vector *vector) {
   if (amalloc(elements, void *, new_capacity) != 0)
     return -1;
 
-  memcpy(elements, vector->elements, old_capacity * sizeof(void *));
+  ASSERT(memcpy(elements, vector->elements, old_capacity * sizeof(void *)), !=, NULL);
 
   free(vector->elements);
   vector->elements = elements;
@@ -43,6 +44,9 @@ static int grow_vector(Vector *vector) {
 }
 
 bool insert_into_vector(Vector *vector, void *element) {
+  ASSERT(vector, !=, NULL);
+  ASSERT(element, !=, NULL);
+
   // Guaranteed that capacity is enough
   if (grow_vector(vector) < 0)
     return false;
@@ -52,13 +56,16 @@ bool insert_into_vector(Vector *vector, void *element) {
 }
 
 bool delete_from_vector(Vector *vector, void *element) {
+  ASSERT(vector, !=, NULL);
+  ASSERT(element, !=, NULL);
+
   const uint64_t count = vector->size.count;
   void **elements = vector->elements;
 
   for (uint64_t i = 0; i < count; ++i) {
     if (elements[i] != element) continue;
 
-    memcpy(elements + i, elements + i + 1, sizeof(void *) * (count - i - 1));
+    ASSERT(memcpy(elements + i, elements + i + 1, sizeof(void *) * (count - i - 1)), !=, NULL);
     vector->size.count -= 1;
 
     return true;
@@ -68,6 +75,10 @@ bool delete_from_vector(Vector *vector, void *element) {
 }
 
 bool foreach_vector(Vector *vector, bool (*procedure)(void *element, void *external), void *external) {
+  ASSERT(vector, !=, NULL);
+  ASSERT(procedure, !=, NULL);
+  ASSERT(external, !=, NULL);
+
   for (uint64_t i = 0; i < vector->size.count; ++i) {
     if (procedure(vector->elements[i], external) == false)
       return false;
@@ -88,6 +99,9 @@ bool any_in_vector(Vector *vector, bool (*procedure)(void *element)) {
 }
 
 static bool destroy_element_layer(void *element, void *data) {
+  ASSERT(element, !=, NULL);
+  ASSERT(data, !=, NULL);
+
   void (*destroy_element)(void *element) = (void (*)(void *element)) data;
   destroy_element(element);
 
@@ -95,8 +109,10 @@ static bool destroy_element_layer(void *element, void *data) {
 }
 
 void clear_vector(Vector *vector, void (*destroy_element)(void *element)) {
+  ASSERT(vector, !=, NULL);
+
   if (destroy_element != NULL)
-    foreach_vector(vector, destroy_element_layer, destroy_element);
+    ASSERT(foreach_vector(vector, destroy_element_layer, destroy_element), ==, true);
 
   const uint64_t capacity = vector->size.capacity;
   vector->size.count = 0;
@@ -107,8 +123,10 @@ void clear_vector(Vector *vector, void (*destroy_element)(void *element)) {
 }
 
 void destroy_vector(Vector *vector, void (*destroy_element)(void *element)) {
+  ASSERT(vector, !=, NULL);
+
   if (destroy_element != NULL)
-    foreach_vector(vector, destroy_element_layer, destroy_element);
+    ASSERT(foreach_vector(vector, destroy_element_layer, destroy_element), ==, true);
 
   free(vector->elements);
   free(vector);
