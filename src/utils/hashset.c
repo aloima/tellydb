@@ -142,7 +142,8 @@ bool exist_in_hashset(HashSet *set, void *element) {
 
 void destroy_hashset(HashSet *set, void (*destroy_element)(void *element)) {
   if (destroy_element != NULL) {
-    for (uint64_t i = 0; i < set->size.count; ++i) {
+    for (uint64_t i = 0; i < set->size.capacity; ++i) {
+      if (set->elements[i] == NULL) continue;
       destroy_element(set->elements[i]);
     }
   }

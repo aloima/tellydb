@@ -162,7 +162,9 @@ static inline void dump_into_file(HashTableElement element, void *external) {
 }
 
 int save_data(const uint32_t server_age) {
-  if (saving) return -1;
+  if (saving)
+    return -1;
+
   saving = true;
 
   char *block = NULL;

@@ -14,7 +14,8 @@ uint64_t get_processed_transaction_count() {
 
 TransactionBlock *enqueue_to_transaction_queue(TransactionBlock **block) {
   TransactionBlock *res = push_tqueue(tx_queue, block);
-  if (res == NULL) return NULL;
+  if (res == NULL)
+    return NULL;
 
   signal_notifier(tx_notifier, 1);
   return res;
@@ -31,7 +32,8 @@ static inline void prepare_transaction(Transaction *transaction, Client *client,
 bool add_transaction(Client *client, const UsedCommand *command, commanddata_t *data) {
   if (client->waiting_block == NULL || server->commands[command->idx].flags.bits.waiting_tx) {
     TransactionBlock *block = malloc(sizeof(TransactionBlock));
-    if (block == NULL) return false;
+    if (block == NULL)
+      return false;
 
     block->type = TX_DIRECT;
     block->client = client;
@@ -44,24 +46,28 @@ bool add_transaction(Client *client, const UsedCommand *command, commanddata_t *
     }
 
     prepare_transaction(block->data.transaction, client, command, data);
-    while (push_tqueue(tx_queue, &block) == NULL) cpu_relax();
+    while (push_tqueue(tx_queue, &block) == NULL)
+      cpu_relax();
 
     signal_notifier(tx_notifier, 1);
   } else {
     MultipleTransactions *multiple = &client->waiting_block->data.multiple;
     multiple->transaction_count += 1;
 
+    Transaction *transactions = NULL;
+
     if (multiple->transaction_count == 1) {
-      multiple->transactions = malloc(sizeof(Transaction));
+      transactions = malloc(sizeof(Transaction));
     } else {
-      multiple->transactions = realloc(multiple->transactions, sizeof(Transaction) * multiple->transaction_count);
+      transactions = realloc(multiple->transactions, sizeof(Transaction) * multiple->transaction_count);
     }
 
-    if (multiple->transactions == NULL) {
+    if (transactions == NULL) {
       multiple->transaction_count -= 1;
       return false;
     }
 
+    multiple->transactions = transactions;
     prepare_transaction(&multiple->transactions[multiple->transaction_count - 1], client, command, data);
   }
 
@@ -128,6 +134,9 @@ void free_transaction_blocks() {
 }
 
 static inline bool check_kv_expiries(void *element, void *external) {
+  ASSERT(element, !=, NULL);
+  ASSERT(external, !=, NULL);
+
   Database *database = (Database *) external;
   const string_t *key = (string_t *) element;
   KeyValue *kv = get_data(database, *key);
@@ -196,9 +205,18 @@ static inline void check_autosave(struct Command *command) {
 
       uint32_t server_age = server->age;
       server_age += difftime(current_time, server->start_at);
-      save_data(server_age);
 
-      write_log(LOG_INFO, "More than %" PRIu32 " keys are changed in %" PRIu32 " seconds, auto-saving...", count, seconds);
+      const int saved = save_data(server_age);
+
+      if (saved == 0) {
+        const char *format = "More than %" PRIu32 " keys are changed in %" PRIu32 " seconds, auto-saved successfully.";
+        write_log(LOG_INFO, format, count, seconds);
+      } else if (saved == -1) {
+        const char *format = "More than %" PRIu32 " keys are changed in %" PRIu32 " seconds, but cannot auto-saved.";
+        write_log(LOG_INFO, format, count, seconds);
+      }
+
+      unreachable();
     } else if (current_time >= (tx_last_saved_at + seconds)) {
       database_operations = 1;
       tx_last_saved_at = current_time;

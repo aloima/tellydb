@@ -2,6 +2,9 @@
 
 static inline LinkedListNode *ll_create_node(void *data) {
   LinkedListNode *node = malloc(sizeof(LinkedListNode));
+  if (node == NULL)
+    return NULL;
+
   node->data = data;
   node->prev = NULL;
   node->next = NULL;
@@ -11,7 +14,8 @@ static inline LinkedListNode *ll_create_node(void *data) {
 
 LinkedList *ll_create() {
   LinkedList *list = malloc(sizeof(LinkedList));
-  if (list == NULL) return NULL;
+  if (list == NULL)
+    return NULL;
 
   list->begin = NULL;
   list->end = NULL;
@@ -22,7 +26,8 @@ LinkedList *ll_create() {
 
 LinkedListNode *ll_insert_back(LinkedList *list, void *data) {
   LinkedListNode *node = ll_create_node(data);
-  if (node == NULL) return NULL;
+  if (node == NULL)
+    return NULL;
 
   if (list->size == 0) {
     list->begin = node;
@@ -43,7 +48,8 @@ LinkedListNode *ll_insert_back(LinkedList *list, void *data) {
 
 LinkedListNode *ll_insert_front(LinkedList *list, void *data) {
   LinkedListNode *node = ll_create_node(data);
-  if (node == NULL) return NULL;
+  if (node == NULL)
+    return NULL;
 
   if (list->size == 0) {
     list->begin = node;

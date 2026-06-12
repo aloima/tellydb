@@ -4,7 +4,7 @@ static void get_keys(struct CommandEntry *entry) {
   if (entry->args->count == 0) return;
 
   for (uint32_t i = 0; i < entry->args->count; ++i) {
-    (void) insert_into_vector(server->keyspace, &entry->args->data[i]);
+    ASSERT(insert_into_vector(server->keyspace, &entry->args->data[i]), ==, true);
   }
 }
 

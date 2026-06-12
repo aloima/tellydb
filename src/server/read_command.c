@@ -64,8 +64,7 @@ void read_command(IOThread *thread, Client *client) {
       continue;
 
     if (size == at) {
-      // TODO: safe type-casting
-      if (size != (int32_t) client->read_buf->size) {
+      if ((int64_t) size != (int64_t) client->read_buf->size) {
         size = -1;
       } else {
         if (atomic_load_explicit(&client->read_buf->refcount, memory_order_relaxed) > 1) {
