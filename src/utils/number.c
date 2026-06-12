@@ -130,7 +130,7 @@ uint8_t ltoa(const int64_t value, char *dst) {
     uval /= 100;
   }
 
-  if (uval > 0) {
+  if (pos != 0) {
     const uint8_t remainder = uval;
 
     if (remainder >= 10) {
@@ -142,7 +142,9 @@ uint8_t ltoa(const int64_t value, char *dst) {
     }
   }
 
-  if (neg) dst[0] = '-';
+  if (neg)
+    dst[0] = '-';
+
   return total_len;
 }
 
