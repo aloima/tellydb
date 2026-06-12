@@ -134,6 +134,9 @@ void free_transaction_blocks() {
 }
 
 static inline bool check_kv_expiries(void *element, void *external) {
+  ASSERT(element, !=, NULL);
+  ASSERT(external, !=, NULL);
+
   Database *database = (Database *) external;
   const string_t *key = (string_t *) element;
   KeyValue *kv = get_data(database, *key);
