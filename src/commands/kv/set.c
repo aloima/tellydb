@@ -3,7 +3,7 @@
 static void get_keys(struct CommandEntry *entry) {
   if (entry->args->count < 2) return;
 
-  (void) insert_into_vector(server->keyspace, &entry->args->data[0]);
+  ASSERT(insert_into_vector(server->keyspace, &entry->args->data[0]), ==, true);
 }
 
 
