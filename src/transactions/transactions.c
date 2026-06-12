@@ -14,7 +14,8 @@ uint64_t get_processed_transaction_count() {
 
 TransactionBlock *enqueue_to_transaction_queue(TransactionBlock **block) {
   TransactionBlock *res = push_tqueue(tx_queue, block);
-  if (res == NULL) return NULL;
+  if (res == NULL)
+    return NULL;
 
   signal_notifier(tx_notifier, 1);
   return res;
@@ -31,7 +32,8 @@ static inline void prepare_transaction(Transaction *transaction, Client *client,
 bool add_transaction(Client *client, const UsedCommand *command, commanddata_t *data) {
   if (client->waiting_block == NULL || server->commands[command->idx].flags.bits.waiting_tx) {
     TransactionBlock *block = malloc(sizeof(TransactionBlock));
-    if (block == NULL) return false;
+    if (block == NULL)
+      return false;
 
     block->type = TX_DIRECT;
     block->client = client;
@@ -44,24 +46,28 @@ bool add_transaction(Client *client, const UsedCommand *command, commanddata_t *
     }
 
     prepare_transaction(block->data.transaction, client, command, data);
-    while (push_tqueue(tx_queue, &block) == NULL) cpu_relax();
+    while (push_tqueue(tx_queue, &block) == NULL)
+      cpu_relax();
 
     signal_notifier(tx_notifier, 1);
   } else {
     MultipleTransactions *multiple = &client->waiting_block->data.multiple;
     multiple->transaction_count += 1;
 
+    Transaction *transactions = NULL;
+
     if (multiple->transaction_count == 1) {
-      multiple->transactions = malloc(sizeof(Transaction));
+      transactions = malloc(sizeof(Transaction));
     } else {
-      multiple->transactions = realloc(multiple->transactions, sizeof(Transaction) * multiple->transaction_count);
+      transactions = realloc(multiple->transactions, sizeof(Transaction) * multiple->transaction_count);
     }
 
-    if (multiple->transactions == NULL) {
+    if (transactions == NULL) {
       multiple->transaction_count -= 1;
       return false;
     }
 
+    multiple->transactions = transactions;
     prepare_transaction(&multiple->transactions[multiple->transaction_count - 1], client, command, data);
   }
 
