@@ -145,6 +145,53 @@ static size_t collect_double(mpf_t *number, const int fd, char *block, const uin
   return (2 + byte_count);
 }
 
+typedef struct AllocationArguments {
+  const int fd;
+  char *block;
+  const uint16_t block_size;
+  uint16_t *at;
+  size_t *collected_bytes;
+  uint32_t *element_count;
+} AllocationArguments;
+
+static inline AllocationArguments create_allocation_arguments(
+  const int fd, char *block, const uint16_t block_size, uint16_t *at, size_t *collected_bytes, uint32_t *element_count
+) {
+  AllocationArguments arguments = {
+    .fd = fd,
+    .at = at,
+    .block = block,
+    .block_size = block_size,
+    .collected_bytes = collected_bytes,
+    .element_count = element_count,
+  };
+
+  return arguments;
+}
+
+static int allocate_value(void **value, const enum TellyTypes type, AllocationArguments arguments) {
+  if (type == TELLY_LIST || type == TELLY_HASHTABLE) {
+    collect_bytes(arguments.fd, arguments.block, arguments.block_size, arguments.at, 4, arguments.element_count);
+
+    if (type == TELLY_LIST) {
+      *(arguments.collected_bytes) += (4 + *(arguments.element_count)); // includes size bytes and type bytes of listnodes
+      *value = ll_create();
+    } else if (type == TELLY_HASHTABLE) {
+      *(arguments.collected_bytes) += 5; // includes size bytes and last (0x17) byte
+      *value = create_hashtable(*(arguments.element_count), string_hash, string_compare);
+    }
+  } else {
+    const int64_t size = PRIMARY_TYPE_SIZE_TABLE[type];
+    ASSERT(size, !=, -1);
+    *value = malloc(size);
+  }
+
+  if (*value == NULL)
+    return -1;
+
+  return 0;
+}
+
 // TODO: memory checking
 static size_t collect_kv(KeyValue *kv, const int fd, char *block, const uint16_t block_size, uint16_t *at) {
   string_t key;
@@ -154,37 +201,36 @@ static size_t collect_kv(KeyValue *kv, const int fd, char *block, const uint16_t
   size_t collected_bytes = collect_string(&key, fd, block, block_size, at, false) + 1;
   collect_bytes(fd, block, block_size, at, 1, &type);
 
-  switch (type) {
-    case TELLY_NULL:
-      break;
+  const int64_t size = PRIMARY_TYPE_SIZE_TABLE[type];
+  uint32_t element_count;
 
+  AllocationArguments arguments = create_allocation_arguments(fd, block, block_size, at, &collected_bytes, &element_count);
+  const int allocated = allocate_value(&value, type, arguments);
+
+  if (allocated == -1) {
+    // TODO
+  }
+
+  switch (type) {
     case TELLY_INT:
-      value = malloc(sizeof(mpz_t));
       collected_bytes += collect_integer(value, fd, block, block_size, at);
       break;
 
     case TELLY_DOUBLE:
-      value = malloc(sizeof(mpf_t));
       collected_bytes += collect_double(value, fd, block, block_size, at);
       break;
 
     case TELLY_STR:
-      value = malloc(sizeof(string_t));
       collected_bytes += collect_string(value, fd, block, block_size, at, false);
       break;
 
     case TELLY_BOOL:
-      value = malloc(sizeof(bool));
       collect_bytes(fd, block, block_size, at, 1, value);
       collected_bytes += 1;
       break;
 
     case TELLY_HASHTABLE: {
-      uint32_t size;
-      collect_bytes(fd, block, block_size, at, 4, &size);
-      collected_bytes += 5; // includes size bytes and last (0x17) byte
-
-      HashTable *table = (value = create_hashtable(size, string_hash, string_compare));
+      HashTable *table = (HashTable *) value;
 
       while (true) {
         uint8_t byte;
@@ -201,33 +247,33 @@ static size_t collect_kv(KeyValue *kv, const int fd, char *block, const uint16_t
 
         void **data = &field->value.data;
 
-        switch (field->value.type) {
-          case TELLY_NULL:
-            break;
+        AllocationArguments field_arguments = create_allocation_arguments(fd, block, block_size, at, &collected_bytes, NULL);
+        const int allocated = allocate_value(data, field->value.type, field_arguments);
 
+        if (allocated == -1) {
+          // TODO
+        }
+
+        switch (field->value.type) {
           case TELLY_INT:
-            *data = malloc(sizeof(mpz_t));
             collected_bytes += collect_integer(*data, fd, block, block_size, at);
             break;
 
           case TELLY_DOUBLE:
-            *data = malloc(sizeof(mpf_t));
             collected_bytes += collect_double(*data, fd, block, block_size, at);
             break;
 
           case TELLY_STR:
-            *data = malloc(sizeof(string_t));
             collected_bytes += collect_string(*data, fd, block, block_size, at, false);
             break;
 
           case TELLY_BOOL:
-            *data = malloc(sizeof(bool));
             collect_bytes(fd, block, block_size, at, 1, *data);
             collected_bytes += 1;
             break;
 
-          // TELLY_LIST and TELLY_HASHTABLE
-          default: break;
+          default:
+            break;
         }
 
         insert_into_hashtable(table, &field->name, field);
@@ -237,40 +283,42 @@ static size_t collect_kv(KeyValue *kv, const int fd, char *block, const uint16_t
     }
 
     case TELLY_LIST: {
-      uint32_t size;
-      collect_bytes(fd, block, block_size, at, 4, &size);
-      collected_bytes += (4 + size); // includes size bytes and type bytes of listnodes
-
-      LinkedList *list = (value = ll_create());
+      LinkedList *list = (LinkedList *) value;
 
       for (uint32_t i = 0; i < size; ++i) {
         uint8_t byte;
         void *list_value = NULL;
         collect_bytes(fd, block, block_size, at, 1, &byte);
 
-        switch (byte) {
+        AllocationArguments list_value_arguments = create_allocation_arguments(fd, block, block_size, at, &collected_bytes, NULL);
+        const int allocated = allocate_value(&list_value, byte, list_value_arguments);
+
+        if (allocated == -1) {
+          // TODO
+        }
+
+        switch ((const enum TellyTypes) byte) {
           case TELLY_NULL:
             break;
 
           case TELLY_INT:
-            list_value = malloc(sizeof(mpz_t));
             collected_bytes += collect_integer(list_value, fd, block, block_size, at);
             break;
 
           case TELLY_DOUBLE:
-            list_value = malloc(sizeof(mpf_t));
             collected_bytes += collect_double(list_value, fd, block, block_size, at);
             break;
 
           case TELLY_STR:
-            list_value = malloc(sizeof(string_t));
             collected_bytes += collect_string(list_value, fd, block, block_size, at, false);
             break;
 
           case TELLY_BOOL:
-            list_value = malloc(sizeof(bool));
             collect_bytes(fd, block, block_size, at, 1, list_value);
             collected_bytes += 1;
+            break;
+
+          default:
             break;
         }
 
