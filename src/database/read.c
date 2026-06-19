@@ -3,24 +3,25 @@
 static void collect_bytes(const int fd, char *block, const uint16_t block_size, uint16_t *at, const uint32_t count, void *data) {
   uint32_t remaining = count;
 
-  if ((*at + remaining) >= block_size) {
-    const uint16_t available = (block_size - *at);
-    memcpy(data + (count - remaining), block + *at, available);
-    ASSERT(read(fd, block, block_size), ==, (int64_t) block_size);
-    remaining -= available;
-
-    while (remaining >= block_size) {
-      memcpy(data + (count - remaining), block, block_size);
-      ASSERT(read(fd, block, block_size), ==, (int64_t) block_size);
-      remaining -= block_size;
-    }
-
-    memcpy(data + (count - remaining), block, remaining);
-    *at = remaining;
-  } else {
+  if ((*at + remaining) < block_size) {
     memcpy(data, block + *at, remaining);
     *at += remaining;
+    return;
   }
+
+  const uint16_t available = (block_size - *at);
+  memcpy(data + (count - remaining), block + *at, available);
+  ASSERT(read(fd, block, block_size), ==, (int64_t) block_size);
+  remaining -= available;
+
+  while (remaining >= block_size) {
+    memcpy(data + (count - remaining), block, block_size);
+    ASSERT(read(fd, block, block_size), ==, (int64_t) block_size);
+    remaining -= block_size;
+  }
+
+  memcpy(data + (count - remaining), block, remaining);
+  *at = remaining;
 }
 
 static size_t collect_string(string_t *string, const int fd, char *block, const uint16_t block_size, uint16_t *at, bool nt) {
