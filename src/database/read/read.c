@@ -1,6 +1,5 @@
 #include <telly.h>
 #include "read.h"
-#include "utils/string.h"
 
 static int allocate_value(const GenericArguments *arguments, const UnallocatedValue value, size_t *collected_bytes) {
   const enum TellyTypes type = value.type;
@@ -29,50 +28,52 @@ static int allocate_value(const GenericArguments *arguments, const UnallocatedVa
   return 0;
 }
 
-#define COLLECT_PRIMARY_TYPES(_arguments, _value, _collected_bytes, _result) \
-  case TELLY_NULL: case TELLY_UNKNOWN:                                       \
-    break;                                                                   \
-                                                                             \
-  case TELLY_INT: {                                                          \
-    (_result) = collect_integer((_arguments), (_value));                     \
-    if (!(_result).succeed)                                                  \
-      return UNSUCCESSFUL_COLLECTION();                                      \
-                                                                             \
-    (_collected_bytes) += (_result).value;                                   \
-    break;                                                                   \
-  }                                                                          \
-                                                                             \
-  case TELLY_DOUBLE: {                                                       \
-    (_result) = collect_double((_arguments), (_value));                      \
-    if (!(_result).succeed)                                                  \
-      return UNSUCCESSFUL_COLLECTION();                                      \
-                                                                             \
-    (_collected_bytes) += (_result).value;                                   \
-    break;                                                                   \
-  }                                                                          \
-                                                                             \
-  case TELLY_STR: {                                                          \
-    (_result) = collect_string((_arguments), (_value));                      \
-    if (!(_result).succeed)                                                  \
-      return UNSUCCESSFUL_COLLECTION();                                      \
-                                                                             \
-    (_collected_bytes) += (_result).value;                                   \
-    break;                                                                   \
-  }                                                                          \
-                                                                             \
-  case TELLY_BOOL: {                                                         \
-    collect_bytes((_arguments), 1, (_value));                                \
-    (_collected_bytes) += 1;                                                 \
-    break;                                                                   \
+#define COLLECT_PRIMARY_TYPES(_arguments, _value, _collected_bytes, _result, label) \
+  case TELLY_NULL: case TELLY_UNKNOWN:                                              \
+    break;                                                                          \
+                                                                                    \
+  case TELLY_INT: {                                                                 \
+    (_result) = collect_integer((_arguments), (_value));                            \
+    if (!(_result).succeed)                                                         \
+      goto label;                                                                   \
+                                                                                    \
+    (_collected_bytes) += (_result).value;                                          \
+    break;                                                                          \
+  }                                                                                 \
+                                                                                    \
+  case TELLY_DOUBLE: {                                                              \
+    (_result) = collect_double((_arguments), (_value));                             \
+    if (!(_result).succeed)                                                         \
+      goto label;                                                                   \
+                                                                                    \
+    (_collected_bytes) += (_result).value;                                          \
+    break;                                                                          \
+  }                                                                                 \
+                                                                                    \
+  case TELLY_STR: {                                                                 \
+    (_result) = collect_string((_arguments), (_value));                             \
+    if (!(_result).succeed)                                                         \
+      goto label;                                                                   \
+                                                                                    \
+    (_collected_bytes) += (_result).value;                                          \
+    break;                                                                          \
+  }                                                                                 \
+                                                                                    \
+  case TELLY_BOOL: {                                                                \
+    collect_bytes((_arguments), 1, (_value));                                       \
+    (_collected_bytes) += 1;                                                        \
+    break;                                                                          \
   }
 
-// TODO: memory checking
+// TODO: free(key.value) integration
 static CollectionResult collect_kv(const GenericArguments *arguments, KeyValue *kv) {
   CollectionResult result;
 
-  string_t key;
-  void *value = NULL;
   enum TellyTypes type = TELLY_UNKNOWN;
+  string_t key;
+  void *value = NULL; // for Generic
+  NameValue *field = NULL; // for HashTable
+  Value *list_value = NULL; // for List
 
   result = collect_string(arguments, &key);
   if (!result.succeed)
@@ -94,7 +95,7 @@ static CollectionResult collect_kv(const GenericArguments *arguments, KeyValue *
   }
 
   switch (type) {
-    COLLECT_PRIMARY_TYPES(arguments, value, collected_bytes, result);
+    COLLECT_PRIMARY_TYPES(arguments, value, collected_bytes, result, GRACEFUL_SHUTDOWN);
 
     case TELLY_HASHTABLE: {
       HashTable *table = (HashTable *) value;
@@ -106,36 +107,37 @@ static CollectionResult collect_kv(const GenericArguments *arguments, KeyValue *
         if (byte == 0x17)
           break;
 
-        NameValue *field = malloc(sizeof(NameValue));
+        field = malloc(sizeof(NameValue));
         if (field == NULL)
-          return UNSUCCESSFUL_COLLECTION();
+          goto GRACEFUL_SHUTDOWN;
 
         result = collect_string(arguments, &field->name);
         if (!result.succeed)
-          return UNSUCCESSFUL_COLLECTION();
+          goto GRACEFUL_SHUTDOWN;
 
         collected_bytes += result.value;
-        field->value.type = byte;
+        field->value.type = (const enum TellyTypes) byte;
         collected_bytes += 1; // type byte
 
-        void **data = &field->value.data;
         const int field_alloc_ret = ({
-          const UnallocatedValue unallocated_value = { .data = data, .type = field->value.type, .element_count = NULL };
+          const UnallocatedValue unallocated_value = { .data = &field->value.data, .type = field->value.type, .element_count = NULL };
           allocate_value(arguments, unallocated_value, &collected_bytes);
         });
 
         if (field_alloc_ret == -1)
-          return UNSUCCESSFUL_COLLECTION();
+          goto GRACEFUL_SHUTDOWN;
 
         switch (field->value.type) {
-          COLLECT_PRIMARY_TYPES(arguments, *data, collected_bytes, result);
+          COLLECT_PRIMARY_TYPES(arguments, field->value.data, collected_bytes, result, GRACEFUL_SHUTDOWN);
 
           default:
             break;
         }
 
         if (insert_into_hashtable(table, &field->name, field) == NULL)
-          return UNSUCCESSFUL_COLLECTION();
+          goto GRACEFUL_SHUTDOWN;
+
+        field = NULL;
       }
 
       break;
@@ -145,46 +147,57 @@ static CollectionResult collect_kv(const GenericArguments *arguments, KeyValue *
       LinkedList *list = (LinkedList *) value;
 
       for (uint32_t i = 0; i < element_count; ++i) {
-        uint8_t byte;
-        void *list_value = NULL;
-        collect_bytes(arguments, 1, &byte);
+        list_value = malloc(sizeof(Value));
+        if (list_value == NULL)
+          goto GRACEFUL_SHUTDOWN;
+
+        collect_bytes(arguments, 1, (uint8_t *) &list_value->type);
 
         const int list_value_alloc_ret = ({
-          UnallocatedValue unallocated_value = { .data = &list_value, .type = byte, .element_count = NULL };
+          UnallocatedValue unallocated_value = { .data = &list_value->data, .type = list_value->type, .element_count = NULL };
           allocate_value(arguments, unallocated_value, &collected_bytes);
         });
 
         if (list_value_alloc_ret == -1)
-          return UNSUCCESSFUL_COLLECTION();
+          goto GRACEFUL_SHUTDOWN;
 
-        switch (byte) {
-          COLLECT_PRIMARY_TYPES(arguments, list_value, collected_bytes, result);
+        switch (list_value->type) {
+          COLLECT_PRIMARY_TYPES(arguments, list_value->data, collected_bytes, result, GRACEFUL_SHUTDOWN);
 
           default:
             break;
         }
 
-        Value *value = malloc(sizeof(Value));
-        if (value == NULL)
-          return UNSUCCESSFUL_COLLECTION();
+        if (ll_insert_back(list, list_value) == NULL)
+          goto GRACEFUL_SHUTDOWN;
 
-        value->type = byte;
-        value->data = list_value;
-
-        if (ll_insert_back(list, value) == NULL)
-          return UNSUCCESSFUL_COLLECTION();
+        list_value = NULL;
       }
-    }
 
-    break;
+      break;
+    }
   }
 
   const int set_kv_ret = set_kv(kv, key, value, type, NULL);
   if (set_kv_ret == -1)
-    return UNSUCCESSFUL_COLLECTION();
+    goto GRACEFUL_SHUTDOWN;
 
   free(key.value);
   return CREATE_COLLECTION_RESULT(true, collected_bytes);
+
+  GRACEFUL_SHUTDOWN: {
+    if (list_value != NULL)
+      free_list_value(list_value);
+
+    if (field != NULL) {
+      // TODO
+    }
+
+    if (value != NULL)
+      free_value((Value) { .data = value, .type = type });
+
+    return UNSUCCESSFUL_COLLECTION();
+  }
 }
 
 static CollectionResult collect_database(const GenericArguments *arguments, Database **database, uint64_t *count) {
