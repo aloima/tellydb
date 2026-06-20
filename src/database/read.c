@@ -201,8 +201,7 @@ static size_t collect_kv(const GenericArguments *arguments, KeyValue *kv) {
   size_t collected_bytes = collect_string(arguments, &key, false) + 1;
   collect_bytes(arguments, 1, &type);
 
-  const int64_t size = PRIMARY_TYPE_SIZE_TABLE[type];
-  uint32_t element_count;
+  uint32_t element_count = 0;
 
   const int alloc_ret = ({
     const UnallocatedValue unallocated_value = { .data = &value, .type = type, .element_count = &element_count };
@@ -288,7 +287,7 @@ static size_t collect_kv(const GenericArguments *arguments, KeyValue *kv) {
     case TELLY_LIST: {
       LinkedList *list = (LinkedList *) value;
 
-      for (uint32_t i = 0; i < size; ++i) {
+      for (uint32_t i = 0; i < element_count; ++i) {
         uint8_t byte;
         void *list_value = NULL;
         collect_bytes(arguments, 1, &byte);
