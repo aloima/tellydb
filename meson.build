@@ -142,7 +142,9 @@ sources = [
   'src/database/file/size.c',
   'src/database/get.c',
   'src/database/kv.c',
-  'src/database/read.c',
+  'src/database/read/bytes.c',
+  'src/database/read/read.c',
+  'src/database/read/types.c',
   'src/database/set.c',
 
   'src/resp/data.c',

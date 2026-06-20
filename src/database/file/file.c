@@ -5,7 +5,7 @@ static int fd = -1;
 static bool saving = false;
 static uint16_t block_capacity;
 
-size_t read_file(const int fd, const off_t file_size, char *block, const uint16_t block_size, const uint16_t filled_block_size);
+off_t read_file(const int fd, const off_t file_size, char *block, const uint16_t block_size, const uint16_t filled_block_size);
 
 int open_database_fd(uint32_t *server_age) {
   if ((fd = open_file(server->conf->data_file, 0)) == -1) return -1;
@@ -39,7 +39,12 @@ int open_database_fd(uint32_t *server_age) {
       memcpy(server_age, block + 2, 8);
 
       const uint16_t filled_block_size = get_authorization_from_file(fd, block, block_capacity);
-      const size_t data_count = read_file(fd, file_size, block, block_capacity, filled_block_size);
+      const off_t data_count = read_file(fd, file_size, block, block_capacity, filled_block_size);
+      if (data_count == -1) {
+        write_log(LOG_ERR, "Cannot read database file, out of memory.");
+        return -1;
+      }
+
       write_log(LOG_INFO,
         "Read database file in %.3f seconds. Loaded password count: %u, loaded data count: %d",
         ((float) clock() - start) / CLOCKS_PER_SEC, get_password_count(), data_count
