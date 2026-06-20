@@ -43,7 +43,7 @@ static void collect_bytes(const GenericArguments *arguments, const uint32_t coun
   *at = remaining;
 }
 
-static size_t collect_string(const GenericArguments *arguments, string_t *string, bool nt) {
+static size_t collect_string(const GenericArguments *arguments, string_t *string) {
   string->len = 0;
 
   uint8_t first;
@@ -53,14 +53,7 @@ static size_t collect_string(const GenericArguments *arguments, string_t *string
   collect_bytes(arguments, byte_count, &string->len);
 
   string->len = ((string->len << 6) | (first & 0b111111));
-
-  if (nt) {
-    string->value = malloc(string->len + 1);
-    string->value[string->len] = '\0';
-  } else {
-    string->value = malloc(string->len);
-  }
-
+  string->value = malloc(string->len);
   collect_bytes(arguments, string->len, string->value);
 
   return (1 + byte_count + string->len);
@@ -196,10 +189,10 @@ static int allocate_value(const GenericArguments *arguments, const UnallocatedVa
 static size_t collect_kv(const GenericArguments *arguments, KeyValue *kv) {
   string_t key;
   void *value = NULL;
-  uint8_t type;
+  enum TellyTypes type = TELLY_UNKNOWN;
 
-  size_t collected_bytes = collect_string(arguments, &key, false) + 1;
-  collect_bytes(arguments, 1, &type);
+  size_t collected_bytes = collect_string(arguments, &key) + 1;
+  collect_bytes(arguments, 1, (uint8_t *) &type);
 
   uint32_t element_count = 0;
 
@@ -213,6 +206,8 @@ static size_t collect_kv(const GenericArguments *arguments, KeyValue *kv) {
   }
 
   switch (type) {
+    case TELLY_NULL: case TELLY_UNKNOWN: break;
+  
     case TELLY_INT:
       collected_bytes += collect_integer(arguments, value);
       break;
@@ -222,7 +217,7 @@ static size_t collect_kv(const GenericArguments *arguments, KeyValue *kv) {
       break;
 
     case TELLY_STR:
-      collected_bytes += collect_string(arguments, value, false);
+      collected_bytes += collect_string(arguments, value);
       break;
 
     case TELLY_BOOL:
@@ -242,7 +237,7 @@ static size_t collect_kv(const GenericArguments *arguments, KeyValue *kv) {
         }
 
         NameValue *field = malloc(sizeof(NameValue));
-        collected_bytes += collect_string(arguments, &field->name, true);
+        collected_bytes += collect_string(arguments, &field->name);
         field->value.type = byte;
         collected_bytes += 1; // type byte
 
@@ -266,7 +261,7 @@ static size_t collect_kv(const GenericArguments *arguments, KeyValue *kv) {
             break;
 
           case TELLY_STR:
-            collected_bytes += collect_string(arguments, *data, false);
+            collected_bytes += collect_string(arguments, *data);
             break;
 
           case TELLY_BOOL:
@@ -301,7 +296,7 @@ static size_t collect_kv(const GenericArguments *arguments, KeyValue *kv) {
           // TODO
         }
 
-        switch ((const enum TellyTypes) byte) {
+        switch (byte) {
           case TELLY_NULL:
             break;
 
@@ -314,7 +309,7 @@ static size_t collect_kv(const GenericArguments *arguments, KeyValue *kv) {
             break;
 
           case TELLY_STR:
-            collected_bytes += collect_string(arguments, list_value, false);
+            collected_bytes += collect_string(arguments, list_value);
             break;
 
           case TELLY_BOOL:
@@ -347,7 +342,7 @@ static size_t collect_database(const GenericArguments *arguments, Database **dat
   collect_bytes(arguments, 8, count);
 
   string_t name;
-  size_t collected_bytes = collect_string(arguments, &name, true) + 8;
+  size_t collected_bytes = collect_string(arguments, &name) + 8;
 
   const uint64_t needed = pow(2, get_bit_count(*count));
   const uint64_t capacity = ((needed > DATABASE_INITIAL_SIZE) ? needed : DATABASE_INITIAL_SIZE);

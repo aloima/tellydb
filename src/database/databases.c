@@ -54,7 +54,7 @@ Database *create_database(const string_t name, const uint64_t capacity) {
   database = malloc(sizeof(Database));
   if (database == NULL) goto CLEANUP;
 
-  name_str = malloc(name.len + 1);
+  name_str = malloc(name.len);
   if (name_str == NULL) goto CLEANUP;
 
   data = create_hashtable(capacity, string_hash, string_compare);
