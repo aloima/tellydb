@@ -20,7 +20,11 @@ KeyValue *set_data(Database *database, KeyValue *kv, string_t key, void *data, c
   if (kv == NULL)
     return NULL;
 
-  set_kv(kv, key, data, type, expire_at);
+  const int set_ret = set_kv(kv, key, data, type, expire_at);
+  if (set_ret == -1) {
+    free(kv);
+    return NULL;
+  }
 
   HashTableKeyValue *element = (HashTableKeyValue *) insert_into_hashtable(database->data, &kv->key, kv);
   if (element == NULL)
