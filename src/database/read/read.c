@@ -1,5 +1,6 @@
 #include <telly.h>
 #include "read.h"
+#include "utils/string.h"
 
 static int allocate_value(const GenericArguments *arguments, const UnallocatedValue value, size_t *collected_bytes) {
   const enum TellyTypes type = value.type;
@@ -35,7 +36,7 @@ static int allocate_value(const GenericArguments *arguments, const UnallocatedVa
   case TELLY_INT: {                                                          \
     (_result) = collect_integer((_arguments), (_value));                     \
     if (!(_result).succeed)                                                  \
-      return UNSUCCESSFUL_COLLECTION();                             \
+      return UNSUCCESSFUL_COLLECTION();                                      \
                                                                              \
     (_collected_bytes) += (_result).value;                                   \
     break;                                                                   \
@@ -44,7 +45,7 @@ static int allocate_value(const GenericArguments *arguments, const UnallocatedVa
   case TELLY_DOUBLE: {                                                       \
     (_result) = collect_double((_arguments), (_value));                      \
     if (!(_result).succeed)                                                  \
-      return UNSUCCESSFUL_COLLECTION();                             \
+      return UNSUCCESSFUL_COLLECTION();                                      \
                                                                              \
     (_collected_bytes) += (_result).value;                                   \
     break;                                                                   \
@@ -53,7 +54,7 @@ static int allocate_value(const GenericArguments *arguments, const UnallocatedVa
   case TELLY_STR: {                                                          \
     (_result) = collect_string((_arguments), (_value));                      \
     if (!(_result).succeed)                                                  \
-      return UNSUCCESSFUL_COLLECTION();                             \
+      return UNSUCCESSFUL_COLLECTION();                                      \
                                                                              \
     (_collected_bytes) += (_result).value;                                   \
     break;                                                                   \
@@ -87,8 +88,10 @@ static CollectionResult collect_kv(const GenericArguments *arguments, KeyValue *
     allocate_value(arguments, unallocated_value, &collected_bytes);
   });
 
-  if (alloc_ret == -1)
+  if (alloc_ret == -1) {
+    free(key.value);
     return UNSUCCESSFUL_COLLECTION();
+  }
 
   switch (type) {
     COLLECT_PRIMARY_TYPES(arguments, value, collected_bytes, result);
@@ -181,17 +184,19 @@ static CollectionResult collect_kv(const GenericArguments *arguments, KeyValue *
     return UNSUCCESSFUL_COLLECTION();
 
   free(key.value);
-
   return CREATE_COLLECTION_RESULT(true, collected_bytes);
 }
 
 static CollectionResult collect_database(const GenericArguments *arguments, Database **database, uint64_t *count) {
+  KeyValue *kv = NULL;
+  *database = NULL;
+
   collect_bytes(arguments, 8, count);
 
   string_t name;
   CollectionResult name_result = collect_string(arguments, &name);
   if (!name_result.succeed)
-    return UNSUCCESSFUL_COLLECTION();
+    goto GRACEFUL_SHUTDOWN;
 
   size_t collected_bytes = name_result.value + 8;
 
@@ -199,25 +204,39 @@ static CollectionResult collect_database(const GenericArguments *arguments, Data
   const uint64_t capacity = ((needed > DATABASE_INITIAL_SIZE) ? needed : DATABASE_INITIAL_SIZE);
 
   *database = create_database(name, capacity);
-  if (*database == NULL)
-    return UNSUCCESSFUL_COLLECTION();
-
   free(name.value);
 
+  if (*database == NULL)
+    goto GRACEFUL_SHUTDOWN;
+
   for (uint64_t i = 0; i < *count; ++i) {
-    KeyValue *kv = malloc(sizeof(KeyValue));
+    kv = malloc(sizeof(KeyValue));
     if (kv == NULL)
-      return UNSUCCESSFUL_COLLECTION();
+      goto GRACEFUL_SHUTDOWN;
 
     CollectionResult result = collect_kv(arguments, kv);
     if (!result.succeed)
-      return UNSUCCESSFUL_COLLECTION();
+      goto GRACEFUL_SHUTDOWN;
 
     collected_bytes += result.value;
-    (void) insert_into_hashtable((*database)->data, &kv->key, kv);
+    auto insertion = insert_into_hashtable((*database)->data, &kv->key, kv);
+    if (insertion == NULL)
+      goto GRACEFUL_SHUTDOWN;
+
+    kv = NULL;
   }
 
   return CREATE_COLLECTION_RESULT(true, collected_bytes);
+
+  GRACEFUL_SHUTDOWN: {
+    if (*database != NULL)
+      free_database(*database);
+
+    if (kv != NULL)
+      free_kv(kv);
+
+    return UNSUCCESSFUL_COLLECTION();
+  }
 }
 
 off_t read_file(const int fd, const off_t file_size, char *block, const uint16_t block_size, const uint16_t filled_block_size) {

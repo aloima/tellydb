@@ -147,7 +147,7 @@ bool rename_database(const string_t old_name, const string_t new_name) {
   return true;
 }
 
-static void free_database(void *database_ptr) {
+void free_database(void *database_ptr) {
   Database *database = (Database *) database_ptr;
 
   destroy_hashtable(database->data, free_hashtablekeyvalue);
