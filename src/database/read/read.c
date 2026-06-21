@@ -117,6 +117,7 @@ static CollectionResult collect_kv(const GenericArguments *arguments, KeyValue *
 
         collected_bytes += result.value;
         field->value.type = (const enum TellyTypes) byte;
+        field->value.data = NULL;
         collected_bytes += 1; // type byte
 
         const int field_alloc_ret = ({
@@ -152,6 +153,7 @@ static CollectionResult collect_kv(const GenericArguments *arguments, KeyValue *
           goto GRACEFUL_SHUTDOWN;
 
         collect_bytes(arguments, 1, (uint8_t *) &list_value->type);
+        list_value->data = NULL;
 
         const int list_value_alloc_ret = ({
           UnallocatedValue unallocated_value = { .data = &list_value->data, .type = list_value->type, .element_count = NULL };
