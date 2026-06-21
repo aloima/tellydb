@@ -191,9 +191,8 @@ static CollectionResult collect_kv(const GenericArguments *arguments, KeyValue *
     if (list_value != NULL)
       free_list_value(list_value);
 
-    if (field != NULL) {
-      // TODO
-    }
+    if (field != NULL)
+      free_namevalue(field);
 
     if (value != NULL)
       free_value((Value) { .data = value, .type = type });
