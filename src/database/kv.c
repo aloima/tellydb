@@ -56,6 +56,12 @@ void free_hashtablekeyvalue(HashTableElement element) {
   free_kv(value);
 }
 
+void free_namevalue(void *data) {
+  NameValue *element = (NameValue *) data;
+  free_value(element->value);
+  free(element->name.value);
+}
+
 void free_value(Value value) {
   const enum TellyTypes type = value.type;
   void *data = value.data;

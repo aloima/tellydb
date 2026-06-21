@@ -46,6 +46,7 @@ typedef struct HashTableKeyValue {
 
 int set_kv(KeyValue *kv, const string_t key, void *value, const enum TellyTypes type, const uint64_t *expire_at);
 void free_value(Value value);
+void free_namevalue(void *data);
 void free_kv(KeyValue *kv);
 void free_hashtablekeyvalue(HashTableElement element);
 
