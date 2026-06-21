@@ -70,14 +70,14 @@ static CollectionResult collect_kv(const GenericArguments *arguments, KeyValue *
   CollectionResult result;
 
   enum TellyTypes type = TELLY_UNKNOWN;
-  string_t key;
+  string_t key = EMPTY_STRING();
   void *value = NULL; // for Generic
   NameValue *field = NULL; // for HashTable
   Value *list_value = NULL; // for List
 
   result = collect_string(arguments, &key);
   if (!result.succeed)
-    return UNSUCCESSFUL_COLLECTION();
+    goto GRACEFUL_SHUTDOWN;
 
   size_t collected_bytes = result.value + 1;
   collect_bytes(arguments, 1, (uint8_t *) &type);
@@ -89,10 +89,8 @@ static CollectionResult collect_kv(const GenericArguments *arguments, KeyValue *
     allocate_value(arguments, unallocated_value, &collected_bytes);
   });
 
-  if (alloc_ret == -1) {
-    free(key.value);
-    return UNSUCCESSFUL_COLLECTION();
-  }
+  if (alloc_ret == -1)
+    goto GRACEFUL_SHUTDOWN;
 
   switch (type) {
     COLLECT_PRIMARY_TYPES(arguments, value, collected_bytes, result, GRACEFUL_SHUTDOWN);
@@ -188,6 +186,9 @@ static CollectionResult collect_kv(const GenericArguments *arguments, KeyValue *
   return CREATE_COLLECTION_RESULT(true, collected_bytes);
 
   GRACEFUL_SHUTDOWN: {
+    if (key.len != 0)
+      free(key.value);
+
     if (list_value != NULL)
       free_list_value(list_value);
 
