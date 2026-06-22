@@ -8,7 +8,8 @@ static uint16_t block_capacity;
 off_t read_file(const int fd, const off_t file_size, char *block, const uint16_t block_size, const uint16_t filled_block_size);
 
 int open_database_fd(uint32_t *server_age) {
-  if ((fd = open_file(server->conf->data_file, 0)) == -1) return -1;
+  if ((fd = open_file(server->conf->data_file, 0)) == -1)
+    return -1;
 
   struct stat sostat;
   stat(server->conf->data_file, &sostat);
@@ -21,6 +22,7 @@ int open_database_fd(uint32_t *server_age) {
 
     if (posix_memalign((void **) &block, block_capacity, block_capacity) == 0) {
       const clock_t start = clock();
+      ASSERT(start, !=, INVALID_CLOCK);
 
       if (read(fd, block, block_capacity) == -1) {
         close(fd);

@@ -86,6 +86,7 @@ static inline void close_server() {
 
   const uint32_t server_age = server->age + difftime(current_time, server->start_at);
   const clock_t start = clock();
+  ASSERT(start, !=, INVALID_CLOCK);
 
   if (save_data(server_age) == 0) {
     write_log(LOG_INFO, "Saved data in %.3f seconds.", ((float) clock() - start) / CLOCKS_PER_SEC);
