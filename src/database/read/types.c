@@ -57,7 +57,7 @@ CollectionResult collect_double(const GenericArguments *arguments, mpf_t *number
   uint8_t two[2];
   collect_bytes(arguments, 2, two);
 
-  uint8_t specifier = two[0], indicator = two[1];
+  const uint8_t specifier = two[0], indicator = two[1];
   const bool negative = (specifier & 0x80);
   const uint8_t byte_count = ((specifier & 0x7F) + 1);
   int16_t exp = ((indicator & 0x80) ? (indicator & 0x7F) : -1);

@@ -65,7 +65,6 @@ static int allocate_value(const GenericArguments *arguments, const UnallocatedVa
     break;                                                                          \
   }
 
-// TODO: free(key.value) integration
 static CollectionResult collect_kv(const GenericArguments *arguments, KeyValue *kv) {
   CollectionResult result;
 
