@@ -12,55 +12,76 @@ int open_database_fd(uint32_t *server_age) {
     return -1;
 
   struct stat sostat;
-  stat(server->conf->data_file, &sostat);
+  ASSERT(stat(server->conf->data_file, &sostat), ==, 0);
 
   const off_t file_size = sostat.st_size;
   block_capacity = sostat.st_blksize;
 
-  if (file_size != 0) {
-    char *block;
+  if (file_size == 0) {
+    const string_t database_name = CREATE_STRING(server->conf->database_name, strlen(server->conf->database_name));
+    Database *database = create_database(database_name, DATABASE_INITIAL_SIZE);
 
-    if (posix_memalign((void **) &block, block_capacity, block_capacity) == 0) {
-      const clock_t start = clock();
-      ASSERT(start, !=, INVALID_CLOCK);
-
-      if (read(fd, block, block_capacity) == -1) {
-        close(fd);
-        free(block);
-        write_log(LOG_ERR, "Cannot read headers because of OS-specific problem");
-        return -1;
-      }
-
-      if (block[0] != 0x18 || block[1] != 0x10) {
-        close(fd);
-        free(block);
-        write_log(LOG_ERR, "Invalid headers for database file, file is closed.");
-        return -1;
-      }
-
-      memcpy(server_age, block + 2, 8);
-
-      const uint16_t filled_block_size = get_authorization_from_file(fd, block, block_capacity);
-      const off_t data_count = read_file(fd, file_size, block, block_capacity, filled_block_size);
-      if (data_count == -1) {
-        write_log(LOG_ERR, "Cannot read database file, out of memory.");
-        return -1;
-      }
-
-      write_log(LOG_INFO,
-        "Read database file in %.3f seconds. Loaded password count: %u, loaded data count: %d",
-        ((float) clock() - start) / CLOCKS_PER_SEC, get_password_count(), data_count
-      );
-
-      free(block);
+    if (database == NULL) {
+      write_log(LOG_ERR, "Cannot create empty database, out of memory.");
+      goto GRACEFUL_SHUTDOWN;
     }
-  } else {
-    set_main_database(create_database(CREATE_STRING(server->conf->database_name, strlen(server->conf->database_name)), DATABASE_INITIAL_SIZE));
+
+    set_main_database(database);
     write_log(LOG_INFO, "Database file is empty, loaded password and data count: 0");
     *server_age = 0;
+
+    return 0;
   }
 
+  char *block = NULL;
+
+  if (posix_memalign((void **) &block, block_capacity, block_capacity) != 0) {
+    write_log(LOG_ERR, "Cannot read database file, out of memory.");
+    goto GRACEFUL_SHUTDOWN;
+  }
+
+  const clock_t start = clock();
+  ASSERT(start, !=, INVALID_CLOCK);
+
+  if (read(fd, block, block_capacity) == -1) {
+    write_log(LOG_ERR, "Cannot read headers because of OS-specific problem");
+    goto GRACEFUL_SHUTDOWN;
+  }
+
+  if (block[0] != 0x18 || block[1] != 0x10) {
+    write_log(LOG_ERR, "Invalid headers for database file, file is closed.");
+    goto GRACEFUL_SHUTDOWN;
+  }
+
+  ASSERT(memcpy(server_age, block + 2, 8), !=, NULL);
+
+  const uint16_t filled_block_size = get_authorization_from_file(fd, block, block_capacity);
+  const off_t data_count = read_file(fd, file_size, block, block_capacity, filled_block_size);
+  if (data_count == -1) {
+    write_log(LOG_ERR, "Cannot read database file, out of memory.");
+    return -1;
+  }
+
+  const clock_t current = clock();
+  ASSERT(current, !=, INVALID_CLOCK);
+
+  write_log(LOG_INFO,
+    "Read database file in %.3f seconds. Loaded password count: %u, loaded data count: %d",
+    ((float) (current - start)) / CLOCKS_PER_SEC, get_password_count(), data_count
+  );
+
+  free(block);
   return 0;
+
+  GRACEFUL_SHUTDOWN: {
+    if (fd != -1)
+      ASSERT(close(fd), ==, 0);
+
+    if (block != NULL)
+      free(block);
+
+    return -1;
+  }
 }
 
 int close_database_fd() {
