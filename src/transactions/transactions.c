@@ -253,7 +253,7 @@ void execute_transaction_block(TransactionBlock *block) {
         string_t *area = &results[result_count++];
         area->value = malloc(result.len);
         area->len = result.len;
-        memcpy(area->value, result.value, area->len);
+        ASSERT(memcpy(area->value, result.value, area->len), !=, NULL);
 
         length += area->len;
       }
@@ -266,7 +266,7 @@ void execute_transaction_block(TransactionBlock *block) {
 
       for (uint64_t i = 0; i < result_count; ++i) {
         string_t result = results[i];
-        memcpy(client->write_buf + at, result.value, result.len);
+        ASSERT(memcpy(client->write_buf + at, result.value, result.len), !=, NULL);
         at += result.len;
         free(result.value);
       }

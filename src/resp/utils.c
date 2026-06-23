@@ -52,13 +52,13 @@ uint64_t create_resp_integer_mpz(const enum ProtocolVersion protover, char *buf,
         const uint8_t digit_len = ltoa(length, digits);
 
         *(buf) = *RDT_BSTRING;
-        memcpy(buf + 1, digits, digit_len);
+        ASSERT(memcpy(buf + 1, digits, digit_len), !=, NULL);
         nbytes += digit_len;
 
         *(buf + nbytes++) = '\r';
         *(buf + nbytes++) = '\n';
 
-        memcpy(buf + nbytes, str, length);
+        ASSERT(memcpy(buf + nbytes, str, length), !=, NULL);
         nbytes += length;
         free(str);
 
@@ -131,7 +131,7 @@ uint64_t create_resp_integer_mpf(const enum ProtocolVersion protover, char *buf,
           const uint8_t digit_len = ltoa(length, digits);
 
           *(buf) = *RDT_BSTRING;
-          memcpy(buf + 1, digits, digit_len);
+          ASSERT(memcpy(buf + 1, digits, digit_len), !=, NULL);
           nbytes += digit_len;
 
           *(buf + nbytes++) = '\r';
@@ -144,7 +144,7 @@ uint64_t create_resp_integer_mpf(const enum ProtocolVersion protover, char *buf,
           break;
       }
 
-      memcpy(buf + nbytes, str, length);
+      ASSERT(memcpy(buf + nbytes, str, length), !=, NULL);
       nbytes += length;
     } else {
       *(buf) = *RDT_INTEGER;
@@ -182,7 +182,7 @@ uint64_t create_resp_string(char *buf, string_t string) {
   *(buf + nbytes + 1) = '\r';
   *(buf + nbytes + 2) = '\n';
 
-  memcpy(buf + nbytes + 3, string.value, string.len);
+  ASSERT(memcpy(buf + nbytes + 3, string.value, string.len), !=, NULL);
   *(buf + nbytes + string.len + 3) = '\r';
   *(buf + nbytes + string.len + 4) = '\n';
   return (nbytes + string.len + 5);

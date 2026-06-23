@@ -6,7 +6,7 @@ int set_kv(KeyValue *kv, const string_t key, void *value, const enum TellyTypes 
     return -1;
 
   kv->key.len = key.len;
-  memcpy(kv->key.value, key.value, key.len);
+  ASSERT(memcpy(kv->key.value, key.value, key.len), !=, NULL);
   kv->key.value[key.len] = '\0';
 
   kv->value.data = value;

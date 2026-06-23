@@ -319,10 +319,10 @@ Config *get_config(const char *filename) {
 
     if (file) {
       const Config data = parse_config(file);
-      memcpy(conf, &data, sizeof(Config));
+      ASSERT(memcpy(conf, &data, sizeof(Config)), !=, NULL);
       ASSERT(fclose(file), !=, EOF);
     } else {
-      memcpy(conf, &default_conf, sizeof(Config));
+      ASSERT(memcpy(conf, &default_conf, sizeof(Config)), !=, NULL);
     }
 
     return conf;
@@ -331,7 +331,7 @@ Config *get_config(const char *filename) {
 
     if (file) {
       const Config data = parse_config(file);
-      memcpy(conf, &data, sizeof(Config));
+      ASSERT(memcpy(conf, &data, sizeof(Config)), !=, NULL);
       ASSERT(fclose(file), !=, EOF);
 
       return conf;

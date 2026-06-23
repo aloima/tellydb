@@ -125,7 +125,7 @@ uint8_t ltoa(const int64_t value, char *dst) {
     const uint64_t remainder = (uval % 100);
 
     pos -= 2;
-    memcpy(dst + pos, TWO_DIGITS_TABLE + remainder * 2, 2);
+    ASSERT(memcpy(dst + pos, TWO_DIGITS_TABLE + remainder * 2, 2), !=, NULL);
 
     uval /= 100;
   }
@@ -135,7 +135,7 @@ uint8_t ltoa(const int64_t value, char *dst) {
 
     if (remainder >= 10) {
       pos -= 2;
-      memcpy(dst + pos, TWO_DIGITS_TABLE + remainder * 2, 2);
+      ASSERT(memcpy(dst + pos, TWO_DIGITS_TABLE + remainder * 2, 2), !=, NULL);
     } else {
       pos -= 1;
       dst[pos] = ('0' + remainder);
