@@ -253,37 +253,50 @@ static CollectionResult collect_database(const GenericArguments *arguments, Data
   }
 }
 
+static inline int create_main_database(const string_t database_name) {
+  Database *database = create_database(database_name, DATABASE_INITIAL_SIZE);
+  if (database == NULL)
+    return -1;
+
+  set_main_database(database);
+  return 0;
+}
+
 off_t read_file(const int fd, const off_t file_size, char *block, const uint16_t block_size, const uint16_t filled_block_size) {
   off_t loaded_count = 0;
   uint16_t at = filled_block_size;
   const string_t database_name = CREATE_STRING(server->conf->database_name, strlen(server->conf->database_name));
 
-  if (at != file_size) {
-    const uint64_t hashed = string_hash((string_t *) &database_name);
+  if (at == file_size) {
+    if (create_main_database(database_name) == -1)
+      return -1;
 
-    off_t collected_bytes = at;
-    uint64_t data_count = 0;
-    Database *database = NULL;
+    return 0;
+  }
 
-    const GenericArguments arguments = { .fd = fd, .block = block, .block_size = block_size, .at = &at };
+  const uint64_t hashed = string_hash((string_t *) &database_name);
 
-    do {
-      CollectionResult result = collect_database(&arguments, &database, &data_count);
-      if (!result.succeed)
-        return -1;
+  off_t collected_bytes = at;
+  uint64_t data_count = 0;
+  Database *database = NULL;
 
-      collected_bytes += result.value;
-      loaded_count += data_count;
+  const GenericArguments arguments = { .fd = fd, .block = block, .block_size = block_size, .at = &at };
 
-      if (database->id == hashed)
-        set_main_database(database);
-    } while (collected_bytes != file_size);
+  do {
+    CollectionResult result = collect_database(&arguments, &database, &data_count);
+    if (!result.succeed)
+      return -1;
 
-    if (!get_main_database()) {
-      set_main_database(create_database(database_name, DATABASE_INITIAL_SIZE));
-    }
-  } else {
-    set_main_database(create_database(database_name, DATABASE_INITIAL_SIZE));
+    collected_bytes += result.value;
+    loaded_count += data_count;
+
+    if (database->id == hashed)
+      set_main_database(database);
+  } while (collected_bytes != file_size);
+
+  if (!get_main_database()) {
+    if (create_main_database(database_name) == -1)
+      return -1;
   }
 
   return loaded_count;
