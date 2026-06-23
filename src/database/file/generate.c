@@ -129,8 +129,8 @@ void generate_headers(char *headers, const uint32_t server_age) {
     // TODO: uint64_t
   );
 
-  memcpy(headers, &magic, sizeof(magic));
-  memcpy(headers + sizeof(magic), &server_age, sizeof(uint32_t));
+  ASSERT(memcpy(headers, &magic, sizeof(magic)), !=, NULL);
+  ASSERT(memcpy(headers + sizeof(magic), &server_age, sizeof(uint32_t)), !=, NULL);
 }
 
 off_t generate_value(char **data, KeyValue *kv) {
@@ -145,7 +145,9 @@ off_t generate_value(char **data, KeyValue *kv) {
 
     case TELLY_HASHTABLE: {
       HashTable *table = kv->value.data;
-      memcpy(*data + len, &table->size.capacity, 4);
+      // TODO: hashtable->size.capacity and its representation in the database file is not compatible,
+      // reduce capacity or increase representation in the database file
+      ASSERT(memcpy(*data + len, &table->size.capacity, 4), !=, NULL);
       len += 4;
 
       Buffer external = {*data, &len};
@@ -159,7 +161,9 @@ off_t generate_value(char **data, KeyValue *kv) {
 
     case TELLY_LIST: {
       const LinkedList *list = kv->value.data;
-      memcpy(*data + len, &list->size, 4);
+      // TODO: list->size and its representation in the database file is not compatible,
+      // reduce capacity or increase representation in the database file
+      ASSERT(memcpy(*data + len, &list->size, 4), !=, NULL);
       len += 4;
 
       const LinkedListNode *node = list->begin;
@@ -196,8 +200,8 @@ uint32_t generate_string_value(char **data, off_t *len, const string_t *string) 
   const uint32_t length_in_bytes = string->len >> 6;
 
   (*data)[*len] = first;
-  memcpy(*data + (*len += 1), &length_in_bytes, byte_count);
-  memcpy(*data + (*len += byte_count), string->value, string->len);
+  ASSERT(memcpy(*data + (*len += 1), &length_in_bytes, byte_count), !=, NULL);
+  ASSERT(memcpy(*data + (*len += byte_count), string->value, string->len), !=, NULL);
   *len += string->len;
 
   return (1 + byte_count + string->len);

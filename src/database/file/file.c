@@ -53,7 +53,7 @@ int open_database_fd(uint32_t *server_age) {
     goto GRACEFUL_SHUTDOWN;
   }
 
-  ASSERT(memcpy(server_age, block + 2, 8), !=, NULL);
+  ASSERT(memcpy(server_age, block + 2, sizeof(*server_age)), !=, NULL);
 
   const uint16_t filled_block_size = get_authorization_from_file(fd, block, block_capacity);
   const off_t data_count = read_file(fd, file_size, block, block_capacity, filled_block_size);
@@ -135,10 +135,13 @@ typedef struct State {
 } State;
 
 static inline void interrupt_dumping_into_file(State *state) {
-  if (state->data) free(state->data);
-  if (state->block) free(state->block);
+  if (state->data)
+    free(state->data);
+  if (state->block)
+    free(state->block);
+
   saving = false;
-  close_database_fd();
+  ASSERT(close_database_fd(), ==, 0);
 }
 
 static inline void dump_into_file(HashTableElement element, void *external) {
@@ -157,7 +160,7 @@ static inline void dump_into_file(HashTableElement element, void *external) {
     off_t remaining = kv_size;
     const uint16_t complete = (block_capacity - state->block_size);
 
-    memcpy(block + state->block_size, data, complete);
+    ASSERT(memcpy(block + state->block_size, data, complete), !=, NULL);
 
     if (write(fd, block, block_capacity) == -1) {
       interrupt_dumping_into_file(state);
@@ -168,7 +171,7 @@ static inline void dump_into_file(HashTableElement element, void *external) {
 
     if (remaining > block_capacity) {
       do {
-        memcpy(block, data + (kv_size - remaining), block_capacity);
+        ASSERT(memcpy(block, data + (kv_size - remaining), block_capacity), !=, NULL);
 
         if (write(fd, block, block_capacity) == -1) {
           interrupt_dumping_into_file(state);
@@ -180,9 +183,9 @@ static inline void dump_into_file(HashTableElement element, void *external) {
     }
 
     state->block_size = remaining;
-    memcpy(block, data + (kv_size - remaining), state->block_size);
+    ASSERT(memcpy(block, data + (kv_size - remaining), state->block_size), !=, NULL);
   } else {
-    memcpy(block + state->block_size, data, kv_size);
+    ASSERT(memcpy(block + state->block_size, data, kv_size), !=, NULL);
     state->block_size += kv_size;
   }
 
@@ -208,7 +211,7 @@ int save_data(const uint32_t server_age) {
     goto cleanup;
   }
 
-  memset(block, 0, block_capacity);
+  ASSERT(memset(block, 0, block_capacity), !=, NULL);
 
   off_t block_size; // `block_size` represents filled block size
   off_t size = 0;   // `size` represents total calculated file size
@@ -221,7 +224,7 @@ int save_data(const uint32_t server_age) {
     block_size = (sizeof(DATABASE_FILE_CONSTANT) + sizeof(server->age) + 1) + password_count_byte_count;
 
     block[sizeof(DATABASE_FILE_CONSTANT) + sizeof(server->age)] = password_count_byte_count;
-    memcpy(block + (sizeof(DATABASE_FILE_CONSTANT) + sizeof(server->age) + 1), &password_count, password_count_byte_count);
+    ASSERT(memcpy(block + (sizeof(DATABASE_FILE_CONSTANT) + sizeof(server->age) + 1), &password_count, password_count_byte_count), !=, NULL);
 
     if (password_count == 0) {
       size += block_size;
@@ -233,7 +236,7 @@ int save_data(const uint32_t server_age) {
 
       if (new_length > block_capacity) {
         const uint32_t allowed = (new_length - block_capacity);
-        memcpy(block + block_size, password->data, allowed);
+        ASSERT(memcpy(block + block_size, password->data, allowed), !=, NULL);
 
         if (write(fd, block, block_capacity) == -1) {
           log_save_io_error("Cannot write passwords block to database file");
@@ -242,12 +245,12 @@ int save_data(const uint32_t server_age) {
         }
 
         const uint32_t remaining = (48 - allowed); // remaining byte count except permissions
-        memcpy(block, password->data, remaining);
+        ASSERT(memcpy(block, password->data, remaining), !=, NULL);
         block[remaining] = password->permissions;
         block_size = (remaining + 1);
         size += block_capacity + block_size;
       } else {
-        memcpy(block + block_size, password->data, 48);
+        ASSERT(memcpy(block + block_size, password->data, 48), !=, NULL);
         block[block_size + 48] = password->permissions;
         block_size = new_length;
         size += block_size;
@@ -262,7 +265,7 @@ int save_data(const uint32_t server_age) {
       Database *database = (Database *) node->data;
       const uint64_t count = database->data->size.count;
 
-      memcpy(block + block_size, &count, 8);
+      ASSERT(memcpy(block + block_size, &count, 8), !=, NULL);
       block_size += 8;
       size += generate_string_value(&block, &block_size, &database->name) + 8;
 
