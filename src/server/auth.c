@@ -82,10 +82,11 @@ uint32_t get_password_count() {
 }
 
 uint16_t get_authorization_from_file(const int fd, char *block, const uint16_t block_size) {
-  const uint8_t password_count_byte_count = block[10];
-  memcpy(&password_count, block + 11, password_count_byte_count);
+  static constexpr const uint32_t password_byte_count_at = (sizeof(DATABASE_FILE_CONSTANT) + sizeof(server->age));
+  const uint8_t password_count_byte_count = block[password_byte_count_at];
+  memcpy(&password_count, block + (password_byte_count_at + 1), password_count_byte_count);
 
-  off_t at = 11 + password_count_byte_count;
+  off_t at = (password_byte_count_at + 1) + password_count_byte_count;
   off_t total = 0;
 
   if (password_count != 0) {
@@ -162,7 +163,7 @@ uint16_t get_authorization_from_file(const int fd, char *block, const uint16_t b
       else break;
     } while (read(fd, block, block_size));
   } else {
-    total = 11;
+    total = (password_byte_count_at + 1);
   }
 
   return (total % block_size);

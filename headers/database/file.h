@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#define DATABASE_FILE_CONSTANT ((uint16_t) 0x1810)
+
 typedef enum {
   BGSAVE_THREAD_FAILED  = -1,
   BGSAVE_ALREADY_SAVING = 0,

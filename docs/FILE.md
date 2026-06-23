@@ -6,8 +6,8 @@ They can be changed from configuration file. Configuration file is changeable vi
 It consists of file headers, authorization part and data lines.
 * `file headers + authorization part + databases`
 
-File headers have 10 bytes size and is as follows:
-* `0x1810 + server age (8-byte)`
+File headers have 6 bytes size and is as follows:
+* `0x1810 + server age (4-byte)`
 
 ### String length specifier
 In this file, a structure named string length specifier for strings is defined as follows:

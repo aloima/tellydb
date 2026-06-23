@@ -218,10 +218,10 @@ int save_data(const uint32_t server_age) {
     struct Password **passwords = get_passwords();
     const uint32_t password_count = get_password_count();
     const uint8_t password_count_byte_count = (password_count != 0) ? (log2(password_count) + 1) : 0;
-    block_size = 11 + password_count_byte_count;
+    block_size = (sizeof(DATABASE_FILE_CONSTANT) + sizeof(server->age) + 1) + password_count_byte_count;
 
-    block[10] = password_count_byte_count;
-    memcpy(block + 11, &password_count, password_count_byte_count);
+    block[sizeof(DATABASE_FILE_CONSTANT) + sizeof(server->age)] = password_count_byte_count;
+    memcpy(block + (sizeof(DATABASE_FILE_CONSTANT) + sizeof(server->age) + 1), &password_count, password_count_byte_count);
 
     if (password_count == 0) {
       size += block_size;

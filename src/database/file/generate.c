@@ -122,9 +122,15 @@ static inline void generate_hashtable_element(HashTableElement element, void *ex
 }
 
 void generate_headers(char *headers, const uint32_t server_age) {
-  headers[0] = 0x18;
-  headers[1] = 0x10;
-  memcpy(headers + 2, &server_age, sizeof(uint32_t));
+  // To guarantee endianness
+  const typeof(DATABASE_FILE_CONSTANT) magic = _Generic(DATABASE_FILE_CONSTANT,
+    uint16_t: htons(DATABASE_FILE_CONSTANT),
+    uint32_t: htonl(DATABASE_FILE_CONSTANT)
+    // TODO: uint64_t
+  );
+
+  memcpy(headers, &magic, sizeof(magic));
+  memcpy(headers + sizeof(magic), &server_age, sizeof(uint32_t));
 }
 
 off_t generate_value(char **data, KeyValue *kv) {
