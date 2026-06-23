@@ -52,13 +52,16 @@ Database *create_database(const string_t name, const uint64_t capacity) {
   HashTable *data = NULL;
 
   database = malloc(sizeof(Database));
-  if (database == NULL) goto CLEANUP;
+  if (database == NULL)
+    goto CLEANUP;
 
   name_str = malloc(name.len);
-  if (name_str == NULL) goto CLEANUP;
+  if (name_str == NULL)
+    goto CLEANUP;
 
   data = create_hashtable(capacity, string_hash, string_compare);
-  if (data == NULL) goto CLEANUP;
+  if (data == NULL)
+    goto CLEANUP;
 
   if (databases == NULL) {
     databases = ll_create();
@@ -70,7 +73,7 @@ Database *create_database(const string_t name, const uint64_t capacity) {
     goto CLEANUP;
 
   database->name = CREATE_STRING(name_str, name.len);
-  memcpy(database->name.value, name.value, name.len);
+  ASSERT(memcpy(database->name.value, name.value, name.len), !=, NULL);
 
   database->id = string_hash((string_t *) &name);
   database->data = data;
@@ -78,9 +81,12 @@ Database *create_database(const string_t name, const uint64_t capacity) {
   return database;
 
 CLEANUP:
-  if (database) free(database);
-  if (name_str) free(name_str);
-  if (data) destroy_hashtable(data, NULL); // There is no data yet, so there is no need freeing method.
+  if (database)
+    free(database);
+  if (name_str)
+    free(name_str);
+  if (data)
+    destroy_hashtable(data, NULL); // There is no data yet, so there is no need freeing method.
 
   return NULL;
 }
@@ -133,16 +139,18 @@ bool rename_database(const string_t old_name, const string_t new_name) {
     node != NULL ? (Database *) node->data : NULL;
   });
 
-  if (!database) return false;
+  if (!database)
+    return false;
 
   char *name = malloc(new_name.len);
-  if (!name) return false;
+  if (!name)
+    return false;
 
   database->id = string_hash((string_t *) &new_name);
   free(database->name.value);
 
   database->name = CREATE_STRING(name, new_name.len);
-  memcpy(database->name.value, new_name.value, new_name.len);
+  ASSERT(memcpy(database->name.value, new_name.value, new_name.len), !=, NULL);
 
   return true;
 }
