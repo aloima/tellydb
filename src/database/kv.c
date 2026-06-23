@@ -6,7 +6,7 @@ int set_kv(KeyValue *kv, const string_t key, void *value, const enum TellyTypes 
     return -1;
 
   kv->key.len = key.len;
-  memcpy(kv->key.value, key.value, key.len);
+  ASSERT(memcpy(kv->key.value, key.value, key.len), !=, NULL);
   kv->key.value[key.len] = '\0';
 
   kv->value.data = value;
@@ -54,6 +54,12 @@ void free_hashtablekeyvalue(HashTableElement element) {
   KeyValue *value = kv->value;
 
   free_kv(value);
+}
+
+void free_namevalue(void *data) {
+  NameValue *element = (NameValue *) data;
+  free_value(element->value);
+  free(element->name.value);
 }
 
 void free_value(Value value) {

@@ -111,7 +111,7 @@ void *push_tqueue(ThreadQueue *queue, void *value) {
 
   char *dst = slot->data;
   __builtin_prefetch(dst, 1, 3);
-  memcpy(dst, value, queue->type);
+  ASSERT(memcpy(dst, value, queue->type), !=, NULL);
   atomic_store_explicit(&slot->seq, end + 1, memory_order_release);
 
   return dst;
@@ -133,7 +133,7 @@ bool pop_tqueue(ThreadQueue *queue, void *dst) {
 
     if (VERY_LIKELY(diff == 0)) {
       if (ATOMIC_CAS_WEAK(qat, &at, at + 1, memory_order_acq_rel, memory_order_relaxed)) {
-        memcpy(dst, slot->data, queue->type);
+        ASSERT(memcpy(dst, slot->data, queue->type), !=, NULL);
         atomic_store_explicit(&slot->seq, at + queue->capacity, memory_order_release);
         return true;
       }

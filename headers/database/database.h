@@ -27,6 +27,7 @@ Database *get_main_database();
 
 Database *get_database(const string_t name);
 bool rename_database(const string_t old_name, const string_t new_name);
+void free_database(void *database_ptr);
 void free_databases();
 
 // TODO: find a way to move it into kv.h

@@ -125,24 +125,26 @@ uint8_t ltoa(const int64_t value, char *dst) {
     const uint64_t remainder = (uval % 100);
 
     pos -= 2;
-    memcpy(dst + pos, TWO_DIGITS_TABLE + remainder * 2, 2);
+    ASSERT(memcpy(dst + pos, TWO_DIGITS_TABLE + remainder * 2, 2), !=, NULL);
 
     uval /= 100;
   }
 
-  if (uval > 0) {
+  if (pos != 0) {
     const uint8_t remainder = uval;
 
     if (remainder >= 10) {
       pos -= 2;
-      memcpy(dst + pos, TWO_DIGITS_TABLE + remainder * 2, 2);
+      ASSERT(memcpy(dst + pos, TWO_DIGITS_TABLE + remainder * 2, 2), !=, NULL);
     } else {
       pos -= 1;
       dst[pos] = ('0' + remainder);
     }
   }
 
-  if (neg) dst[0] = '-';
+  if (neg)
+    dst[0] = '-';
+
   return total_len;
 }
 

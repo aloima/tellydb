@@ -39,7 +39,8 @@ Queue *create_queue(const uint64_t capacity, const uint64_t size, uint64_t align
   const uint64_t offset = ((capacity / 4) * 4);
 
   for (uint64_t i = offset; i < capacity; ++i) {
-    if (!init_state(queue, i, align, size)) return NULL;
+    if (!init_state(queue, i, align, size))
+      return NULL;
   }
 
   queue->capacity = capacity;
@@ -65,12 +66,13 @@ void free_queue(Queue *queue) {
 
 void *push_queue(Queue *queue, void *value) {
   // There is no possibility for prefetching because of time-lacking.
-  if (queue->size == queue->capacity) return NULL;
+  if (queue->size == queue->capacity)
+    return NULL;
 
   void *res = queue->slots[queue->end];
   queue->end = ((queue->end + 1) % queue->capacity);
 
-  memcpy(res, value, queue->type);
+  ASSERT(memcpy(res, value, queue->type), !=, NULL);
   queue->size += 1;
 
   return res;
