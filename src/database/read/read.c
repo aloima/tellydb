@@ -4,16 +4,16 @@
 static int allocate_value(const GenericArguments *arguments, const UnallocatedValue value, size_t *collected_bytes) {
   const enum TellyTypes type = value.type;
   void **data = value.data;
-  uint32_t *element_count = value.element_count;
+  uint64_t *element_count = value.element_count;
 
   if (type == TELLY_LIST || type == TELLY_HASHTABLE) {
-    collect_bytes(arguments, 4, element_count);
+    collect_bytes(arguments, sizeof(uint64_t), element_count);
 
     if (type == TELLY_LIST) {
-      *collected_bytes += (4 + *element_count); // includes size bytes and type bytes of listnodes
+      *collected_bytes += (sizeof(((LinkedList *) 0)->size) + *element_count); // includes size bytes and type bytes of listnodes
       *data = ll_create();
     } else if (type == TELLY_HASHTABLE) {
-      *collected_bytes += 5; // includes size bytes and last (0x17) byte
+      *collected_bytes += sizeof(((HashTable *) 0)->size.capacity) + 1; // includes size bytes and last (0x17) byte
       *data = create_hashtable(*element_count, string_hash, string_compare);
     }
   } else {
@@ -81,7 +81,7 @@ static CollectionResult collect_kv(const GenericArguments *arguments, KeyValue *
   size_t collected_bytes = result.value + 1;
   collect_bytes(arguments, 1, (uint8_t *) &type);
 
-  uint32_t element_count = 0;
+  uint64_t element_count = 0;
 
   const int alloc_ret = ({
     const UnallocatedValue unallocated_value = { .data = &value, .type = type, .element_count = &element_count };
@@ -144,7 +144,7 @@ static CollectionResult collect_kv(const GenericArguments *arguments, KeyValue *
     case TELLY_LIST: {
       LinkedList *list = (LinkedList *) value;
 
-      for (uint32_t i = 0; i < element_count; ++i) {
+      for (uint64_t i = 0; i < element_count; ++i) {
         list_value = malloc(sizeof(Value));
         if (list_value == NULL)
           goto GRACEFUL_SHUTDOWN;

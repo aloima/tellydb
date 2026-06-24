@@ -15,7 +15,7 @@ typedef struct GenericArguments {
 typedef struct UnallocatedValue {
   void **data;
   const enum TellyTypes type;
-  uint32_t *element_count;
+  uint64_t *element_count;
 } UnallocatedValue;
 
 typedef struct CollectionResult {

@@ -145,10 +145,8 @@ off_t generate_value(char **data, KeyValue *kv) {
 
     case TELLY_HASHTABLE: {
       HashTable *table = kv->value.data;
-      // TODO: hashtable->size.capacity and its representation in the database file is not compatible,
-      // reduce capacity or increase representation in the database file
-      ASSERT(memcpy(*data + len, &table->size.capacity, 4), !=, NULL);
-      len += 4;
+      ASSERT(memcpy(*data + len, &table->size.capacity, sizeof(table->size.capacity)), !=, NULL);
+      len += sizeof(table->size.capacity);
 
       Buffer external = {*data, &len};
       foreach_hashtable(table, generate_hashtable_element, &external);
@@ -161,10 +159,8 @@ off_t generate_value(char **data, KeyValue *kv) {
 
     case TELLY_LIST: {
       const LinkedList *list = kv->value.data;
-      // TODO: list->size and its representation in the database file is not compatible,
-      // reduce capacity or increase representation in the database file
-      ASSERT(memcpy(*data + len, &list->size, 4), !=, NULL);
-      len += 4;
+      ASSERT(memcpy(*data + len, &list->size, sizeof(list->size)), !=, NULL);
+      len += sizeof(list->size);
 
       const LinkedListNode *node = list->begin;
 
