@@ -25,9 +25,9 @@ static string_t run(struct CommandEntry *entry) {
   string_t *name = &entry->args->data[1];
 
   const HashTableNameValue *field = (HashTableNameValue *) get_from_hashtable(table, name);
-  const Value value = field->value->value;
 
   if (field) {
+    const Value value = field->value->value;
     return write_value(value.data, value.type, entry->client->protover, entry->client->write_buf);
   } else {
     return RESP_NULL(entry->client->protover);
