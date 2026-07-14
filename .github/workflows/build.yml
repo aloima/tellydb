@@ -54,8 +54,8 @@ jobs:
 
     - name: Install meson & ninja via PIP
       run: |
-        python3 -m pip install --upgrade pip --ignore-installed --break-system-packages
-        python3 -m pip install meson ninja --break-system-packages
+        sudo python3 -m pip install --upgrade pip --ignore-installed --break-system-packages
+        sudo python3 -m pip install meson ninja --break-system-packages
 
     - name: Run Meson Setup
       run: |
