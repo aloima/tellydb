@@ -111,7 +111,7 @@ static inline void generate_hashtable_element(HashTableElement element, void *ex
   data[*len] = value.type;
   *len += 1;
 
-  generate_string_value(&data, len, (string_t *) element.key);
+  generate_string_value(&data, len, field->key);
 
   switch (value.type) {
     GENERATE_PRIMITIVE_VALUES(&data, *len, value.data);
@@ -195,10 +195,20 @@ uint32_t generate_string_value(char **data, off_t *len, const string_t *string) 
   const uint8_t first = (byte_count << 6) | (string->len & 0b111111);
   const uint32_t length_in_bytes = string->len >> 6;
 
-  (*data)[*len] = first;
-  ASSERT(memcpy(*data + (*len += 1), &length_in_bytes, byte_count), !=, NULL);
-  ASSERT(memcpy(*data + (*len += byte_count), string->value, string->len), !=, NULL);
-  *len += string->len;
+  char *_data = *data; 
+  off_t _len = *len;
+
+  (_data)[_len] = first;
+  _len += 1;
+
+  ASSERT(memcpy(_data + _len, &length_in_bytes, byte_count), !=, NULL);
+  _len += byte_count;
+
+  ASSERT(memcpy(_data + _len, string->value, string->len), !=, NULL);
+  _len += string->len;
+
+  *data = _data;
+  *len = _len;
 
   return (1 + byte_count + string->len);
 }
