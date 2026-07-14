@@ -21,7 +21,7 @@ static string_t run(struct CommandEntry *entry) {
     return INVALID_TYPE_ERROR("HTYPE");
 
   HashTable *table = (HashTable *) kv->value.data;
-  char *key = entry->args->data[1].value;
+  string_t *key = &entry->args->data[1];
 
   const HashTableNameValue *field = (HashTableNameValue *) get_from_hashtable(table, key);
   if (field == NULL)
