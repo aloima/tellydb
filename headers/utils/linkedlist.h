@@ -18,6 +18,7 @@ typedef enum {
 } LLSearchDirection;
 
 LinkedList *ll_create();
+void ll_clear(LinkedList *list, void (*free_data)(void *data));
 void ll_free(LinkedList *list, void (*free_data)(void *data));
 
 LinkedListNode *ll_insert_back(LinkedList *list, void *data);

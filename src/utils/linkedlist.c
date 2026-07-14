@@ -159,7 +159,7 @@ LinkedListNode *ll_get_from_index(LinkedList *list, uint64_t index, const LLSear
   return node;
 }
 
-void ll_free(LinkedList *list, void (*free_data)(void *data)) {
+void ll_clear(LinkedList *list, void (*free_data)(void *data)) {
   LinkedListNode *front = list->begin;
 
   if (free_data) {
@@ -176,4 +176,9 @@ void ll_free(LinkedList *list, void (*free_data)(void *data)) {
       free(tmp);
     }
   }
+}
+
+void ll_free(LinkedList *list, void (*free_data)(void *data)) {
+  ll_clear(list, free_data);
+  free(list);
 }

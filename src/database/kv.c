@@ -95,7 +95,6 @@ void free_value(Value value) {
 
     case TELLY_LIST:
       ll_free(data, free_list_value);
-      free(data);
       break;
   }
 }
