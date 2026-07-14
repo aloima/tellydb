@@ -47,7 +47,7 @@ static inline off_t get_value_size(const enum TellyTypes type, void *value) {
 
     case TELLY_HASHTABLE: {
       HashTable *table = (HashTable *) value;
-      off_t length = 5;
+      off_t length = 9;
 
       foreach_hashtable(table, get_hashtable_size, &length);
       return length;
@@ -56,7 +56,7 @@ static inline off_t get_value_size(const enum TellyTypes type, void *value) {
     case TELLY_LIST: {
       const LinkedList *list = value;
       const LinkedListNode *node = list->begin;
-      off_t length = 4;
+      off_t length = 8;
 
       while (node) {
         const Value *value = (Value *) node->data;
