@@ -19,11 +19,17 @@ static inline bool insert_into_hashtable_in_database(HashTable *table, string_t 
     return NULL;
   }
 
-  memcpy(field->name.value, key.value, key.len);
+  ASSERT(memcpy(field->name.value, key.value, key.len), !=, NULL);
   field->value.data = value;
   field->value.type = type;
 
-  (void) insert_into_hashtable(table, &field->name, field);
+  const HashTableElement *element = insert_into_hashtable(table, &field->name, field);
+  if (element == NULL) {
+    free(field);
+    free(field->name.value);
+    return false;
+  }
+
   return true;
 }
 
