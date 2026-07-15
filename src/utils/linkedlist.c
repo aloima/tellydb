@@ -134,26 +134,20 @@ LinkedListNode *ll_search_node(LinkedList *list, const LLSearchDirection dir, vo
 LinkedListNode *ll_get_from_index(LinkedList *list, uint64_t index, const LLSearchDirection direction) {
   LinkedListNode *node = NULL;
 
-  switch (direction) {
-    case LL_FRONT:
-      node = list->begin;
+  if (direction == LL_FRONT) {
+    node = list->begin;
 
-      while ((index != 0) && (node != NULL)) {
-        node = node->next;
-        index -= 1;
-      }
+    while ((index != 0) && (node != NULL)) {
+      node = node->next;
+      index -= 1;
+    }
+  } else if (direction == LL_BACK) {
+    node = list->end;
 
-      break;
-
-    case LL_BACK:
-      node = list->end;
-
-      while ((index != 0) && (node != NULL)) {
-        node = node->prev;
-        index -= 1;
-      }
-
-      break;
+    while ((index != 0) && (node != NULL)) {
+      node = node->prev;
+      index -= 1;
+    }
   }
 
   return node;
