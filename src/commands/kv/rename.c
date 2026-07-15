@@ -24,14 +24,14 @@ static string_t run(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("The new key already exists");
   }
 
-  (void) delete_from_hashtable(entry->database->data, &search);
+  ASSERT(delete_from_hashtable(entry->database->data, &search), ==, true);
 
   free(kv->key.value);
   kv->key.len = name.len;
   kv->key.value = malloc(name.len + 1);
-  memcpy(kv->key.value, name.value, name.len);
+  ASSERT(memcpy(kv->key.value, name.value, name.len), !=, NULL);
 
-  (void) insert_into_hashtable(entry->database->data, &kv->key, kv);
+  ASSERT(insert_into_hashtable(entry->database->data, &kv->key, kv), !=, NULL);
 
   PASS_NO_CLIENT(entry->client);
   return RESP_OK();
