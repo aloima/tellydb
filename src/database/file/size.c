@@ -36,7 +36,7 @@ static inline off_t get_value_size(const enum TellyTypes type, void *value) {
     }
 
     case TELLY_STR: {
-      const string_t *string = value;
+      const string_t *string = (string_t *) value;
       const uint8_t byte_count = get_byte_count(string->len);
 
       return (byte_count + string->len);

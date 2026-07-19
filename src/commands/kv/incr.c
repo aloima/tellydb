@@ -45,7 +45,7 @@ static string_t run(struct CommandEntry *entry) {
       if (!result) {
         number = malloc(sizeof(mpz_t));
         if (number == NULL) {
-          at += create_resp_string(entry->client->write_buf + at, CREATE_STRING("error", 5));
+          at += create_resp_string(entry->client->write_buf + at, CREATE_SIZED_STRING("error"));
           continue;
         }
 
@@ -55,7 +55,7 @@ static string_t run(struct CommandEntry *entry) {
         const bool success = set_data(entry->database, NULL, key, value, TELLY_INT, NULL);
 
         if (!success) {
-          at += create_resp_string(entry->client->write_buf + at, CREATE_STRING("error", 5));
+          at += create_resp_string(entry->client->write_buf + at, CREATE_SIZED_STRING("error"));
           mpz_clear(*value);
           free(number);
           continue;
@@ -83,7 +83,7 @@ static string_t run(struct CommandEntry *entry) {
           }
 
           default:
-            at += create_resp_string(entry->client->write_buf + at, CREATE_STRING("invalid type", 12));
+            at += create_resp_string(entry->client->write_buf + at, CREATE_SIZED_STRING("invalid type"));
             break;
         }
       }

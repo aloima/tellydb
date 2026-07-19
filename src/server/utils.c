@@ -7,10 +7,10 @@ string_t write_value(void *value, const enum TellyTypes type, const enum Protoco
     case TELLY_NULL: {
       switch (protover) {
         case RESP2:
-          return CREATE_STRING("$-1\r\n", 5);
+          return CREATE_SIZED_STRING("$-1\r\n");
 
         case RESP3:
-          return CREATE_STRING("_\r\n", 3);
+          return CREATE_SIZED_STRING("_\r\n");
       }
 
       unreachable();
@@ -47,9 +47,9 @@ string_t write_value(void *value, const enum TellyTypes type, const enum Protoco
 
         case RESP3:
           if (is_true) {
-            return CREATE_STRING("#t\r\n", 4);
+            return CREATE_SIZED_STRING("#t\r\n");
           } else {
-            return CREATE_STRING("#f\r\n", 4);
+            return CREATE_SIZED_STRING("#f\r\n");
           }
 
         default: unreachable();

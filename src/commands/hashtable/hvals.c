@@ -8,13 +8,19 @@ static void get_keys(struct CommandEntry *entry) {
 
 
 static constexpr string_t c_null[] = {
-  [RESP2] = CREATE_STRING("$-1\r\n", 5),
-  [RESP3] = CREATE_STRING("_\r\n", 3)
+  [RESP2] = CREATE_SIZED_STRING("$-1\r\n"),
+  [RESP3] = CREATE_SIZED_STRING("_\r\n")
 };
 
 static constexpr string_t c_bool[4][2] = {
-  [RESP2] = { [false] = CREATE_STRING("+false\r\n", 8), [true] = CREATE_STRING("+true\r\n", 7) },
-  [RESP3] = { [false] = CREATE_STRING("#f\r\n", 4), [true] = CREATE_STRING("#t\r\n", 4) },
+  [RESP2] = {
+    [false] = RESP_OK_MESSAGE("false"),
+    [true]  = RESP_OK_MESSAGE("true")
+  },
+  [RESP3] = {
+    [false] = CREATE_SIZED_STRING("#f\r\n"),
+    [true]  = CREATE_SIZED_STRING("#t\r\n")
+  },
 };
 
 typedef struct Response {
@@ -72,7 +78,7 @@ static string_t run(struct CommandEntry *entry) {
 
   const KeyValue *kv = get_data(entry->database, entry->args->data[0]);
   if (!kv)
-    return CREATE_STRING("*0\r\n", 4);
+    return CREATE_SIZED_STRING("*0\r\n");
   if (kv->value.type != TELLY_HASHTABLE)
     return INVALID_TYPE_ERROR("HVALS");
 

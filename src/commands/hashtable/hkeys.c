@@ -41,7 +41,7 @@ static string_t run(struct CommandEntry *entry) {
 
   const KeyValue *kv = get_data(entry->database, entry->args->data[0]);
   if (!kv)
-    return CREATE_STRING("*0\r\n", 4);
+    return CREATE_SIZED_STRING("*0\r\n");
   if (kv->value.type != TELLY_HASHTABLE)
     return INVALID_TYPE_ERROR("HKEYS");
 

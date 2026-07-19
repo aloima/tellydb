@@ -26,7 +26,7 @@ static string_t run(struct CommandEntry *entry) {
     }
   } else {
     PASS_NO_CLIENT(entry->client);
-    return CREATE_STRING(":0\r\n", 4);
+    return CREATE_SIZED_STRING(":0\r\n");
   }
 
   if (!(entry->password->permissions & P_READ)) {
