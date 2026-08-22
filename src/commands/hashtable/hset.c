@@ -25,8 +25,8 @@ static inline bool insert_into_hashtable_in_database(HashTable *table, string_t 
 
   const HashTableElement *element = insert_into_hashtable(table, &field->name, field);
   if (element == NULL) {
-    free(field);
     free(field->name.value);
+    free(field);
     return false;
   }
 

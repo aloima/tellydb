@@ -1,4 +1,3 @@
-#include "database/kv.h"
 #include <telly.h>
 
 static void get_keys(struct CommandEntry *entry) {
