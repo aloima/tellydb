@@ -1,32 +1,41 @@
 #include <telly.h>
 #include "file.h"
 
-#define GENERATE_PRIMITIVE_VALUES(data, len, value)  \
-  case TELLY_NULL:                                   \
-    break;                                           \
-                                                     \
-  case TELLY_INT:                                    \
-    generate_integer_value((data), &(len), (value)); \
-    break;                                           \
-                                                     \
-  case TELLY_DOUBLE:                                 \
-    generate_double_value((data), &(len), (value));  \
-    break;                                           \
-                                                     \
-  case TELLY_STR:                                    \
-    generate_string_value((data), &len, (value));    \
-    break;                                           \
-                                                     \
-  case TELLY_BOOL:                                   \
-    generate_boolean_value((data), &len, (value));   \
-    break
+static inline void generate_integer_value(char **data, off_t *len, const void *value);
+static inline void generate_double_value(char **data, off_t *len, const void *value);
+static inline void generate_boolean_value(char **data, off_t *len, const void *value);
+
+static inline void generate_string_value_layer(char **data, off_t *len, const void *value) {
+  const string_t *string = (const string_t *) value;
+  (void) generate_string_value(data, len, string);
+}
+
+static inline bool is_primitive(const enum TellyTypes type) {
+  switch (type) {
+    case TELLY_INT: case TELLY_DOUBLE: case TELLY_STR: case TELLY_BOOL:
+      return true;
+    default:
+      return false;
+  }
+}
+
+typedef void (*generator_t)(char **data, off_t *len, const void *value);
+
+static const generator_t GENERATORS[] = {
+  [TELLY_INT]    = generate_integer_value,
+  [TELLY_DOUBLE] = generate_double_value,
+  [TELLY_STR]    = generate_string_value_layer,
+  [TELLY_BOOL]   = generate_boolean_value
+};
 
 typedef struct Buffer {
   char *data;
   off_t *len;
 } Buffer;
 
-static inline void generate_integer_value(char **data, off_t *len, mpz_t *number) {
+static inline void generate_integer_value(char **data, off_t *len, const void *value) {
+  const mpz_t *number = (const mpz_t *) value;
+
   const bool negative = (mpz_sgn(*number) == -1);
   const uint8_t byte_count = ((mpz_sizeinbase(*number, 2) + 7) / 8);
 
@@ -56,7 +65,9 @@ static inline void generate_integer_value(char **data, off_t *len, mpz_t *number
   free(hex);
 }
 
-static inline void generate_double_value(char **data, off_t *len, mpf_t *number) {
+static inline void generate_double_value(char **data, off_t *len, const void *value) {
+  const mpf_t *number = (const mpf_t *) value;
+
   mp_exp_t exp;
   char *hex = mpf_get_str(NULL, &exp, 16, (FLOAT_PRECISION / 8) * 2, *number);
   const uint64_t size = strlen(hex);
@@ -96,7 +107,9 @@ static inline void generate_double_value(char **data, off_t *len, mpf_t *number)
   free(hex);
 }
 
-static inline void generate_boolean_value(char **data, off_t *len, const bool *boolean) {
+static inline void generate_boolean_value(char **data, off_t *len, const void *value) {
+  const bool *boolean = (const bool *) value;
+
   (*data)[*len] = *boolean;
   *len += 1;
 }
@@ -105,20 +118,15 @@ static inline void generate_hashtable_element(HashTableElement element, void *ex
   const HashTableNameValue *field = (HashTableNameValue *) ((void *) &element);
   const Value value = field->value->value;
 
-  char *data = ((Buffer *) external)->data;
-  off_t *len = ((Buffer *) external)->len;
+  Buffer *buffer = (Buffer *) external;
+  char *data = buffer->data;
+  off_t *len = buffer->len;
 
   data[*len] = value.type;
   *len += 1;
 
-  generate_string_value(&data, len, field->key);
-
-  switch (value.type) {
-    GENERATE_PRIMITIVE_VALUES(&data, *len, value.data);
-
-    default:
-      break;
-  }
+  (void) generate_string_value(&data, len, field->key);
+  GENERATORS[value.type](&data, len, value.data);
 }
 
 void generate_headers(char *headers, const uint32_t server_age) {
@@ -135,15 +143,18 @@ void generate_headers(char *headers, const uint32_t server_age) {
 
 off_t generate_value(char **data, KeyValue *kv) {
   off_t len = 0;
+  const enum TellyTypes type = kv->value.type;
 
   generate_string_value(data, &len, &kv->key);
-  (*data)[len] = kv->value.type;
+  (*data)[len++] = type;
   len += 1;
 
-  switch (kv->value.type) {
-    GENERATE_PRIMITIVE_VALUES(data, len, kv->value.data);
+  if (is_primitive(type)) {
+    GENERATORS[type](data, &len, kv->value.data);
+    return len;
+  }
 
-    case TELLY_HASHTABLE: {
+  if (type == TELLY_HASHTABLE) {
       HashTable *table = kv->value.data;
       ASSERT(memcpy(*data + len, &table->size.capacity, sizeof(table->size.capacity)), !=, NULL);
       len += sizeof(table->size.capacity);
@@ -153,38 +164,28 @@ off_t generate_value(char **data, KeyValue *kv) {
 
       (*data)[len] = 0x17;
       len += 1;
+  } else if (type == TELLY_LIST) {
+    const LinkedList *list = kv->value.data;
+    ASSERT(memcpy(*data + len, &list->size, sizeof(list->size)), !=, NULL);
+    len += sizeof(list->size);
 
-      break;
-    }
+    const LinkedListNode *node = list->begin;
 
-    case TELLY_LIST: {
-      const LinkedList *list = kv->value.data;
-      ASSERT(memcpy(*data + len, &list->size, sizeof(list->size)), !=, NULL);
-      len += sizeof(list->size);
+    while (node) {
+      Value *value = (Value *) node->data;
+      const enum TellyTypes value_type = value->type;
 
-      const LinkedListNode *node = list->begin;
+      (*data)[len] = value_type;
+      len += 1;
 
-      while (node) {
-        Value *value = (Value *) node->data;
-        (*data)[len] = value->type;
-        len += 1;
-
-        switch (value->type) {
-          GENERATE_PRIMITIVE_VALUES(data, len, value->data);
-
-          default:
-            break;
-        }
-
-        node = node->next;
+      if (is_primitive(value_type)) {
+        GENERATORS[value_type](data, &len, value->data);
       }
 
-      break;
+      node = node->next;
     }
-
-    default:
-      len = 0;
-      break;
+  } else {
+    return 0;
   }
 
   return len;
