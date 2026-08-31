@@ -22,21 +22,21 @@ struct CommandIndex {
 
 const struct CommandIndex *get_command_index(const char *str, size_t len);
 
-struct CommandEntry {
+typedef struct {
   Database *database;
   Client *client;
   Password *password;
   commandargs_t *args;
-};
+} CommandEntry;
 
-struct Subcommand {
+typedef struct Subcommand {
   char *name;
   char *summary;
   char *since;
   char *complexity;
-};
+} Subcommand;
 
-struct Command {
+typedef struct Command {
   char *name;
   char *summary;
   char *since;
@@ -53,15 +53,15 @@ struct Command {
     uint8_t value;
   } flags;
 
-  void (*get_keys)(struct CommandEntry *entry);
-  string_t (*run)(struct CommandEntry *entry);
+  void (*get_keys)(CommandEntry *entry);
+  string_t (*run)(CommandEntry *entry);
 
-  struct Subcommand *subcommands;
+  Subcommand *subcommands;
   uint32_t subcommand_count;
-};
+} Command;
 
-struct Command *load_commands();
-struct Command *get_commands();
+Command *load_commands();
+Command *get_commands();
 uint32_t get_command_count();
 void free_commands();
 

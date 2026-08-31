@@ -1,6 +1,6 @@
 #include <telly.h>
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
   if (!entry->client->waiting_block) {
@@ -15,7 +15,7 @@ static string_t run(struct CommandEntry *entry) {
   return CREATE_STRING(entry->client->write_buf, nbytes);
 }
 
-const struct Command cmd_discard = {
+const Command cmd_discard = {
   .name = "DISCARD",
   .summary = "Discards the current started transaction block.",
   .since = "0.2.0",

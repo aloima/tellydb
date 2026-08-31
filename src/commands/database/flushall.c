@@ -1,6 +1,6 @@
 #include <telly.h>
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   LinkedListNode *node = get_databases()->begin;
 
   while (node) {
@@ -14,7 +14,7 @@ static string_t run(struct CommandEntry *entry) {
   return RESP_OK();
 }
 
-const struct Command cmd_flushall = {
+const Command cmd_flushall = {
   .name = "FLUSHALL",
   .summary = "Deletes all the keys of all databases.",
   .since = "1.0.0",

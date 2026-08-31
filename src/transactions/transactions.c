@@ -156,9 +156,9 @@ static inline bool check_kv_expiries(void *element, void *external) {
   unreachable();
 }
 
-static inline string_t execute_transaction(Client *client, struct Password *password, Transaction *transaction) {
-  struct Command *command = transaction->command;
-  struct CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction->args, transaction->database, password);
+static inline string_t execute_transaction(Client *client, Password *password, Transaction *transaction) {
+  Command *command = transaction->command;
+  CommandEntry entry = CREATE_COMMAND_ENTRY(client, &transaction->args, transaction->database, password);
 
   if ((password->permissions & command->permissions) != command->permissions) {
     WRITE_ERROR_MESSAGE(client, "No permissions to execute this command");
@@ -186,7 +186,7 @@ static inline string_t execute_transaction(Client *client, struct Password *pass
   return command->run(&entry);
 }
 
-static inline void check_autosave(struct Command *command) {
+static inline void check_autosave(Command *command) {
   if (command->flags.bits.affect_database) {
     const time_t current_time = time(NULL);
     ASSERT(current_time, !=, INVALID_TIME);
@@ -226,11 +226,11 @@ static inline void check_autosave(struct Command *command) {
 
 void execute_transaction_block(TransactionBlock *block) {
   Client *client = ((block->client->id != -1) ? block->client : NULL);
-  struct Password *password = block->password;
+  Password *password = block->password;
 
   switch (block->type) {
     case TX_DIRECT: {
-      struct Transaction *transaction = block->data.transaction;
+      Transaction *transaction = block->data.transaction;
       const string_t response = execute_transaction(client, password, transaction);
       check_autosave(transaction->command);
 
@@ -245,7 +245,7 @@ void execute_transaction_block(TransactionBlock *block) {
       uint64_t length = 0;
 
       for (uint32_t i = 0; i < multiple.transaction_count; ++i) {
-        struct Transaction *transaction = &multiple.transactions[i];
+        Transaction *transaction = &multiple.transactions[i];
         const string_t result = execute_transaction(client, password, transaction);
         check_autosave(transaction->command);
         if (result.len == 0) continue;

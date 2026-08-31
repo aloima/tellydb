@@ -1,13 +1,13 @@
 #include <telly.h>
 
-static void get_keys(struct CommandEntry *entry) {
+static void get_keys(CommandEntry *entry) {
   if (entry->args->count == 1 || (entry->args->count - 1) % 2 != 0) return;
   ASSERT(insert_into_vector(server->keyspace, &entry->args->data[0]), ==, true);
 }
 
 
 
-static inline bool insert_into_hashtable_in_database(HashTable *table, string_t key, void *value, enum TellyTypes type) {
+static inline bool insert_into_hashtable_in_database(HashTable *table, string_t key, void *value, TellyType type) {
   NameValue *field = malloc(sizeof(NameValue));
   if (field == NULL)
     return false;
@@ -33,7 +33,7 @@ static inline bool insert_into_hashtable_in_database(HashTable *table, string_t 
   return true;
 }
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   if (entry->args->count == 1 || (entry->args->count - 1) % 2 != 0) {
     PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("HSET");
@@ -155,7 +155,7 @@ static string_t run(struct CommandEntry *entry) {
   return CREATE_STRING(entry->client->write_buf, buf_len);
 }
 
-const struct Command cmd_hset = {
+const Command cmd_hset = {
   .name = "HSET",
   .summary = "Sets field(s) of the hash table.",
   .since = "0.1.3",

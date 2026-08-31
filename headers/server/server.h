@@ -55,6 +55,6 @@ void start_server(Config *config);
 
 int read_from_socket(Client *client, char *buf, const size_t nbytes);
 int write_to_socket(Client *client, char *buf, const size_t nbytes);
-string_t write_value(void *value, const enum TellyTypes type, const enum ProtocolVersion protover, char *buffer);
+string_t write_value(void *value, const TellyType type, const ProtocolVersion protover, char *buffer);
 
 void read_command(IOThread *thread, Client *client);

@@ -1,21 +1,21 @@
 #include <telly.h>
 
-static void get_keys(struct CommandEntry *entry) {
+static void get_keys(CommandEntry *entry) {
   if (entry->args->count < 2) return;
 
   ASSERT(insert_into_vector(server->keyspace, &entry->args->data[0]), ==, true);
 }
 
 
-typedef struct Response {
+typedef struct {
   const string_t input;
-  enum TellyTypes type;
+  TellyType type;
 
   bool is_integer, is_double;
   bool is_true;
 } Response;
 
-typedef struct Options {
+typedef struct {
   bool get;
   bool nx, xx;
   bool as;
@@ -23,7 +23,7 @@ typedef struct Options {
   Expiry expiry;
 } Options;
 
-typedef enum OptionParsingCode : uint8_t {
+typedef enum : uint8_t {
   MISSING_EX_VALUE,
   INVALID_EX_VALUE,
   BOUNDS_OF_EX_VALUE,
@@ -71,13 +71,13 @@ static constexpr string_t parsing_code_response[] = {
   [VALID_OPTIONS]        = RESP_OK()
 };
 
-typedef enum ExpiryType : uint8_t {
+typedef enum : uint8_t {
   EXPIRY_EX,
   EXPIRY_PX
 } ExpiryType;
 
-typedef struct TypeIdentifier {
-  const enum TellyTypes type;
+typedef struct {
+  const TellyType type;
   const char **values;
 } TypeIdentifier;
 
@@ -128,7 +128,7 @@ static inline void take_as_number(Response *response) {
   response->type = TELLY_UNKNOWN;
 }
 
-static OptionParsingCode parse_options(struct CommandEntry *entry, Options *options, Response *response) {
+static OptionParsingCode parse_options(CommandEntry *entry, Options *options, Response *response) {
   const TypeIdentifier types[] = {
     {TELLY_STR,     (const char *[]) {"STR", "STRING", NULL}},
     {TELLY_BOOL,    (const char *[]) {"BOOL", "BOOLEAN", NULL}},
@@ -255,7 +255,7 @@ static inline int take_as_string(void **value, const string_t data) {
   return 0;
 }
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   if (entry->args->count < 2) {
     PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("SET");
@@ -440,7 +440,7 @@ static string_t run(struct CommandEntry *entry) {
   }
 }
 
-const struct Command cmd_set = {
+const Command cmd_set = {
   .name = "SET",
   .summary = "Set key to hold the string value.",
   .since = "0.1.0",

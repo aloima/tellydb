@@ -1,6 +1,6 @@
 #include <telly.h>
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
   switch (entry->args->count) {
@@ -17,7 +17,7 @@ static string_t run(struct CommandEntry *entry) {
   }
 }
 
-const struct Command cmd_ping = {
+const Command cmd_ping = {
   .name = "PING",
   .summary = "Pings the server and returns a simple/bulk string.",
   .since = "0.1.2",

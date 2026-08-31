@@ -1,6 +1,6 @@
 #include <telly.h>
 
-static inline bool init_state(struct ThreadQueue *queue, uint64_t at, uint64_t align, uint64_t size) {
+static inline bool init_state(ThreadQueue *queue, uint64_t at, uint64_t align, uint64_t size) {
   atomic_init(&queue->slots[at].seq, at);
 
   if (posix_memalign((void **) &queue->slots[at].data, align, size) != 0) {

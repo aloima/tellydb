@@ -7,7 +7,7 @@ static const string_t PROTOCOLS[] = {
   CREATE_SIZED_STRING("RESP3")
 };
 
-static inline bool determine_protover(enum ProtocolVersion *protover, const string_t value) {
+static inline bool determine_protover(ProtocolVersion *protover, const string_t value) {
   if (SSTREQ(value, CREATE_SIZED_STRING("2"))) {
     *protover = RESP2;
     return true;
@@ -19,7 +19,7 @@ static inline bool determine_protover(enum ProtocolVersion *protover, const stri
   return false;
 }
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
   if (entry->args->count != 1) {
@@ -34,7 +34,7 @@ static string_t run(struct CommandEntry *entry) {
   const uint32_t client_id_len = ltoa(entry->client->id, client_id);
   ASSERT(client_id_len, <=, 11U);
 
-  const enum ProtocolVersion protover = entry->client->protover;
+  const ProtocolVersion protover = entry->client->protover;
 
   string_t values[4][2] = {
     {CREATE_SIZED_STRING("server"),    CREATE_SIZED_STRING("telly")},
@@ -66,7 +66,7 @@ static string_t run(struct CommandEntry *entry) {
   return CREATE_STRING(buf, at);
 }
 
-const struct Command cmd_hello = {
+const Command cmd_hello = {
   .name = "HELLO",
   .summary = "Handshakes with the tellydb server.",
   .since = "0.1.6",

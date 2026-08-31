@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-typedef struct Queue {
+typedef struct {
   uint64_t at;
   uint64_t end;
 

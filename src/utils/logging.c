@@ -4,7 +4,7 @@ static int fd = -1;
 static _Atomic(off_t) new_size;
 #define LOG_LENGTH 4096
 
-static struct ThreadQueue *lines;
+static ThreadQueue *lines;
 
 int initialize_logs() {
   const Config *conf = server->conf;
@@ -75,7 +75,7 @@ int initialize_logs() {
   return 0;
 }
 
-void write_log(enum LogLevel level, const char *fmt, ...) {
+void write_log(LogLevel level, const char *fmt, ...) {
   Config *conf = server->conf ?: get_default_config();
   const uint8_t check = (conf->allowed_log_levels & level);
 

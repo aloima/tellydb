@@ -17,11 +17,11 @@ static inline void get_used_command(const commanddata_t *data, UsedCommand *comm
     return;
   }
 
-  struct Command *command_data = &server->commands[command_index->idx];
-  struct Subcommand *subcommand = NULL;
+  Command *command_data = &server->commands[command_index->idx];
+  Subcommand *subcommand = NULL;
 
   if (data->args.count != 0) {
-    struct Subcommand *subcommands = command_data->subcommands;
+    Subcommand *subcommands = command_data->subcommands;
     const uint32_t subcommand_count = command_data->subcommand_count;
     const char *value = data->args.data[0].value;
 

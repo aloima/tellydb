@@ -5,7 +5,7 @@ static inline string_t subcommand_id(Client *client, char *buffer) {
   return CREATE_STRING(buffer, nbytes);
 }
 
-static inline string_t subcommand_info(struct CommandEntry *entry) {
+static inline string_t subcommand_info(CommandEntry *entry) {
   Client *client;
 
   switch (entry->args->count) {
@@ -70,7 +70,7 @@ static inline string_t subcommand_info(struct CommandEntry *entry) {
         {"config", 6}, {"auth",  4}, {"server", 6}
       };
 
-      const enum Permissions perm_masks[] = {
+      const Permission perm_masks[] = {
         P_READ, P_WRITE, P_CLIENT,
         P_CONFIG, P_AUTH, P_SERVER
       };
@@ -93,11 +93,11 @@ static inline string_t subcommand_info(struct CommandEntry *entry) {
   char connected_at[21];
   generate_date_string(connected_at, client->connected_at);
 
-  const struct Command *command = atomic_load_explicit(&client->command->data, memory_order_relaxed);
+  const Command *command = atomic_load_explicit(&client->command->data, memory_order_relaxed);
   char *command_name = NULL;
 
   if (command != NULL) {
-    const struct Subcommand *subcommand = atomic_load_explicit(&client->command->subcommand, memory_order_relaxed);
+    const Subcommand *subcommand = atomic_load_explicit(&client->command->subcommand, memory_order_relaxed);
 
     if (subcommand != NULL) {
       command_name = alloca(strlen(command->name) + strlen(subcommand->name) + 2);
@@ -124,7 +124,7 @@ static inline string_t subcommand_info(struct CommandEntry *entry) {
   return CREATE_STRING(entry->client->write_buf, nbytes);
 }
 
-static inline string_t subcommand_list(struct CommandEntry *entry) {
+static inline string_t subcommand_list(CommandEntry *entry) {
   if (!(entry->password->permissions & P_CLIENT)) {
     return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_CLIENT");
   }
@@ -151,7 +151,7 @@ static inline string_t subcommand_list(struct CommandEntry *entry) {
   return CREATE_STRING(entry->client->write_buf, at);
 }
 
-static string_t subcommand_lock(struct CommandEntry *entry) {
+static string_t subcommand_lock(CommandEntry *entry) {
   if (!(entry->password->permissions & P_CLIENT)) {
     PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_CLIENT");
@@ -191,7 +191,7 @@ static string_t subcommand_lock(struct CommandEntry *entry) {
   return RESP_OK();
 }
 
-static inline string_t subcommand_setinfo(struct CommandEntry *entry) {
+static inline string_t subcommand_setinfo(CommandEntry *entry) {
   if (entry->args->count != 3) {
     return WRONG_ARGUMENT_ERROR("CLIENT SETINFO");
   }
@@ -232,7 +232,7 @@ static inline string_t subcommand_setinfo(struct CommandEntry *entry) {
   }
 }
 
-static inline string_t subcommand_kill(struct CommandEntry *entry) {
+static inline string_t subcommand_kill(CommandEntry *entry) {
   if (!(entry->password->permissions & P_CLIENT)) {
     PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_CLIENT");
@@ -270,7 +270,7 @@ static inline string_t subcommand_kill(struct CommandEntry *entry) {
   return RESP_OK();
 }
 
-static inline string_t subcommand_unlock(struct CommandEntry *entry) {
+static inline string_t subcommand_unlock(CommandEntry *entry) {
   if (!(entry->password->permissions & P_CLIENT)) {
     PASS_NO_CLIENT(entry->client);
     return RESP_ERROR_MESSAGE("Not allowed to use this command, need P_CLIENT");
@@ -306,7 +306,7 @@ static inline string_t subcommand_unlock(struct CommandEntry *entry) {
   return RESP_OK();
 }
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   if (entry->args->count == 0) {
     PASS_NO_CLIENT(entry->client);
     return MISSING_SUBCOMMAND_ERROR("CLIENT");
@@ -336,44 +336,44 @@ static string_t run(struct CommandEntry *entry) {
   return EMPTY_STRING();
 }
 
-static struct Subcommand subcommands[] = {
-  (struct Subcommand) {
+static Subcommand subcommands[] = {
+  (Subcommand) {
     .name = "ID",
     .summary = "Returns ID number of client.",
     .since = "0.1.0",
     .complexity = "O(1)"
   },
-  (struct Subcommand) {
+  (Subcommand) {
     .name = "INFO",
     .summary = "Returns information about the client.",
     .since = "0.1.0",
     .complexity = "O(1)"
   },
-  (struct Subcommand) {
+  (Subcommand) {
     .name = "LIST",
     .summary = "Lists IDs of the connected clients.",
     .since = "0.2.0",
     .complexity = "O(1)"
   },
-  (struct Subcommand) {
+  (Subcommand) {
     .name = "LOCK",
     .summary = "Locks specified client.",
     .since = "0.1.8",
     .complexity = "O(1)"
   },
-  (struct Subcommand) {
+  (Subcommand) {
     .name = "SETINFO",
     .summary = "Sets properties for the client.",
     .since = "0.1.2",
     .complexity = "O(1)"
   },
-  (struct Subcommand) {
+  (Subcommand) {
     .name = "KILL",
     .summary = "Kills specified client.",
     .since = "0.1.8",
     .complexity = "O(1)"
   },
-  (struct Subcommand) {
+  (Subcommand) {
     .name = "UNLOCK",
     .summary = "Unlocks specified client.",
     .since = "0.1.8",
@@ -381,7 +381,7 @@ static struct Subcommand subcommands[] = {
   },
 };
 
-const struct Command cmd_client = {
+const Command cmd_client = {
   .name = "CLIENT",
   .summary = "Main command of client(s).",
   .since = "0.1.0",

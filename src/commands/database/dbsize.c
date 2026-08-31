@@ -1,6 +1,6 @@
 #include <telly.h>
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
   Database *database;
@@ -16,7 +16,7 @@ static string_t run(struct CommandEntry *entry) {
   return CREATE_STRING(entry->client->write_buf, nbytes);
 }
 
-const struct Command cmd_dbsize = {
+const Command cmd_dbsize = {
   .name = "DBSIZE",
   .summary = "Returns key count in the database.",
   .since = "0.1.6",

@@ -1,6 +1,6 @@
 #include <telly.h>
 
-static constexpr const enum Permissions permissions_mapping[] = {
+static constexpr const Permission permissions_mapping[] = {
   ['r'] = P_READ,
   ['w'] = P_WRITE,
   ['c'] = P_CLIENT,
@@ -18,13 +18,13 @@ typedef struct {
   } response;
 } PermissionValue;
 
-static inline PermissionValue read_permissions_value(struct CommandEntry *entry, const string_t value) {
+static inline PermissionValue read_permissions_value(CommandEntry *entry, const string_t value) {
   uint64_t length = value.len;
   uint8_t permissions = 0;
 
   while (length > 0) {
     const char c = value.value[length];
-    const enum Permissions data = permissions_mapping[(int8_t) c];
+    const Permission data = permissions_mapping[(int8_t) c];
 
     if (data == 0) {
       permissions |= data;
@@ -44,7 +44,7 @@ static inline PermissionValue read_permissions_value(struct CommandEntry *entry,
   }};
 }
 
-static inline string_t add_pwd(struct CommandEntry *entry) {
+static inline string_t add_pwd(CommandEntry *entry) {
   if (entry->args->count != 3) {
     PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("PWD ADD");
@@ -86,7 +86,7 @@ static inline string_t add_pwd(struct CommandEntry *entry) {
   return RESP_ERROR_MESSAGE("This password already exists");
 }
 
-static inline string_t edit_pwd(struct CommandEntry *entry) {
+static inline string_t edit_pwd(CommandEntry *entry) {
   if (entry->args->count != 3) {
     PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("PWD EDIT");
@@ -124,14 +124,14 @@ static inline string_t edit_pwd(struct CommandEntry *entry) {
     return RESP_ERROR_MESSAGE("Tried to give permissions your password do not have");
   }
 
-  struct Password **passwords = get_passwords();
+  Password **passwords = get_passwords();
   passwords[target]->permissions = permissions;
 
   PASS_NO_CLIENT(entry->client);
   return RESP_OK();
 }
 
-static inline string_t remove_pwd(struct CommandEntry *entry) {
+static inline string_t remove_pwd(CommandEntry *entry) {
   if (entry->args->count != 2) {
     PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("PWD REMOVE");
@@ -148,7 +148,7 @@ static inline string_t remove_pwd(struct CommandEntry *entry) {
   return RESP_OK();
 }
 
-static inline string_t generate_pwd(struct CommandEntry *entry) {
+static inline string_t generate_pwd(CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
   char value[33];
@@ -158,7 +158,7 @@ static inline string_t generate_pwd(struct CommandEntry *entry) {
   return CREATE_STRING(entry->client->write_buf, 39);
 }
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   if (entry->args->count == 0) {
     PASS_NO_CLIENT(entry->client);
     return MISSING_SUBCOMMAND_ERROR("PWD");
@@ -186,26 +186,26 @@ static string_t run(struct CommandEntry *entry) {
   return response;
 }
 
-static struct Subcommand subcommands[] = {
-  (struct Subcommand) {
+static Subcommand subcommands[] = {
+  (Subcommand) {
     .name = "ADD",
     .summary = "Adds a password.",
     .since = "0.1.7",
     .complexity = "O(N) where N is permissions length"
   },
-  (struct Subcommand) {
+  (Subcommand) {
     .name = "EDIT",
     .summary = "Edits a password permissions.",
     .since = "0.1.7",
     .complexity = "O(N) where N is permissions length"
   },
-  (struct Subcommand) {
+  (Subcommand) {
     .name = "REMOVE",
     .summary = "Removes a password.",
     .since = "0.1.7",
     .complexity = "O(1)"
   },
-  (struct Subcommand) {
+  (Subcommand) {
     .name = "GENERATE",
     .summary = "Generates a password value.",
     .since = "0.1.7",
@@ -213,7 +213,7 @@ static struct Subcommand subcommands[] = {
   }
 };
 
-const struct Command cmd_pwd = {
+const Command cmd_pwd = {
   .name = "PWD",
   .summary = "Allows to manage passwords.",
   .since = "0.1.7",

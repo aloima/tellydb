@@ -1,6 +1,6 @@
 #include <telly.h>
 
-static void get_keys(struct CommandEntry *entry) {
+static void get_keys(CommandEntry *entry) {
   if (entry->args->count == 0) return;
 
   for (uint32_t i = 0; i < entry->args->count; ++i) {
@@ -10,7 +10,7 @@ static void get_keys(struct CommandEntry *entry) {
 
 
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   if (entry->args->count == 0) {
     PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("INCR");
@@ -136,7 +136,7 @@ static string_t run(struct CommandEntry *entry) {
   return CREATE_STRING(entry->client->write_buf, at);
 }
 
-const struct Command cmd_decr = {
+const Command cmd_decr = {
   .name = "DECR",
   .summary = "Decrements the number stored at each key.",
   .since = "0.1.0",

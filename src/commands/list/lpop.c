@@ -1,13 +1,13 @@
 #include <telly.h>
 
-static void get_keys(struct CommandEntry *entry) {
+static void get_keys(CommandEntry *entry) {
   if (entry->args->count != 1) return;
   ASSERT(insert_into_vector(server->keyspace, &entry->args->data[0]), ==, true);
 }
 
 
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   if (entry->args->count != 1) {
     PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("LPOP");
@@ -44,7 +44,7 @@ static string_t run(struct CommandEntry *entry) {
   return response;
 }
 
-const struct Command cmd_lpop = {
+const Command cmd_lpop = {
   .name = "LPOP",
   .summary = "Removes and returns first element of the list.",
   .since = "0.1.3",

@@ -1,6 +1,6 @@
 #include <telly.h>
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   (void) entry;
 
   const time_t current_time = time(NULL);
@@ -26,7 +26,7 @@ static string_t run(struct CommandEntry *entry) {
   unreachable();
 }
 
-const struct Command cmd_bgsave = {
+const Command cmd_bgsave = {
   .name = "BGSAVE",
   .summary = "Saves all data to database file in background using a thread.",
   .since = "0.1.6",

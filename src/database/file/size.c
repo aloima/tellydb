@@ -1,7 +1,7 @@
 #include <telly.h>
 #include "file.h"
 
-static inline off_t get_value_size(const enum TellyTypes type, void *value);
+static inline off_t get_value_size(const TellyType type, void *value);
 
 static inline void get_hashtable_size(HashTableElement element, void *external) {
   const HashTableNameValue *field = (HashTableNameValue *) ((void *) &element);
@@ -11,7 +11,7 @@ static inline void get_hashtable_size(HashTableElement element, void *external) 
   *length += (1 + get_value_size(TELLY_STR, element.key) + get_value_size(value.type, value.data));
 }
 
-static inline off_t get_value_size(const enum TellyTypes type, void *value) {
+static inline off_t get_value_size(const TellyType type, void *value) {
   switch (type) {
     case TELLY_NULL:
       return 0;

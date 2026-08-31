@@ -5,20 +5,20 @@
 #include <stdint.h>
 
 // Will be used for method arguments, includes everything which will be used except individual data such as string
-typedef struct GenericArguments {
+typedef struct {
   const int fd;
   char *block;
   const uint16_t block_size;
   uint16_t *at;
 } GenericArguments;
 
-typedef struct UnallocatedValue {
+typedef struct {
   void **data;
-  const enum TellyTypes type;
+  const TellyType type;
   uint64_t *element_count;
 } UnallocatedValue;
 
-typedef struct CollectionResult {
+typedef struct {
   bool succeed;
   size_t value;
 } CollectionResult;

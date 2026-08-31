@@ -11,7 +11,7 @@
   }
 
 #define CREATE_COMMAND_ENTRY(_client, _args, _database, _password) ({\
-  (struct CommandEntry) {\
+  (CommandEntry) {\
     .client = (_client),\
     .args = (_args),\
     .database = (_database),\

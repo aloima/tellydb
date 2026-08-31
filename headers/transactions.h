@@ -1,25 +1,24 @@
 #pragma once
 
-#include "commands/data.h"
+#include "commands/commands.h"
 #include "database/database.h"
 #include "server/server.h"
 #include "resp/resp.h"
-#include "auth.h"
 
 #include <stdint.h>
 
 #define MAX_RESPONSE_SIZE 262144
 
-enum TransactionBlockType : uint8_t {
+typedef enum : uint8_t {
   TX_UNINITIALIZED,
   TX_DIRECT,
   TX_WAITING,
   TX_MULTIPLE
-};
+} TransactionBlockType;
 
-typedef struct Transaction {
+typedef struct {
   commandargs_t args;
-  struct Command *command;
+  Command *command;
   Database *database;
   QueryBuffer *read_buf;
 } Transaction;
@@ -30,9 +29,9 @@ typedef struct {
 } MultipleTransactions;
 
 typedef struct TransactionBlock {
-  enum TransactionBlockType type;
+  TransactionBlockType type;
   Client *client;
-  struct Password *password;
+  Password *password;
 
   union {
     Transaction *transaction;

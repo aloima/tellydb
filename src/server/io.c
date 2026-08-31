@@ -3,7 +3,7 @@
 #define IO_QUEUE_SIZE 512
 
 typedef struct {
-  enum IOOpType type;
+  IOOpType type;
   Client *client;
   string_t to_write;
 } IOOperation;
@@ -79,7 +79,7 @@ void send_destroy_signal_to_io_threads() {
   free(io_threads);
 }
 
-int add_io_request(const enum IOOpType type, Client *client, string_t to_write) {
+int add_io_request(const IOOpType type, Client *client, string_t to_write) {
   if (client->id == -1) return -1;
 
   int thread_idx = (client->id % io_thread_count);

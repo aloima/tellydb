@@ -1,6 +1,6 @@
 #include <telly.h>
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
   if (!entry->client->waiting_block) {
@@ -18,7 +18,7 @@ static string_t run(struct CommandEntry *entry) {
   PASS_COMMAND();
 }
 
-const struct Command cmd_exec = {
+const Command cmd_exec = {
   .name = "EXEC",
   .summary = "Executes a transaction block consists of multiple transactions.",
   .since = "0.2.0",

@@ -1,13 +1,13 @@
 #include <telly.h>
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   clear_database(entry->database);
 
   PASS_NO_CLIENT(entry->client);
   return RESP_OK();
 }
 
-const struct Command cmd_flushdb = {
+const Command cmd_flushdb = {
   .name = "FLUSHDB",
   .summary = "Deletes all the keys of the currently selected database.",
   .since = "1.0.0",

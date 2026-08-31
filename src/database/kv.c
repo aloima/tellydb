@@ -1,6 +1,6 @@
 #include <telly.h>
 
-int set_kv(KeyValue *kv, const string_t key, void *value, const enum TellyTypes type, const uint64_t *expire_at) {
+int set_kv(KeyValue *kv, const string_t key, void *value, const TellyType type, const uint64_t *expire_at) {
   kv->key.value = malloc(key.len + 1);
   if (kv->key.value == NULL)
     return -1;
@@ -63,7 +63,7 @@ void free_namevalue(void *data) {
 }
 
 void free_value(Value value) {
-  const enum TellyTypes type = value.type;
+  const TellyType type = value.type;
   void *data = value.data;
 
   switch (type) {

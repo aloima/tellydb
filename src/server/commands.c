@@ -1,6 +1,6 @@
 #include <telly.h>
 
-static const struct Command *command_list[] = {
+static const Command *command_list[] = {
   // Database commands
   &cmd_bgsave, &cmd_dbsize, &cmd_flushall, &cmd_flushdb, &cmd_lastsave,
   &cmd_save, &cmd_select,
@@ -24,17 +24,17 @@ static const struct Command *command_list[] = {
   &cmd_rpop, &cmd_rpush
 };
 
-static struct Command *commands = NULL;
+static Command *commands = NULL;
 static constexpr uint32_t command_count = (sizeof(command_list) / sizeof(command_list[0]));
 
-struct Command *load_commands() {
-  if (amalloc(commands, struct Command, command_count) != 0) {
+Command *load_commands() {
+  if (amalloc(commands, Command, command_count) != 0) {
     write_log(LOG_ERR, "Cannot create commands, out of memory.");
     return NULL;
   }
 
   for (uint32_t i = 0; i < command_count; ++i) {
-    const struct Command *command = command_list[i];
+    const Command *command = command_list[i];
     const uint32_t index = get_command_index(command->name, strlen(command->name))->idx;
     ASSERT(i, ==, index); // In command_hash.gperf file, commands are ordered in the same way
 
@@ -48,7 +48,7 @@ void free_commands() {
   if (commands) free(commands);
 }
 
-struct Command *get_commands() {
+Command *get_commands() {
   return commands;
 }
 

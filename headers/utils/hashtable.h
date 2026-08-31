@@ -5,7 +5,7 @@
 #define HASHTABLE_GROW_LOAD_FACTOR 0.75
 #define HASHTABLE_GROW_MULTIPLIER 2.00
 
-typedef struct HashTableElement {
+typedef struct {
   void *key;
   void *value;
 } HashTableElement;

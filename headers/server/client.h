@@ -17,10 +17,10 @@ typedef struct TransactionBlock TransactionBlock;
 struct Password;
 typedef struct Password Password;
 
-enum ProtocolVersion : uint8_t {
+typedef enum ProtocolVersion : uint8_t {
   RESP2 = 2,
   RESP3 = 3
-};
+} ProtocolVersion;
 
 typedef struct {
   _Atomic(struct Command *) data;
@@ -34,7 +34,7 @@ typedef struct {
   _Atomic(uint32_t) refcount;
 } QueryBuffer;
 
-typedef struct {
+typedef struct Client {
   int id, connfd;
   SSL *ssl;
 
@@ -44,7 +44,7 @@ typedef struct {
   char *lib_name, *lib_ver;
 
   Password *password;
-  enum ProtocolVersion protover;
+  ProtocolVersion protover;
 
   bool locked;
   TransactionBlock *waiting_block;

@@ -20,7 +20,7 @@
 
 #define ATOMIC_CAS_WEAK atomic_compare_exchange_weak_explicit
 
-enum TellyTypes : uint8_t {
+typedef enum : uint8_t {
   TELLY_UNKNOWN,
   TELLY_NULL,
   TELLY_INT,
@@ -29,7 +29,7 @@ enum TellyTypes : uint8_t {
   TELLY_BOOL,
   TELLY_HASHTABLE,
   TELLY_LIST
-};
+} TellyType;
 
 static constexpr int64_t PRIMARY_TYPE_SIZE_TABLE[] = {
   [TELLY_NULL]      = 0,

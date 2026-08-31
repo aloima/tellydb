@@ -1,6 +1,6 @@
 #include <telly.h>
 
-static void get_keys(struct CommandEntry *entry) {
+static void get_keys(CommandEntry *entry) {
   if (entry->args->count != 1) return;
 
   ASSERT(insert_into_vector(server->keyspace, &entry->args->data[0]), ==, true);
@@ -8,7 +8,7 @@ static void get_keys(struct CommandEntry *entry) {
 
 
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
   if (entry->args->count != 1)
@@ -22,7 +22,7 @@ static string_t run(struct CommandEntry *entry) {
   return get_resp_type_name(res->value.type);
 }
 
-const struct Command cmd_type = {
+const Command cmd_type = {
   .name = "TYPE",
   .summary = "Returns type of the value.",
   .since = "0.1.0",

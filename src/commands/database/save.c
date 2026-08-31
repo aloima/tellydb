@@ -1,6 +1,6 @@
 #include <telly.h>
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
   const time_t current_time = time(NULL);
@@ -17,7 +17,7 @@ static string_t run(struct CommandEntry *entry) {
   }
 }
 
-const struct Command cmd_save = {
+const Command cmd_save = {
   .name = "SAVE",
   .summary = "Saves all data in all databases to the database file.",
   .since = "0.1.6",

@@ -7,24 +7,24 @@
 
 #include <pthread.h>
 
-enum IOOpType : uint8_t {
+typedef enum : uint8_t {
   IOOP_READ,
   IOOP_WRITE,
   IOOP_TERMINATE
-};
+} IOOpType;
 
-enum IOThreadStatus {
+typedef enum : uint8_t {
   IO_THREAD_ACTIVE,
   IO_THREAD_PENDING_DESTROY,
   IO_THREAD_DESTROYED
-};
+} IOThreadStatus;
 
 typedef struct {
   pthread_t thread;
   ThreadQueue *queue;
   event_notifier_t *notifier; // For catching I/O operations, used inside I/O thread
 
-  _Atomic(enum IOThreadStatus) status;
+  _Atomic(IOThreadStatus) status;
 
   Arena *ucmd_arena;
 } IOThread;
@@ -34,4 +34,4 @@ int64_t get_io_thread_count();
 
 int create_io_threads();
 void send_destroy_signal_to_io_threads();
-int add_io_request(const enum IOOpType type, Client *client, string_t write_str);
+int add_io_request(const IOOpType type, Client *client, string_t write_str);

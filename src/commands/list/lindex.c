@@ -1,13 +1,13 @@
 #include <telly.h>
 
-static void get_keys(struct CommandEntry *entry) {
+static void get_keys(CommandEntry *entry) {
   if (entry->args->count != 2) return;
   ASSERT(insert_into_vector(server->keyspace, &entry->args->data[0]), ==, true);
 }
 
 
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
   if (entry->args->count != 2) {
@@ -61,7 +61,7 @@ static string_t run(struct CommandEntry *entry) {
   return write_value(value->data, value->type, entry->client->protover, entry->client->write_buf);
 }
 
-const struct Command cmd_lindex = {
+const Command cmd_lindex = {
   .name = "LINDEX",
   .summary = "Returns element at the index in the list.",
   .since = "0.1.4",

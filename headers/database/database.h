@@ -34,6 +34,6 @@ void free_databases();
 ExpiryState check_kv_expiry(Database *database, KeyValue *kv);
 
 KeyValue *get_data(Database *database, string_t key);
-KeyValue *set_data(Database *database, KeyValue *kv, string_t key, void *data, const enum TellyTypes type, const uint64_t *expire_at);
+KeyValue *set_data(Database *database, KeyValue *kv, string_t key, void *data, const TellyType type, const uint64_t *expire_at);
 bool delete_data(Database *database, const string_t key);
 void clear_database(Database *database);

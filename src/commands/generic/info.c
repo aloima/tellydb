@@ -51,7 +51,7 @@ static bool get_section(char *section, const Config *conf, const string_t name) 
   return true;
 }
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
   char buf[8192], section[2048];
@@ -94,7 +94,7 @@ static string_t run(struct CommandEntry *entry) {
   return CREATE_STRING(entry->client->write_buf, nbytes);
 }
 
-const struct Command cmd_info = {
+const Command cmd_info = {
   .name = "INFO",
   .summary = "Displays server information.",
   .since = "0.1.0",

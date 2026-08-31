@@ -1,6 +1,6 @@
 #include <telly.h>
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
   if (entry->args->count == 0) {
@@ -13,7 +13,7 @@ static string_t run(struct CommandEntry *entry) {
   string_t response;
 
   if (SSTREQ(CREATE_SIZED_STRING("DOCS"), subcommand)) {
-    const struct Command *commands = get_commands();
+    const Command *commands = get_commands();
     const uint32_t command_count = get_command_count();
 
     char *res = entry->client->write_buf;
@@ -24,7 +24,7 @@ static string_t run(struct CommandEntry *entry) {
         res_len = sprintf(res, "*%" PRIu32 "\r\n", command_count * 2);
 
         for (uint32_t i = 0; i < command_count; ++i) {
-          struct Command command = commands[i];
+          Command command = commands[i];
 
           char buf[4096];
           res_len += sprintf(buf, (
@@ -54,7 +54,7 @@ static string_t run(struct CommandEntry *entry) {
         res_len = sprintf(res, "%%%" PRIu32 "\r\n", command_count);
 
         for (uint32_t i = 0; i < command_count; ++i) {
-          struct Command command = commands[i];
+          Command command = commands[i];
 
           char buf[4096];
           res_len += sprintf(buf, (
@@ -86,7 +86,7 @@ static string_t run(struct CommandEntry *entry) {
 
     response = CREATE_STRING(res, res_len);
   } else if (SSTREQ(CREATE_SIZED_STRING("LIST"), subcommand)) {
-    const struct Command *commands = get_commands();
+    const Command *commands = get_commands();
     const uint32_t command_count = get_command_count();
 
     char *res = entry->client->write_buf;
@@ -109,20 +109,20 @@ static string_t run(struct CommandEntry *entry) {
   return response;
 }
 
-static struct Subcommand subcommands[] = {
-  (struct Subcommand) {
+static Subcommand subcommands[] = {
+  (Subcommand) {
     .name = "LIST",
     .summary = "Returns name list of all commands.",
     .since = "0.1.0",
     .complexity = "O(N) where N is count of all commands"
   },
-  (struct Subcommand) {
+  (Subcommand) {
     .name = "COUNT",
     .summary = "Returns count of all commands in the server.",
     .since = "0.1.0",
     .complexity = "O(1)"
   },
-  (struct Subcommand) {
+  (Subcommand) {
     .name = "DOCS",
     .summary = "Returns documentation about multiple commands.",
     .since = "0.1.0",
@@ -130,7 +130,7 @@ static struct Subcommand subcommands[] = {
   }
 };
 
-const struct Command cmd_command = {
+const Command cmd_command = {
   .name = "COMMAND",
   .summary = "Gives information about the commands in the server.",
   .since = "0.1.0",

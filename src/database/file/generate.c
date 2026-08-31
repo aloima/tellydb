@@ -10,7 +10,7 @@ static inline void generate_string_value_layer(char **data, off_t *len, const vo
   (void) generate_string_value(data, len, string);
 }
 
-static inline bool is_primitive(const enum TellyTypes type) {
+static inline bool is_primitive(const TellyType type) {
   switch (type) {
     case TELLY_INT: case TELLY_DOUBLE: case TELLY_STR: case TELLY_BOOL:
       return true;
@@ -28,7 +28,7 @@ static const generator_t GENERATORS[] = {
   [TELLY_BOOL]   = generate_boolean_value
 };
 
-typedef struct Buffer {
+typedef struct {
   char *data;
   off_t *len;
 } Buffer;
@@ -143,7 +143,7 @@ void generate_headers(char *headers, const uint32_t server_age) {
 
 off_t generate_value(char **data, KeyValue *kv) {
   off_t len = 0;
-  const enum TellyTypes type = kv->value.type;
+  const TellyType type = kv->value.type;
 
   generate_string_value(data, &len, &kv->key);
   (*data)[len] = type;
@@ -173,7 +173,7 @@ off_t generate_value(char **data, KeyValue *kv) {
 
     while (node) {
       Value *value = (Value *) node->data;
-      const enum TellyTypes value_type = value->type;
+      const TellyType value_type = value->type;
 
       (*data)[len] = value_type;
       len += 1;

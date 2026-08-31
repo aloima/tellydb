@@ -1,6 +1,6 @@
 #include <telly.h>
 
-static void get_keys(struct CommandEntry *entry) {
+static void get_keys(CommandEntry *entry) {
   if (entry->args->count != 1) return;
   ASSERT(insert_into_vector(server->keyspace, &entry->args->data[0]), ==, true);
 }
@@ -23,8 +23,8 @@ static constexpr string_t c_bool[4][2] = {
   },
 };
 
-typedef struct Response {
-  enum ProtocolVersion protover;
+typedef struct {
+  ProtocolVersion protover;
   char *data;
   uint64_t at;
 } Response;
@@ -34,7 +34,7 @@ static void dump_hashtable(HashTableElement element, void *external) {
   const Value value = ((NameValue *) element.value)->value;
 
   Response *response = (Response *) external;
-  const enum ProtocolVersion protover = response->protover;
+  const ProtocolVersion protover = response->protover;
 
   response->at += create_resp_string(response->data + response->at, *name);
   char *buf = response->data + response->at;
@@ -71,7 +71,7 @@ static void dump_hashtable(HashTableElement element, void *external) {
   }
 }
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
   if (entry->args->count != 1) {
@@ -95,7 +95,7 @@ static string_t run(struct CommandEntry *entry) {
   }
 
   HashTable *table = (HashTable *) kv->value.data;
-  const enum ProtocolVersion protover = entry->client->protover;
+  const ProtocolVersion protover = entry->client->protover;
 
   char *data = entry->client->write_buf;
   uint64_t at = 0;
@@ -122,7 +122,7 @@ static string_t run(struct CommandEntry *entry) {
   return CREATE_STRING(response.data, response.at);
 }
 
-const struct Command cmd_hgetall = {
+const Command cmd_hgetall = {
   .name = "HGETALL",
   .summary = "Gets all fields and their values from the hash table.",
   .since = "0.1.9",

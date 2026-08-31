@@ -1,13 +1,13 @@
 #include <telly.h>
 
-static void get_keys(struct CommandEntry *entry) {
+static void get_keys(CommandEntry *entry) {
   if (entry->args->count != 2) return;
   ASSERT(insert_into_vector(server->keyspace, &entry->args->data[0]), ==, true);
 }
 
 
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
   if (entry->args->count != 2) {
@@ -61,7 +61,7 @@ static string_t run(struct CommandEntry *entry) {
   return get_resp_type_name(data->type);
 }
 
-const struct Command cmd_ltype = {
+const Command cmd_ltype = {
   .name = "LTYPE",
   .summary = "Returns type of the element at the index in the list.",
   .since = "1.0.0",

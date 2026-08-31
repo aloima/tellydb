@@ -1,7 +1,7 @@
 #include <telly.h>
 
 // Runs before run(), so old key must be used.
-static void get_keys(struct CommandEntry *entry) {
+static void get_keys(CommandEntry *entry) {
   if (entry->args->count != 2) return;
 
   ASSERT(insert_into_vector(server->keyspace, &entry->args->data[0]), ==, true);
@@ -9,7 +9,7 @@ static void get_keys(struct CommandEntry *entry) {
 
 
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   if (entry->args->count != 2) {
     PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("RENAME");
@@ -37,7 +37,7 @@ static string_t run(struct CommandEntry *entry) {
   return RESP_OK();
 }
 
-const struct Command cmd_rename = {
+const Command cmd_rename = {
   .name = "RENAME",
   .summary = "Renames existing key to new key.",
   .since = "0.1.7",

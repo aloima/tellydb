@@ -1,6 +1,6 @@
 #include <telly.h>
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
   const time_t current_time = time(NULL);
@@ -14,7 +14,7 @@ static string_t run(struct CommandEntry *entry) {
   return CREATE_STRING(entry->client->write_buf, nbytes);
 }
 
-const struct Command cmd_age = {
+const Command cmd_age = {
   .name = "AGE",
   .summary = "Sends the server age as seconds.",
   .since = "0.1.6",

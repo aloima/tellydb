@@ -9,12 +9,12 @@
 
 #define RESP_INLINE_ARGUMENT_COUNT 32
 
-typedef struct CommandArgs {
+typedef struct {
   string_t *data;
   uint32_t count;
 } commandargs_t;
 
-typedef struct CommandData {
+typedef struct {
   string_t name;
   commandargs_t args;
 } commanddata_t;

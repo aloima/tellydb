@@ -92,7 +92,7 @@ uint16_t get_authorization_from_file(const int fd, char *block, const uint16_t b
   if (password_count != 0) {
     Password *password;
     uint32_t password_at = 0;
-    passwords = malloc(password_count * sizeof(struct Password *));
+    passwords = malloc(password_count * sizeof(Password *));
 
     /*
       Interrupted operations
@@ -199,9 +199,9 @@ int add_password(Client *client, const string_t data, const uint8_t permissions)
   password_count += 1;
 
   if (password_count == 1) {
-    passwords = malloc(sizeof(struct Password *));
+    passwords = malloc(sizeof(Password *));
   } else {
-    passwords = realloc(passwords, password_count * sizeof(struct Password *));
+    passwords = realloc(passwords, password_count * sizeof(Password *));
   }
 
   if (passwords == NULL) {

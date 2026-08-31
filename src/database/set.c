@@ -1,6 +1,6 @@
 #include <telly.h>
 
-KeyValue *set_data(Database *database, KeyValue *kv, string_t key, void *data, const enum TellyTypes type, const uint64_t *expire_at) {
+KeyValue *set_data(Database *database, KeyValue *kv, string_t key, void *data, const TellyType type, const uint64_t *expire_at) {
   if (kv != NULL) {
     free_value(kv->value);
     kv->value.type = type;

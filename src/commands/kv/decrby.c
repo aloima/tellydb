@@ -1,6 +1,6 @@
 #include <telly.h>
 
-static void get_keys(struct CommandEntry *entry) {
+static void get_keys(CommandEntry *entry) {
   if (entry->args->count != 2) return;
 
   ASSERT(insert_into_vector(server->keyspace, &entry->args->data[0]), ==, true);
@@ -8,7 +8,7 @@ static void get_keys(struct CommandEntry *entry) {
 
 
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   if (entry->args->count != 2) {
     PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("DECRBY");
@@ -28,7 +28,7 @@ static string_t run(struct CommandEntry *entry) {
 
   if (!result) {
     void *number;
-    enum TellyTypes type;
+    TellyType type;
 
     if (is_integer) {
       type = TELLY_INT;
@@ -116,7 +116,7 @@ static string_t run(struct CommandEntry *entry) {
   return write_value(result->value.data, result->value.type, entry->client->protover, entry->client->write_buf);
 }
 
-const struct Command cmd_decrby = {
+const Command cmd_decrby = {
   .name = "DECRBY",
   .summary = "Decrements the number stored at key by value.",
   .since = "0.2.0",

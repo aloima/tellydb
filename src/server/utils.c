@@ -1,6 +1,6 @@
 #include <telly.h>
 
-string_t write_value(void *value, const enum TellyTypes type, const enum ProtocolVersion protover, char *buffer) {
+string_t write_value(void *value, const TellyType type, const ProtocolVersion protover, char *buffer) {
   switch (type) {
     case TELLY_UNKNOWN: unreachable();
 

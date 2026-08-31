@@ -7,7 +7,7 @@ typedef struct LinkedListNode {
   struct LinkedListNode *prev, *next;
 } LinkedListNode;
 
-typedef struct LinkedList {
+typedef struct {
   LinkedListNode *begin, *end;
   uint64_t size;
 } LinkedList;

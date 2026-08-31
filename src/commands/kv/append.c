@@ -1,6 +1,6 @@
 #include <telly.h>
 
-static void get_keys(struct CommandEntry *entry) {
+static void get_keys(CommandEntry *entry) {
   if (entry->args->count != 2) return;
 
   ASSERT(insert_into_vector(server->keyspace, &entry->args->data[0]), ==, true);
@@ -8,7 +8,7 @@ static void get_keys(struct CommandEntry *entry) {
 
 
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   if (entry->args->count != 2) {
     PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("APPEND");
@@ -63,7 +63,7 @@ static string_t run(struct CommandEntry *entry) {
   }
 }
 
-const struct Command cmd_append = {
+const Command cmd_append = {
   .name = "APPEND",
   .summary = "Appends string to existed value. If key is not exist, creates a new one.",
   .since = "0.1.7",

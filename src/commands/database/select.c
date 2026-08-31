@@ -1,6 +1,6 @@
 #include <telly.h>
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
   if (entry->args->count != 1) {
@@ -20,7 +20,7 @@ static string_t run(struct CommandEntry *entry) {
   return RESP_OK();
 }
 
-const struct Command cmd_select = {
+const Command cmd_select = {
   .name = "SELECT",
   .summary = "Selects database which will be used by client.",
   .since = "0.1.9",

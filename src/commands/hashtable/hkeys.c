@@ -1,13 +1,13 @@
 #include <telly.h>
 
-static void get_keys(struct CommandEntry *entry) {
+static void get_keys(CommandEntry *entry) {
   if (entry->args->count != 1) return;
   ASSERT(insert_into_vector(server->keyspace, &entry->args->data[0]), ==, true);
 }
 
 
 
-typedef struct Response {
+typedef struct {
   char *buf;
   uint64_t at;
 } Response;
@@ -32,7 +32,7 @@ static void dump_hashtable_keys(HashTableElement element, void *external) {
   response->at = at;
 }
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
   if (entry->args->count != 1) {
@@ -60,7 +60,7 @@ static string_t run(struct CommandEntry *entry) {
   return CREATE_STRING(response.buf, response.at);
 }
 
-const struct Command cmd_hkeys = {
+const Command cmd_hkeys = {
   .name = "HKEYS",
   .summary = "Gets all field names from the hash table.",
   .since = "0.1.9",

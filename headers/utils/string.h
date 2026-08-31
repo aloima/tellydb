@@ -8,7 +8,7 @@
 #define streq(s1, s2) (strcmp((s1), (s2)) == 0)
 #define SSTREQ(s1, s2) (((s1).len == (s2).len) && (memcmp((s1).value, (s2).value, (s1).len) == 0))
 
-typedef struct String {
+typedef struct {
   char *value;
   uint32_t len;
 } string_t;

@@ -103,14 +103,14 @@ LinkedList *get_databases() {
   return databases;
 }
 
-struct ExternalData {
+typedef struct {
   uint64_t target;
   string_t name;
-};
+} ExternalData;
 
 static inline bool cmp(void *data, void *external) {
   Database *database = (Database *) data;
-  struct ExternalData *external_s = ((struct ExternalData *) external);
+  ExternalData *external_s = ((ExternalData *) external);
 
   const string_t a = database->name;
   const string_t b = external_s->name;
@@ -119,7 +119,7 @@ static inline bool cmp(void *data, void *external) {
 }
 
 Database *get_database(const string_t name) {
-  struct ExternalData external = {
+  ExternalData external = {
     .name = name,
     .target = string_hash((string_t *) &name)
   };
@@ -130,7 +130,7 @@ Database *get_database(const string_t name) {
 
 bool rename_database(const string_t old_name, const string_t new_name) {
   Database *database = ({
-    struct ExternalData external = {
+    ExternalData external = {
       .name = old_name,
       .target = string_hash((string_t *) &old_name)
     };

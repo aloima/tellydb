@@ -1,6 +1,6 @@
 #include <telly.h>
 
-static inline bool init_state(struct Queue *queue, uint64_t at, uint64_t align, uint64_t size) {
+static inline bool init_state(Queue *queue, uint64_t at, uint64_t align, uint64_t size) {
   if (posix_memalign((void **) &queue->slots[at], align, size) != 0) {
     for (uint64_t i = 0; i < at; ++i) {
       free(queue->slots[i]);

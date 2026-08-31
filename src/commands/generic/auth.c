@@ -1,6 +1,6 @@
 #include <telly.h>
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
   if (entry->args->count != 1 && entry->args->count != 2) {
@@ -26,12 +26,12 @@ static string_t run(struct CommandEntry *entry) {
     }
   }
 
-  struct Password **passwords = get_passwords();
+  Password **passwords = get_passwords();
   entry->client->password = passwords[target];
   return RESP_OK();
 }
 
-const struct Command cmd_auth = {
+const Command cmd_auth = {
   .name = "AUTH",
   .summary = "Allows to authorize client via passwords.",
   .since = "0.1.7",

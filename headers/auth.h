@@ -8,7 +8,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-enum Permissions {
+typedef enum : uint8_t {
   P_NONE   = 0b00000000,
   P_READ   = 0b00000001,
   P_WRITE  = 0b00000010,
@@ -16,7 +16,7 @@ enum Permissions {
   P_CONFIG = 0b00001000,
   P_AUTH   = 0b00010000,
   P_SERVER = 0b00100000,
-};
+} Permission;
 
 typedef struct Password {
   unsigned char data[48];

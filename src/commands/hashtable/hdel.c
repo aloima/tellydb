@@ -1,13 +1,13 @@
 #include <telly.h>
 
-static void get_keys(struct CommandEntry *entry) {
+static void get_keys(CommandEntry *entry) {
   if (entry->args->count < 2) return;
   ASSERT(insert_into_vector(server->keyspace, &entry->args->data[0]), ==, true);
 }
 
 
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   if (entry->args->count < 2) {
     PASS_NO_CLIENT(entry->client);
     return WRONG_ARGUMENT_ERROR("HDEL");
@@ -55,7 +55,7 @@ static string_t run(struct CommandEntry *entry) {
     PASS_COMMAND();
 }
 
-const struct Command cmd_hdel = {
+const Command cmd_hdel = {
   .name = "HDEL",
   .summary = "Deletes field(s) of the hash table.",
   .since = "0.1.5",

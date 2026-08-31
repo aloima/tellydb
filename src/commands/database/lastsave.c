@@ -1,6 +1,6 @@
 #include <telly.h>
 
-static string_t run(struct CommandEntry *entry) {
+static string_t run(CommandEntry *entry) {
   PASS_NO_CLIENT(entry->client);
 
   struct stat res;
@@ -16,7 +16,7 @@ static string_t run(struct CommandEntry *entry) {
   return CREATE_STRING(entry->client->write_buf, nbytes);
 }
 
-const struct Command cmd_lastsave = {
+const Command cmd_lastsave = {
   .name = "LASTSAVE",
   .summary = "Returns last save time of database as UNIX time.",
   .since = "0.1.6",

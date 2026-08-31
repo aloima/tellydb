@@ -218,7 +218,7 @@ int save_data(const uint32_t server_age) {
   generate_headers(block, server_age);
 
   {
-    struct Password **passwords = get_passwords();
+    Password **passwords = get_passwords();
     const uint32_t password_count = get_password_count();
     const uint8_t password_count_byte_count = (password_count != 0) ? (log2(password_count) + 1) : 0;
     block_size = (sizeof(DATABASE_FILE_CONSTANT) + sizeof(server->age) + 1) + password_count_byte_count;
@@ -231,7 +231,7 @@ int save_data(const uint32_t server_age) {
     }
 
     for (uint32_t i = 0; i < password_count; ++i) {
-      struct Password *password = passwords[i];
+      Password *password = passwords[i];
       const uint32_t new_length = (block_size + 49);
 
       if (new_length > block_capacity) {

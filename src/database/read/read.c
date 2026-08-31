@@ -2,7 +2,7 @@
 #include "read.h"
 
 static int allocate_value(const GenericArguments *arguments, const UnallocatedValue value, size_t *collected_bytes) {
-  const enum TellyTypes type = value.type;
+  const TellyType type = value.type;
   void **data = value.data;
   uint64_t *element_count = value.element_count;
 
@@ -68,7 +68,7 @@ static int allocate_value(const GenericArguments *arguments, const UnallocatedVa
 static CollectionResult collect_kv(const GenericArguments *arguments, KeyValue *kv) {
   CollectionResult result;
 
-  enum TellyTypes type = TELLY_UNKNOWN;
+  TellyType type = TELLY_UNKNOWN;
   string_t key = EMPTY_STRING();
   void *value = NULL; // for Generic
   NameValue *field = NULL; // for HashTable
@@ -113,7 +113,7 @@ static CollectionResult collect_kv(const GenericArguments *arguments, KeyValue *
           goto GRACEFUL_SHUTDOWN;
 
         collected_bytes += result.value;
-        field->value.type = (const enum TellyTypes) byte;
+        field->value.type = (const TellyType) byte;
         field->value.data = NULL;
         collected_bytes += 1; // type byte
 
