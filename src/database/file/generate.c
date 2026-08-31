@@ -146,7 +146,7 @@ off_t generate_value(char **data, KeyValue *kv) {
   const enum TellyTypes type = kv->value.type;
 
   generate_string_value(data, &len, &kv->key);
-  (*data)[len++] = type;
+  (*data)[len] = type;
   len += 1;
 
   if (is_primitive(type)) {
