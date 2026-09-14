@@ -144,8 +144,8 @@ static inline void interrupt_dumping_into_file(State *state) {
   ASSERT(close_database_fd(), ==, 0);
 }
 
-static inline void dump_into_file(HashTableElement element, void *external) {
-  const HashTableKeyValue *kv_element = (HashTableKeyValue *) ((void *) &element);
+static inline void dump_into_file(HashTableElement *element, void *external) {
+  const HashTableKeyValue *kv_element = (HashTableKeyValue *) element;
   KeyValue *kv = kv_element->value;
   State *state = (State *) external;
 

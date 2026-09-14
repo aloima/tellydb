@@ -2,8 +2,9 @@
 
 HashTable *create_hashtable(const uint64_t capacity, uint64_t (*hash)(void *), bool (*key_compare)(void *, void *)) {
   HashTable *table;
-  if (amalloc(table, HashTable, 1) != 0)
+  if (amalloc(table, HashTable, 1) != 0) {
     return NULL;
+  }
 
   if (amalloc(table->elements, HashTableElement, capacity) != 0) {
     free(table);
@@ -26,14 +27,16 @@ HashTable *create_hashtable(const uint64_t capacity, uint64_t (*hash)(void *), b
 static int grow_hashtable(HashTable *table) {
   const uint64_t old_capacity = table->size.capacity;
 
-  if (table->size.count < (old_capacity * HASHTABLE_GROW_LOAD_FACTOR))
+  if (table->size.count < (old_capacity * HASHTABLE_GROW_LOAD_FACTOR)) {
     return 0;
+  }
 
   const uint64_t new_capacity = old_capacity * HASHTABLE_GROW_MULTIPLIER;
   HashTableElement *elements;
 
-  if (amalloc(elements, HashTableElement, new_capacity) != 0)
+  if (amalloc(elements, HashTableElement, new_capacity) != 0) {
     return -1;
+  }
 
   for (uint64_t i = 0; i < old_capacity; ++i) {
     HashTableElement element = table->elements[i];
@@ -41,8 +44,9 @@ static int grow_hashtable(HashTable *table) {
 
     uint64_t index = table->hash(element.key) % new_capacity;
 
-    while (elements[index].key != NULL)
+    while (elements[index].key != NULL) {
       index = (index + 1) % new_capacity;
+    }
 
     elements[index] = element;
   }
@@ -56,16 +60,18 @@ static int grow_hashtable(HashTable *table) {
 
 HashTableElement *insert_into_hashtable(HashTable *table, void *key, void *value) {
   // Guaranteed that capacity is enough
-  if (grow_hashtable(table) < 0)
+  if (grow_hashtable(table) < 0) {
     return NULL;
+  }
 
   const uint64_t capacity = table->size.capacity;
   const uint64_t start = table->hash(key) % capacity;
   uint64_t index = start;
 
   while (table->elements[index].key != NULL) {
-    if (table->key_compare(table->elements[index].key, key))
+    if (table->key_compare(table->elements[index].key, key)) {
       return &table->elements[index];
+    }
 
     index = (index + 1) % capacity;
   }
@@ -83,14 +89,12 @@ bool delete_from_hashtable(HashTable *table, void *key) {
   uint64_t deletion = start;
 
   while (!table->key_compare(table->elements[deletion].key, key)) {
-    if (table->elements[deletion].key == NULL)
-      return false;
+    if (table->elements[deletion].key == NULL) return false;
 
     deletion = (deletion + 1) % capacity;
 
     // Element cannot be found even all hashtable was searched.
-    if (deletion == start)
-      return false;
+    if (deletion == start) return false;
   }
 
   table->size.count -= 1;
@@ -104,19 +108,15 @@ bool delete_from_hashtable(HashTable *table, void *key) {
     while (true) {
       current = (current + 1) % capacity;
       void *current_key = table->elements[current].key;
-
-      if (current_key == NULL)
-        return true;
+      if (current_key == NULL) return true;
 
       const uint64_t ideal = table->hash(current_key) % capacity;
 
       // If ideal is not in (deletion, current], move elements[current] into elements[deletion]
       if (deletion <= current) {
-        if (!(deletion < ideal && ideal <= current))
-          break;
+        if (!(deletion < ideal && ideal <= current)) break;
       } else {
-        if (!(deletion < ideal || ideal <= current))
-          break;
+        if (!(deletion < ideal || ideal <= current)) break;
       }
     }
 
@@ -134,13 +134,11 @@ bool exist_in_hashtable(HashTable *table, void *key) {
   uint64_t index = start;
 
   while (!table->key_compare(table->elements[index].key, key)) {
-    if (table->elements[index].key == NULL)
-      return false;
+    if (table->elements[index].key == NULL) return false;
 
     index = (index + 1) % capacity;
 
-    if (index == start)
-      return false;
+    if (index == start) return false;
   }
 
   return true;
@@ -152,40 +150,42 @@ HashTableElement *get_from_hashtable(HashTable *table, void *key) {
   uint64_t index = start;
 
   while (!table->key_compare(table->elements[index].key, key)) {
-    if (table->elements[index].key == NULL)
-      return NULL;
+    if (table->elements[index].key == NULL) return NULL;
 
     index = (index + 1) % capacity;
 
-    if (index == start)
-      return NULL;
+    if (index == start) return NULL;
   }
 
   return &table->elements[index];
 }
 
-void foreach_hashtable(HashTable *table, void (*procedure)(HashTableElement element, void *external), void *external) {
+void foreach_hashtable(HashTable *table, void (*procedure)(HashTableElement *element, void *external), void *external) {
   for (uint64_t i = 0; i < table->size.capacity; ++i) {
     if (table->elements[i].key == NULL) continue;
-    procedure(table->elements[i], external);
+    procedure(&table->elements[i], external);
   }
 }
 
-static void destroy_element_layer(HashTableElement element, void *data) {
+static void destroy_element_layer(HashTableElement *element, void *data) {
   void (*destroy_element)(HashTableElement element) = (void (*)(HashTableElement element)) data;
-  destroy_element(element);
+  destroy_element(*element);
+  element->key = NULL;
+  element->value = NULL;
 }
 
 void clear_hashtable(HashTable *table, void (*destroy_element)(HashTableElement element)) {
-  if (destroy_element != NULL)
+  if (destroy_element != NULL) {
     foreach_hashtable(table, destroy_element_layer, destroy_element);
+    table->size.count = 0;
+  } else {
+    const uint64_t capacity = table->size.capacity;
+    table->size.count = 0;
 
-  const uint64_t capacity = table->size.capacity;
-  table->size.count = 0;
-
-  for (uint64_t i = 0; i < capacity; ++i) {
-    table->elements->key = NULL;
-    table->elements->value = NULL;
+    for (uint64_t i = 0; i < capacity; ++i) {
+      table->elements[i].key = NULL;
+      table->elements[i].value = NULL;
+    }
   }
 }
 

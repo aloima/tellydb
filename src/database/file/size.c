@@ -3,12 +3,12 @@
 
 static inline off_t get_value_size(const TellyType type, void *value);
 
-static inline void get_hashtable_size(HashTableElement element, void *external) {
-  const HashTableNameValue *field = (HashTableNameValue *) ((void *) &element);
+static inline void get_hashtable_size(HashTableElement *element, void *external) {
+  const HashTableNameValue *field = (HashTableNameValue *) element;
   const Value value = field->value->value;
   uint64_t *length = (uint64_t *) external;
 
-  *length += (1 + get_value_size(TELLY_STR, element.key) + get_value_size(value.type, value.data));
+  *length += (1 + get_value_size(TELLY_STR, element->key) + get_value_size(value.type, value.data));
 }
 
 static inline off_t get_value_size(const TellyType type, void *value) {
@@ -72,11 +72,11 @@ static inline off_t get_value_size(const TellyType type, void *value) {
   }
 }
 
-void get_maximum_keyvalue_size(HashTableElement element, void *external) {
-  const HashTableKeyValue *kv = (HashTableKeyValue *) ((void *) &element);
+void get_maximum_keyvalue_size(HashTableElement *element, void *external) {
+  const HashTableKeyValue *kv = (HashTableKeyValue *) element;
   const Value value = kv->value->value;
   uint64_t *max_size = (uint64_t *) external;
 
-  const uint64_t size = (1 + get_value_size(TELLY_STR, (string_t *) element.key) + get_value_size(value.type, value.data));
+  const uint64_t size = (1 + get_value_size(TELLY_STR, (string_t *) element->key) + get_value_size(value.type, value.data));
   *max_size = ((*max_size > size) ? *max_size : size);
 }

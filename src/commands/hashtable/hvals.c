@@ -29,8 +29,8 @@ typedef struct {
   uint64_t at;
 } Response;
 
-static void dump_hashtable(HashTableElement element, void *external) {
-  const Value value = ((NameValue *) element.value)->value;
+static void dump_hashtable(HashTableElement *element, void *external) {
+  const Value value = ((NameValue *) element->value)->value;
 
   Response *response = (Response *) external;
   const ProtocolVersion protover = response->protover;

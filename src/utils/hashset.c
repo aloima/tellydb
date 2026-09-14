@@ -2,8 +2,9 @@
 
 HashSet *create_hashset(const uint64_t capacity) {
   HashSet *set;
-  if (amalloc(set, HashSet, 1) != 0)
+  if (amalloc(set, HashSet, 1) != 0) {
     return NULL;
+  }
 
   if (amalloc(set->elements, void *, capacity) != 0) {
     free(set);
@@ -79,14 +80,12 @@ bool delete_from_hashset(HashSet *set, void *element) {
   uint64_t deletion = start;
 
   while (set->elements[deletion] != element) {
-    if (set->elements[deletion] == NULL)
-      return false;
+    if (set->elements[deletion] == NULL) return false;
 
     deletion = (deletion + 1) % capacity;
 
     // Element cannot be found even all hashset was searched.
-    if (deletion == start)
-      return false;
+    if (deletion == start) return false;
   }
 
   set->size.count -= 1;
@@ -107,11 +106,9 @@ bool delete_from_hashset(HashSet *set, void *element) {
 
       // If ideal is not in (deletion, current], move elements[current] into elements[deletion]
       if (deletion <= current) {
-        if (!(deletion < ideal && ideal <= current))
-          break;
+        if (!(deletion < ideal && ideal <= current)) break;
       } else {
-        if (!(deletion < ideal || ideal <= current))
-          break;
+        if (!(deletion < ideal || ideal <= current)) break;
       }
     }
 
@@ -128,13 +125,11 @@ bool exist_in_hashset(HashSet *set, void *element) {
   uint64_t index = start;
 
   while (set->elements[index] != element) {
-    if (set->elements[index] == NULL)
-      return false;
+    if (set->elements[index] == NULL) return false;
 
     index = (index + 1) % capacity;
 
-    if (index == start)
-      return false;
+    if (index == start) return false;
   }
 
   return true;

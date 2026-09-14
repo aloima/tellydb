@@ -12,8 +12,8 @@ typedef struct {
   uint64_t at;
 } Response;
 
-static void dump_hashtable_keys(HashTableElement element, void *external) {
-  const string_t *name = (string_t *) element.key;
+static void dump_hashtable_keys(HashTableElement *element, void *external) {
+  const string_t *name = (string_t *) element->key;
   Response *response = (Response *) external;
 
   char *buf = response->buf;
@@ -40,10 +40,8 @@ static string_t run(CommandEntry *entry) {
   }
 
   const KeyValue *kv = get_data(entry->database, entry->args->data[0]);
-  if (!kv)
-    return CREATE_SIZED_STRING("*0\r\n");
-  if (kv->value.type != TELLY_HASHTABLE)
-    return INVALID_TYPE_ERROR("HKEYS");
+  if (!kv) return CREATE_SIZED_STRING("*0\r\n");
+  if (kv->value.type != TELLY_HASHTABLE) return INVALID_TYPE_ERROR("HKEYS");
 
   HashTable *table = (HashTable *) kv->value.data;
   char *buf = entry->client->write_buf;
