@@ -133,12 +133,12 @@ void free_transaction_blocks() {
   free_tqueue(tx_queue);
 }
 
-static inline bool check_kv_expiries(void *element, void *external) {
+static inline bool check_kv_expiries(void **element, void *external) {
   ASSERT(element, !=, NULL);
   ASSERT(external, !=, NULL);
 
   Database *database = (Database *) external;
-  const string_t *key = (string_t *) element;
+  const string_t *key = (string_t *) *element;
   KeyValue *kv = get_data(database, *key);
   if (kv == NULL)
     return true;

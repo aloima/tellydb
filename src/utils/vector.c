@@ -74,36 +74,44 @@ bool delete_from_vector(Vector *vector, void *element) {
   return false;
 }
 
-bool foreach_vector(Vector *vector, bool (*procedure)(void *element, void *external), void *external) {
+bool foreach_vector(Vector *vector, bool (*procedure)(void **element, void *external), void *external) {
   ASSERT(vector, !=, NULL);
   ASSERT(procedure, !=, NULL);
   ASSERT(external, !=, NULL);
 
-  for (uint64_t i = 0; i < vector->size.count; ++i) {
-    if (procedure(vector->elements[i], external) == false)
+  const uint64_t count = vector->size.count;
+
+  for (uint64_t i = 0; i < count; ++i) {
+    if (procedure(&vector->elements[i], external) == false) {
       return false;
+    }
   }
 
   return true;
 }
 
 bool any_in_vector(Vector *vector, bool (*procedure)(void *element)) {
-  for (uint64_t i = 0; i < vector->size.count; ++i) {
-    void *element = vector->elements[i];
+  const uint64_t count = vector->size.count;
+  void **elements = vector->elements;
 
-    if (procedure(element))
+  for (uint64_t i = 0; i < count; ++i) {
+    void *element = elements[i];
+
+    if (procedure(element)) {
       return true;
+    }
   }
 
   return false;
 }
 
-static bool destroy_element_layer(void *element, void *data) {
+static bool destroy_element_layer(void **element, void *data) {
   ASSERT(element, !=, NULL);
   ASSERT(data, !=, NULL);
 
   void (*destroy_element)(void *element) = (void (*)(void *element)) data;
-  destroy_element(element);
+  destroy_element(*element);
+  *element = NULL;
 
   return true;
 }
@@ -111,22 +119,25 @@ static bool destroy_element_layer(void *element, void *data) {
 void clear_vector(Vector *vector, void (*destroy_element)(void *element)) {
   ASSERT(vector, !=, NULL);
 
-  if (destroy_element != NULL)
+  if (destroy_element != NULL) {
     ASSERT(foreach_vector(vector, destroy_element_layer, destroy_element), ==, true);
+    vector->size.count = 0;
+  } else {
+    const uint64_t capacity = vector->size.capacity;
+    vector->size.count = 0;
 
-  const uint64_t capacity = vector->size.capacity;
-  vector->size.count = 0;
-
-  for (uint64_t i = 0; i < capacity; ++i) {
-    vector->elements[i] = NULL;
+    for (uint64_t i = 0; i < capacity; ++i) {
+      vector->elements[i] = NULL;
+    }
   }
 }
 
 void destroy_vector(Vector *vector, void (*destroy_element)(void *element)) {
   ASSERT(vector, !=, NULL);
 
-  if (destroy_element != NULL)
+  if (destroy_element != NULL) {
     ASSERT(foreach_vector(vector, destroy_element_layer, destroy_element), ==, true);
+  }
 
   free(vector->elements);
   free(vector);
