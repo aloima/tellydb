@@ -18,6 +18,8 @@ void generate_random_string(char *dest, size_t length) {
 }
 
 static inline void number_pad(char *res, const uint32_t value) {
+  if (value >= 100) return;
+
   const char *digits = &TWO_DIGITS_TABLE[value * 2];
   res[0] = digits[0];
   res[1] = digits[1];
