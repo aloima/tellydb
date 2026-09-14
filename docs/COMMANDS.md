@@ -472,6 +472,25 @@ The list of unwritten behavior to commands.
 
 ---
 
+### LRANGE
+* **Syntax**: `LPUSH key start end`
+* **Description**: Returns the elements between two indexes from the list.
+* **Since**: `1.2.2`
+* **Time complexity**: `O(N + S) where N is element count between indexes, S is shortest distance from indexes`
+* **Permissions**: `P_READ`
+* **Returns**: Array
+* **Behavior**:
+  * If the key is holding a value that is not a list, throws an error.
+  * If the key is not holding a value, returns empty array.
+  * If `end` index is out of bounds of list ending, `end` will become `list_length - 1`.
+  * If `start` index is negative and out of bounds of list starting, returns empty array.
+* **Example**:
+  ```shell
+  LRANGE list 0 -2
+  ```
+
+---
+
 ### LTYPE
 * **Syntax**: `LTYPE key index`
 * **Description**: Returns type of the element at the index in the list.

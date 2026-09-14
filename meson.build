@@ -131,6 +131,7 @@ sources = [
   'src/commands/list/llen.c',
   'src/commands/list/lpop.c',
   'src/commands/list/lpush.c',
+  'src/commands/list/lrange.c',
   'src/commands/list/ltype.c',
   'src/commands/list/rpop.c',
   'src/commands/list/rpush.c',

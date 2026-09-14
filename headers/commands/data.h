@@ -58,6 +58,7 @@ extern const Command cmd_lindex;
 extern const Command cmd_llen;
 extern const Command cmd_lpop;
 extern const Command cmd_lpush;
+extern const Command cmd_lrange;
 extern const Command cmd_ltype;
 extern const Command cmd_rpop;
 extern const Command cmd_rpush;
