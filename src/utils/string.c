@@ -18,13 +18,9 @@ void generate_random_string(char *dest, size_t length) {
 }
 
 static inline void number_pad(char *res, const uint32_t value) {
-  if (value < 10) {
-    res[0] = '0';
-    res[1] = (value + 48);
-  } else if (value < 100) {
-    res[0] = ((value / 10) + 48);
-    res[1] = ((value % 10) + 48);
-  }
+  const char *digits = &TWO_DIGITS_TABLE[value * 2];
+  res[0] = digits[0];
+  res[1] = digits[1];
 }
 
 void generate_date_string(char *text, const time_t value) {
