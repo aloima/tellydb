@@ -31,8 +31,9 @@ static int grow_vector(Vector *vector) {
   const uint64_t new_capacity = old_capacity * VECTOR_GROW_MULTIPLIER;
   void **elements;
 
-  if (amalloc(elements, void *, new_capacity) != 0)
+  if (amalloc(elements, void *, new_capacity) != 0) {
     return -1;
+  }
 
   ASSERT(memcpy(elements, vector->elements, old_capacity * sizeof(void *)), !=, NULL);
 
@@ -48,8 +49,9 @@ bool insert_into_vector(Vector *vector, void *element) {
   ASSERT(element, !=, NULL);
 
   // Guaranteed that capacity is enough
-  if (grow_vector(vector) < 0)
+  if (grow_vector(vector) < 0) {
     return false;
+  }
 
   vector->elements[vector->size.count++] = element;
   return true;
@@ -77,7 +79,6 @@ bool delete_from_vector(Vector *vector, void *element) {
 bool foreach_vector(Vector *vector, bool (*procedure)(void **element, void *external), void *external) {
   ASSERT(vector, !=, NULL);
   ASSERT(procedure, !=, NULL);
-  ASSERT(external, !=, NULL);
 
   const uint64_t count = vector->size.count;
 
