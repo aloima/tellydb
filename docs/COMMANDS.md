@@ -504,8 +504,8 @@ The list of unwritten behavior to commands.
   * If the key is not holding a value, throws invalid type error.
 * **Examples**:
   ```shell
-  LINDEX tasks 1
-  LINDEX tasks -3
+  LTYPE tasks 1
+  LTYPE tasks -3
   ```
 
 ---
