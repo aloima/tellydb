@@ -128,6 +128,7 @@ void clear_vector(Vector *vector, void (*destroy_element)(void *element)) {
     vector->size.count = 0;
 
     for (uint64_t i = 0; i < capacity; ++i) {
+      if (vector->elements[i] == NULL) break;
       vector->elements[i] = NULL;
     }
   }
