@@ -73,9 +73,19 @@ uint64_t atoull_s(const string_t str) {
     }
   }
 
-  while (len != 0 && *value == '0') {
+  while (len > 0 && *value == '0') {
     value += 1;
     len -= 1;
+  }
+
+  if (len == 0) {
+    errno = 0;
+    return 0;
+  }
+
+  if (VERY_UNLIKELY(len > 20)) {
+    errno = ERANGE;
+    return UINT64_MAX;
   }
 
   static constexpr const uint64_t max_div_10 = UINT64_MAX / 10;
@@ -108,12 +118,7 @@ uint64_t atoull_s(const string_t str) {
 
 uint8_t ltoa(const int64_t value, char *dst) {
   const bool neg = (value < 0);
-  uint64_t uval;
-
-  if (value == INT64_MIN)
-    uval = 9223372036854775808ULL; // 2^63
-  else
-    uval = (neg ? -value : value);
+  uint64_t uval = neg ? -(value + 1) + 1 : value;
 
   const uint8_t len = get_digit_count(uval);
   const uint8_t total_len = (len + neg);
@@ -122,7 +127,7 @@ uint8_t ltoa(const int64_t value, char *dst) {
   uint8_t pos = total_len;
 
   while (uval >= 100) {
-    const uint64_t remainder = (uval % 100);
+    const uint32_t remainder = (uval % 100);
 
     pos -= 2;
     ASSERT(memcpy(dst + pos, TWO_DIGITS_TABLE + remainder * 2, 2), !=, NULL);
@@ -142,8 +147,9 @@ uint8_t ltoa(const int64_t value, char *dst) {
     }
   }
 
-  if (neg)
+  if (neg) {
     dst[0] = '-';
+  }
 
   return total_len;
 }
