@@ -1,8 +1,8 @@
 #include <telly.h>
 
-static inline void init_state(ThreadQueue *queue, uint64_t at, void *data, uint64_t size) {
+static inline void init_state(ThreadQueue *queue, uint64_t at, uint64_t size) {
   atomic_init(&queue->slots[at].seq, at);
-  queue->slots[at].data = data + (size * at);
+  queue->slots[at].data = queue->slots->block + (size * at);
 }
 
 ThreadQueue *create_tqueue(const uint64_t capacity, const uint64_t size, uint64_t align) {
@@ -21,8 +21,7 @@ ThreadQueue *create_tqueue(const uint64_t capacity, const uint64_t size, uint64_
     return NULL;
   }
 
-  void *data;
-  if (posix_memalign((void **) &data, align, capacity * size) != 0) {
+  if (posix_memalign((void **) &queue->slots->block, align, capacity * size) != 0) {
     free(queue->slots);
     free(queue);
     return NULL;
@@ -30,16 +29,16 @@ ThreadQueue *create_tqueue(const uint64_t capacity, const uint64_t size, uint64_
 
   for (uint64_t i = 0; i < capacity / 4; ++i) {
     const uint64_t idx = (i * 4);
-    init_state(queue, idx, data, size);
-    init_state(queue, idx + 1, data, size);
-    init_state(queue, idx + 2, data, size);
-    init_state(queue, idx + 3, data, size);
+    init_state(queue, idx, size);
+    init_state(queue, idx + 1, size);
+    init_state(queue, idx + 2, size);
+    init_state(queue, idx + 3, size);
   }
 
   const uint64_t offset = ((capacity / 4) * 4);
 
   for (uint64_t i = offset; i < capacity; ++i) {
-    init_state(queue, i, data, size);
+    init_state(queue, i, size);
   }
 
   atomic_init(&queue->at, 0);
@@ -62,10 +61,7 @@ void reset_tqueue(ThreadQueue *queue) {
 }
 
 void free_tqueue(ThreadQueue *queue) {
-  for (uint64_t i = 0; i < queue->capacity; ++i) {
-    free(queue->slots[i].data);
-  }
-
+  free(queue->slots->block);
   free(queue->slots);
   free(queue);
 }

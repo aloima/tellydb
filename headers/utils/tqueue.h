@@ -7,8 +7,9 @@
 
 typedef struct {
   _Atomic uint64_t seq;
+  void *block; // Memory block which shared on slots->data
   void *data;
-  char _pad[64 - sizeof(uint64_t) - sizeof(void *)];
+  char _pad[64 - sizeof(uint64_t) - sizeof(void *) - sizeof(void *)];
 } ThreadQueueSlot;
 
 typedef struct {
