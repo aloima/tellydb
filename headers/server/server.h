@@ -42,6 +42,9 @@ typedef struct {
   struct Command *commands;
   Client *clients;
 
+  LinkedList *databases;
+  Database *initial_database;
+
   // Given keys in the command, one keyspace is enough because of that transactions is ran individually.
   Vector *keyspace;
 } Server;

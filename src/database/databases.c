@@ -1,65 +1,53 @@
 #include <telly.h>
 
-static LinkedList *databases = NULL;
-static Database *main = NULL;
-
-static inline void free_failed_database(Database *database, char *rname, HashTable *data) {
-  free(database);
-  free(rname);
-
-  if (data) {
-    // There is no data yet, so freeing method is redundant
-    destroy_hashtable(data, NULL);
-  }
-}
-
-#define FREE_FAILED_DATABASE(database, rname, data) do {  \
-  free_failed_database(database, rname, data);            \
-  return NULL;                                            \
-} while (0)
-
-Database *create_database(const string_t name, const uint64_t capacity) {
+static inline Database *allocate_database(const string_t name, const uint64_t capacity) {
   Database *database = NULL;
   char *rname = NULL;
-  HashTable *data = NULL;
 
   database = malloc(sizeof(Database));
-  if (database == NULL) FREE_FAILED_DATABASE(database, rname, data);
+  if (database == NULL) return NULL;
 
   rname = malloc(name.len);
-  if (rname == NULL) FREE_FAILED_DATABASE(database, rname, data);
 
-  data = create_hashtable(capacity, string_hash, string_compare);
-  if (data == NULL) FREE_FAILED_DATABASE(database, rname, data);
-
-  if (databases == NULL) {
-    databases = ll_create();
-    if (databases == NULL) FREE_FAILED_DATABASE(database, rname, data);
+  if (rname == NULL) {
+    free(database);
+    return NULL;
   }
 
-  if (ll_insert_back(databases, database) == NULL) FREE_FAILED_DATABASE(database, rname, data);
-
+  database->id = string_hash((string_t *) &name);
   database->name = CREATE_STRING(rname, name.len);
   ASSERT(memcpy(database->name.value, name.value, name.len), !=, NULL);
 
-  database->id = string_hash((string_t *) &name);
-  database->data = data;
+  database->data = create_hashtable(capacity, string_hash, string_compare);
+
+  if (database->data == NULL) {
+    free(database);
+    free(rname);
+    return NULL;
+  }
 
   return database;
 }
 
-#undef FREE_FAILED_DATABASE
+Database *create_database(const string_t name, const uint64_t capacity) {
+  Database *database = allocate_database(name, capacity);
+  if (database == NULL) return NULL;
 
-void set_main_database(Database *database) {
-  main = database;
-}
+  if (server->databases == NULL) {
+    server->databases = ll_create();
 
-Database *get_main_database() {
-  return main;
-}
+    if (server->databases == NULL) {
+      free_database(database);
+      return NULL;
+    }
+  }
 
-LinkedList *get_databases() {
-  return databases;
+  if (ll_insert_back(server->databases, database) == NULL) {
+    free_database(database);
+    return NULL;
+  }
+
+  return database;
 }
 
 typedef struct {
@@ -83,24 +71,13 @@ Database *get_database(const string_t name) {
     .target = string_hash((string_t *) &name)
   };
 
-  LinkedListNode *node = ll_search_node(databases, LL_BACK, &external, cmp);
+  LinkedListNode *node = ll_search_node(server->databases, LL_BACK, &external, cmp);
   return node != NULL ? (Database *) node->data : NULL;
 }
 
 bool rename_database(const string_t old_name, const string_t new_name) {
-  Database *database = ({
-    ExternalData external = {
-      .name = old_name,
-      .target = string_hash((string_t *) &old_name)
-    };
-
-    LinkedListNode *node = ll_search_node(databases, LL_BACK, &external, cmp);
-    node != NULL ? (Database *) node->data : NULL;
-  });
-
-  if (!database) {
-    return false;
-  }
+  Database *database = get_database(old_name);
+  if (!database) return false;
 
   char *name = malloc(new_name.len);
   if (!name) return false;
@@ -123,5 +100,5 @@ void free_database(void *database_ptr) {
 }
 
 void free_databases() {
-  ll_free(databases, free_database);
+  ll_free(server->databases, free_database);
 }

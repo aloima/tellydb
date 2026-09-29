@@ -80,7 +80,7 @@ Client *add_client(const int connfd) {
   client->id = id;
   client->connfd = connfd;
   ASSERT(time(&client->connected_at), !=, INVALID_TIME);
-  client->database = get_main_database();
+  client->database = server->initial_database;
 
   client->command = malloc(sizeof(UsedCommand));
   atomic_init(&client->command->idx, UINT64_MAX);

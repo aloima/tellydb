@@ -26,7 +26,7 @@ int open_database_fd(uint32_t *server_age) {
       goto GRACEFUL_SHUTDOWN;
     }
 
-    set_main_database(database);
+    server->initial_database = database;
     write_log(LOG_INFO, "Database file is empty, loaded password and data count: 0");
     *server_age = 0;
 

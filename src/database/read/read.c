@@ -253,12 +253,12 @@ static CollectionResult collect_database(const GenericArguments *arguments, Data
   }
 }
 
-static inline int create_main_database(const string_t database_name) {
+static inline int create_initial_database(const string_t database_name) {
   Database *database = create_database(database_name, DATABASE_INITIAL_SIZE);
   if (database == NULL)
     return -1;
 
-  set_main_database(database);
+  server->initial_database = database;
   return 0;
 }
 
@@ -268,9 +268,7 @@ off_t read_file(const int fd, const off_t file_size, char *block, const uint16_t
   const string_t database_name = CREATE_STRING(server->conf->database_name, strlen(server->conf->database_name));
 
   if (at == file_size) {
-    if (create_main_database(database_name) == -1)
-      return -1;
-
+    if (create_initial_database(database_name) == -1) return -1;
     return 0;
   }
 
@@ -290,13 +288,13 @@ off_t read_file(const int fd, const off_t file_size, char *block, const uint16_t
     collected_bytes += result.value;
     loaded_count += data_count;
 
-    if (database->id == hashed)
-      set_main_database(database);
+    if (database->id == hashed) {
+      server->initial_database = database;
+    }
   } while (collected_bytes != file_size);
 
-  if (!get_main_database()) {
-    if (create_main_database(database_name) == -1)
-      return -1;
+  if (server->initial_database == NULL) {
+    if (create_initial_database(database_name) == -1) return -1;
   }
 
   return loaded_count;

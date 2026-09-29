@@ -19,9 +19,6 @@ typedef struct {
 Database *create_database(const string_t name, const uint64_t capacity);
 LinkedList *get_databases();
 
-void set_main_database(Database *database);
-Database *get_main_database();
-
 Database *get_database(const string_t name);
 bool rename_database(const string_t old_name, const string_t new_name);
 void free_database(void *database_ptr);
