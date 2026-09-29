@@ -17,6 +17,9 @@ typedef struct {
 #define CREATE_STRING(value, len) ((string_t) {(value), (len)})
 #define CREATE_SIZED_STRING(value) ((string_t) {(value), (sizeof(value) - 1)})
 
+uint64_t string_hash(void *data);
+bool string_compare(void *string_a, void *string_b);
+
 void to_uppercase(string_t src, char *dst);
 
 static constexpr char months[12][4] = {
