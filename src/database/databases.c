@@ -16,29 +16,31 @@ uint64_t string_hash(void *data) {
   unsigned long v;
   int r;
 
-  if ((c == NULL) || (len == '\0'))
-      return ret;
+  if ((c == NULL) || (len == '\0')) {
+    return ret;
+  }
 
   n = 0x100;
   while (len > 0) {
-      v = n | (*c);
-      n += 0x100;
-      r = (int) ((v >> 2) ^ v) & 0x0f;
-      /* cast to uint64_t to avoid 32 bit shift of 32 bit value */
-      ret = (ret << r) | (unsigned long) ((uint64_t) ret >> (32 - r));
-      ret &= 0xFFFFFFFFL;
-      ret ^= v * v;
+    v = n | (*c);
+    n += 0x100;
+    r = (int) ((v >> 2) ^ v) & 0x0f;
+    /* cast to uint64_t to avoid 32 bit shift of 32 bit value */
+    ret = (ret << r) | (unsigned long) ((uint64_t) ret >> (32 - r));
+    ret &= 0xFFFFFFFFL;
+    ret ^= v * v;
 
-      c++;
-      len--;
+    c++;
+    len--;
   }
 
   return (ret >> 16) ^ ret;
 }
 
 bool string_compare(void *string_a, void *string_b) {
-  if (string_a == NULL || string_b == NULL)
+  if (string_a == NULL || string_b == NULL) {
     return NULL;
+  }
 
   string_t *a = (string_t *) string_a;
   string_t *b = (string_t *) string_b;
@@ -46,50 +48,52 @@ bool string_compare(void *string_a, void *string_b) {
   return SSTREQ(*a, *b);
 }
 
+static inline void free_failed_database(Database *database, char *rname, HashTable *data) {
+  free(database);
+  free(rname);
+
+  if (data) {
+    // There is no data yet, so freeing method is redundant
+    destroy_hashtable(data, NULL);
+  }
+}
+
+#define FREE_FAILED_DATABASE(database, rname, data) do {  \
+  free_failed_database(database, rname, data);            \
+  return NULL;                                            \
+} while (0)
+
 Database *create_database(const string_t name, const uint64_t capacity) {
   Database *database = NULL;
-  char *name_str = NULL;
+  char *rname = NULL;
   HashTable *data = NULL;
 
   database = malloc(sizeof(Database));
-  if (database == NULL)
-    goto CLEANUP;
+  if (database == NULL) FREE_FAILED_DATABASE(database, rname, data);
 
-  name_str = malloc(name.len);
-  if (name_str == NULL)
-    goto CLEANUP;
+  rname = malloc(name.len);
+  if (rname == NULL) FREE_FAILED_DATABASE(database, rname, data);
 
   data = create_hashtable(capacity, string_hash, string_compare);
-  if (data == NULL)
-    goto CLEANUP;
+  if (data == NULL) FREE_FAILED_DATABASE(database, rname, data);
 
   if (databases == NULL) {
     databases = ll_create();
-    if (databases == NULL)
-      goto CLEANUP;
+    if (databases == NULL) FREE_FAILED_DATABASE(database, rname, data);
   }
 
-  if (ll_insert_back(databases, database) == NULL)
-    goto CLEANUP;
+  if (ll_insert_back(databases, database) == NULL) FREE_FAILED_DATABASE(database, rname, data);
 
-  database->name = CREATE_STRING(name_str, name.len);
+  database->name = CREATE_STRING(rname, name.len);
   ASSERT(memcpy(database->name.value, name.value, name.len), !=, NULL);
 
   database->id = string_hash((string_t *) &name);
   database->data = data;
 
   return database;
-
-CLEANUP:
-  if (database)
-    free(database);
-  if (name_str)
-    free(name_str);
-  if (data)
-    destroy_hashtable(data, NULL); // There is no data yet, so there is no need freeing method.
-
-  return NULL;
 }
+
+#undef FREE_FAILED_DATABASE
 
 void set_main_database(Database *database) {
   main = database;
@@ -139,12 +143,12 @@ bool rename_database(const string_t old_name, const string_t new_name) {
     node != NULL ? (Database *) node->data : NULL;
   });
 
-  if (!database)
+  if (!database) {
     return false;
+  }
 
   char *name = malloc(new_name.len);
-  if (!name)
-    return false;
+  if (!name) return false;
 
   database->id = string_hash((string_t *) &new_name);
   free(database->name.value);
