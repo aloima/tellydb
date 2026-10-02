@@ -179,6 +179,7 @@ sources = [
   'src/utils/queue.c',
   'src/utils/string.c',
   'src/utils/tqueue.c',
+  'src/utils/tsleep.c',
   'src/utils/vector.c',
 
   command_hash_c,
