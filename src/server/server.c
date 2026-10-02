@@ -45,10 +45,10 @@ void terminate_connection(Client *client) {
 
 static inline void cleanup() {
   destroy_transaction_thread();
-  usleep(15);
+  tsleep(15);
 
   send_destroy_signal_to_io_threads();
-  usleep(15);
+  tsleep(15);
 
   free_transaction_blocks();
   free_commands();

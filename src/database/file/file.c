@@ -86,7 +86,7 @@ int open_database_fd(uint32_t *server_age) {
 
 int close_database_fd() {
   while (saving) {
-    usleep(100);
+    tsleep(100);
   }
 
   if (lockf(fd, F_ULOCK, 0) == -1) {
