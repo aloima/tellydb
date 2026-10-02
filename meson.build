@@ -148,6 +148,10 @@ sources = [
   'src/database/read/types.c',
   'src/database/set.c',
 
+  'src/io/cleanup.c',
+  'src/io/io_procedure.c',
+  'src/io/io.c',
+
   'src/resp/data.c',
   'src/resp/inline.c',
   'src/resp/resp.c',
@@ -157,7 +161,6 @@ sources = [
   'src/server/client.c',
   'src/server/commands.c',
   'src/server/events.c',
-  'src/server/io.c',
   'src/server/password.c',
   'src/server/read_command.c',
   'src/server/server.c',

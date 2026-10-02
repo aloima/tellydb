@@ -1,6 +1,6 @@
 #pragma once
 
-#include "client.h"
+#include "server/client.h"
 #include "utils/utils.h"
 
 #include <stdint.h>
@@ -28,9 +28,6 @@ typedef struct {
 
   Arena *ucmd_arena;
 } IOThread;
-
-IOThread *get_io_threads();
-int64_t get_io_thread_count();
 
 int create_io_threads();
 void send_destroy_signal_to_io_threads();

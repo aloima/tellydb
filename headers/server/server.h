@@ -4,6 +4,7 @@
 #include "macros.h" // IWYU pragma: export
 
 #include "../config.h"
+#include "../io.h"
 #include "../utils/utils.h"
 
 #include <signal.h>
@@ -14,7 +15,6 @@
 
 #include <openssl/crypto.h>
 
-#include "io.h"     // IWYU pragma: export
 #include "macros.h" // IWYU pragma: export
 #include "client.h" // IWYU pragma: export
 
@@ -44,6 +44,9 @@ typedef struct {
 
   LinkedList *databases;
   Database *initial_database;
+
+  IOThread *io_threads;
+  uint32_t io_thread_count;
 
   // Given keys in the command, one keyspace is enough because of that transactions is ran individually.
   Vector *keyspace;

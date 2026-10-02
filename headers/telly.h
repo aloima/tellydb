@@ -87,6 +87,7 @@
 
 // telly headers
 #include "auth.h"              // IWYU pragma: export
+#include "io.h"                // IWYU pragma: export
 #include "commands/commands.h" // IWYU pragma: export
 #include "config.h"            // IWYU pragma: export
 #include "database/database.h" // IWYU pragma: export
