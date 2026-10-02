@@ -1,7 +1,7 @@
 #include <telly.h>
 
 static string_t run(CommandEntry *entry) {
-  LinkedListNode *node = get_databases()->begin;
+  LinkedListNode *node = server->databases->begin;
 
   while (node) {
     Database *database = (Database *) node->data;

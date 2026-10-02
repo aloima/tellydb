@@ -259,7 +259,7 @@ int save_data(const uint32_t server_age) {
   }
 
   {
-    LinkedListNode *node = get_databases()->begin;
+    LinkedListNode *node = server->databases->begin;
 
     while (node) {
       Database *database = (Database *) node->data;
