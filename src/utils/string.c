@@ -5,20 +5,21 @@
 uint64_t string_hash(void *data) {
   string_t *key = (string_t *) data;
 
-  char *c = key->value;
-  uint64_t len = key->len;
+  const char *c = key->value;
+  const char *end = c + key->len;
 
   unsigned long ret = 0;
   long n;
   unsigned long v;
   int r;
 
-  if ((c == NULL) || (len == '\0')) {
+  if ((c == NULL) || (*end != '\0')) {
     return ret;
   }
 
   n = 0x100;
-  while (len > 0) {
+
+  while (c < end) {
     v = n | (*c);
     n += 0x100;
     r = (int) ((v >> 2) ^ v) & 0x0f;
@@ -28,7 +29,6 @@ uint64_t string_hash(void *data) {
     ret ^= v * v;
 
     c++;
-    len--;
   }
 
   return (ret >> 16) ^ ret;
